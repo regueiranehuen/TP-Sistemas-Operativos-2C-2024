@@ -4,6 +4,6 @@
 #include <utils/includes/sockets.h>
 #include <commons/config.h>
 
-void servidor_memoria_kernel (t_log* log, t_config* config);
+int servidor_memoria_kernel (t_log* log, t_config* config);
 
 #endif
