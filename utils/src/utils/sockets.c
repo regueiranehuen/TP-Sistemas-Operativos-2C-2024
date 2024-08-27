@@ -2,6 +2,8 @@
 
 int iniciar_servidor(t_log* log,char* puerto)
 {
+// Creación del socket de escucha
+	int error;
 	int socket_servidor;
 
 	struct addrinfo hints, *servinfo; //*p;
@@ -11,11 +13,17 @@ int iniciar_servidor(t_log* log,char* puerto)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE;
 
-	getaddrinfo(NULL, puerto, &hints, &servinfo);
+	error=getaddrinfo(NULL, puerto, &hints, &servinfo);
+	if (error != 0) {
+        log_error(log, "Error en getaddrinfo: %s", gai_strerror(error));
+        return -1;
+    }
 
 	socket_servidor= socket(servinfo->ai_family,
                         servinfo->ai_socktype,
                         servinfo->ai_protocol);
+
+//bind y listen
 
 	setsockopt(socket_servidor, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int));
 	bind(socket_servidor, servinfo->ai_addr, servinfo->ai_addrlen);
@@ -30,7 +38,7 @@ int iniciar_servidor(t_log* log,char* puerto)
 
 int esperar_cliente(t_log* log,int socket_servidor)
 {
-
+//accept
 	int socket_cliente;
 	socket_cliente= accept(socket_servidor, NULL, NULL);
 
