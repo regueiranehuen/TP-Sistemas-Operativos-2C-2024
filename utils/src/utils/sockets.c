@@ -110,6 +110,41 @@ int cliente_handshake(int socket_cliente, t_log* log) {
     }
 }
 
+
+int crear_conexion(t_log* log,char *ip, char* puerto) {
+
+//crear socket de conexión
+    struct addrinfo hints;
+    struct addrinfo *server_info;
+    int socket_cliente; // Inicializar en un valor inválido
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    getaddrinfo(ip, puerto, &hints, &server_info);
+
+//conexión con el servidor
+
+socket_cliente = socket(server_info->ai_family,
+                         server_info->ai_socktype,
+                         server_info->ai_protocol);
+if (socket_cliente == -1){
+    log_info(log,"Error al conectarse con el servidor");
+    return socket_cliente;
+}
+	log_info(log,"Se pudo conectar al servidor");
+
+    connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen);
+
+    freeaddrinfo(server_info); // Liberar la memoria asignada por getaddrinfo()
+
+    return socket_cliente;
+}
+
+
+/*
+
 int crear_conexion(t_log* log,char *ip, char* puerto) {
 
 //crear socket de conexión
@@ -159,9 +194,6 @@ int crear_conexion(t_log* log,char *ip, char* puerto) {
     return socket_cliente;
 }
 
-
-
-/*
 void* recibir_buffer(int* size, int socket_cliente)
 {
 	void * buffer;

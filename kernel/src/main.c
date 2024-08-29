@@ -12,6 +12,8 @@ config= config_create("kernel.config");
 
 socket_cliente_memoria = cliente_Memoria_Kernel(log,config);
 sockets= cliente_CPU_Kernel(log,config);
+
+
 socket_cpu_dispatch=sockets.socket_Dispatch;
 socket_cpu_interrupt=sockets.socket_Interrupt;
 
