@@ -71,8 +71,9 @@ t_socket_cpu* cliente_CPU_Kernel(t_log* log, t_config* config){
         log_info(log, "Se pudo conectar al servidor CPU_Dispatch");
     }
 
-   respuesta_Interrupt = cliente_handshake(socket_cliente_Interrupt,log);
    respuesta_Dispatch = cliente_handshake(socket_cliente_Dispatch,log);
+   respuesta_Interrupt = cliente_handshake(socket_cliente_Interrupt,log);
+   
    if (respuesta_Interrupt == 0){
     log_info(log,"Handshake de Kernel --> CPU_Interrupt realizado correctamente");
    }

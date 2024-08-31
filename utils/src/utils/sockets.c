@@ -26,11 +26,25 @@ int iniciar_servidor(t_log* log,char* puerto)
 //bind y listen
 
 	setsockopt(socket_servidor, SOL_SOCKET, SO_REUSEPORT, &(int){1}, sizeof(int));
-	bind(socket_servidor, servinfo->ai_addr, servinfo->ai_addrlen);
 
-	listen(socket_servidor, SOMAXCONN);
+	if (bind(socket_servidor, servinfo->ai_addr, servinfo->ai_addrlen) == -1) {
+    log_error(log, "Error en bind: %s", strerror(errno));
+    freeaddrinfo(servinfo);
+    return -1;
+}
 
-	freeaddrinfo(servinfo);
+if (listen(socket_servidor, SOMAXCONN) == -1) {
+    log_error(log, "Error en listen: %s", strerror(errno));
+    freeaddrinfo(servinfo);
+    return -1;
+}
+
+freeaddrinfo(servinfo);
+
+if (socket_servidor == -1){
+    log_info (log,"Error en la creación del socket_servidor");
+    return -1;
+}
 	log_trace(log, "Servidor abierto");
 
 	return socket_servidor;
@@ -41,7 +55,10 @@ int esperar_cliente(t_log* log,int socket_servidor)
 //accept
 	int socket_cliente;
 	socket_cliente= accept(socket_servidor, NULL, NULL);
-
+if (socket_cliente == -1){
+    log_info(log,"Error en la conexión con el cliente");
+    return -1;
+}
 	log_info(log, "Se conecto un cliente!");
 
 	return socket_cliente;

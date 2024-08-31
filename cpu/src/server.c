@@ -22,31 +22,30 @@ puerto_interrupt = config_get_string_value(config,"PUERTO_ESCUCHA_INTERRUPT");
 socket_servidor_Dispatch = iniciar_servidor(log,puerto_dispatch);
 socket_servidor_Interrupt = iniciar_servidor(log,puerto_interrupt);
 
-sockets->socket_Dispatch=socket_servidor_Dispatch;
-sockets->socket_Interrupt=socket_servidor_Interrupt;
-   
-
-if (socket_servidor_Dispatch == -1 || socket_servidor_Interrupt == -1) {
-    log_error(log, "Error al iniciar el servidor de CPU");
-    return sockets;
+  if (socket_servidor_Dispatch == -1 || socket_servidor_Interrupt == -1) {
+        log_error(log, "Error al iniciar el servidor de CPU");
+        // Cerrar los sockets abiertos
+        if (socket_servidor_Dispatch != -1) close(socket_servidor_Dispatch);
+        if (socket_servidor_Interrupt != -1) close(socket_servidor_Interrupt);
+        free(sockets);
+        return NULL;
     }
 
     log_info(log,"Servidor abierto correctamente");
-printf("forro0");
-socket_cliente_Dispatch = esperar_cliente(log,socket_servidor_Dispatch);
-printf("forro1");
-socket_cliente_Interrupt = esperar_cliente(log,socket_servidor_Interrupt);
-printf("forro2");
-if (socket_cliente_Dispatch == -1 || socket_cliente_Interrupt == -1) {
-    log_error(log, "Error al esperar cliente");
-    if (socket_cliente_Dispatch != -1) close(socket_cliente_Dispatch);
-        if (socket_cliente_Interrupt != -1) close(socket_cliente_Interrupt);
-        if (socket_servidor_Dispatch != -1) close(socket_servidor_Dispatch);
-        if (socket_servidor_Interrupt != -1) close(socket_servidor_Interrupt);
-        return sockets;
-    }
 
-    printf("hasta aca llega");
+socket_cliente_Dispatch = esperar_cliente(log,socket_servidor_Dispatch);
+socket_cliente_Interrupt = esperar_cliente(log,socket_servidor_Interrupt);
+
+if (socket_cliente_Dispatch == -1 || socket_cliente_Interrupt == -1) {
+        log_error(log, "Error al esperar cliente");
+        if (socket_cliente_Dispatch != -1) close(socket_cliente_Dispatch);
+        if (socket_cliente_Interrupt != -1) close(socket_cliente_Interrupt);
+        close(socket_servidor_Dispatch);
+        close(socket_servidor_Interrupt);
+        free(sockets);
+        return NULL;
+    }
+printf("hola");
 respuesta_Dispatch = servidor_handshake(socket_cliente_Dispatch,log);
 respuesta_Interrupt = servidor_handshake(socket_cliente_Interrupt,log);
 
@@ -63,59 +62,50 @@ respuesta_Interrupt = servidor_handshake(socket_cliente_Interrupt,log);
     log_error(log, "Handshake de Kernel --> CPU_Dispatch tuvo un error");
    }
 
+sockets->socket_Dispatch=socket_servidor_Dispatch;
+sockets->socket_Interrupt=socket_servidor_Interrupt;
+
     close(socket_cliente_Dispatch);
     close(socket_cliente_Interrupt);
 	return sockets;
 }
 
-t_socket_cpu* cliente_cpu_memoria (t_log* log, t_config * config){
+int cliente_cpu_memoria (t_log* log, t_config * config){
 
 
-char * ip, * puerto_dispatch, * puerto_interrupt;
-int socket_Dispatch, socket_Interrupt, respuesta_Dispatch,respuesta_Interrupt;
-t_socket_cpu* sockets=malloc(sizeof(t_sockets_cpu));
-sockets->socket_Dispatch=-1;
-sockets->socket_Interrupt=-1;
+char * ip, * puerto;
+int socket_cliente, respuesta;
 
 ip = config_get_string_value(config, "IP_MEMORIA");
-puerto_dispatch = config_get_string_value(config, "PUERTO_ESCUCHA_DISPATCH");
-puerto_interrupt = config_get_string_value(config,"PUERTO_ESCUCHA_INTERRUPT");
+puerto = config_get_string_value(config, "PUERTO_MEMORIA");
 
  // Verificar que ip y puerto no sean NULL
-    if (ip == NULL || puerto_dispatch == NULL || puerto_interrupt ==NULL ) {
+    if (ip == NULL || puerto == NULL) {
         log_info(log, "No se pudo obtener IP o PUERTO de la configuración");
-        return sockets;
+        return -1;
     }
 
     // Crear conexión
-    socket_Dispatch = crear_conexion(log, ip, puerto_dispatch);
-    socket_Interrupt = crear_conexion(log, ip, puerto_interrupt);
+    socket_cliente = crear_conexion(log, ip, puerto);
 
-    if (socket_Dispatch == -1 || socket_Interrupt == -1) {
+    if (socket_cliente == -1) {
         log_info(log, "No se pudo crear la conexión");
-        return sockets;
+        return -1;
     }
 
-   respuesta_Dispatch = cliente_handshake(socket_Dispatch,log);
-   respuesta_Interrupt = cliente_handshake (socket_Interrupt,log);
+   respuesta = cliente_handshake(socket_cliente,log);
+   
 
-   if (respuesta_Dispatch == 0){
-    log_info(log,"Handshake de CPU_Dispatch --> Memoria realizado correctamente");
+   if (respuesta == 0){
+    log_info(log,"Handshake de CPU --> Memoria realizado correctamente");
    }
    else {
-    log_error(log, "Handshake de CPU_Dispatch --> Memoria tuvo un error");
-   }
-   if (respuesta_Interrupt == 0){
-    log_info(log,"Handshake de CPU_Interrupt --> Memoria realizado correctamente");
-   }
-   else {
-    log_error(log, "Handshake de CPU_Interrupt --> Memoria tuvo un error");
+    log_error(log, "Handshake de CPU --> Memoria tuvo un error");
    }
 
-sockets->socket_Dispatch=socket_Dispatch;
-sockets->socket_Interrupt=socket_Interrupt;
 
-    return sockets;
+
+    return socket_cliente;
 }
 
 void* función_hilo_servidor_cpu(void* void_args){
@@ -124,6 +114,7 @@ void* función_hilo_servidor_cpu(void* void_args){
 
 
     t_socket_cpu* sockets = servidor_CPU_Kernel(args->log, args->config);
+   
     if (sockets->socket_Dispatch == -1 || sockets->socket_Interrupt == -1) {
         log_error(args->log, "No se pudo establecer la conexión con Kernel");
         pthread_exit(NULL);
@@ -136,12 +127,12 @@ void* función_hilo_cliente_memoria(void* void_args){
   args_hilo* args = ((args_hilo*)void_args);
 
 
-    t_socket_cpu* sockets = cliente_cpu_memoria(args->log, args->config);
-    if (sockets->socket_Dispatch == -1 || sockets->socket_Interrupt == -1) {
+    int socket = cliente_cpu_memoria(args->log, args->config);
+    if (socket== -1) {
         log_error(args->log, "No se pudo establecer la conexión con Kernel");
         pthread_exit(NULL);
     }
-    return (void*)sockets;
+    return (void*)(intptr_t)socket;
 }
 
 
@@ -184,11 +175,11 @@ log_info(log,"El hilo cliente_memoria se creo correctamente");
 
 pthread_join(hilo_servidor,&socket_servidor_kernel);
 
-sockets->socket_servidor= (void*)socket_servidor_kernel;
+sockets->socket_servidor= (t_socket_cpu*)socket_servidor_kernel;
 
-pthread_join(hilo_servidor,&socket_cliente_memoria);
+pthread_join(hilo_cliente,&socket_cliente_memoria);
 
-sockets->socket_cliente= (void*)socket_cliente_memoria;
+sockets->socket_cliente= (intptr_t)socket_cliente_memoria;
 
 free(args);
 return sockets;

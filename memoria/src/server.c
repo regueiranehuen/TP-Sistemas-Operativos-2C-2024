@@ -1,13 +1,41 @@
 #include "includes/server.h"
 
+
+void* hilo_gestor_clientes (void* void_args){
+hilo_clientes *args = (hilo_clientes*)void_args;
+
+int socket_cliente = esperar_cliente(args->log,args->socket_servidor);
+if (socket_cliente == -1) {
+    log_error(args->log, "Error al esperar cliente");
+    close(args->socket_servidor);
+}
+
+servidor_handshake(socket_cliente,args->log);
+log_info(args->log,"Handshake memoria->cliente realizado correctamente");
+close(socket_cliente);
+return NULL;
+}
+
 int servidor_memoria_kernel (t_log* log, t_config* config){
 
+hilo_clientes* args1 = malloc(sizeof(hilo_clientes)); 
+hilo_clientes* args2 = malloc(sizeof(hilo_clientes)); 
+
 char * puerto;
-int socket_servidor,socket_cliente, respuesta_Handshake;
+int socket_servidor,respuesta;
+
+pthread_t hilo_socket_1;
+pthread_t hilo_socket_2;
+
 
 puerto = config_get_string_value(config,"PUERTO_ESCUCHA");
 
 socket_servidor = iniciar_servidor(log,puerto);
+
+args1->log=log;
+args1->socket_servidor=socket_servidor;
+args2->log=log;
+args2->socket_servidor=socket_servidor;
 
 if (socket_servidor == -1) {
     log_error(log, "Error al iniciar el servidor");
@@ -16,24 +44,31 @@ if (socket_servidor == -1) {
 
     log_info(log,"Servidor abierto correctamente");
 
-socket_cliente = esperar_cliente(log,socket_servidor);
+respuesta = pthread_create (&hilo_socket_1,NULL,hilo_gestor_clientes,(void*)args1);
 
-if (socket_cliente == -1) {
-    log_error(log, "Error al esperar cliente");
-    close(socket_servidor);
+if(respuesta != 0){
+    log_error(log,"Error al crear el hilo_gestor_cliente_1");
+    free (args1);
     return -1;
 }
 
-respuesta_Handshake = servidor_handshake(socket_cliente,log);
+log_info(log,"El hilo_gestor_cliente_1 se creo correctamente");
 
-if (respuesta_Handshake == 0){
-    log_info(log,"Handshake de Kernel --> Memoria realizado correctamente");
-   }
-   else {
-    log_error(log, "Handshake de Kernel --> Memoria tuvo un error");
-   }
+respuesta = pthread_create (&hilo_socket_2,NULL,hilo_gestor_clientes,(void*)args2);
 
-    close(socket_cliente);
+if(respuesta != 0){
+    log_error(log,"Error al crear el hilo_gestor_cliente_1");
+    free (args2);
+    return -1;
+}
+
+log_info(log,"El hilo_gestor_cliente_2 se creo correctamente");
+
+pthread_join(hilo_socket_1,NULL);
+pthread_join(hilo_socket_2,NULL);
+
+    free(args1);
+    free(args2);
 	return socket_servidor;
 }
 

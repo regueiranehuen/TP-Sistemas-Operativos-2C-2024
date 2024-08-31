@@ -11,12 +11,31 @@ config = config_create("CPU.config");
 
 sockets = hilos_cpu(log, config);
 
-close(sockets->socket_cliente->socket_Dispatch);
-close(sockets->socket_cliente->socket_Interrupt);
-close(sockets->socket_servidor->socket_Dispatch);
-close(sockets->socket_servidor->socket_Interrupt);
-config_destroy(config);
-log_destroy(log);
+liberarMemoria(sockets,log,config);
 
     return 0;
+}
+
+void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
+
+if (sockets == NULL || sockets->socket_cliente == -1 ||
+    sockets->socket_servidor == NULL || 
+    sockets->socket_servidor->socket_Dispatch == -1 || 
+    sockets->socket_servidor->socket_Interrupt == -1) {
+
+    log_info(log, "Error en los sockets de cpu");
+    }
+    else{
+close(sockets->socket_cliente);
+close(sockets->socket_servidor->socket_Dispatch);
+close(sockets->socket_servidor->socket_Interrupt);
+}
+   if (sockets != NULL) {
+        if (sockets->socket_servidor != NULL) {
+            free(sockets->socket_servidor);
+        }
+        free(sockets);
+    }
+config_destroy(config);
+log_destroy(log);
 }
