@@ -116,7 +116,7 @@ int crear_conexion(t_log* log,char *ip, char* puerto) {
 //crear socket de conexión
     struct addrinfo hints;
     struct addrinfo *server_info;
-    int socket_cliente; // Inicializar en un valor inválido
+    int socket_cliente;
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;

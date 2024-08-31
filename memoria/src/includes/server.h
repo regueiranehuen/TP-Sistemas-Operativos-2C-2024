@@ -4,7 +4,21 @@
 #include <utils/includes/sockets.h>
 #include <commons/config.h>
 
+typedef struct{
+
+int socket_servidor;
+int socket_cliente;
+
+} sockets_memoria;
+
 int servidor_memoria_kernel (t_log* log, t_config* config);
 int cliente_memoria_filesystem (t_log* log, t_config* config);
+void* función_hilo_servidor(void* args);
+void* función_hilo_cliente(void* args);
+sockets_memoria* hilos_memoria(t_log* log, t_config* config);
+
+
+
+
 
 #endif

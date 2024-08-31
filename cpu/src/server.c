@@ -32,9 +32,11 @@ if (socket_servidor_Dispatch == -1 || socket_servidor_Interrupt == -1) {
     }
 
     log_info(log,"Servidor abierto correctamente");
+printf("forro0");
 socket_cliente_Dispatch = esperar_cliente(log,socket_servidor_Dispatch);
+printf("forro1");
 socket_cliente_Interrupt = esperar_cliente(log,socket_servidor_Interrupt);
-
+printf("forro2");
 if (socket_cliente_Dispatch == -1 || socket_cliente_Interrupt == -1) {
     log_error(log, "Error al esperar cliente");
     if (socket_cliente_Dispatch != -1) close(socket_cliente_Dispatch);
@@ -43,6 +45,8 @@ if (socket_cliente_Dispatch == -1 || socket_cliente_Interrupt == -1) {
         if (socket_servidor_Interrupt != -1) close(socket_servidor_Interrupt);
         return sockets;
     }
+
+    printf("hasta aca llega");
 respuesta_Dispatch = servidor_handshake(socket_cliente_Dispatch,log);
 respuesta_Interrupt = servidor_handshake(socket_cliente_Interrupt,log);
 

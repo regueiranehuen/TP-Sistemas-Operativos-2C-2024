@@ -20,7 +20,7 @@
 #include<commons/log.h>
 #include<commons/config.h>
 #include <errno.h>
-
+#include <pthread.h>
 typedef enum
 {
 	MENSAJE,
@@ -38,6 +38,11 @@ typedef struct
 	op_code codigo_operacion;
 	t_buffer* buffer;
 } t_paquete;
+
+typedef struct{
+t_log* log;
+t_config* config;
+} args_hilo;
 
 int iniciar_servidor(t_log* log,char* puerto);
 int esperar_cliente(t_log* log,int socket_servidor);

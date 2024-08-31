@@ -3,13 +3,21 @@
 
 #include "utils/includes/sockets.h"
 
+
 typedef struct{
 int socket_Dispatch;
 int socket_Interrupt;
 }t_socket_cpu;
 
-int cliente_Memoria_Kernel(t_log* log,t_config* config);
-t_socket_cpu cliente_CPU_Kernel(t_log* log, t_config* config);
+typedef struct{
+int socket_cliente_memoria;
+t_socket_cpu* sockets_cliente_cpu;
+}sockets_kernel;
 
+int cliente_Memoria_Kernel(t_log* log,t_config* config);
+t_socket_cpu* cliente_CPU_Kernel(t_log* log, t_config* config);
+void* función_hilo_cliente_memoria(void* void_args);
+void* función_hilo_cliente_cpu(void* void_args);
+sockets_kernel* hilos_kernel(t_log* log, t_config* config);
 
 #endif

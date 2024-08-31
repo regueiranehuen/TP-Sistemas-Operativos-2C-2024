@@ -9,7 +9,7 @@ int socket_servidor;
 log = log_create ("filesystem.log","tp",true,LOG_LEVEL_TRACE);
 config = config_create("filesystem.config");
 
-socket_servidor = servidor_FileSystem_Memoria(log,config);
+socket_servidor = hilo_filesystem(log,config);
 
 config_destroy(config);
 log_destroy(log);
