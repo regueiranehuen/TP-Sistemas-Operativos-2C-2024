@@ -123,6 +123,7 @@ void* función_hilo_cliente_cpu(void* void_args){
 
 sockets_kernel* hilos_kernel(t_log* log, t_config* config){
 
+pthread_t hilo_cliente;
 pthread_t hilo_servidor;
 
 args_hilo* args = malloc(sizeof(args_hilo)); 
@@ -137,7 +138,7 @@ void* socket_cliente_cpu;
 
 int resultado;
 
-resultado = pthread_create (&hilo_servidor,NULL,función_hilo_cliente_memoria,(void*)args);
+resultado = pthread_create (&hilo_cliente,NULL,función_hilo_cliente_memoria,(void*)args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");
@@ -157,7 +158,7 @@ if(resultado != 0){
 
 log_info(log,"El hilo cliente_cpu se creo correctamente");
 
-pthread_join(hilo_servidor,&socket_cliente_memoria);
+pthread_join(hilo_cliente,&socket_cliente_memoria);
 
 sockets->socket_cliente_memoria= (intptr_t)socket_cliente_memoria;
 
