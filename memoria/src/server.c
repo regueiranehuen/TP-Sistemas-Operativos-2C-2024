@@ -72,7 +72,7 @@ pthread_join(hilo_socket_2,NULL);
 	return socket_servidor;
 }
 
-void* función_hilo_servidor(void *void_args){
+void* funcion_hilo_servidor(void *void_args){
     
     args_hilo *args = (args_hilo*)void_args;
 
@@ -120,7 +120,7 @@ puerto = config_get_string_value(config, "PUERTO_FILESYSTEM");
 
 }
 
-void* función_hilo_cliente(void* void_args){
+void* funcion_hilo_cliente(void* void_args){
     
     args_hilo* args = ((args_hilo*)void_args);
 
@@ -152,7 +152,7 @@ int resultado;
 sockets_memoria* sockets=malloc(sizeof(sockets_memoria));
 
 
-resultado = pthread_create (&hilo_servidor,NULL,función_hilo_servidor,(void*)args);
+resultado = pthread_create (&hilo_servidor,NULL,funcion_hilo_servidor,(void*)args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");
@@ -162,7 +162,7 @@ if(resultado != 0){
 
 log_info(log,"El hilo servidor se creo correctamente");
 
-resultado = pthread_create (&hilo_cliente,NULL,función_hilo_cliente,(void*)args);
+resultado = pthread_create (&hilo_cliente,NULL,funcion_hilo_cliente,(void*)args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");

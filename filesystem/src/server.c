@@ -37,7 +37,7 @@ close(socket_cliente);
 return socket_servidor;
 }
 
-void* función_hilo_servidor(void* void_args){
+void* funcion_hilo_servidor(void* void_args){
     
     args_hilo* args = ((args_hilo*)void_args);
 
@@ -64,7 +64,7 @@ void* socket_servidor;
 
 int resultado;
 
-resultado = pthread_create (&hilo_servidor,NULL,función_hilo_servidor,(void*)args);
+resultado = pthread_create (&hilo_servidor,NULL,funcion_hilo_servidor,(void*)args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");

@@ -18,8 +18,8 @@ int socket_cliente;
 void* hilo_gestor_clientes (void* void_args);
 int servidor_memoria_kernel (t_log* log, t_config* config);
 int cliente_memoria_filesystem (t_log* log, t_config* config);
-void* función_hilo_servidor(void* args);
-void* función_hilo_cliente(void* args);
+void* funcion_hilo_servidor(void* args);
+void* funcion_hilo_cliente(void* args);
 sockets_memoria* hilos_memoria(t_log* log, t_config* config);
 
 

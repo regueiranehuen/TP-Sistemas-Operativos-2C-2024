@@ -93,7 +93,7 @@ t_socket_cpu* cliente_CPU_Kernel(t_log* log, t_config* config){
     return resultado;
 }
 
-void* función_hilo_cliente_memoria(void* void_args){
+void* funcion_hilo_cliente_memoria(void* void_args){
     
     args_hilo* args = ((args_hilo*)void_args);
 
@@ -107,7 +107,7 @@ void* función_hilo_cliente_memoria(void* void_args){
    return (void*)(intptr_t)socket_cliente;
 }
 
-void* función_hilo_cliente_cpu(void* void_args){
+void* funcion_hilo_cliente_cpu(void* void_args){
 
   args_hilo* args = ((args_hilo*)void_args);
 
@@ -139,7 +139,7 @@ void* socket_cliente_cpu;
 
 int resultado;
 
-resultado = pthread_create (&hilo_cliente,NULL,función_hilo_cliente_memoria,(void*)args);
+resultado = pthread_create (&hilo_cliente,NULL,funcion_hilo_cliente_memoria,(void*)args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");
@@ -149,7 +149,7 @@ if(resultado != 0){
 
 log_info(log,"El hilo cliente_memoria se creo correctamente");
 
-resultado = pthread_create (&hilo_servidor,NULL,función_hilo_cliente_cpu,(void*)args);
+resultado = pthread_create (&hilo_servidor,NULL,funcion_hilo_cliente_cpu,(void*)args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");

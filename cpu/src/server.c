@@ -108,7 +108,7 @@ puerto = config_get_string_value(config, "PUERTO_MEMORIA");
     return socket_cliente;
 }
 
-void* función_hilo_servidor_cpu(void* void_args){
+void* funcion_hilo_servidor_cpu(void* void_args){
 
   args_hilo* args = ((args_hilo*)void_args);
 
@@ -122,7 +122,7 @@ void* función_hilo_servidor_cpu(void* void_args){
     
     return (void*)sockets;
 }
-void* función_hilo_cliente_memoria(void* void_args){
+void* funcion_hilo_cliente_memoria(void* void_args){
 
   args_hilo* args = ((args_hilo*)void_args);
 
@@ -153,7 +153,7 @@ void* socket_cliente_memoria;
 
 int resultado;
 
-resultado = pthread_create (&hilo_servidor,NULL,función_hilo_servidor_cpu,(void*)args);
+resultado = pthread_create (&hilo_servidor,NULL,funcion_hilo_servidor_cpu,(void*)args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");
@@ -163,7 +163,7 @@ if(resultado != 0){
 
 log_info(log,"El hilo servidor_kernel se creo correctamente");
 
-resultado = pthread_create (&hilo_cliente,NULL,función_hilo_cliente_memoria,(void*)args);
+resultado = pthread_create (&hilo_cliente,NULL,funcion_hilo_cliente_memoria,(void*)args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");
