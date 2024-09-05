@@ -72,13 +72,13 @@ pthread_join(hilo_socket_2,NULL);
 	return socket_servidor;
 }
 
-void* función_hilo_servidor(void *void_args){
+void* funcion_hilo_servidor(void *void_args){
     
     args_hilo *args = (args_hilo*)void_args;
 
     int socket_servidor = servidor_memoria_kernel(args->log,args->config);
     if (socket_servidor == -1) {
-        log_error(args->log, "No se pudo establecer la conexión con la Memoria");
+        log_error(args->log, "No se pudo establecer la conexion con la Memoria");
         pthread_exit(NULL);
     }
 
@@ -99,11 +99,11 @@ puerto = config_get_string_value(config, "PUERTO_FILESYSTEM");
         return -1;
     }
 
-    // Crear conexión
+    // Crear conexion
     socket_cliente = crear_conexion(log, ip, puerto);
 
     if (socket_cliente == -1) {
-        log_info(log, "No se pudo crear la conexión");
+        log_info(log, "No se pudo crear la conexion");
         return -1;
     }
 
@@ -120,14 +120,14 @@ puerto = config_get_string_value(config, "PUERTO_FILESYSTEM");
 
 }
 
-void* función_hilo_cliente(void* void_args){
+void* funcion_hilo_cliente(void* void_args){
     
     args_hilo* args = ((args_hilo*)void_args);
 
 
     int socket_cliente = cliente_memoria_filesystem(args->log,args->config);
     if (socket_cliente == -1) {
-        log_error(args->log, "No se pudo establecer la conexión con filesystem");
+        log_error(args->log, "No se pudo establecer la conexion con filesystem");
         pthread_exit(NULL);
     }
 
@@ -152,7 +152,7 @@ int resultado;
 sockets_memoria* sockets=malloc(sizeof(sockets_memoria));
 
 
-resultado = pthread_create (&hilo_servidor,NULL,función_hilo_servidor,(void*)args);
+resultado = pthread_create (&hilo_servidor,NULL,funcion_hilo_servidor,(void*)args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");
@@ -162,7 +162,7 @@ if(resultado != 0){
 
 log_info(log,"El hilo servidor se creo correctamente");
 
-resultado = pthread_create (&hilo_cliente,NULL,función_hilo_cliente,(void*)args);
+resultado = pthread_create (&hilo_cliente,NULL,funcion_hilo_cliente,(void*)args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");

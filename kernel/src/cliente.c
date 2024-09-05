@@ -15,10 +15,10 @@ int cliente_Memoria_Kernel(t_log* log, t_config* config) {
         return -1;
     }
 
-    // Crear conexión
+    // Crear conexion
     socket_cliente = crear_conexion(log, ip, puerto);
     if (socket_cliente == -1) {
-        log_info(log, "No se pudo crear la conexión");
+        log_info(log, "No se pudo crear la conexion");
         return -1;
     }
  
@@ -49,24 +49,24 @@ t_socket_cpu* cliente_CPU_Kernel(t_log* log, t_config* config){
 
     // Verificar que ip y puerto no sean NULL
     if (ip == NULL || puerto_Dispatch == NULL || puerto_Interrupt == NULL) {
-        log_info(log, "No se pudo obtener IP o PUERTO de la configuración");
+        log_info(log, "No se pudo obtener IP o PUERTO de la configuracion");
         return resultado;
     }
 
-    // Crear conexión a Interrupt
+    // Crear conexion a Interrupt
   
     socket_cliente_Interrupt = crear_conexion(log, ip, puerto_Interrupt);
   
     if (socket_cliente_Interrupt == -1) {
-        log_error(log, "No se pudo crear la conexión a CPU_Interrupt");
+        log_error(log, "No se pudo crear la conexion a CPU_Interrupt");
     } else {
         log_info(log, "Se pudo conectar al servidor CPU_Interrupt");
     }
 
-    // Crear conexión a Dispatch
+    // Crear conexion a Dispatch
     socket_cliente_Dispatch = crear_conexion(log, ip, puerto_Dispatch);
     if (socket_cliente_Dispatch == -1) {
-        log_error(log, "No se pudo crear la conexión a CPU_Dispatch");
+        log_error(log, "No se pudo crear la conexion a CPU_Dispatch");
     } else {
         log_info(log, "Se pudo conectar al servidor CPU_Dispatch");
     }
@@ -93,28 +93,28 @@ t_socket_cpu* cliente_CPU_Kernel(t_log* log, t_config* config){
     return resultado;
 }
 
-void* función_hilo_cliente_memoria(void* void_args){
+void* funcion_hilo_cliente_memoria(void* void_args){
     
     args_hilo* args = ((args_hilo*)void_args);
 
 
     int socket_cliente = cliente_Memoria_Kernel(args->log, args->config);
     if (socket_cliente == -1) {
-        log_error(args->log, "No se pudo establecer la conexión con Memoria");
+        log_error(args->log, "No se pudo establecer la conexion con Memoria");
         pthread_exit(NULL);
     }
 
    return (void*)(intptr_t)socket_cliente;
 }
 
-void* función_hilo_cliente_cpu(void* void_args){
+void* funcion_hilo_cliente_cpu(void* void_args){
 
   args_hilo* args = ((args_hilo*)void_args);
 
 
     t_socket_cpu* sockets = cliente_CPU_Kernel(args->log, args->config);
     if (sockets->socket_Dispatch == -1 || sockets->socket_Interrupt == -1) {
-        log_error(args->log, "No se pudo establecer la conexión con CPU");
+        log_error(args->log, "No se pudo establecer la conexion con CPU");
         pthread_exit(NULL);
     }
     
@@ -124,8 +124,8 @@ void* función_hilo_cliente_cpu(void* void_args){
 
 sockets_kernel* hilos_kernel(t_log* log, t_config* config){
 
-pthread_t hilo_cliente;
-pthread_t hilo_servidor;
+pthread_t hilo_cliente_memoria;
+pthread_t hilo_cliente_cpu;
 
 args_hilo* args = malloc(sizeof(args_hilo)); 
 
@@ -139,7 +139,7 @@ void* socket_cliente_cpu;
 
 int resultado;
 
-resultado = pthread_create (&hilo_cliente,NULL,función_hilo_cliente_memoria,(void*)args);
+resultado = pthread_create (&hilo_cliente_memoria,NULL,funcion_hilo_cliente_memoria,(void*)args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");
@@ -149,7 +149,7 @@ if(resultado != 0){
 
 log_info(log,"El hilo cliente_memoria se creo correctamente");
 
-resultado = pthread_create (&hilo_servidor,NULL,función_hilo_cliente_cpu,(void*)args);
+resultado = pthread_create (&hilo_cliente_cpu,NULL,funcion_hilo_cliente_cpu,(void*)args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");
@@ -159,11 +159,11 @@ if(resultado != 0){
 
 log_info(log,"El hilo cliente_cpu se creo correctamente");
 
-pthread_join(hilo_cliente,&socket_cliente_memoria);
+pthread_join(hilo_cliente_memoria,&socket_cliente_memoria);
 
 sockets->socket_cliente_memoria= (intptr_t)socket_cliente_memoria;
 
-pthread_join(hilo_servidor,&socket_cliente_cpu);
+pthread_join(hilo_cliente_cpu,&socket_cliente_cpu);
 
 sockets->sockets_cliente_cpu= (void*)socket_cliente_cpu;
 

@@ -56,7 +56,7 @@ int esperar_cliente(t_log* log,int socket_servidor)
 	int socket_cliente;
 	socket_cliente= accept(socket_servidor, NULL, NULL);
 if (socket_cliente == -1){
-    log_info(log,"Error en la conexión con el cliente");
+    log_info(log,"Error en la conexion con el cliente");
     return -1;
 }
 	log_info(log, "Se conecto un cliente!");
@@ -73,7 +73,7 @@ int servidor_handshake(int socket_cliente, t_log* log) {
     // Recibir handshake
     bytes = recv(socket_cliente, &handshake, sizeof(int32_t), MSG_WAITALL);
     if (bytes <= 0) {
-		log_info(log,"Error en recv o conexión cerrada por el cliente");
+		log_info(log,"Error en recv o conexion cerrada por el cliente");
       
         return -1;
     }
@@ -130,7 +130,7 @@ int cliente_handshake(int socket_cliente, t_log* log) {
 
 int crear_conexion(t_log* log,char *ip, char* puerto) {
 
-//crear socket de conexión
+//crear socket de conexion
     struct addrinfo hints;
     struct addrinfo *server_info;
     int socket_cliente;
@@ -141,7 +141,7 @@ int crear_conexion(t_log* log,char *ip, char* puerto) {
 
     getaddrinfo(ip, puerto, &hints, &server_info);
 
-//conexión con el servidor
+//conexion con el servidor
 
 socket_cliente = socket(server_info->ai_family,
                          server_info->ai_socktype,
@@ -164,7 +164,7 @@ if (socket_cliente == -1){
 
 int crear_conexion(t_log* log,char *ip, char* puerto) {
 
-//crear socket de conexión
+//crear socket de conexion
     struct addrinfo hints;
     struct addrinfo *server_info;
     struct addrinfo *p;
@@ -181,7 +181,7 @@ int crear_conexion(t_log* log,char *ip, char* puerto) {
         log_info(log, "Error en getaddrinfo: %s\n", gai_strerror(err));
         return -1; // Error al obtener información del servidor
     }
-//conexión con el servidor
+//conexion con el servidor
 
     // Iterar a través de la lista de resultados y tratar de conectarse
     for (p = server_info; p != NULL; p = p->ai_next) {
@@ -197,7 +197,7 @@ int crear_conexion(t_log* log,char *ip, char* puerto) {
             continue; // Intentar con la siguiente dirección
         }
 
-        break; // Si llegamos aquí, la conexión fue exitosa
+        break; // Si llegamos aquí, la conexion fue exitosa
     }
 	log_info(log,"Se pudo conectar al servidor");
 

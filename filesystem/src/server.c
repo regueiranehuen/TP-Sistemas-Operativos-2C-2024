@@ -37,14 +37,14 @@ close(socket_cliente);
 return socket_servidor;
 }
 
-void* función_hilo_servidor(void* void_args){
+void* funcion_hilo_servidor(void* void_args){
     
     args_hilo* args = ((args_hilo*)void_args);
 
 
     int socket_servidor = servidor_FileSystem_Memoria(args->log, args->config);
     if (socket_servidor == -1) {
-        log_error(args->log, "No se pudo establecer la conexión con Memoria");
+        log_error(args->log, "No se pudo establecer la conexion con Memoria");
         pthread_exit(NULL);
     }
 
@@ -64,7 +64,7 @@ void* socket_servidor;
 
 int resultado;
 
-resultado = pthread_create (&hilo_servidor,NULL,función_hilo_servidor,(void*)args);
+resultado = pthread_create (&hilo_servidor,NULL,funcion_hilo_servidor,(void*)args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");
