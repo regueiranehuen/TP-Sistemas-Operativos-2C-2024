@@ -4,7 +4,7 @@ void cliente_Memoria_Kernel(t_log* log, t_config* config) {
     char* ip;
     char* puerto;
     int socket_cliente;
-    char* mensaje_prueba = "Hola como estas";
+    char* mensaje_prueba = "Hola";
 
     // Asignar valores a las variables ip y puerto usando config_get_string_value
     ip = config_get_string_value(config, "IP_MEMORIA");
