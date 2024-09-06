@@ -10,17 +10,15 @@ int main(int argc, char *argv[])
     char *archivo_pseudocodigo = argv[1];
     int tamanio_proceso = atoi(argv[2]);
 
-    t_queue *cola_new, *cola_ready;
     cola_new = queue_create();
     cola_ready = queue_create();
 
     log = log_create("kernel.log", "tp", true, LOG_LEVEL_TRACE);
     config = config_create("kernel.config");
 
-    int socket;
+   
     sockets = hilos_kernel(log, config);
     proceso_inicial = iniciar_kernel(archivo_pseudocodigo, tamanio_proceso);
-    crear_proceso(cola_new, socket, cola_ready);
     liberar_espacio(log, config, sockets, proceso_inicial);
     return 0;
 }
