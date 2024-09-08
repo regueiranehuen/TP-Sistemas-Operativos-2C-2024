@@ -3,6 +3,7 @@
 int iniciar_servidor(t_log* log,char* puerto)
 {
 // Creación del socket de escucha
+
 	int error;
 	int socket_servidor;
 
