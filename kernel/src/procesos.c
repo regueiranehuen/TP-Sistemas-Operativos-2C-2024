@@ -58,7 +58,7 @@ El Kernel creará un nuevo PCB y un TCB asociado con TID 0 y lo dejará en estad
 t_pcb *PROCESS_CREATE(char *pseudocodigo, int tamanio_proceso, int prioridad)  
 {
     t_tcb tcb_0;
-    t_pcb *pcb = crear_pcb(tcb_0);
+    t_pcb *pcb = crear_pcb(&tcb_0);
     pcb->estado = "NEW";
     pcb->pseudocodigo = pseudocodigo;
     pcb->tamanio_proceso = tamanio_proceso;
