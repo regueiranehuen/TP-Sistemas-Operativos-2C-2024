@@ -1,4 +1,5 @@
 #include "includes/procesos.h"
+#include "includes/funcionesAuxiliares.h"
 
 sem_t semaforo;
 t_queue *cola_new;
@@ -7,7 +8,7 @@ t_list *lista_pcbs;
 pthread_mutex_t mutex_pthread_join;
 t_pcb *proceso_exec;
 
-t_pcb *crear_pcb(t_tcb*tcb)
+t_pcb *crear_pcb()
 {
     static int pid = 0;
     t_pcb *pcb = malloc(sizeof(t_pcb));
@@ -15,19 +16,11 @@ t_pcb *crear_pcb(t_tcb*tcb)
     pcb->pid = pid;
     pcb->tids = lista_tids;
     pid += 1;
-    inicializar_estados_hilos(pcb);  
+    inicializar_estados_hilos(pcb);
     list_add(lista_pcbs, pcb);
     t_tcb *tcb = crear_tcb(pcb);
-    queue_push(pcb->cola_hilos_new, tcb); 
+    queue_push(pcb->cola_hilos_new, tcb);
     return pcb;
-}
-
-void inicializar_estados_hilos(t_pcb *pcb)   
-{
-    pcb->cola_hilos_new = queue_create();
-    pcb->colas_hilos_prioridad_ready = list_create();
-    pcb->lista_hilos_blocked = list_create();
-    pcb->cola_hilos_exit = queue_create();
 }
 
 t_tcb *crear_tcb(t_pcb *pcb)
@@ -55,15 +48,14 @@ el tercer parámetro es la prioridad del hilo main (TID 0).
 El Kernel creará un nuevo PCB y un TCB asociado con TID 0 y lo dejará en estado NEW.
 */
 
-t_pcb *PROCESS_CREATE(char *pseudocodigo, int tamanio_proceso, int prioridad)  
+t_pcb *PROCESS_CREATE(char *pseudocodigo, int tamanio_proceso, int prioridad)
 {
-    t_tcb tcb_0;
-    t_pcb *pcb = crear_pcb(&tcb_0);
+
+    t_pcb *pcb = crear_pcb();
     pcb->estado = "NEW";
     pcb->pseudocodigo = pseudocodigo;
     pcb->tamanio_proceso = tamanio_proceso;
     pcb->prioridad = prioridad;
-    queue_push(pcb->cola_hilos_new, tcb_0);  
     return pcb;
 }
 
@@ -99,7 +91,8 @@ void PROCESS_EXIT(t_log *log, t_config *config)
     t_pcb *pcb = proceso_exec;
     int pedido;
     char *puerto = config_get_string_value(config, "PUERTO_MEMORIA");
-    int socket_memoria = crear_conexion(log, config, puerto);
+    char *ip = config_get_string_value(config, "IP_MEMORIA");
+    int socket_memoria = crear_conexion(log, ip, puerto);
     send(socket_memoria, pcb, sizeof(t_pcb), 0);
     recv(socket_memoria, &pedido, sizeof(int), 0);
     close(socket_memoria);
@@ -114,22 +107,6 @@ void PROCESS_EXIT(t_log *log, t_config *config)
     }
 }
 
-t_pcb *lista_pcb(t_list *lista_pcbs, int pid)
-{
-
-    int tamanio = list_size(lista_pcbs);
-    int i;
-    for (i = 0; i < tamanio; i++)
-    {
-        t_pcb *pcb = list_get(lista_pcbs, i);
-        if (pcb->pid == pid)
-        {
-            return pcb;
-        }
-    }
-    return NULL;
-}
-
 void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
 {
     t_pcb *pcb = crear_pcb();
@@ -138,65 +115,6 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
     pcb->tamanio_proceso = tamanio_proceso;
     pcb->cola_hilos_new = tcb;
     list_add(lista_pcbs, pcb);
-}
-
-void liberar_proceso(t_pcb *pcb)
-{
-
-    // Mandar todos los hilos de la cola new a la cola exit y destruir la primera
-
-    int tamanio_cola_new = queue_size(pcb->cola_hilos_new);
-
-    for (int i = 0; i < tamanio_cola_new; i++)
-    {
-        t_tcb *tcb = queue_pop(pcb->cola_hilos_new);
-        queue_push(pcb->cola_hilos_exit, tcb);
-    }
-
-    queue_destroy(pcb->cola_hilos_new);
-
-    // Mandar todos los hilos de la cola ready a la cola exit y destruir la primera
-
-    int tamanio_lista = list_size(pcb->colas_hilos_prioridad_ready);
-
-    for (int i = 0; i < tamanio_lista; i++)
-    {
-        t_cola_prioridad *cola = list_get(pcb->colas_hilos_prioridad_ready, i);
-        int tamanio_cola = queue_size(cola->cola);
-
-        for (int j = 0; j < tamanio_cola; j++)
-        {
-            t_tcb *tcb = queue_pop(cola->cola);
-            queue_push(pcb->cola_hilos_exit, tcb);
-        }
-        queue_destroy(cola->cola);
-        free(cola);
-    }
-    list_destroy(pcb->colas_hilos_prioridad_ready);
-
-    // Mandar todos los hilos de la lista blocked a la cola exit y destruir la primera
-
-    int tamanio_lista_blocked = list_size(pcb->lista_hilos_blocked);
-
-    for (int i = 0; i < tamanio_lista_blocked; i++)
-    {
-        t_tcb *tcb = list_get(pcb->lista_hilos_blocked, i);
-        queue_push(pcb->cola_hilos_exit, tcb);
-    }
-    list_destroy(pcb->lista_hilos_blocked);
-    if (strcmp(pcb->hilo_exec->estado, "EXEC") == 0)
-    {
-        // mandar interrupcion a cpu
-        queue_push(pcb->cola_hilos_exit, pcb->hilo_exec);
-    }
-
-    // Destruir la cola exit, lista de tids y liberar el espacio del pcb
-
-    queue_destroy(pcb->cola_hilos_exit);
-
-    list_destroy(pcb->tids);
-
-    free(pcb);
 }
 
 /*Creación de hilos
@@ -218,7 +136,8 @@ t_tcb *THREAD_CREATE(char *pseudocodigo, int prioridad, t_log *log, t_config *co
     t_pcb *pcb = proceso_exec;
     int resultado = 0;
     char *puerto = config_get_string_value(config, "PUERTO_MEMORIA");
-    int socket_memoria = crear_conexion(log, config, puerto);
+    char *ip = config_get_string_value(config, "IP_MEMORIA");
+    int socket_memoria = crear_conexion(log, ip, puerto);
     send(socket_memoria, &resultado, sizeof(int), 0);
     recv(socket_memoria, &resultado, sizeof(int), 0);
     close(socket_memoria);
@@ -239,25 +158,6 @@ t_tcb *THREAD_CREATE(char *pseudocodigo, int prioridad, t_log *log, t_config *co
     }
 }
 
-t_cola_prioridad *cola_prioridad(t_list *lista_colas_prioridad, int prioridad)
-{ // Busca la cola con la prioridad del parametro en la lista de colas, si la encuentra devuelve la info de la posición de dicha lista, si no crea una y la devuelve
-
-    int tamanio = list_size(lista_colas_prioridad);
-    int i;
-    for (i = 0; i < tamanio; i++)
-    {
-        t_cola_prioridad *cola = list_get(lista_colas_prioridad, i);
-        if (cola->prioridad == prioridad)
-        {
-            return cola;
-        }
-    }
-    t_cola_prioridad *cola = malloc(sizeof(t_cola_prioridad));
-    cola->cola = queue_create();
-    cola->prioridad = prioridad;
-    list_add(lista_colas_prioridad, cola);
-    return cola;
-}
 /*
 THREAD_JOIN, esta syscall recibe como parámetro un TID, mueve el hilo que la invocó al
 estado BLOCK hasta que el TID pasado por parámetro finalice. En caso de que el TID pasado
@@ -267,7 +167,7 @@ esta syscall no hace nada y el hilo que la invocó continuará su ejecución.*/
 void THREAD_JOIN(int tid)
 { // falta logica para desbloquear hilo cuando termina de ejecutar el hilo asociado
 
-    if (lista_tcb(proceso_exec, tid) == -1 || tid_finalizado(proceso_exec, tid) == -1)
+    if (lista_tcb(proceso_exec, tid) == -1 || tid_finalizado(proceso_exec, tid) == 0)
     {
         return;
     }
@@ -277,33 +177,50 @@ void THREAD_JOIN(int tid)
     list_add(proceso_exec->lista_hilos_blocked, tcb_aux);
 }
 
-int lista_tcb(t_pcb *pcb, int tid)
-{ // Busca un tid en una lista de tids
+/*
+THREAD_CANCEL, esta syscall recibe como parámetro un TID con el objetivo de finalizarlo pasando al mismo al estado EXIT.
+Se deberá indicar a la Memoria la finalización de dicho hilo. En caso de que el TID pasado por parámetro no exista o
+ya haya finalizado, esta syscall no hace nada. Finalmente, el hilo que la invocó continuará su ejecución.
+*/
+void THREAD_CANCEL(int tid, t_config *config, t_log *log)
+{ // suponiendo que el proceso main esta ejecutando
 
-    int tamanio = list_size(pcb->tids);
+    t_cola_prioridad *cola = malloc(sizeof(t_cola_prioridad));
+    int respuesta;
 
-    for (int i = 0; i < tamanio; i++)
+    t_tcb *tcb = buscar_tcb(tid, proceso_exec->cola_hilos_new, cola->cola, proceso_exec->lista_hilos_blocked);
+    cola = cola_prioridad(proceso_exec->colas_hilos_prioridad_ready, tcb->prioridad);
+    
+    if (tcb == NULL)
     {
-        int *tid_aux = list_get(pcb->tids, i);
-        if (tid_aux == tid)
-        {
-            return 0;
-        }
+        return;
     }
-    return -1;
-}
 
-int tid_finalizado(t_pcb *pcb, int tid)
-{
-
-    int tamanio = queue_size(pcb->cola_hilos_exit);
-    for (int i = 0; i < tamanio; i++)
+    if (lista_tcb(proceso_exec, tid) == -1 || tid_finalizado(proceso_exec, tid) == 0)
     {
-        int tid_aux = queue_peek(pcb->cola_hilos_exit, i);
-        if (tid_aux == tid)
-        {
-            return 0;
-        }
+        return;
     }
-    return -1;
+
+    char *puerto = config_get_string_value(config, "PUERTO_MEMORIA");
+    char *ip = config_get_string_value(config, "IP_MEMORIA");
+
+    int socket_memoria = crear_conexion(log, ip, puerto);
+
+
+    void * stream_tcb = serializar_tcb(tcb);  
+    send(socket_memoria, stream_tcb, tam_buffer_tcb(tcb), 0); 
+    recv(socket_memoria, &respuesta, sizeof(int), 0);
+
+    if (respuesta == -1)
+    {
+        log_info(log, "Error en la liberacion de memoria del hilo");
+        close(socket_memoria);
+        return;
+    }
+
+
+    move_tcb_to_exit(proceso_exec->cola_hilos_new, cola->cola, proceso_exec->lista_hilos_blocked, proceso_exec->cola_hilos_exit, tid);
+
+
+    close(socket_memoria);
 }

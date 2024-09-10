@@ -1,3 +1,5 @@
+#ifndef PROCESOS_H
+#define PROCESOS_H
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
 #include "utils/includes/sockets.h"
@@ -5,7 +7,7 @@
 #include <semaphore.h>
 
 extern sem_t semaforo;
-extern t_queue *cola_new;  // Cola de los procesos nuevos administrada por FIFO
+extern t_queue *cola_new;
 extern t_queue *cola_ready;
 extern t_list *lista_pcbs;
 extern pthread_mutex_t mutex_pthread_join;
@@ -16,6 +18,9 @@ typedef struct
     int pid; // proceso asociado al hilo
     char *estado;
     char *pseudocodigo;
+
+    // No se si me conviene hacer el void * stream acá o trabajarlo x afuera, por ahora lo hago x afuera
+
 } t_tcb;
 
 typedef struct
@@ -46,16 +51,20 @@ typedef struct
     t_tcb *tcb;
 } t_proceso;
 
-t_pcb *crear_pcb(t_tcb*tcb);
+t_pcb *crear_pcb();
 t_tcb *crear_tcb(t_pcb *pcb);
+
 t_pcb *PROCESS_CREATE(char *pseudocodigo, int tamanio_proceso, int prioridad);
+void PROCESS_EXIT(t_log *log, t_config *config);
+
+t_tcb* THREAD_CREATE (char* pseudocodigo,int prioridad,t_log* log, t_config* config);
+void THREAD_JOIN(int tid);
+void THREAD_CANCEL(int tid, t_config *config, t_log *log);
+
 void new_a_ready(int socket_memoria);
-void PROCESS_EXIT(t_tcb *tcb, int socket_memoria);
-t_pcb *lista_pcb(t_list *lista_pcbs, int pid);
-t_proceso iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso);
-void liberar_proceso(t_pcb *pcb);
-t_tcb *THREAD_CREATE(char *pseudocodigo, int prioridad, int socket_memoria, int pid);
-t_cola_prioridad *cola_prioridad(t_list *lista_colas_prioridad, int prioridad);
-int lista_tcb(t_pcb *pcb, int tid);
-int tid_finalizado(t_pcb *pcb, int tid);
-void inicializar_estados_hilos(t_pcb *pcb);
+
+void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso);
+
+
+
+#endif

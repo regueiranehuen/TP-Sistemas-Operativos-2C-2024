@@ -3,10 +3,12 @@
 int main(int argc, char *argv[])
 {
 
+    // Hay que ver lo de proceso_inicial
+
     t_log *log;
     t_config *config;
     sockets_kernel *sockets;
-    t_proceso proceso_inicial;
+    //t_proceso proceso_inicial;
     char *archivo_pseudocodigo = argv[1];
     int tamanio_proceso = atoi(argv[2]);
 
@@ -18,8 +20,8 @@ int main(int argc, char *argv[])
 
    
     sockets = hilos_kernel(log, config);
-    proceso_inicial = iniciar_kernel(archivo_pseudocodigo, tamanio_proceso);
-    liberar_espacio(log, config, sockets, proceso_inicial);
+    //proceso_inicial = iniciar_kernel(archivo_pseudocodigo, tamanio_proceso);
+    //liberar_espacio(log, config, sockets, proceso_inicial);
     return 0;
 }
 
