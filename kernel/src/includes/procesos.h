@@ -16,8 +16,14 @@ typedef struct
     int tid;
     int prioridad;
     int pid; // proceso asociado al hilo
+
+
+
     char *estado;
     char *pseudocodigo;
+
+    int estado_length;
+    int pseudocodigo_length;
 
     // No se si me conviene hacer el void * stream acá o trabajarlo x afuera, por ahora lo hago x afuera
 

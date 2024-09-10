@@ -207,7 +207,9 @@ void THREAD_CANCEL(int tid, t_config *config, t_log *log)
     int socket_memoria = crear_conexion(log, ip, puerto);
 
 
-    void * stream_tcb = serializar_tcb(tcb);  
+    void * stream_tcb = serializar_tcb(tcb);
+    
+      
     send(socket_memoria, stream_tcb, tam_buffer_tcb(tcb), 0); 
     recv(socket_memoria, &respuesta, sizeof(int), 0);
 

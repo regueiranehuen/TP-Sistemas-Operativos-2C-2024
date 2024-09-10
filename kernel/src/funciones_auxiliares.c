@@ -271,8 +271,12 @@ void* serializar_tcb(t_tcb* tcb){
     // Verificar si malloc fue exitoso
     if (stream == NULL) {
         //log_info(log);   loggear que no se pudo reservar memoria
-        return;
+        // terminar de ejecutar la funcion
+        return NULL;
     }
+
+    tcb->estado_length=strlen(tcb->estado)+1;
+    tcb->pseudocodigo_length=strlen(tcb->pseudocodigo)+1;
 
     int desplazamiento = 0;
     // void *memcpy(void *destino, const void *origen, size_t n);
@@ -283,16 +287,22 @@ void* serializar_tcb(t_tcb* tcb){
     desplazamiento+=sizeof(int);
     memcpy(stream + desplazamiento,&(tcb->pid),sizeof(int));
     desplazamiento+=sizeof(int);
-    memcpy(stream + desplazamiento, tcb->estado, strlen(tcb->estado) + 1);
-    desplazamiento+=strlen(tcb->estado) + 1;
-    memcpy(stream + desplazamiento, tcb->pseudocodigo,strlen(tcb->pseudocodigo) + 1);
-    desplazamiento+=strlen(tcb->pseudocodigo) + 1;
+
+    // Para los chars primero mandamos los tamaños y luego los textos en sí:
+    memcpy(stream+desplazamiento, &(tcb->estado_length),sizeof(int));
+    desplazamiento+=sizeof(int);
+    memcpy(stream + desplazamiento, tcb->estado, tcb->estado_length);
+    desplazamiento+=tcb->estado_length;
+    memcpy(stream+desplazamiento,&(tcb->pseudocodigo_length),sizeof(int));
+    desplazamiento+=sizeof(int);
+    memcpy(stream + desplazamiento, tcb->pseudocodigo,tcb->pseudocodigo_length);
+    // No tiene sentido seguir calculando el desplazamiento, ya ocupamos el buffer completo
     
     return stream;
 }
 
 
-// El tamaño del buffer del tcb se vale por los 3 enteros que almacena + el estado + el pseudocodigo +2 por los caracteres de terminación \0 
+// El tamaño del buffer del tcb se vale por los 5 enteros que almacena + el estado + el pseudocodigo +2 por los caracteres de terminación \0 
 int tam_buffer_tcb(t_tcb*tcb){
-    return (3*sizeof(int) + strlen(tcb->estado) + strlen(tcb->pseudocodigo) + 2);
+    return (5*sizeof(int) + strlen(tcb->estado) + strlen(tcb->pseudocodigo) + 2);
 }
