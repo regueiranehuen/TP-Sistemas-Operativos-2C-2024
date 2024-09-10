@@ -2,6 +2,10 @@
 #define FUNCIONESAUXILIARES_H
 
 #include "includes/procesos.h"
+#include "includes/serializacion.h"
+#include "commons/string.h"
+
+
 
 
 
@@ -20,7 +24,6 @@ void move_tcb_to_exit(t_queue* queue_new, t_queue* queue_ready, t_list* list_blo
 t_tcb* find_tcb_in_queue(t_queue* queue, int tid);
 t_tcb* find_tcb_in_list(t_list* list, int tid);
 t_tcb* buscar_tcb(int tid, t_queue* queue_new, t_queue* queue_ready, t_list* list_blocked);
-void* serializar_tcb(t_tcb* tcb);
-int tam_buffer_tcb(t_tcb*tcb);
+
 
 #endif
