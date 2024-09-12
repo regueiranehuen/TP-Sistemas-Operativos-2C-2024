@@ -262,3 +262,12 @@ t_tcb *buscar_tcb(int tid, t_queue *queue_new, t_queue *queue_ready, t_list *lis
     return NULL; // No encontrado en ninguna cola/lista
 }
 
+// Función auxiliar para obtener el tamaño de la suma de los hilos que se encuentran en colas que a su vez estan en una lista
+int suma_tam_hilos_colas_en_lista(t_list*list){
+    int tam = 0;
+    for (int i = 0; i< list_size(list);i++){
+        t_queue* queue = list_get(list,i);
+        tam+= queue_size(queue)*sizeof(pthread_t);
+    }
+    return tam;  
+}

@@ -1,37 +1,6 @@
 #include "includes/funcionesAuxiliares.h"
 
 
-// typedef struct
-// {
-//     int tid;
-//     int prioridad;
-//     int pid; // proceso asociado al hilo
-
-
-
-//     char *estado;
-//     char *pseudocodigo;
-
-//     int estado_length;
-//     int pseudocodigo_length;
-
-//     // No se si me conviene hacer el void * stream acá o trabajarlo x afuera, por ahora lo hago x afuera
-
-// } t_tcb;
-
-
-// void agregar_a_paquete(t_paquete* paquete, void* valor, int tamanio)
-// {
-// 	paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + tamanio + sizeof(int));
-
-// 	memcpy(paquete->buffer->stream + paquete->buffer->size, &tamanio, sizeof(int));
-// 	memcpy(paquete->buffer->stream + paquete->buffer->size + sizeof(int), valor, tamanio);
-
-// 	paquete->buffer->size += tamanio + sizeof(int);
-// }
-
-
-
 t_paquete* agregar_tcb_a_paquete(t_tcb*tcb){
 
     t_paquete*paquete=crear_paquete();
@@ -46,40 +15,36 @@ t_paquete* agregar_tcb_a_paquete(t_tcb*tcb){
     agregar_a_paquete(paquete,&(tcb->pseudocodigo_length),sizeof(int));
     agregar_a_paquete(paquete,tcb->pseudocodigo,sizeof(tcb->pseudocodigo_length));
 
+
+
     return paquete;
 
 }
-
-
-
-// typedef struct
-// {
-//     int pid;
-//     t_list *tids;
-//     t_list *colas_hilos_prioridad_ready;
-//     t_list *lista_hilos_blocked;
-//     t_queue *cola_hilos_new;
-//     t_queue *cola_hilos_exit;
-//     t_tcb *hilo_exec;
-//     char *mutex;
-//     char *estado;
-//     char *pseudocodigo;
-//     int tamanio_proceso;
-//     int prioridad;
-// } t_pcb;
 
 
 t_paquete* agregar_pcb_a_paquete(t_pcb*pcb){
     t_paquete*paquete=crear_paquete();
 
     agregar_a_paquete(paquete,&(pcb->pid),sizeof(int));
-
-	
+	agregar_a_paquete(paquete,pcb->tids,list_size(pcb->tids)*sizeof(int));
+	agregar_a_paquete(paquete,pcb->colas_hilos_prioridad_ready,suma_tam_hilos_colas_en_lista(pcb->colas_hilos_prioridad_ready));
+	agregar_a_paquete(paquete,pcb->lista_hilos_blocked,list_size(pcb->lista_hilos_blocked)*sizeof(pthread_t));
+	agregar_a_paquete(paquete,pcb->cola_hilos_new,queue_size(pcb->cola_hilos_new)*sizeof(pthread_t));
+	agregar_a_paquete(paquete,pcb->cola_hilos_exit,queue_size(pcb->cola_hilos_exit)*sizeof(pthread_t));
+	agregar_tcb_a_paquete(pcb->hilo_exec);
+	pcb->mutex_length=string_length(pcb->mutex);
+	agregar_a_paquete(paquete,&(pcb->mutex_length),sizeof(int));
+	agregar_a_paquete(paquete,pcb->mutex,pcb->mutex_length);
+	pcb->estado_length=string_length(pcb->estado);
+	agregar_a_paquete(paquete,&(pcb->estado_length),sizeof(int));
+	agregar_a_paquete(paquete,pcb->estado,pcb->estado_length);
+	pcb->pseudocodigo_length=string_length(pcb->pseudocodigo);
+	agregar_a_paquete(paquete,&(pcb->pseudocodigo_length),sizeof(int));
+	agregar_a_paquete(paquete,pcb->pseudocodigo,pcb->pseudocodigo_length);
 	agregar_a_paquete(paquete,&(pcb->tamanio_proceso),sizeof(int));
-
 	agregar_a_paquete(paquete,&(pcb->prioridad),sizeof(int));
-	
 
+	return paquete;
 }
 
 
