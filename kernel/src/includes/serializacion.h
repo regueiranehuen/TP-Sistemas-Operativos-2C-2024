@@ -5,8 +5,8 @@
 #include "utils/includes/sockets.h"
 
 
-t_paquete* agregar_tcb_a_paquete(t_tcb*tcb);
-t_paquete* agregar_pcb_a_paquete(t_pcb*pcb);
+void agregar_tcb_a_paquete(t_tcb*tcb,t_paquete*paquete);
+void agregar_pcb_a_paquete(t_pcb*pcb,t_paquete*paquete);
 
 
 

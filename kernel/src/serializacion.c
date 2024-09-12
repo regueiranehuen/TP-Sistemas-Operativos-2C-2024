@@ -1,10 +1,7 @@
 #include "includes/funcionesAuxiliares.h"
 
 
-t_paquete* agregar_tcb_a_paquete(t_tcb*tcb){
-
-    t_paquete*paquete=crear_paquete();
-
+void agregar_tcb_a_paquete(t_tcb*tcb,t_paquete*paquete){
     agregar_a_paquete(paquete,&(tcb->tid),sizeof(int));
     agregar_a_paquete(paquete,&(tcb->prioridad),sizeof(int));
     agregar_a_paquete(paquete,&(tcb->pid),sizeof(int));
@@ -14,16 +11,10 @@ t_paquete* agregar_tcb_a_paquete(t_tcb*tcb){
     tcb->pseudocodigo_length = string_length(tcb->pseudocodigo);
     agregar_a_paquete(paquete,&(tcb->pseudocodigo_length),sizeof(int));
     agregar_a_paquete(paquete,tcb->pseudocodigo,sizeof(tcb->pseudocodigo_length));
-
-
-
-    return paquete;
-
 }
 
 
-t_paquete* agregar_pcb_a_paquete(t_pcb*pcb){
-    t_paquete*paquete=crear_paquete();
+void agregar_pcb_a_paquete(t_pcb*pcb,t_paquete*paquete){
 
     agregar_a_paquete(paquete,&(pcb->pid),sizeof(int));
 	agregar_a_paquete(paquete,pcb->tids,list_size(pcb->tids)*sizeof(int));
@@ -31,7 +22,7 @@ t_paquete* agregar_pcb_a_paquete(t_pcb*pcb){
 	agregar_a_paquete(paquete,pcb->lista_hilos_blocked,list_size(pcb->lista_hilos_blocked)*sizeof(pthread_t));
 	agregar_a_paquete(paquete,pcb->cola_hilos_new,queue_size(pcb->cola_hilos_new)*sizeof(pthread_t));
 	agregar_a_paquete(paquete,pcb->cola_hilos_exit,queue_size(pcb->cola_hilos_exit)*sizeof(pthread_t));
-	agregar_tcb_a_paquete(pcb->hilo_exec);
+	agregar_tcb_a_paquete(pcb->hilo_exec,paquete);
 	pcb->mutex_length=string_length(pcb->mutex);
 	agregar_a_paquete(paquete,&(pcb->mutex_length),sizeof(int));
 	agregar_a_paquete(paquete,pcb->mutex,pcb->mutex_length);
@@ -43,8 +34,6 @@ t_paquete* agregar_pcb_a_paquete(t_pcb*pcb){
 	agregar_a_paquete(paquete,pcb->pseudocodigo,pcb->pseudocodigo_length);
 	agregar_a_paquete(paquete,&(pcb->tamanio_proceso),sizeof(int));
 	agregar_a_paquete(paquete,&(pcb->prioridad),sizeof(int));
-
-	return paquete;
 }
 
 
