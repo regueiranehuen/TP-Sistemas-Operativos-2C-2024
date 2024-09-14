@@ -27,7 +27,7 @@ typedef struct
 {
     int pid;
     t_list *tids;
-    t_list *colas_hilos_prioridad_ready;
+    t_list *colas_hilos_prioridad_ready; // SOLO PARA ESTA t_cola_prioridad
     t_list *lista_hilos_blocked;
     t_queue *cola_hilos_new;
     t_queue *cola_hilos_exit;

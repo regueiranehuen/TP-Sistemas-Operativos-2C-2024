@@ -20,6 +20,7 @@ t_tcb* find_tcb_in_queue(t_queue* queue, int tid);
 t_tcb* find_tcb_in_list(t_list* list, int tid);
 t_tcb* buscar_tcb(int tid, t_queue* queue_new, t_queue* queue_ready, t_list* list_blocked);
 int suma_tam_hilos_colas_en_lista(t_list*list);
+int size_tcbs_queue(t_queue*queue);
 
 
 

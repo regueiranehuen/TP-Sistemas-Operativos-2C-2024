@@ -10,3 +10,15 @@ t_pcb *fifo(t_queue *cola_proceso)
     }
     return NULL;
 }
+
+/*
+void planificadorLargoPlazo()
+{
+
+}
+
+void planificadorCortoPlazo()
+{
+
+}
+*/

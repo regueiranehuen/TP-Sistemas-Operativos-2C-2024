@@ -264,10 +264,35 @@ t_tcb *buscar_tcb(int tid, t_queue *queue_new, t_queue *queue_ready, t_list *lis
 
 // Función auxiliar para obtener el tamaño de la suma de los hilos que se encuentran en colas que a su vez estan en una lista
 int suma_tam_hilos_colas_en_lista(t_list*list){
-    int tam = 0;
-    for (int i = 0; i< list_size(list);i++){
-        t_queue* queue = list_get(list,i);
-        tam+= queue_size(queue)*sizeof(pthread_t);
+    int tam_total = 0;
+    for (int i = 0; i< list_size(list); i++){
+        t_cola_prioridad * cola_prioridad = list_get(list,i);
+        tam_total+= queue_size(cola_prioridad->cola) * size_tcbs_queue(cola_prioridad->cola); 
     }
-    return tam;  
+    return tam_total;  
+}
+
+
+// Funcion auxiliar para calcular el tamaño de una cola con tcb y prioridad
+int size_tcbs_queue(t_queue*queue){
+    int tam = 0;
+
+    t_queue*queue_aux = queue_create();
+
+    *queue_aux=*queue;
+    
+    while(!queue_is_empty(queue_aux)){
+        t_tcb*tcb=queue_pop(queue_aux);
+        tam+=tam_tcb(tcb);
+        tam+=sizeof(int); // Por la prioridad del tcb
+    }
+    queue_destroy(queue_aux);
+    
+    return tam;
+}
+
+
+// Función auxiliar para conseguir el tamaño de un TCB
+int tam_tcb(t_tcb * tcb){
+    return 5*sizeof(int) + tcb->estado_length + tcb->pseudocodigo_length;
 }

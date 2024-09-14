@@ -64,9 +64,7 @@ void new_a_ready(int socket_memoria) // Verificar contra la memoria si el proces
     int pedido = 1;
     t_pcb *pcb = queue_peek(cola_new);
 
-    t_paquete*paquete_pcb = crear_paquete();
-    agregar_pcb_a_paquete(pcb,paquete_pcb); // Agrego estructura pcb a paquete para la serializacion
-    enviar_paquete(paquete_pcb,socket_memoria); // Enviar paquete serializado del pcb para que memoria verifique si tiene espacio para inicializar el proximo proceso
+    send_pcb(pcb,socket_memoria);
     recv(socket_memoria, &pedido, sizeof(int), 0);
 
     if (pedido == -1)
@@ -95,10 +93,7 @@ void PROCESS_EXIT(t_log *log, t_config *config)
     char *ip = config_get_string_value(config, "IP_MEMORIA");
     int socket_memoria = crear_conexion(log, ip, puerto);
 
-    t_paquete*paquete_pcb = crear_paquete();
-    agregar_pcb_a_paquete(pcb,paquete_pcb);
-    enviar_paquete(paquete_pcb,socket_memoria);
-
+    send_pcb(pcb,socket_memoria);
     recv(socket_memoria, &pedido, sizeof(int), 0);
     close(socket_memoria);
     if (pedido == -1)
@@ -144,9 +139,7 @@ t_tcb *THREAD_CREATE(char *pseudocodigo, int prioridad, t_log *log, t_config *co
     char *ip = config_get_string_value(config, "IP_MEMORIA");
     int socket_memoria = crear_conexion(log, ip, puerto);
 
-    t_paquete*paquete_pcb = crear_paquete();
-    agregar_pcb_a_paquete(pcb,paquete_pcb);
-    enviar_paquete(paquete_pcb,socket_memoria);
+    
 
     recv(socket_memoria, &resultado, sizeof(int), 0);
     close(socket_memoria);
