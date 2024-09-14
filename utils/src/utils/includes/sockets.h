@@ -21,10 +21,29 @@
 #include<commons/config.h>
 #include <errno.h>
 #include <pthread.h>
+
 typedef enum
 {
 	MENSAJE,
-	PAQUETE
+	PAQUETE,
+    SET,
+    READ_MEM,
+    WRITE_MEM,
+    SUM,
+    SUB,
+    JNZ,
+    LOG,
+    DUMP_MEMORY,
+    IO,
+    PROCESS_CREATE,
+    THREAD_CREATE,
+    THREAD_JOIN,
+    THREAD_CANCEL,
+    MUTEX_CREATE,
+    MUTEX_LOCK,
+    MUTEX_UNLOCK,
+    THREAD_EXIT,
+    PROCESS_EXIT
 }op_code;
 
 typedef struct
@@ -43,6 +62,27 @@ typedef struct{
 t_log* log;
 t_config* config;
 } args_hilo;
+
+//Registros de CPU
+typedef struct{
+    uint32_t AX;
+    uint32_t BX;
+    uint32_t CX;
+    uint32_t DX;
+	uint32_t EX;
+    uint32_t FX;
+    uint32_t GX;
+    uint32_t HX;
+}t_registros_cpu;
+
+typedef struct{
+    char* parametros1;
+    char* parametros2;
+    char* parametros3;
+    char* parametros4;
+    char* parametros5;
+    char* parametros6;
+}t_instruccion;
 
 int iniciar_servidor(t_log* log,char* puerto);
 int esperar_cliente(t_log* log,int socket_servidor);
