@@ -1,4 +1,4 @@
-#include
+#include "mmu.h"
 
 int traducir_direccion_logica(int direccion_logica) {
 

@@ -1,4 +1,4 @@
-#include "ejecucionInstrucciones.h"
+#include "funcExecute.h"
 
 void funSET(char *registro, char* valor) {
 

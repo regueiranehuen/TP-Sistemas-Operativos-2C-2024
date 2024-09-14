@@ -1,5 +1,5 @@
-#ifdef EJECUCIONINSTRUCCIONES_H_
-#define EJECUCIONINSTRUCCIONES_H_
+#ifdef FUNCEXECUTE_H_
+#define FUNCEXECUTE_H_
 #include "main.h"
 
 
