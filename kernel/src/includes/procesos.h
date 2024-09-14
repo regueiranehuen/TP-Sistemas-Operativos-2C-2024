@@ -3,7 +3,7 @@
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
 #include "utils/includes/sockets.h"
-#include "includes/cliente.h"
+#include "../includes/cliente.h"
 #include <semaphore.h>
 
 extern sem_t semaforo;

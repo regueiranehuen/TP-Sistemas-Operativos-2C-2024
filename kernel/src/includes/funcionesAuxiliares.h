@@ -1,8 +1,8 @@
 #ifndef FUNCIONESAUXILIARES_H
 #define FUNCIONESAUXILIARES_H
 
-#include "includes/procesos.h"
-#include "includes/serializacion.h"
+#include "../includes/procesos.h"
+#include "../../utils/src/utils/includes/utilsCliente.h"
 #include "commons/string.h"
 
 

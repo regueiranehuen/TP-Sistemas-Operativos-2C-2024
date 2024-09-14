@@ -1,9 +1,9 @@
-#ifndef SERIALIZACION_H_
-#define SERIALIZACION_H_
+#ifndef UTILSCLIENTE_H
+#define UTILSCLIENTE_H
 
 
 #include "utils/includes/sockets.h"
-
+#include "../../kernel/src/includes/funcionesAuxiliares.h"
 
 void agregar_tcb_a_paquete(t_tcb*tcb,t_paquete*paquete);
 void agregar_pcb_a_paquete(t_pcb*pcb,t_paquete*paquete);
