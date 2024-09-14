@@ -61,7 +61,7 @@ t_tcb* tcb = list_get(pcb->lista_hilos_blocked,i);
 queue_push(pcb->cola_hilos_exit,tcb);
 }
 list_destroy(pcb->lista_hilos_blocked);
-if(strcmp(pcb->hilo_exec->estado, "EXEC") == 0){
+if(pcb->hilo_exec->estado==TCB_EXECUTE){
     //mandar interrupcion a cpu
     queue_push(pcb->cola_hilos_exit,pcb->hilo_exec);
 }
@@ -94,17 +94,17 @@ list_add(lista_colas_prioridad,cola);
 return cola;
 }
 
-int lista_tcb(t_pcb* pcb, int tid){ //Busca un tid en una lista de tids
+int lista_tcb(t_pcb* pcb, int tid) { 
+    // Busca un tid en una lista de tids
+    int tamanio = list_size(pcb->tids);
 
-int tamanio = list_size(pcb->tids);
-
-for(int i=0;i<tamanio;i++){
-int* tid_aux = list_get(pcb->tids, i);
-if(tid_aux == tid){
-    return 0;
-}
-}
-return -1;
+    for (int i = 0; i < tamanio; i++) {
+        int* tid_aux = list_get(pcb->tids, i);
+        if (*tid_aux == tid) {  // Desreferenciamos el puntero para comparar el valor entero
+            return 0;
+        }
+    }
+    return -1;
 }
 
 int tid_finalizado(t_pcb* pcb, int tid) {
@@ -199,8 +199,7 @@ t_tcb* find_tcb_in_list(t_list* list, int tid) {
     return NULL;  // No encontrado
 }
 
-// Función principal para buscar un TCB en las colas NEW, READY y la lista BLOCKED
-t_tcb* buscar_tcb(int tid, t_queue* queue_new, t_queue* queue_ready, t_list* list_blocked) {
+t_tcb* buscar_tcb(int tid, t_queue* queue_new, t_list* queue_ready, t_list* list_blocked) {
     t_tcb* tcb = NULL;
 
     // Buscar en la cola NEW
@@ -209,17 +208,36 @@ t_tcb* buscar_tcb(int tid, t_queue* queue_new, t_queue* queue_ready, t_list* lis
         return tcb;  // Encontrado en NEW
     }
 
-    // Buscar en la cola READY
-    tcb = find_tcb_in_queue(queue_ready, tid);
-    if (tcb != NULL) {
-        return tcb;  // Encontrado en READY
+    // Buscar en la cola READY (en queue_ready que es una lista de t_cola_prioridad)
+    for (int i = 0; i < list_size(queue_ready); i++) {
+        t_cola_prioridad* cola_prioridad = list_get(queue_ready, i);
+        tcb = find_tcb_in_queue(cola_prioridad->cola, tid);
+        if (tcb != NULL) {
+            return tcb;  // Encontrado en READY
+        }
     }
 
-    // Buscar en la lista BLOCKED
-    tcb = find_tcb_in_list(list_blocked, tid);
-    if (tcb != NULL) {
-        return tcb;  // Encontrado en BLOCKED
+    // Buscar en la lista BLOCKED (en list_blocked que es una lista de t_cola_prioridad)
+    for (int i = 0; i < list_size(list_blocked); i++) {
+        t_cola_prioridad* cola_prioridad = list_get(list_blocked, i);
+        tcb = find_tcb_in_queue(cola_prioridad->cola, tid);
+        if (tcb != NULL) {
+            return tcb;  // Encontrado en BLOCKED
+        }
     }
 
     return NULL;  // No encontrado en ninguna cola/lista
+}
+
+t_mutex* busqueda_mutex(t_list* lista_mutex, int mutex_id){
+
+int tamanio_lista = list_size(lista_mutex);
+
+for(int i=0; i< tamanio_lista;i++){
+t_mutex* mutex_aux = list_get(lista_mutex,i);
+if(mutex_aux->mutex_id == mutex_id){
+    return mutex_aux;
+}
+}
+return NULL;
 }
