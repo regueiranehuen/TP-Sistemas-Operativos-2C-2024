@@ -140,7 +140,7 @@ t_tcb *THREAD_CREATE(char *pseudocodigo, int prioridad, t_log *log, t_config *co
     int socket_memoria = crear_conexion(log, ip, puerto);
 
     
-
+    send(socket_memoria,&resultado,sizeof(int),0);
     recv(socket_memoria, &resultado, sizeof(int), 0);
     close(socket_memoria);
     if (resultado == -1)
@@ -208,10 +208,7 @@ void THREAD_CANCEL(int tid, t_config *config, t_log *log)
 
     int socket_memoria = crear_conexion(log, ip, puerto);
 
-    t_paquete*paquete_tcb=crear_paquete();
-    agregar_tcb_a_paquete(tcb,paquete_tcb); // Meter estructura tcb en paquete nuevo para la serialización
-    enviar_paquete(paquete_tcb,socket_memoria); // Enviar paquete tcb serializado
-
+    send_tcb(tcb,socket_memoria);
     recv(socket_memoria, &respuesta, sizeof(int), 0);
 
     if (respuesta == -1)
@@ -226,4 +223,102 @@ void THREAD_CANCEL(int tid, t_config *config, t_log *log)
 
 
     close(socket_memoria);
+}
+
+///
+
+/*
+PROCESS_EXIT, esta syscall finalizará el PCB correspondiente al TCB que ejecutó la instrucción,
+enviando todos sus TCBs asociados a la cola de EXIT. Esta instrucción sólo será llamada por el TID 0 del proceso
+y le deberá indicar a la memoria la finalización de dicho proceso.
+*/
+
+void PROCESS_EXIT(t_log *log, t_config *config)
+{ // Me parece que va sin parametros pero no se como verga saber que hilo llamo a esta funcion, aparte diría que hay que crear una conexion con memoria adentro de la función
+    t_pcb *pcb = proceso_exec;
+    int pedido;
+    char *puerto = config_get_string_value(config, "PUERTO_MEMORIA");
+    char *ip = config_get_string_value(config, "IP_MEMORIA");
+    int socket_memoria = crear_conexion(log, ip, puerto);
+
+    send_pcb(pcb,socket_memoria);
+    recv(socket_memoria, &pedido, sizeof(int), 0);
+    close(socket_memoria);
+    if (pedido == -1)
+    {
+        printf("Memoria la concha de tu madre ");
+    }
+    else
+    {
+        liberar_proceso(pcb);
+        sem_post(&semaforo);
+    }
+}
+
+
+
+
+// En este apartado solamente se tendrá la instrucción DUMP_MEMORY. Esta syscall le solicita a la memoria, junto al PID y TID que lo solicitó, que haga un Dump del proceso.
+// Esta syscall bloqueará al hilo que la invocó hasta que el módulo memoria confirme la finalización de la operación, en caso de error, el proceso se enviará a EXIT. Caso contrario, el hilo se desbloquea normalmente pasando a READY.
+
+
+void DUMP_MEMORY(t_config*config,t_log*log){
+    t_pcb *pcb = proceso_exec;
+    t_tcb *tcb = pcb->hilo_exec;
+
+    // Conectar con memoria
+    char *puerto = config_get_string_value(config, "PUERTO_MEMORIA");
+    char *ip = config_get_string_value(config, "IP_MEMORIA");
+    int socket_memoria = crear_conexion(log, ip, puerto);
+
+    int pid = pcb->pid;
+    int tid = tcb->tid;
+
+    char *mensaje = "DUMP_MEMORY";
+    int tam_mensaje = strlen(mensaje) + 1;
+
+    t_paquete *paquete_dump = crear_paquete();
+    agregar_a_paquete(paquete_dump,&pid,sizeof(int));
+    agregar_a_paquete(paquete_dump,&tid,sizeof(int));
+    agregar_a_paquete(paquete_dump,mensaje,tam_mensaje);
+    enviar_paquete(paquete_dump,socket_memoria);
+
+    int rta;
+    
+    recv(socket_memoria,&rta,sizeof(int),0);
+    
+    if(rta == -1){
+        log_info(log, "Error en el dump de memoria ");
+        PROCESS_EXIT(log,config);
+    }
+    else{
+        log_info(log,"Dump de memoria exitoso");
+        tcb->estado = "READY";
+    }
+    
+    close(socket_memoria);
+}
+
+// Entrada Salida
+// Para la implementación de este trabajo práctico, el módulo Kernel simulará la existencia de un único dispositivo de Entrada Salida, el cual atenderá las peticiones bajo el algoritmo FIFO. Para “utilizar” esta interfaz, se dispone de la syscall IO. Esta syscall recibe como parámetro la cantidad de milisegundos que el hilo va a permanecer haciendo la operación de entrada/salida.
+
+void IO(int milisegundos) {
+    t_pcb *pcb = proceso_exec;
+    t_tcb *tcb = proceso_exec->hilo_exec;
+
+    // Cambiar el estado del hilo a BLOCKED
+    tcb->estado = "BLOCKED";
+
+    // Agregar el hilo a la lista de hilos bloqueados
+    list_add(pcb->lista_hilos_blocked, tcb);
+
+    // Simular la espera por E/S
+    usleep(milisegundos * 1000);
+
+    // Sacar el hilo de la lista de bloqueados
+    find_and_remove_tcb_in_list(pcb->lista_hilos_blocked, tcb->tid);
+
+    // Mover el hilo a la cola de READY
+    tcb->estado = "READY";
+    queue_push(cola_ready, tcb);
 }
