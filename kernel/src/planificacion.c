@@ -1,7 +1,5 @@
 #include "includes/planificacion.h"
 
-
-
 t_pcb *fifo(t_queue *cola_proceso)
 {
 
@@ -14,46 +12,6 @@ t_pcb *fifo(t_queue *cola_proceso)
 }
 
 
-t_tcb *fifo(t_queue *cola_hilo)
-{
-
-    if (cola_hilo!= NULL)
-    {
-        t_tcb *tcb = queue_pop(cola_hilo);
-        return tcb;
-    }
-    return NULL;
-}
-
-// t_tcb* prioridades_sin_lista(t_queue* cola_hilos) {
-//     //t_tcb* hilo_seleccionado = NULL;
-//     t_tcb* hilo_actual = queue_pop(cola_hilos);
-//     t_tcb* hilo_sig = queue_pop(cola_hilos);
-
-//     for (int i = 0; i < queue_size(cola_hilos); i++) {
-        
-//         if (hilo_sig==NULL){
-//             queue_push
-//         }
-
-//         // Seleccionamos el hilo con la prioridad más baja
-//         if (hilo_actual->prioridad < hilo_seleccionado->prioridad) {
-//             if (hilo_seleccionado != NULL) {
-//                 queue_push(cola_hilo, hilo_seleccionado);  // Reinserta el anterior hilo seleccionado
-//             }
-//             hilo_seleccionado = hilo_actual;  // Actualizamos el hilo seleccionado
-//         } else {
-//             queue_push(cola_hilos, hilo_actual);  // Reinserta el hilo no seleccionado
-//         }
-
-//         hilo_actual = queue_pop(cola_hilos);
-//         hilo_sig = queue_pop(cola_hilos);
-
-       
-//     }
-    
-//     return hilo_seleccionado;
-// }
 
 t_tcb* prioridades(t_queue* cola_hilos) {
     if (!queue_is_empty(cola_hilos)) {
@@ -63,11 +21,17 @@ t_tcb* prioridades(t_queue* cola_hilos) {
         for (int i = 0; i < queue_size(cola_hilos); i++) {
             t_tcb* hilo_siguiente = queue_pop(cola_hilos);  // Siguiente hilo a comparar
 
+            if (hilo_siguiente == NULL){ // Si hay un único hilo en la cola
+
+                return hilo_actual;
+            } 
+
             // Si la prioridad del siguiente es menor, actualizamos el hilo seleccionado
             if (hilo_siguiente->prioridad < hilo_actual->prioridad) {
                 queue_push(cola_hilos, hilo_actual);  // Reinserta el actual
                 hilo_actual = hilo_siguiente;  // Actualiza el hilo seleccionado
-            } else {
+            } 
+            else {
                 queue_push(cola_hilos, hilo_siguiente);  // Reinserta el siguiente si no es seleccionado
             }
         }
@@ -79,16 +43,23 @@ t_tcb* prioridades(t_queue* cola_hilos) {
 }
 
 
+t_tcb*round_robbin(t_queue*cola_hilos,t_config*config){
 
+    if (!queue_is_empty(cola_hilos)){
+        int quantum=config_get_int_value(config,"QUANTUM");  // Cantidad máxima de tiempo que obtiene la CPU un proceso/hilo (EN MILISEGUNDOS)
+        
+        t_tcb*tcb=queue_pop(cola_hilos); // Sacar el primer hilo de la cola
+        
+        // Simular que el hilo está en ejecución durante el tiempo del quantum
+        usleep(quantum * 1000); // usleep trata con microsegundos, 1 microsegundo es igual a 1000 milisegundos
 
-/*
-void planificadorLargoPlazo()
-{
+        if (strcmp(tcb->estado,"EXIT")!=0){ // Si el hilo no terminó de realizar su tarea
+            queue_push(cola_hilos,tcb); // lo reenviamos al final de la cola
+        }
+
+        return tcb;
+        
+    }
+    return NULL;
 
 }
-
-void planificadorCortoPlazo()
-{
-
-}
-*/

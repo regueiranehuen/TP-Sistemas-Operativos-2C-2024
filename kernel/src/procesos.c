@@ -225,38 +225,6 @@ void THREAD_CANCEL(int tid, t_config *config, t_log *log)
     close(socket_memoria);
 }
 
-///
-
-/*
-PROCESS_EXIT, esta syscall finalizará el PCB correspondiente al TCB que ejecutó la instrucción,
-enviando todos sus TCBs asociados a la cola de EXIT. Esta instrucción sólo será llamada por el TID 0 del proceso
-y le deberá indicar a la memoria la finalización de dicho proceso.
-*/
-
-void PROCESS_EXIT(t_log *log, t_config *config)
-{ // Me parece que va sin parametros pero no se como verga saber que hilo llamo a esta funcion, aparte diría que hay que crear una conexion con memoria adentro de la función
-    t_pcb *pcb = proceso_exec;
-    int pedido;
-    char *puerto = config_get_string_value(config, "PUERTO_MEMORIA");
-    char *ip = config_get_string_value(config, "IP_MEMORIA");
-    int socket_memoria = crear_conexion(log, ip, puerto);
-
-    send_pcb(pcb,socket_memoria);
-    recv(socket_memoria, &pedido, sizeof(int), 0);
-    close(socket_memoria);
-    if (pedido == -1)
-    {
-        printf("Memoria la concha de tu madre ");
-    }
-    else
-    {
-        liberar_proceso(pcb);
-        sem_post(&semaforo);
-    }
-}
-
-
-
 
 // En este apartado solamente se tendrá la instrucción DUMP_MEMORY. Esta syscall le solicita a la memoria, junto al PID y TID que lo solicitó, que haga un Dump del proceso.
 // Esta syscall bloqueará al hilo que la invocó hasta que el módulo memoria confirme la finalización de la operación, en caso de error, el proceso se enviará a EXIT. Caso contrario, el hilo se desbloquea normalmente pasando a READY.

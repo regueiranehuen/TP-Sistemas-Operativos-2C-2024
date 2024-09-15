@@ -70,6 +70,9 @@ void new_a_ready(int socket_memoria);
 
 void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso);
 
+void DUMP_MEMORY(t_config*config,t_log*log);
+void IO(int milisegundos);
+
 
 
 #endif
