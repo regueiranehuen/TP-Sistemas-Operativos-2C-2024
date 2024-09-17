@@ -8,24 +8,44 @@ void ciclo_de_instruccion() {
 
     while(cicloInstrucciones) {
 
-        fetch();
-        decode();
-        execute();
+        t_instruccion* instruccion = fetch();
+        op_code nombre_instruccion = decode(instruccion);
+        execute(instruccion_nombre, instruccion);
         //dentro del pcb esta el pc con demas registris
         //pcb->pc++;
+        if(cicloInstrucciones) { 
         checkInterrupt();
-    }
+        }
 }
 
-void fetch() {
+void fetch(uint32_t tid, uint32_t pc) {
 
-    //Pedir instruccion a Memoria
-    //pedir_instruccion_memoria();
-    //instruccion = recibir_instruccion(conexion_memoria);
+    pedir_instruccion_memoria(tid, pc, log_cpu);
+    log_info(log_cpu, "PID: %i - FETCH - Program Counter: %i", tid, pc);
+    t_instruccion* instruccion = malloc(sizeof(t_instruccion));
+    op_code codigo = recibir_operacion(); // TODO ver como modelar la operacion
+    if(codigo == READY){
+        log_info(log_cpu, "COPOP: %i", codigo);
+        instruccion = recibir_instruccion(); // 
+    }else{
+        return -1;
+    }
+  return instruccion;
     
 }
 
-void decode() {
+void pedir_instruccion_memoria(uint32_t pid, uint32_t pc, t_log *logg){
+    t_paquete* paquete = crear_paquete_op(PEDIR_INSTRUCCION_MEMORIA);
+    agregar_entero_a_paquete(paquete,tid);
+    agregar_entero_a_paquete(paquete,pc);
+    
+    //log_info(logg, "serializacion %i %i", pid, pc); ya esta el log
+    enviar_paquete(paquete,conexion_memoria);
+    eliminar_paquete(paquete);
+
+}
+
+op_code decode() {
     if (strcmp(instruccion->parametros1, "SET") == 0) {
         return SET;
     } else if (strcmp(instruccion->parametros1, "READ_MEM") == 0) {
@@ -68,9 +88,41 @@ void decode() {
 
 }
 
-void execute() {
 
+void execute(op_code instruccion_nombre, t_instruccion* instruccion) {
+    switch (instruccion_nombre) {
+        case SET:
+            log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
+            funcSet(instruccion);
+            break;
+        case SUM:
+            log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
+            funcSum(instruccion);
+            break;
+        case SUB:
+            log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
+            funcSub(instruccion);
+            break;
+        case JNZ:
+            log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
+            funcJnz(instruccion);
+            break;
+        case READ_MEM:
+            log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
+            funcREAD_MEM(instruccion);
+            esperar_devolucion_pcb();
+            break;
+        case WRITE_MEM:
+            log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s", instruccion->parametros1, instruccion->parametros2);
+            funcWait(instruccion);
+            funWRITE_MEM();
+            break;
+        default:
+            log_info(log_cpu, "Instrucción desconocida\n");
+            break;
+    }
 
+    
 }
 
 void checkInterrupt() {

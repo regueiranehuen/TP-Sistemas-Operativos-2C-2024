@@ -5,6 +5,6 @@
 #include "main.h"
 
 t_instruccion* instruccion;
-
+t_log* log_cpu;
 
 #endif
