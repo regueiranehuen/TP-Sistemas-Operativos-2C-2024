@@ -7,4 +7,6 @@
 t_instruccion* instruccion;
 t_log* log_cpu;
 
+int hay_interrupcion;
+
 #endif

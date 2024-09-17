@@ -125,16 +125,14 @@ void execute(op_code instruccion_nombre, t_instruccion* instruccion) {
     
 }
 
-void checkInterrupt() {
- // pseudo
- //if(hay_interrupciones)
- //
- //if(contexto->tid == tid_interrupt)
- //actualizar contexto_ejecucion en Memoria
- //y devolver el TID al kernel con motivo de interrupcion
- //t_paquete* paquete = crear_paquete(INTERRUPCION);
- //agregar_contextoEjec_a_paquete(paquete, algo);
- //enviar_paquete(paquete)
- //eliminar_paquete(paquete);
- //el else no lo pondria porque de todas maneras se lo descarta igual
+void checkInterrupt(uint32_t tid) {
+ if (hay_interrupcion){
+        hay_interrupcion = 0;
+        if(contexto->tid == tid_interrupt){
+            seguir_ejecutando = 0;
+            if(!es_por_usuario){
+            enviar_contexto(socket_cliente_kernel_dispatch, contexto,INTERRUPCION);
+            }
+        }
+    }
 }

@@ -43,7 +43,8 @@ typedef enum
     MUTEX_LOCK,
     MUTEX_UNLOCK,
     THREAD_EXIT,
-    PROCESS_EXIT
+    PROCESS_EXIT,
+    INTERRUPCION,
 }op_code;
 
 typedef struct
