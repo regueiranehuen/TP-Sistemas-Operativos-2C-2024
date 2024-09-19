@@ -6,8 +6,8 @@ int main(int argc, char *argv[])
     t_log *log;
     t_config *config;
     sockets_kernel *sockets;
-    char *archivo_pseudocodigo = argv[1];
-    int tamanio_proceso = atoi(argv[2]);
+    //char *archivo_pseudocodigo = argv[1];
+    //int tamanio_proceso = atoi(argv[2]);
 
     cola_new = queue_create();
     cola_ready = queue_create();
@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
 
    
     sockets = hilos_kernel(log, config);
-    iniciar_kernel(archivo_pseudocodigo, tamanio_proceso);
+    //iniciar_kernel(archivo_pseudocodigo, tamanio_proceso);
     liberar_espacio(log, config, sockets);
     return 0;
 }

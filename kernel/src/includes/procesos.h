@@ -5,7 +5,7 @@
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
 #include "utils/includes/sockets.h"
-#include "includes/cliente.h"
+#include "../includes/cliente.h"
 #include <semaphore.h>
 
 extern sem_t semaforo;
@@ -16,6 +16,11 @@ extern pthread_mutex_t mutex_pthread_join;
 extern t_config* config;
 extern t_log* logger;
 extern t_list* lista_mutex;
+
+typedef enum{
+    PCB_INIT,
+    DUMP_MEMORIA
+}code_operacion;
 
 typedef enum {
     TCB_NEW,
@@ -32,6 +37,7 @@ int prioridad;
 int pid; // proceso asociado al hilo
 estado_hilo estado;
 char* pseudocodigo;
+int pseudocodigo_length;
 }t_tcb;
 
 typedef enum {
@@ -59,6 +65,7 @@ t_list* lista_mutex;
 estado_pcb estado;
 int tamanio_proceso;
 int prioridad;
+
 }t_pcb;
 
 typedef struct {
@@ -96,6 +103,9 @@ void MUTEX_CREATE();
 void MUTEX_LOCK(int mutex_id);
 void MUTEX_UNLOCK(int mutex_id);
 
+void IO(int milisegundos);
+
+void DUMP_MEMORY();
 
 
 #endif

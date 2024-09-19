@@ -12,7 +12,7 @@ config= config_create("memoria.config");
 if (config == NULL) {
     log_error(log, "Error al crear la configuración");
 }
-
+estado_servidor = 1;
 sockets = hilos_memoria(log,config);
 
 
