@@ -318,70 +318,35 @@ void MUTEX_UNLOCK(int mutex_id)
 }
 
 
-// En este apartado solamente se tendrá la instrucción DUMP_MEMORY. Esta syscall le solicita a la memoria, junto al PID y TID que lo solicitó, que haga un Dump del proceso.
-// Esta syscall bloqueará al hilo que la invocó hasta que el módulo memoria confirme la finalización de la operación, en caso de error, el proceso se enviará a EXIT. Caso contrario, el hilo se desbloquea normalmente pasando a READY.
 
-
-void DUMP_MEMORY(){
-    t_pcb *pcb = proceso_exec;
-    t_tcb *tcb = pcb->hilo_exec;
-
-    // Conectar con memoria
-    char *puerto = config_get_string_value(config, "PUERTO_MEMORIA");
-    char *ip = config_get_string_value(config, "IP_MEMORIA");
-    int socket_memoria = crear_conexion(logger, ip, puerto);
-
-    int pid = pcb->pid;
-    int tid = tcb->tid;
-
-    char *mensaje = "DUMP_MEMORY";
-    int tam_mensaje = strlen(mensaje) + 1;
-
-    t_paquete *paquete_dump = crear_paquete();
-    agregar_a_paquete(paquete_dump,&pid,sizeof(int));
-    agregar_a_paquete(paquete_dump,&tid,sizeof(int));
-    agregar_a_paquete(paquete_dump,mensaje,tam_mensaje);
-    enviar_paquete(paquete_dump,socket_memoria);
-
-    int rta;
-    
-    recv(socket_memoria,&rta,sizeof(int),0);
-    
-    if(rta == -1){
-        log_info(logger, "Error en el dump de memoria ");
-        PROCESS_EXIT(logger,config);
-    }
-    else{
-        log_info(logger,"Dump de memoria exitoso");
-        tcb->estado = TCB_READY;
-    }
-    
-    close(socket_memoria);
-}
-
-
-
-
-// Entrada Salida
-// Para la implementación de este trabajo práctico, el módulo Kernel simulará la existencia de un único dispositivo de Entrada Salida, el cual atenderá las peticiones bajo el algoritmo FIFO. Para “utilizar” esta interfaz, se dispone de la syscall IO. Esta syscall recibe como parámetro la cantidad de milisegundos que el hilo va a permanecer haciendo la operación de entrada/salida.
+/*
+Entrada Salida
+Para la implementación de este trabajo práctico, el módulo Kernel simulará la existencia de un único dispositivo de Entrada Salida, 
+el cual atenderá las peticiones bajo el algoritmo FIFO. Para “utilizar” esta interfaz, se dispone de la syscall IO. Esta syscall recibe 
+como parámetro la cantidad de milisegundos que el hilo va a permanecer haciendo la operación de entrada/salida.
+*/
 
 void IO(int milisegundos) {
-    t_pcb *pcb = proceso_exec;
-    t_tcb *tcb = proceso_exec->hilo_exec;
+
+
+    t_tcb* tcb = proceso_exec->hilo_exec;
 
     // Cambiar el estado del hilo a BLOCKED
     tcb->estado = TCB_BLOCKED;
+    proceso_exec->hilo_exec = NULL;
 
     // Agregar el hilo a la lista de hilos bloqueados
-    list_add(pcb->lista_hilos_blocked, tcb);
+    list_add(proceso_exec->lista_hilos_blocked, tcb);
 
     // Simular la espera por E/S
     usleep(milisegundos * 1000);
 
     // Sacar el hilo de la lista de bloqueados
-    find_and_remove_tcb_in_list(pcb->lista_hilos_blocked, tcb->tid);
-
+    find_and_remove_tcb_in_list(proceso_exec->lista_hilos_blocked, tcb->tid);
+    
     // Mover el hilo a la cola de READY
     tcb->estado = TCB_READY;
-    queue_push(cola_ready, tcb);
+    t_cola_prioridad* cola = cola_prioridad(proceso_exec->colas_hilos_prioridad_ready,tcb->prioridad);
+    queue_push(cola->cola, tcb);
 }
+

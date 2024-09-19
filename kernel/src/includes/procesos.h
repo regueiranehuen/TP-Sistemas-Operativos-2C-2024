@@ -62,8 +62,8 @@ typedef struct
     t_queue *cola_hilos_exit;
     t_tcb *hilo_exec;
 
-    t_list *lista_mutex; //
-    estado_pcb estado; //
+    t_list *lista_mutex; 
+    estado_pcb estado; 
 
 
 

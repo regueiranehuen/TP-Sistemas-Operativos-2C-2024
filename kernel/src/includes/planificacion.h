@@ -7,7 +7,7 @@
 
 
 t_pcb *fifo(t_queue *cola_proceso);
-t_tcb*round_robin(t_queue*cola_hilos);
+t_tcb*round_robin(t_cola_prioridad*cola_prioridad);
 t_tcb* prioridades(t_queue* cola_hilos);
 
 

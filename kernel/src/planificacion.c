@@ -23,6 +23,9 @@ t_tcb* fifo_tcb(t_queue * cola_hilos)
 }
 
 
+// Prioridades
+// Se elegirá al siguiente hilo a ejecutar según cual tenga el número de prioridad más bajo, siendo 0 la máxima prioridad. En caso de tener varios hilos con la misma prioridad más alta, se desempata por FIFO. Se pide implementar este esquema sin desalojo.
+
 
 t_tcb* prioridades(t_queue* cola_hilos) 
 {
@@ -61,23 +64,19 @@ t_tcb* prioridades(t_queue* cola_hilos)
 
 /// A ROUND ROBIN LE TENGO QUE AGREGAR COMO PARAMETRO LA PRIORIDAD DE LA COLA DE PRIORIDAD
 
-t_tcb*round_robbin(t_cola_prioridad*cola_prioridad){
+t_tcb*round_robin(t_cola_prioridad*cola_prioridad){
 
     if (!queue_is_empty(cola_prioridad->cola)){
-        int quantum=config_get_int_value(config,"QUANTUM");  // Cantidad máxima de tiempo que obtiene la CPU un proceso/hilo (EN MILISEGUNDOS)
+        int quantum = config_get_int_value(config,"QUANTUM");  // Cantidad máxima de tiempo que obtiene la CPU un proceso/hilo (EN MILISEGUNDOS)
         
-        t_tcb*tcb=queue_pop(cola_prioridad->cola); // Sacar el primer hilo de la cola
-        
+        t_tcb*tcb = queue_pop(cola_prioridad->cola); // Sacar el primer hilo de la cola
         
 
-
-        //tcb->estado=TCB_EXECUTE;
         // Simular que el hilo está en ejecución durante el tiempo del quantum
         usleep(quantum * 1000); // usleep trata con microsegundos, 1 microsegundo es igual a 1000 milisegundos
 
 
-
-        if (tcb->estado!=TCB_EXECUTE){ // Si el hilo no terminó de realizar su tarea
+        if (tcb->estado!=TCB_EXIT){ // Si el hilo no terminó de realizar su tarea
             queue_push(cola_prioridad->cola,tcb); // lo reenviamos al final de la cola
         }
 
@@ -96,7 +95,6 @@ t_tcb*round_robbin(t_cola_prioridad*cola_prioridad){
 // - Cada cola implementará un algoritmo Round Robin con un quantum (Q) definido por archivo de configuración.
 // - Al llegar un hilo a ready se posiciona siempre al final de la cola que le corresponda.
 
-
 // typedef struct
 // {
 //     int prioridad;
@@ -104,16 +102,22 @@ t_tcb*round_robbin(t_cola_prioridad*cola_prioridad){
 // } t_cola_prioridad;
 
 
-t_tcb*colas_multinivel(t_list * lista_colas_prioridad, t_config * config)
+
+t_tcb*colas_multinivel(t_list * lista_colas_prioridad)
 {
-    for (int i = 0; i< list_size(lista_colas_prioridad); i++)
+    for (int i = 0; i < list_size(lista_colas_prioridad); i++)
     {
-        t_cola_prioridad * cola_prioridad_actual = cola_prioridad(lista_colas_prioridad, i);
-        while (cola_prioridad_actual->cola!=NULL)
+        
+        t_cola_prioridad *cola_prioridad_actual = cola_prioridad(lista_colas_prioridad,i);
+
+        
+        while (!queue_is_empty(cola_prioridad_actual->cola))
         {
-            round_robbin(cola_prioridad_actual);
+            t_tcb *tcb = round_robin(cola_prioridad_actual);
+            return tcb;
         }
     }
 
     return NULL;
 }
+

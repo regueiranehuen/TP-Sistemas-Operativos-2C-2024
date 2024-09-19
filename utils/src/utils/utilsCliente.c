@@ -35,8 +35,6 @@ void agregar_pcb_a_paquete(t_pcb*pcb,t_paquete*paquete){
 
     agregar_a_paquete(paquete,pcb->lista_mutex,list_size(pcb->lista_mutex)*sizeof(int));
 
-	
-
     agregar_a_paquete(paquete,&(pcb->estado),sizeof(int));
 	agregar_a_paquete(paquete,&(pcb->tamanio_proceso),sizeof(int));
 	agregar_a_paquete(paquete,&(pcb->prioridad),sizeof(int));
