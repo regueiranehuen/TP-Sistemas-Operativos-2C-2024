@@ -3,14 +3,15 @@
 
 
 #include "utils/includes/sockets.h"
+
 #include "../../kernel/src/includes/funcionesAuxiliares.h"
 
 void agregar_tcb_a_paquete(t_tcb*tcb,t_paquete*paquete);
 void agregar_pcb_a_paquete(t_pcb*pcb,t_paquete*paquete);
 void send_tcb(t_tcb*tcb,int socket);
 void send_pcb(t_pcb*pcb,int socket);
-int tam_tcb(t_tcb * tcb);
-int size_tcbs_queue(t_queue*queue);
+
+
 
 
 
