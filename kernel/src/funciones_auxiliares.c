@@ -294,5 +294,5 @@ int size_tcbs_queue(t_queue*queue){
 
 // Función auxiliar para conseguir el tamaño de un TCB
 int tam_tcb(t_tcb * tcb){
-    return 5*sizeof(int) + tcb->estado_length + tcb->pseudocodigo_length;
+    return 5*sizeof(int) + tcb->pseudocodigo_length;
 }
