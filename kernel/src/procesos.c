@@ -350,3 +350,68 @@ void IO(int milisegundos) {
     queue_push(cola->cola, tcb);
 }
 
+
+/* En este apartado solamente se tendrá la instrucción DUMP_MEMORY. Esta syscall le solicita a la memoria, 
+junto al PID y TID que lo solicitó, que haga un Dump del proceso.
+Esta syscall bloqueará al hilo que la invocó hasta que el módulo memoria confirme la finalización de la operación, 
+en caso de error, el proceso se enviará a EXIT. Caso contrario, el hilo se desbloquea normalmente pasando a READY.
+*/
+
+void DUMP_MEMORY(){
+
+    t_tcb* tcb = proceso_exec->hilo_exec;
+    int rta_cpu;
+
+    char* puerto_cpu = config_get_string_value(config, "PUERTO_CPU_INTERRUPT");
+    char* ip_cpu = config_get_string_value(config, "IP_CPU");
+    int socket_cpu = crear_conexion(logger, ip_cpu, puerto_cpu);
+
+    send_tcb(proceso_exec->hilo_exec,socket_cpu);
+    recv(socket_cpu,&rta_cpu,sizeof(int),0);
+
+    if(rta_cpu == -1){
+        log_info(logger, "Error en el desalojo del hilo ");
+        return;
+    }
+    close(socket_cpu);
+    tcb->estado = TCB_BLOCKED;
+
+    list_add(proceso_exec->lista_hilos_blocked,tcb);
+
+    proceso_exec->hilo_exec = NULL;
+
+
+    // Conectar con memoria
+    char* puerto = config_get_string_value(config, "PUERTO_MEMORIA");
+    char* ip = config_get_string_value(config, "IP_MEMORIA");
+    int socket_memoria = crear_conexion(logger, ip, puerto);
+
+    int pid = proceso_exec->pid;
+    int tid = tcb->tid; 
+    code_operacion codigo= DUMP_MEMORIA;
+    t_paquete *paquete_dump = crear_paquete();
+    agregar_a_paquete(paquete_dump,&pid,sizeof(int));
+    agregar_a_paquete(paquete_dump,&tid,sizeof(int));
+    agregar_a_paquete(paquete_dump,&codigo,sizeof(int));
+    enviar_paquete(paquete_dump,socket_memoria);
+
+    int rta_memoria;
+
+    recv(socket_memoria,&rta_memoria,sizeof(int),0);
+    close(socket_memoria);
+
+    if(rta_memoria == -1){
+        log_info(logger, "Error en el dump de memoria ");
+        
+  PROCESS_EXIT(logger,config);
+    }
+    else{
+        log_info(logger,"Dump de memoria exitoso");
+        tcb->estado = TCB_READY;
+        t_cola_prioridad* cola = cola_prioridad(proceso_exec->colas_hilos_prioridad_ready,tcb->prioridad);
+        queue_push(cola->cola, tcb);
+    }
+
+
+    
+}
