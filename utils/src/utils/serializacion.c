@@ -288,7 +288,7 @@ void agregar_entero_int_a_paquete(t_paquete *paquete, int numero)
 
 void agregar_contexto_a_paquete(t_paquete *paquete, t_contexto *pcb)
 {
-    agregar_entero_a_paquete(paquete, pcb->pid);
+    agregar_entero_a_paquete(paquete, pcb->tid);
     agregar_entero_a_paquete(paquete, pcb->pc);
     agregar_registros_a_paquete(paquete, pcb->registros);
 }
@@ -508,7 +508,7 @@ t_contexto *recibir_contexto(int socket)
 
     buffer = recibir_buffer(&size, socket);
 
-    nuevo_contexto->pid = leer_entero_uint32(buffer, &desp);
+    nuevo_contexto->tid = leer_entero_uint32(buffer, &desp);
     nuevo_contexto->pc = leer_entero_uint32(buffer, &desp);
     nuevo_contexto->registros->AX = leer_entero_uint8(buffer, &desp);
     nuevo_contexto->registros->BX = leer_entero_uint8(buffer, &desp);
@@ -547,7 +547,7 @@ void recibir_string_mas_contexto(int conexion_kernel_cpu_dispatch, t_contexto **
     buffer = recibir_buffer(&size, conexion_kernel_cpu_dispatch);
     *recurso_wait = leer_string(buffer, &desp);
 
-    (*pcb_wait)->pid = leer_entero_uint32(buffer, &desp);
+    (*pcb_wait)->tid = leer_entero_uint32(buffer, &desp);
     (*pcb_wait)->pc = leer_entero_uint32(buffer, &desp);
     (*pcb_wait)->registros->AX = leer_entero_uint8(buffer, &desp);
     (*pcb_wait)->registros->BX = leer_entero_uint8(buffer, &desp);
@@ -569,7 +569,7 @@ void recibir_string_mas_u32_con_contexto(int conexion_kernel_cpu_dispatch, char 
     buffer = recibir_buffer(&size, conexion_kernel_cpu_dispatch);
     *palabra = leer_string(buffer, &desp);
     *numero = leer_entero_uint32(buffer, &desp);
-    (*contexto)->pid = leer_entero_uint32(buffer, &desp);
+    (*contexto)->tid = leer_entero_uint32(buffer, &desp);
     (*contexto)->pc = leer_entero_uint32(buffer, &desp);
     (*contexto)->registros->AX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
@@ -601,7 +601,7 @@ void recibir_2_string_con_contexto(int conexion_kernel_cpu_dispatch, char **pala
     *contexto = malloc(sizeof(t_contexto));
     t_registros_cpu *registros = malloc(sizeof(t_registros_cpu));
     (*contexto)->registros = registros;
-    (*contexto)->pid = leer_entero_uint32(buffer, &desp);
+    (*contexto)->tid = leer_entero_uint32(buffer, &desp);
     (*contexto)->pc = leer_entero_uint32(buffer, &desp);
     (*contexto)->registros->AX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
@@ -773,7 +773,7 @@ void recibir_2_string_mas_u32_con_contexto(int socket, char **palabra1, char **p
     t_registros_cpu *registros = malloc(sizeof(t_registros_cpu));
     (*contexto)->registros = registros;
 
-    (*contexto)->pid = leer_entero_uint32(buffer, &desp);
+    (*contexto)->tid = leer_entero_uint32(buffer, &desp);
     (*contexto)->pc = leer_entero_uint32(buffer, &desp);
     (*contexto)->registros->AX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
@@ -797,7 +797,7 @@ t_string_2enteros *recibir_string_2enteros_con_contexto(int socket, t_contexto *
     t_registros_cpu *registros = malloc(sizeof(t_registros_cpu));
     (*contexto)->registros = registros;
 
-    (*contexto)->pid = leer_entero_uint32(buffer, &desp);
+    (*contexto)->tid = leer_entero_uint32(buffer, &desp);
     (*contexto)->pc = leer_entero_uint32(buffer, &desp);
     (*contexto)->registros->AX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
@@ -823,7 +823,7 @@ void recibir_2_string_mas_3_u32_con_contexto(int socket, char **palabra1, char *
     t_registros_cpu *registros = malloc(sizeof(t_registros_cpu));
     (*contexto)->registros = registros;
 
-    (*contexto)->pid = leer_entero_uint32(buffer, &desp);
+    (*contexto)->tid = leer_entero_uint32(buffer, &desp);
     (*contexto)->pc = leer_entero_uint32(buffer, &desp);
     (*contexto)->registros->AX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);

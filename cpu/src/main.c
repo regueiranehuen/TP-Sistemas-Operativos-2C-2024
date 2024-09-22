@@ -2,11 +2,7 @@
 
 int main(int argc, char* argv[]) {
 
-    t_log* log;
-    t_config* config;
-    t_sockets_cpu* sockets;
-
-log = log_create("CPU.log", "tp", true, LOG_LEVEL_TRACE);
+log_cpu = log_create("CPU.log", "tp", true, LOG_LEVEL_TRACE);
 config = config_create("CPU.config");
 
 sockets = hilos_cpu(log, config);

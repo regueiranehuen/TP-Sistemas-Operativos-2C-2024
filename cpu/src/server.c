@@ -4,11 +4,6 @@ t_socket_cpu* servidor_CPU_Kernel(t_log* log, t_config* config){
 
 //declaración de variables
 
-char *puerto_dispatch,*puerto_interrupt;
-int socket_servidor_Dispatch, socket_servidor_Interrupt;
-int socket_cliente_Dispatch =-1, socket_cliente_Interrupt =-1;
-int respuesta_Dispatch, respuesta_Interrupt;
-t_socket_cpu* sockets=malloc(sizeof(t_socket_cpu));
 sockets->socket_Dispatch=-1;
 sockets->socket_Interrupt=-1;
 
@@ -73,9 +68,6 @@ sockets->socket_Interrupt=socket_servidor_Interrupt;
 int cliente_cpu_memoria (t_log* log, t_config * config){
 
 
-char * ip, * puerto;
-int socket_cliente, respuesta;
-
 ip = config_get_string_value(config, "IP_MEMORIA");
 puerto = config_get_string_value(config, "PUERTO_MEMORIA");
 
@@ -86,14 +78,14 @@ puerto = config_get_string_value(config, "PUERTO_MEMORIA");
     }
 
     // Crear conexion
-    socket_cliente = crear_conexion(log, ip, puerto);
+    conexion_memoria = crear_conexion(log, ip, puerto);
 
-    if (socket_cliente == -1) {
+    if (conexion_memoria == -1) {
         log_info(log, "No se pudo crear la conexion");
         return -1;
     }
 
-   respuesta = cliente_handshake(socket_cliente,log);
+   respuesta = cliente_handshake(conexion_memoria,log);
    
 
    if (respuesta == 0){
@@ -105,7 +97,7 @@ puerto = config_get_string_value(config, "PUERTO_MEMORIA");
 
 
 
-    return socket_cliente;
+    return conexion_memoria;
 }
 
 void* funcion_hilo_servidor_cpu(void* void_args){
@@ -122,6 +114,7 @@ void* funcion_hilo_servidor_cpu(void* void_args){
     
     return (void*)sockets;
 }
+
 void* funcion_hilo_cliente_memoria(void* void_args){
 
   args_hilo* args = ((args_hilo*)void_args);
@@ -135,6 +128,53 @@ void* funcion_hilo_cliente_memoria(void* void_args){
     return (void*)(intptr_t)socket;
 }
 
+void recibir_kernel_dispatch(int SOCKET_CLIENTE_KERNEL_DISPATCH){
+    enviar_string(SOCKET_CLIENTE_KERNEL_DISPATCH, "hola desde cpu dispatch", MENSAJE);
+    int noFinalizar = 0;
+    while(noFinalizar != -1){
+        int codOperacion = recibir_operacion(SOCKET_CLIENTE_KERNEL_DISPATCH);
+        switch (codOperacion)
+        {
+        case EXEC:
+            log_trace(log_cpu, "llego contexto de ejecucion");
+            contexto = recibir_contexto(SOCKET_CLIENTE_KERNEL_DISPATCH);
+            ejecutar_ciclo_de_instruccion(log_cpu);
+            //sem_post(&sem_fin_de_ciclo);
+            log_trace(log_cpu, "ejecute correctamente el ciclo de instruccion");
+            break;
+        case -1:
+            noFinalizar=codOperacion;
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+void recibir_kernel_interrupt(int SOCKET_CLIENTE_KERNEL_INTERRUPT){
+    enviar_string(SOCKET_CLIENTE_KERNEL_INTERRUPT, "hola desde cpu interrupt", MENSAJE);
+    int noFinalizar = 0;
+    while(noFinalizar != -1){
+        int codOperacion = recibir_operacion(SOCKET_CLIENTE_KERNEL_INTERRUPT);
+        switch (codOperacion)
+        {
+        case FIN_QUANTUM_RR:
+            tid_interrupt = recibir_entero_uint32(SOCKET_CLIENTE_KERNEL_INTERRUPT,log_cpu);
+            hay_interrupcion = 1;
+            log_trace(log_cpu,"recibi una interrupcion para el pid: %d", tid_interrupt);
+            break;
+        case INTERRUPCION_USUARIO:
+            tid_interrupt = recibir_entero_uint32(SOCKET_CLIENTE_KERNEL_INTERRUPT,log_cpu);
+            hay_interrupcion = 1;
+            es_por_usuario = 1;
+        case -1:
+            noFinalizar=codOperacion;
+            break;
+        default:
+            break;
+        }
+    }
+}
 
 t_sockets_cpu* hilos_cpu(t_log* log, t_config* config){
 

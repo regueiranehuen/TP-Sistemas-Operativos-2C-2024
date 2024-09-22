@@ -1,32 +1,31 @@
 #include "cicloDeInstruccion.h"
 
-bool cicloInstrucciones = true;
-
 void ciclo_de_instruccion() {
 
-    cicloInstrucciones=true;
+    seguir_ejecutando=1;
 
-    while(cicloInstrucciones) {
+    while(seguir_ejecutando) {
 
-        t_instruccion* instruccion = fetch();
+        t_instruccion* instruccion = fetch(contexto->tid,contexto->pc);
         op_code nombre_instruccion = decode(instruccion);
-        execute(instruccion_nombre, instruccion);
+        execute(nombre_instruccion, instruccion);
         //dentro del pcb esta el pc con demas registris
         //pcb->pc++;
-        if(cicloInstrucciones) { 
-        checkInterrupt();
+        if(seguir_ejecutando) { 
+        checkInterrupt(contexto->tid);
         }
 }
+}
 
-void fetch(uint32_t tid, uint32_t pc) {
+t_instruccion* fetch(uint32_t tid, uint32_t pc) {
 
     pedir_instruccion_memoria(tid, pc, log_cpu);
     log_info(log_cpu, "PID: %i - FETCH - Program Counter: %i", tid, pc);
     t_instruccion* instruccion = malloc(sizeof(t_instruccion));
-    op_code codigo = recibir_operacion(); // TODO ver como modelar la operacion
+    op_code codigo = recibir_operacion(conexion_memoria); // TODO ver como modelar la operacion
     if(codigo == READY){
         log_info(log_cpu, "COPOP: %i", codigo);
-        instruccion = recibir_instruccion(); // 
+        instruccion = recibir_instruccion(conexion_memoria); // 
     }else{
         return -1;
     }
@@ -34,12 +33,12 @@ void fetch(uint32_t tid, uint32_t pc) {
     
 }
 
-void pedir_instruccion_memoria(uint32_t pid, uint32_t pc, t_log *logg){
+void pedir_instruccion_memoria(uint32_t tid, uint32_t pc, t_log *logg){
     t_paquete* paquete = crear_paquete_op(PEDIR_INSTRUCCION_MEMORIA);
     agregar_entero_a_paquete(paquete,tid);
     agregar_entero_a_paquete(paquete,pc);
     
-    //log_info(logg, "serializacion %i %i", pid, pc); ya esta el log
+    //log_info(logg, "serializacion %i %i", tid, pc); ya esta el log
     enviar_paquete(paquete,conexion_memoria);
     eliminar_paquete(paquete);
 
@@ -125,13 +124,15 @@ void execute(op_code instruccion_nombre, t_instruccion* instruccion) {
     
 }
 
-void checkInterrupt(uint32_t tid) {
- if (hay_interrupcion){
+void checkInterrupt(uint32_t tid){
+    if (hay_interrupcion){
         hay_interrupcion = 0;
         if(contexto->tid == tid_interrupt){
             seguir_ejecutando = 0;
             if(!es_por_usuario){
-            enviar_contexto(socket_cliente_kernel_dispatch, contexto,INTERRUPCION);
+            enviar_contexto(sockets->socket_Dispatch, contexto,INTERRUPCION);
+            }else{
+            enviar_contexto(sockets->socket_Dispatch, contexto,INTERRUPCION_USUARIO);
             }
         }
     }

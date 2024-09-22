@@ -15,12 +15,14 @@
 #include <semaphore.h>
 #include <signal.h>
 #include <unistd.h>
-#include <sys/socket.h>
 #include <netdb.h>
 #include <assert.h>
 #include <math.h>
+#include <sys/socket.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <errno.h>
+#include <pthread.h>
 
 typedef struct{
     uint32_t AX;
@@ -31,13 +33,14 @@ typedef struct{
     uint32_t FX;
     uint32_t GX;
     uint32_t HX;
+    uint32_t Base;
+    uint32_t Limite;
 }t_registros_cpu;
 
 typedef struct {
-	uint32_t pid;
+	uint32_t tid;
 	uint32_t pc;
 	t_registros_cpu* registros;
-
 }t_contexto;
 
 typedef struct {
@@ -206,7 +209,6 @@ void* recibir_buffer(int* size, int socket_cliente);
 void recibir_mensaje(int socket_cliente, t_log* loggs);
 t_list* recibir_paquete(int socket_cliente);
 void* serializar_paquete(t_paquete* paquete, int bytes);
-int crear_conexion(char *ip, char* puerto);
 void enviar_mensaje(char* mensaje, int socket_cliente);
 void crear_buffer(t_paquete* paquete);
 t_paquete* crear_paquete(void);

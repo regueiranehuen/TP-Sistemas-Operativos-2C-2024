@@ -1,5 +1,5 @@
-#ifdef MMU_H_
-#define MMU_H_
+#ifndef MMU_H
+#define MMU_H
 
 #include "main.h"
 
