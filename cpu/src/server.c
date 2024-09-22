@@ -1,4 +1,4 @@
-#include "includes/server.h"
+#include "server.h"
 
 t_socket_cpu* servidor_CPU_Kernel(t_log* log, t_config* config){
 

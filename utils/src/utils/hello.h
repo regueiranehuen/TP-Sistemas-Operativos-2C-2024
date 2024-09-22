@@ -1,8 +1,7 @@
 #ifndef UTILS_HELLO_H_
 #define UTILS_HELLO_H_
 
-#include <stdlib.h>
-#include <stdio.h>
+#include "utils.h"
 
 /**
 * @brief Imprime un saludo por consola

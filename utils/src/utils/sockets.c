@@ -1,4 +1,4 @@
-#include "includes/sockets.h"
+#include "sockets.h"
 
 int iniciar_servidor(t_log* log,char* puerto)
 {
@@ -127,7 +127,6 @@ int cliente_handshake(int socket_cliente, t_log* log) {
     }
 }
 
-
 int crear_conexion(t_log* log,char *ip, char* puerto) {
 
 //crear socket de conexion
@@ -159,7 +158,22 @@ if (socket_cliente == -1){
     return socket_cliente;
 }
 
+void liberar_conexion(int socket_cliente)
+{
+    close(socket_cliente);
+}
 
+t_config *iniciar_config(char *ruta)
+{
+    t_config *nuevo_config = config_create(ruta);
+    if (nuevo_config == NULL)
+    {
+        printf("No se puede crear la config");
+        exit(1);
+    }
+
+    return nuevo_config;
+}
 /*
 
 int crear_conexion(t_log* log,char *ip, char* puerto) {

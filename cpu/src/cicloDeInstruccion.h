@@ -1,7 +1,7 @@
 #ifdef CICLODEINSTRUCCION_H_
 #define CICLODEINSTRUCCION_H_
 
-#include "utils/includes/sockets.h"
+#include "utils/sockets.h"
 #include "main.h"
 
 t_instruccion* instruccion;

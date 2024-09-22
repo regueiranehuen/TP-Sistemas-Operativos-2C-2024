@@ -1,4 +1,4 @@
-#include "includes/cicloDeInstruccion.h"
+#include "cicloDeInstruccion.h"
 
 bool cicloInstrucciones = true;
 
