@@ -70,6 +70,7 @@ t_tcb *colas_multinivel(t_pcb *pcb, int *prioridad)
 
     else
     {
+
         t_cola_prioridad *cola_prioridad_actual = cola_prioridad(pcb->colas_hilos_prioridad_ready, *prioridad);
         if (!queue_is_empty(cola_prioridad_actual->cola))
         {
