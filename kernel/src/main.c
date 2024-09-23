@@ -1,11 +1,14 @@
 #include "includes/main.h"
 
+
+sockets_kernel *sockets; 
+
 int main(int argc, char *argv[])
 {
-
+    
     t_log *log;
     t_config *config;
-    sockets_kernel *sockets;
+    
     char *archivo_pseudocodigo = argv[1];
     int tamanio_proceso = atoi(argv[2]);
 

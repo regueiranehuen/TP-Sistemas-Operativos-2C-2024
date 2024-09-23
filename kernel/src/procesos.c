@@ -418,26 +418,55 @@ void DUMP_MEMORY(){
     
 }
 
+/* Faltaría la siguiente implementación:
+En caso que el algoritmo requiera desalojar al hilo en ejecución, se enviará una interrupción a través de la conexión de interrupt para forzar el desalojo del mismo.*/
 void planificador_corto_plazo(){
 
     if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO") == 0){
-
-        fifo_tcb(proceso_exec); // ACÁ DEBERIAMOS DECIRLE A LA CPU QUE PASE EL PROCESO OBTENIDO POR FIFO A EXECUTE
+        t_tcb* hilo_exec = fifo_tcb(proceso_exec); 
+        ejecucion(hilo_exec,sockets->sockets_cliente_cpu->socket_Dispatch);
 
     }
     if (strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"PRIORIDADES")==0){
 
-        prioridades(proceso_exec);  
+        t_tcb* hilo_exec=prioridades(proceso_exec);
+        ejecucion(hilo_exec,sockets->sockets_cliente_cpu->socket_Dispatch);
 
     }
 
     if (strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")==0){
-        
-        colas_multinivel(proceso_exec,0);
-
+        t_tcb* hilo_exec=colas_multinivel(proceso_exec,0); 
+        ejecucion(hilo_exec,sockets->sockets_cliente_cpu->socket_Dispatch);
     }
 
 
 }
 
+void ejecucion(t_tcb*hilo,int socket_dispatch){
+    t_paquete*paquete = crear_paquete();
 
+    hilo->estado=TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
+
+
+
+    agregar_a_paquete(paquete,&hilo->tid,sizeof(hilo->tid));
+    agregar_a_paquete(paquete,&hilo->pid,sizeof(hilo->pid));
+
+    int rtaCPU =-1;
+
+// Se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
+    enviar_paquete(paquete,socket_dispatch); 
+    recv(socket_dispatch,&rtaCPU,sizeof(rtaCPU),0);
+
+    /*Agregué algunos de los códigos de operación subidos al módulo CPU. Había conflicto con algunos nombres por llamarse igual a algunas funciones que tenemos
+    hechas, así que no agregué todos*/
+
+    // en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
+
+    if (rtaCPU == INTERRUPCION || rtaCPU == INTERRUPCION_USUARIO || rtaCPU == ERROR || rtaCPU == LLAMADA_POR_INSTRUCCION){ // 
+        planificador_corto_plazo();
+    }
+
+    
+
+}

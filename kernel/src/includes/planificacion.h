@@ -9,6 +9,7 @@
 
 
 
+
 t_pcb *fifo_pcb(t_queue *cola_proceso);
 
 t_tcb *fifo_tcb(t_pcb* pcb);

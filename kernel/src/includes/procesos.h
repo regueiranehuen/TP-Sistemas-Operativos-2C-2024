@@ -5,6 +5,8 @@
 #include "commons/collections/list.h"
 #include "commons/collections/queue.h"
 #include "utils/includes/sockets.h"
+
+
 #include "../includes/cliente.h"
 #include <semaphore.h>
 
@@ -16,6 +18,8 @@ extern pthread_mutex_t mutex_pthread_join;
 extern t_config *config;
 extern t_log *logger;
 extern t_list *lista_mutex;
+
+extern sockets_kernel* sockets; // Hice a los sockets como una variable global externa para tener acceso tanto en procesos.c como en main.c
 
 typedef enum
 {
@@ -67,8 +71,7 @@ typedef struct
     t_queue *cola_hilos_new;
     t_queue *cola_hilos_exit;
 
-
-    t_queue*cola_hilos_ready; // REVISAR BIEN ESTO
+    t_queue*cola_hilos_ready; 
 
     t_tcb *hilo_exec;
 
@@ -104,8 +107,15 @@ typedef struct
 } t_mutex;
 
 typedef enum{
-    DUMP_MEMORIA
+    DUMP_MEMORIA,
+    //MOTIVOS DE DESALOJO
+    TERMINO_PROCESO,
+    INTERRUPCION,
+    INTERRUPCION_USUARIO,
+    ERROR,
+    LLAMADA_POR_INSTRUCCION
 }code_operacion;
+
 
 
 t_pcb *crear_pcb();
@@ -130,5 +140,6 @@ void DUMP_MEMORY();
 void IO(int milisegundos);
 
 void planificador_corto_plazo();
+void ejecucion(t_tcb*hilo,int socket_dispatch);
 
 #endif
