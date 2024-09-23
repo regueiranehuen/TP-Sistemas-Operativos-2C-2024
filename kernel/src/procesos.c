@@ -420,23 +420,20 @@ void DUMP_MEMORY(){
 
 void planificador_corto_plazo(){
 
-    // voy a cambiar los parametros de las funciones fifo y prioridades para que reciban directamente el proceso exec
-
     if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO") == 0){
 
-        fifo(proceso_exec->cola_hilos_ready); // ACÁ DEBERIAMOS DECIRLE A LA CPU QUE PASE EL PROCESO OBTENIDO POR FIFO A EXECUTE
+        fifo_tcb(proceso_exec); // ACÁ DEBERIAMOS DECIRLE A LA CPU QUE PASE EL PROCESO OBTENIDO POR FIFO A EXECUTE
 
     }
     if (strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"PRIORIDADES")==0){
 
-        prioridades(proceso_exec->cola_hilos_ready);  
+        prioridades(proceso_exec);  
 
     }
 
     if (strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")==0){
-        static int prioridad=0;
-
-        colas_multinivel(proceso_exec,&prioridad);
+        
+        colas_multinivel(proceso_exec,0);
 
     }
 
