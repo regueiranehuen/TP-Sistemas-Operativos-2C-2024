@@ -285,7 +285,6 @@ t_mutex *busqueda_mutex(t_list *lista_mutex, int mutex_id)
     return NULL;
 }
 
-
 // Función auxiliar para obtener el tamaño de la suma de los hilos que se encuentran en colas que a su vez estan en una lista
 int suma_tam_hilos_colas_en_lista(t_list*list){
     int tam_total = 0;

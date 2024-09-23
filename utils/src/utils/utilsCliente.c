@@ -31,6 +31,9 @@ void agregar_pcb_a_paquete(t_pcb*pcb,t_paquete*paquete){
 	agregar_a_paquete(paquete,pcb->lista_hilos_blocked,list_size(pcb->lista_hilos_blocked)*sizeof(pthread_t));
 	agregar_a_paquete(paquete,pcb->cola_hilos_new,queue_size(pcb->cola_hilos_new)*sizeof(pthread_t));
 	agregar_a_paquete(paquete,pcb->cola_hilos_exit,queue_size(pcb->cola_hilos_exit)*sizeof(pthread_t));
+
+	agregar_a_paquete(paquete,pcb->cola_hilos_ready,queue_size(pcb->cola_hilos_ready)*sizeof(pthread_t));
+
 	agregar_tcb_a_paquete(pcb->hilo_exec,paquete);
 
     agregar_a_paquete(paquete,pcb->lista_mutex,list_size(pcb->lista_mutex)*sizeof(int));

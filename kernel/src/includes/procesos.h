@@ -27,6 +27,9 @@ typedef enum
     TCB_EXIT
 } estado_hilo;
 
+
+
+
 typedef struct
 {
     int tid;
@@ -36,6 +39,9 @@ typedef struct
     char *pseudocodigo;
     int pseudocodigo_length;
 } t_tcb;
+
+
+
 
 typedef enum
 {
@@ -60,6 +66,10 @@ typedef struct
     t_list *lista_hilos_blocked;
     t_queue *cola_hilos_new;
     t_queue *cola_hilos_exit;
+
+
+    t_queue*cola_hilos_ready; // REVISAR BIEN ESTO
+
     t_tcb *hilo_exec;
 
     t_list *lista_mutex; 
@@ -70,6 +80,8 @@ typedef struct
     int tamanio_proceso;
     int prioridad;
 } t_pcb;
+
+
 
 typedef struct
 {
@@ -91,6 +103,11 @@ typedef struct
     t_tcb *hilo; // hilo que esta en la región crítica
 } t_mutex;
 
+typedef enum{
+    DUMP_MEMORIA
+}code_operacion;
+
+
 t_pcb *crear_pcb();
 t_tcb *crear_tcb(t_pcb *pcb);
 
@@ -111,5 +128,7 @@ void MUTEX_UNLOCK(int mutex_id);
 
 void DUMP_MEMORY();
 void IO(int milisegundos);
+
+void planificador_corto_plazo();
 
 #endif
