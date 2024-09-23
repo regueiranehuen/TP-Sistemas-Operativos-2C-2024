@@ -77,9 +77,11 @@ void round_robin(t_queue *cola)
         int fin_quantum_rr=FIN_QUANTUM_RR;
         send(sockets->sockets_cliente_cpu->socket_Interrupt,&fin_quantum_rr,sizeof(int),0);
         recv(sockets->sockets_cliente_cpu->socket_Interrupt,&rtaCPU,sizeof(rtaCPU),0);
-        if (rtaCPU == THREAD_EXIT_)
+        if (rtaCPU == THREAD_EXIT_) // Al código de operación que está en la branch memoria_cpu le agregué un guión bajo pq se llamaría igual que la syscall. Ojo con eso
         {
-            //move_tcb_to_exit??? THREAD_EXIT() ???
+            t_pcb*pcb=lista_pcb(lista_pcbs,tcb->pid);
+            move_tcb_to_exit(pcb->cola_hilos_new,pcb->cola_hilos_ready,pcb->lista_hilos_blocked,pcb->cola_hilos_exit,tcb->tid);
+            // THREAD_EXIT() ???
         }
         else
         {
