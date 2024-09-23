@@ -113,7 +113,10 @@ typedef enum{
     INTERRUPCION,
     INTERRUPCION_USUARIO,
     ERROR,
-    LLAMADA_POR_INSTRUCCION
+    LLAMADA_POR_INSTRUCCION,
+    /// 
+    FIN_QUANTUM_RR,
+    THREAD_EXIT_
 }code_operacion;
 
 
@@ -140,6 +143,6 @@ void DUMP_MEMORY();
 void IO(int milisegundos);
 
 void planificador_corto_plazo();
-void ejecucion(t_tcb*hilo,int socket_dispatch);
+void ejecucion(t_tcb*hilo,t_queue*queue,int socket_dispatch);
 
 #endif

@@ -11,7 +11,6 @@ t_pcb *fifo_pcb(t_queue *cola_proceso)
     return NULL;
 }
 
-
 t_tcb *fifo_tcb(t_pcb *pcb)
 {
 
@@ -47,7 +46,7 @@ t_tcb *prioridades(t_pcb *pcb)
             if (hilo_siguiente->prioridad < hilo_actual->prioridad)
             {
                 queue_push(pcb->cola_hilos_ready, hilo_actual); // Reinserta el actual
-                hilo_actual = hilo_siguiente;        // Actualiza el hilo seleccionado
+                hilo_actual = hilo_siguiente;                   // Actualiza el hilo seleccionado
             }
             else
             {
@@ -61,41 +60,70 @@ t_tcb *prioridades(t_pcb *pcb)
     return NULL;
 }
 
-t_tcb *colas_multinivel(t_pcb *pcb, int prioridad)
+void round_robin(t_queue *cola)
+{
+    if (!queue_is_empty(cola))
+    {
+        int quantum = config_get_int_value(config, "QUANTUM"); // Cantidad máxima de tiempo que obtiene la CPU un proceso/hilo (EN MILISEGUNDOS)
+
+        t_tcb *tcb = queue_pop(cola); // Sacar el primer hilo de la cola
+
+        ejecucion(tcb,cola,sockets->sockets_cliente_cpu->socket_Dispatch);
+
+        // Simular que el hilo está en ejecución durante el tiempo del quantum
+        usleep(quantum * 1000); // usleep trata con microsegundos, 1 microsegundo es igual a 1000 milisegundos
+        
+        int rtaCPU=-1;
+        int fin_quantum_rr=FIN_QUANTUM_RR;
+        send(sockets->sockets_cliente_cpu->socket_Interrupt,&fin_quantum_rr,sizeof(int),0);
+        recv(sockets->sockets_cliente_cpu->socket_Interrupt,&rtaCPU,sizeof(rtaCPU),0);
+        if (rtaCPU == THREAD_EXIT_)
+        {
+            //move_tcb_to_exit??? THREAD_EXIT() ???
+        }
+        else
+        {
+            tcb->estado = TCB_READY;
+            queue_push(cola, tcb); // Lo reinsertas si no ha terminado
+        }
+    }
+}
+
+void colas_multinivel(t_pcb *pcb, int prioridad)
 {
 
     if (list_is_empty(pcb->colas_hilos_prioridad_ready))
     {
-        return NULL;
+        return;
     }
 
     else
     {
-        int priori = nueva_prioridad(pcb->colas_hilos_prioridad_ready,prioridad);
+        int priori = nueva_prioridad(pcb->colas_hilos_prioridad_ready, prioridad);
         t_cola_prioridad *cola_prioridad_actual = cola_prioridad(pcb->colas_hilos_prioridad_ready, priori);
         if (!queue_is_empty(cola_prioridad_actual->cola))
         {
-            return round_robin(cola_prioridad_actual->cola);
+            round_robin(cola_prioridad_actual->cola);
         }
-
+        if (!queue_is_empty(cola_prioridad_actual->cola)){
+            int prioridadSig = priori + 1;
+            colas_multinivel(pcb, prioridadSig);
+        }
         
-        int prioridadSig = priori + 1;
-        return colas_multinivel(pcb, prioridadSig);
-
     }
-
-    return NULL;
 }
 
-int nueva_prioridad(t_list*colas_hilos_prioridad_ready,int priori_actual){
+int nueva_prioridad(t_list *colas_hilos_prioridad_ready, int priori_actual)
+{
 
-    for (int i = 0; i <= priori_actual && i < list_size(colas_hilos_prioridad_ready);i++){
+    for (int i = 0; i <= priori_actual && i < list_size(colas_hilos_prioridad_ready); i++)
+    {
         t_cola_prioridad *cola_prioridad_i = list_get(colas_hilos_prioridad_ready, i);
 
-        if (cola_prioridad_i != NULL && !queue_is_empty(cola_prioridad_i->cola)) {
-            return i;  
+        if (cola_prioridad_i != NULL && !queue_is_empty(cola_prioridad_i->cola))
+        {
+            return i;
         }
-
     }
 
     return -1; // no deberia pasar

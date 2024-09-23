@@ -424,25 +424,24 @@ void planificador_corto_plazo(){
 
     if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO") == 0){
         t_tcb* hilo_exec = fifo_tcb(proceso_exec); 
-        ejecucion(hilo_exec,sockets->sockets_cliente_cpu->socket_Dispatch);
+        ejecucion(hilo_exec,proceso_exec->cola_hilos_ready,sockets->sockets_cliente_cpu->socket_Dispatch);
 
     }
     if (strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"PRIORIDADES")==0){
 
         t_tcb* hilo_exec=prioridades(proceso_exec);
-        ejecucion(hilo_exec,sockets->sockets_cliente_cpu->socket_Dispatch);
+        ejecucion(hilo_exec,proceso_exec->cola_hilos_ready,sockets->sockets_cliente_cpu->socket_Dispatch);
 
     }
 
     if (strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")==0){
-        t_tcb* hilo_exec=colas_multinivel(proceso_exec,0); 
-        ejecucion(hilo_exec,sockets->sockets_cliente_cpu->socket_Dispatch);
+        colas_multinivel(proceso_exec,0); 
     }
 
 
 }
 
-void ejecucion(t_tcb*hilo,int socket_dispatch){
+void ejecucion(t_tcb*hilo,t_queue*queue,int socket_dispatch){
     t_paquete*paquete = crear_paquete();
 
     hilo->estado=TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
@@ -464,6 +463,10 @@ void ejecucion(t_tcb*hilo,int socket_dispatch){
     // en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
 
     if (rtaCPU == INTERRUPCION || rtaCPU == INTERRUPCION_USUARIO || rtaCPU == ERROR || rtaCPU == LLAMADA_POR_INSTRUCCION){ // 
+        hilo->estado=TCB_READY;
+        
+        // Antes de llamar al siguiente hilo, debo meter al actual en la cola de ready que le corresponda
+        queue_push(queue,hilo);
         planificador_corto_plazo();
     }
 
