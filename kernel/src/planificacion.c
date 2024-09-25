@@ -105,7 +105,7 @@ void colas_multinivel(t_pcb *pcb, int prioridad)
         {
             round_robin(cola_prioridad_actual->cola);
         }
-        if (!queue_is_empty(cola_prioridad_actual->cola)){
+        else{
             int prioridadSig = priori + 1;
             colas_multinivel(pcb, prioridadSig);
         }
