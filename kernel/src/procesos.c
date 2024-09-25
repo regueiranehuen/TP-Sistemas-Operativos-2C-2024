@@ -525,3 +525,37 @@ void ejecucion(t_tcb*hilo,t_queue*queue,int socket_dispatch){
     }
 
 }
+
+void insertar_ordenado(t_queue cola, t_tcb nuevo_hilo) {
+    if (queue_is_empty(cola)) {
+        queue_push(cola, nuevo_hilo);
+        return;
+    }
+
+    t_queue *cola_temporal = queue_create();
+    int inserted = 0;
+
+    for (int i = 0; i < cola->size; i++) {
+        t_tcb *hilo_actual = queue_peek(cola);
+
+        if (hilo_actual->prioridad > nuevo_hilo->prioridad) {
+            // Si la prioridad del hilo actual es mayor que la prioridad del nuevo hilo,
+            // insertamos el nuevo hilo antes del hilo actual
+            queue_push(cola_temporal, nuevo_hilo);
+            inserted = 1;
+        }
+
+        queue_push(cola_temporal, hilo_actual);
+        queue_pop(cola);
+    }
+
+    if (!inserted) {
+        queue_push(cola_temporal, nuevo_hilo);
+    }
+
+    while (!queue_is_empty(cola_temporal)) {
+        queue_push(cola, queue_pop(cola_temporal));
+    }
+
+    queue_destroy(cola_temporal);
+}
