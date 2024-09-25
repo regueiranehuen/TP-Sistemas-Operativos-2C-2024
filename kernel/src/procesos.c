@@ -418,6 +418,15 @@ void DUMP_MEMORY(){
     
 }
 
+// THREAD_EXIT, esta syscall finaliza al hilo que lo invocó, pasando el mismo al estado EXIT. Se deberá indicar a la Memoria la finalización de dicho hilo.
+
+void THREAD_EXIT(){
+    move_tcb_to_exit(proceso_exec->cola_hilos_new,proceso_exec->cola_hilos_ready,proceso_exec->lista_hilos_blocked,proceso_exec->cola_hilos_exit,proceso_exec->hilo_exec->tid);
+}
+
+
+
+
 /* Faltaría la siguiente implementación:
 En caso que el algoritmo requiera desalojar al hilo en ejecución, se enviará una interrupción a través de la conexión de interrupt para forzar el desalojo del mismo.*/
 void planificador_corto_plazo(){

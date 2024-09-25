@@ -130,6 +130,7 @@ void PROCESS_EXIT();
 void THREAD_CREATE(char *pseudocodigo, int prioridad);
 void THREAD_JOIN(int tid);
 void THREAD_CANCEL(int tid);
+void THREAD_EXIT();
 
 void new_a_ready();
 
