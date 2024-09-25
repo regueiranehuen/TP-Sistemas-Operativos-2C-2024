@@ -432,14 +432,14 @@ En caso que el algoritmo requiera desalojar al hilo en ejecución, se enviará u
 void planificador_corto_plazo(){
 
     if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO") == 0){
-        t_tcb* hilo_exec = fifo_tcb(proceso_exec); 
-        ejecucion(hilo_exec,proceso_exec->cola_hilos_ready,sockets->sockets_cliente_cpu->socket_Dispatch);
+        proceso_exec->hilo_exec = fifo_tcb(proceso_exec); 
+        ejecucion(proceso_exec->hilo_exec,proceso_exec->cola_hilos_ready,sockets->sockets_cliente_cpu->socket_Dispatch);
 
     }
     if (strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"PRIORIDADES")==0){
 
-        t_tcb* hilo_exec=prioridades(proceso_exec);
-        ejecucion(hilo_exec,proceso_exec->cola_hilos_ready,sockets->sockets_cliente_cpu->socket_Dispatch);
+        proceso_exec->hilo_exec=prioridades(proceso_exec);
+        ejecucion(proceso_exec->hilo_exec,proceso_exec->cola_hilos_ready,sockets->sockets_cliente_cpu->socket_Dispatch);
 
     }
 
