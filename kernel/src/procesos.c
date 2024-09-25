@@ -480,8 +480,7 @@ void ejecucion(t_tcb*hilo,t_queue*queue,int socket_dispatch){
     }
 
     if (rtaCPU == THREAD_EXIT_){
-        t_pcb*pcb=lista_pcb(lista_pcbs,hilo->pid);
-        move_tcb_to_exit(pcb->cola_hilos_new,pcb->cola_hilos_ready,pcb->lista_hilos_blocked,pcb->cola_hilos_exit,hilo->tid);
+        THREAD_EXIT();
     }
 
 }
