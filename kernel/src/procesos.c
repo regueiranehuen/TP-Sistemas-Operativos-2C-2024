@@ -144,7 +144,7 @@ THREAD_CREATE, esta syscall recibirá como parámetro de la CPU el nombre del ar
 Al momento de crear el nuevo hilo, deberá generar el nuevo TCB con un TID autoincremental y poner al mismo en el estado READY.
 */
 
-void THREAD_CREATE(char *pseudocodigo, int prioridad) // REVISAR SEND
+void THREAD_CREATE(char *pseudocodigo, int prioridad) 
 {
 
     t_pcb *pcb = proceso_exec;
@@ -154,7 +154,7 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad) // REVISAR SEND
     char *ip = config_get_string_value(config, "IP_MEMORIA");
 
     int socket_memoria = crear_conexion(logger, ip, puerto);
-    send(socket_memoria, &resultado, sizeof(int), 0);
+    send_pcb(pcb,PEDIDO_MEMORIA_THREAD_CREATE,socket_memoria);
     recv(socket_memoria, &resultado, sizeof(int), 0);
     close(socket_memoria);
     if (resultado == -1)
@@ -198,7 +198,7 @@ Se deberá indicar a la Memoria la finalización de dicho hilo. En caso de que e
 ya haya finalizado, esta syscall no hace nada. Finalmente, el hilo que la invocó continuará su ejecución.
 */
 
-void THREAD_CANCEL(int tid)  // REVISAR SEND
+void THREAD_CANCEL(int tid)  
 { // suponiendo que el proceso main esta ejecutando
 
     t_cola_prioridad *cola = malloc(sizeof(t_cola_prioridad));
@@ -216,13 +216,15 @@ void THREAD_CANCEL(int tid)  // REVISAR SEND
         return;
     }
 
+
+
+    // Podriamos hacer las 3 lineas de abajo en una unica funcion
     char *puerto = config_get_string_value(config, "PUERTO_MEMORIA");
     char *ip = config_get_string_value(config, "IP_MEMORIA");
-
     int socket_memoria = crear_conexion(logger, ip, puerto);
 
-    
-    send(socket_memoria, tcb, sizeof(t_tcb), 0);
+
+    send_tcb(tcb,PEDIDO_MEMORIA_THREAD_CANCEL,socket_memoria);
     recv(socket_memoria, &respuesta, sizeof(int), 0);
 
     if (respuesta == -1)
@@ -394,6 +396,7 @@ void DUMP_MEMORY(){
     char* ip = config_get_string_value(config, "IP_MEMORIA");
     int socket_memoria = crear_conexion(logger, ip, puerto);
 
+
     int pid = proceso_exec->pid;
     int tid = tcb->tid; 
     code_operacion codigo= DUMP_MEMORIA; ///////////////
@@ -430,8 +433,6 @@ void DUMP_MEMORY(){
 void THREAD_EXIT(){
     move_tcb_to_exit(proceso_exec->cola_hilos_new,proceso_exec->cola_hilos_ready,proceso_exec->lista_hilos_blocked,proceso_exec->cola_hilos_exit,proceso_exec->hilo_exec->tid);
 }
-
-
 
 
 /* Faltaría la siguiente implementación:
