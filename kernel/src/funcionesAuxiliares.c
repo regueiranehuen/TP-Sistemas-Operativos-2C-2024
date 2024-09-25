@@ -314,6 +314,12 @@ int size_tcbs_queue(t_queue*queue){
     return tam;
 }
 
+// Función auxiliar para conseguir el tamaño de un PCB
+int tam_pcb(t_pcb*pcb){
+    return 4*sizeof(int) + list_size(pcb->tids)*sizeof(int) + suma_tam_hilos_colas_en_lista(pcb->colas_hilos_prioridad_ready) + list_size(pcb->lista_hilos_blocked)*sizeof(pthread_t) + queue_size(pcb->cola_hilos_new)*sizeof(pthread_t)+queue_size(pcb->cola_hilos_exit)*sizeof(pthread_t)+queue_size(pcb->cola_hilos_ready)*sizeof(pthread_t)+tam_tcb(pcb->hilo_exec)+list_size(pcb->lista_mutex)*sizeof(int);
+}
+
+
 
 // Función auxiliar para conseguir el tamaño de un TCB
 int tam_tcb(t_tcb * tcb){

@@ -224,7 +224,7 @@ void THREAD_CANCEL(int tid)
     int socket_memoria = crear_conexion(logger, ip, puerto);
 
 
-    send_tcb(tcb,PEDIDO_MEMORIA_THREAD_CANCEL,socket_memoria);
+    send_tcb(tcb,PEDIDO_MEMORIA_THREAD_EXIT,socket_memoria);
     recv(socket_memoria, &respuesta, sizeof(int), 0);
 
     if (respuesta == -1)
@@ -433,6 +433,39 @@ void DUMP_MEMORY(){
 void THREAD_EXIT(){
     move_tcb_to_exit(proceso_exec->cola_hilos_new,proceso_exec->cola_hilos_ready,proceso_exec->lista_hilos_blocked,proceso_exec->cola_hilos_exit,proceso_exec->hilo_exec->tid);
 }
+
+
+void planificador_largo_plazo(char*pseudocodigo,int tam_proceso,int prioridad,code_operacion code){
+    switch(code){
+        case PEDIDO_MEMORIA_INICIALIZAR_PROCESO:
+        new_a_ready();
+        break;
+        case PEDIDO_MEMORIA_TERMINAR_PROCESO:
+        PROCESS_EXIT();
+        new_a_ready();
+        break;
+        case PEDIDO_MEMORIA_THREAD_CREATE:
+        THREAD_CREATE(pseudocodigo,prioridad);
+
+        if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO")==0 || strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "PRIORIDADES")==0)
+        queue_push(proceso_exec->cola_hilos_ready,proceso_exec->hilo_exec); // Capaz habria que hacer un insertar ordenado para la cola de ready en prioridades...
+
+        if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "CMN")==0)
+        queue_push(list_get(proceso_exec->colas_hilos_prioridad_ready,prioridad),proceso_exec->hilo_exec);
+        
+        break;
+        case PEDIDO_MEMORIA_THREAD_EXIT:
+        THREAD_EXIT();
+        for (int i = 0; i < list_size(proceso_exec->lista_hilos_blocked); i++){
+            queue_push(proceso_exec->cola_hilos_ready,list_get(proceso_exec->lista_hilos_blocked,i));
+        }
+        break;
+        default:
+        break;
+    }
+
+}
+
 
 
 /* Faltaría la siguiente implementación:

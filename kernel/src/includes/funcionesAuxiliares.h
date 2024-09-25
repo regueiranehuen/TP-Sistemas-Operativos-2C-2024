@@ -21,5 +21,6 @@ t_mutex* busqueda_mutex(t_list* lista_mutex, int mutex_id);
 int suma_tam_hilos_colas_en_lista(t_list*list);
 int size_tcbs_queue(t_queue*queue);
 int tam_tcb(t_tcb * tcb);
+int tam_pcb(t_pcb*pcb);
 
 #endif

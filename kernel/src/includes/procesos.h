@@ -121,7 +121,7 @@ typedef enum{
     PEDIDO_MEMORIA_INICIALIZAR_PROCESO,
     PEDIDO_MEMORIA_TERMINAR_PROCESO,
     PEDIDO_MEMORIA_THREAD_CREATE,
-    PEDIDO_MEMORIA_THREAD_CANCEL
+    PEDIDO_MEMORIA_THREAD_EXIT
 }code_operacion;
 
 
@@ -150,5 +150,7 @@ void IO(int milisegundos);
 
 void planificador_corto_plazo();
 void ejecucion(t_tcb*hilo,t_queue*queue,int socket_dispatch);
+
+void planificador_largo_plazo(char*pseudocodigo,int tam_proceso,int prioridad,code_operacion code);
 
 #endif
