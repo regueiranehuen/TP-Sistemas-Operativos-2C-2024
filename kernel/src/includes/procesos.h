@@ -10,7 +10,8 @@
 #include "../includes/cliente.h"
 #include <semaphore.h>
 
-extern sem_t semaforo;
+extern sem_t semaforo_new_a_ready;
+extern sem_t semaforo_estado_a_exit;
 extern t_queue *cola_new;
 extern t_queue *cola_ready;
 extern t_list *lista_pcbs;
@@ -116,7 +117,10 @@ typedef enum{
     LLAMADA_POR_INSTRUCCION,
     /// 
     FIN_QUANTUM_RR,
-    THREAD_EXIT_
+    THREAD_EXIT_,
+    PEDIDO_MEMORIA_INICIALIZAR_PROCESO,
+    PEDIDO_MEMORIA_TERMINAR_PROCESO,
+    PEDIDO_MEMORIA_THREAD_CREATE
 }code_operacion;
 
 

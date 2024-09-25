@@ -74,7 +74,8 @@ void new_a_ready() // Verificar contra la memoria si el proceso se puede inicial
     char *puerto = config_get_string_value(config, "PUERTO_MEMORIA");
     int socket_memoria = crear_conexion(logger, ip, puerto);
     // Hacer serializacion del tipo pcb
-    send(socket_memoria, pcb, sizeof(t_pcb), 0); // Enviar pcb para que memoria verifique si tiene espacio para inicializar el proximo proceso
+    code_operacion code = PEDIDO_MEMORIA_INICIALIZAR_PROCESO;
+    send_pcb(pcb,code,socket_memoria);
     recv(socket_memoria, &pedido, sizeof(int), 0);
     close(socket_memoria);
     if (pedido == -1)
@@ -103,7 +104,10 @@ void PROCESS_EXIT()
     char *puerto = config_get_string_value(config, "PUERTO_MEMORIA");
     char *ip = config_get_string_value(config, "IP_MEMORIA");
     int socket_memoria = crear_conexion(logger, ip, puerto);
-    send(socket_memoria, pcb, sizeof(t_pcb), 0);
+
+    code_operacion code = PEDIDO_MEMORIA_TERMINAR_PROCESO;
+
+    send_pcb(pcb,code,socket_memoria);
     recv(socket_memoria, &pedido, sizeof(int), 0);
     close(socket_memoria);
     if (pedido == -1)
@@ -140,7 +144,7 @@ THREAD_CREATE, esta syscall recibirá como parámetro de la CPU el nombre del ar
 Al momento de crear el nuevo hilo, deberá generar el nuevo TCB con un TID autoincremental y poner al mismo en el estado READY.
 */
 
-void THREAD_CREATE(char *pseudocodigo, int prioridad)
+void THREAD_CREATE(char *pseudocodigo, int prioridad) // REVISAR SEND
 {
 
     t_pcb *pcb = proceso_exec;
@@ -194,7 +198,7 @@ Se deberá indicar a la Memoria la finalización de dicho hilo. En caso de que e
 ya haya finalizado, esta syscall no hace nada. Finalmente, el hilo que la invocó continuará su ejecución.
 */
 
-void THREAD_CANCEL(int tid)
+void THREAD_CANCEL(int tid)  // REVISAR SEND
 { // suponiendo que el proceso main esta ejecutando
 
     t_cola_prioridad *cola = malloc(sizeof(t_cola_prioridad));
@@ -217,6 +221,7 @@ void THREAD_CANCEL(int tid)
 
     int socket_memoria = crear_conexion(logger, ip, puerto);
 
+    
     send(socket_memoria, tcb, sizeof(t_tcb), 0);
     recv(socket_memoria, &respuesta, sizeof(int), 0);
 
@@ -368,7 +373,8 @@ void DUMP_MEMORY(){
     char* ip_cpu = config_get_string_value(config, "IP_CPU");
     int socket_cpu = crear_conexion(logger, ip_cpu, puerto_cpu);
 
-    send_tcb(proceso_exec->hilo_exec,socket_cpu);
+    code_operacion code = DUMP_MEMORIA;
+    send_tcb(proceso_exec->hilo_exec,code,socket_cpu);
     recv(socket_cpu,&rta_cpu,sizeof(int),0);
 
     if(rta_cpu == -1){
@@ -390,11 +396,12 @@ void DUMP_MEMORY(){
 
     int pid = proceso_exec->pid;
     int tid = tcb->tid; 
-    code_operacion codigo= DUMP_MEMORIA;
+    code_operacion codigo= DUMP_MEMORIA; ///////////////
     t_paquete *paquete_dump = crear_paquete();
+
+    agregar_a_paquete(paquete_dump,&codigo,sizeof(int)); //////////////
     agregar_a_paquete(paquete_dump,&pid,sizeof(int));
     agregar_a_paquete(paquete_dump,&tid,sizeof(int));
-    agregar_a_paquete(paquete_dump,&codigo,sizeof(int));
     enviar_paquete(paquete_dump,socket_memoria);
 
     int rta_memoria;
@@ -405,7 +412,7 @@ void DUMP_MEMORY(){
     if(rta_memoria == -1){
         log_info(logger, "Error en el dump de memoria ");
         
-  PROCESS_EXIT(logger,config);
+        PROCESS_EXIT();
     }
     else{
         log_info(logger,"Dump de memoria exitoso");

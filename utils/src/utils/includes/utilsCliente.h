@@ -8,8 +8,8 @@
 
 void agregar_tcb_a_paquete(t_tcb*tcb,t_paquete*paquete);
 void agregar_pcb_a_paquete(t_pcb*pcb,t_paquete*paquete);
-void send_tcb(t_tcb*tcb,int socket);
-void send_pcb(t_pcb*pcb,int socket);
+void send_tcb(t_tcb*tcb,code_operacion code ,int socket);
+void send_pcb(t_pcb*pcb,code_operacion code, int socket);
 
 void enviar_mensaje(char* mensaje, int socket_cliente);
 t_paquete* crear_paquete(void);

@@ -16,10 +16,11 @@ void agregar_tcb_a_paquete(t_tcb*tcb,t_paquete*paquete){
 }
 
 
-void send_tcb(t_tcb*tcb,int socket_memoria){
+void send_tcb(t_tcb*tcb,code_operacion code ,int socket){
 	t_paquete* paquete = crear_paquete();
+	agregar_a_paquete(paquete,&code,sizeof(code));
 	agregar_tcb_a_paquete(tcb,paquete);
-	enviar_paquete(paquete,socket_memoria);
+	enviar_paquete(paquete,socket);
 }
 
 
@@ -45,10 +46,11 @@ void agregar_pcb_a_paquete(t_pcb*pcb,t_paquete*paquete){
 }
 
 
-void send_pcb(t_pcb*pcb,int socket_memoria){
+void send_pcb(t_pcb*pcb,code_operacion code, int socket){
 	t_paquete*paquete=crear_paquete();
+	agregar_a_paquete(paquete,&code,sizeof(code));
 	agregar_pcb_a_paquete(pcb,paquete);
-	enviar_paquete(paquete,socket_memoria);
+	enviar_paquete(paquete,socket);
 }
 
 
