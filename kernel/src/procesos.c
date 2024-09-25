@@ -447,8 +447,11 @@ void planificador_largo_plazo(char*pseudocodigo,int tam_proceso,int prioridad,co
         case PEDIDO_MEMORIA_THREAD_CREATE:
         THREAD_CREATE(pseudocodigo,prioridad);
 
-        if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO")==0 || strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "PRIORIDADES")==0)
+        if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO")==0)
         queue_push(proceso_exec->cola_hilos_ready,proceso_exec->hilo_exec); // Capaz habria que hacer un insertar ordenado para la cola de ready en prioridades...
+
+        if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "PRIORIDADES")==0)   
+        insertar_ordenado(proceso_exec->cola_hilos_ready,proceso_exec->hilo_exec);
 
         if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "CMN")==0)
         queue_push(list_get(proceso_exec->colas_hilos_prioridad_ready,prioridad),proceso_exec->hilo_exec);
@@ -472,22 +475,14 @@ void planificador_largo_plazo(char*pseudocodigo,int tam_proceso,int prioridad,co
 En caso que el algoritmo requiera desalojar al hilo en ejecución, se enviará una interrupción a través de la conexión de interrupt para forzar el desalojo del mismo.*/
 void planificador_corto_plazo(){
 
-    if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO") == 0){
+    if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO") == 0 || strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "PRIORIDADES") == 0){
         proceso_exec->hilo_exec = fifo_tcb(proceso_exec); 
         ejecucion(proceso_exec->hilo_exec,proceso_exec->cola_hilos_ready,sockets->sockets_cliente_cpu->socket_Dispatch);
-
-    }
-    if (strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"PRIORIDADES")==0){
-
-        proceso_exec->hilo_exec=prioridades(proceso_exec);
-        ejecucion(proceso_exec->hilo_exec,proceso_exec->cola_hilos_ready,sockets->sockets_cliente_cpu->socket_Dispatch);
-
     }
 
     if (strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")==0){
         colas_multinivel(proceso_exec,0); 
     }
-
 
 }
 
@@ -516,7 +511,11 @@ void ejecucion(t_tcb*hilo,t_queue*queue,int socket_dispatch){
         hilo->estado=TCB_READY;
         
         // Antes de llamar al siguiente hilo, debo meter al actual en la cola de ready que le corresponda
-        queue_push(queue,hilo);
+        if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO") == 0 || strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "CMN")==0)
+            queue_push(queue,hilo);
+        else
+            insertar_ordenado(queue,hilo);
+
         planificador_corto_plazo();
     }
 
@@ -524,38 +523,4 @@ void ejecucion(t_tcb*hilo,t_queue*queue,int socket_dispatch){
         THREAD_EXIT();
     }
 
-}
-
-void insertar_ordenado(t_queue cola, t_tcb nuevo_hilo) {
-    if (queue_is_empty(cola)) {
-        queue_push(cola, nuevo_hilo);
-        return;
-    }
-
-    t_queue *cola_temporal = queue_create();
-    int inserted = 0;
-
-    for (int i = 0; i < cola->size; i++) {
-        t_tcb *hilo_actual = queue_peek(cola);
-
-        if (hilo_actual->prioridad > nuevo_hilo->prioridad) {
-            // Si la prioridad del hilo actual es mayor que la prioridad del nuevo hilo,
-            // insertamos el nuevo hilo antes del hilo actual
-            queue_push(cola_temporal, nuevo_hilo);
-            inserted = 1;
-        }
-
-        queue_push(cola_temporal, hilo_actual);
-        queue_pop(cola);
-    }
-
-    if (!inserted) {
-        queue_push(cola_temporal, nuevo_hilo);
-    }
-
-    while (!queue_is_empty(cola_temporal)) {
-        queue_push(cola, queue_pop(cola_temporal));
-    }
-
-    queue_destroy(cola_temporal);
 }

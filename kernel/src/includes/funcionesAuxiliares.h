@@ -22,5 +22,6 @@ int suma_tam_hilos_colas_en_lista(t_list*list);
 int size_tcbs_queue(t_queue*queue);
 int tam_tcb(t_tcb * tcb);
 int tam_pcb(t_pcb*pcb);
+void insertar_ordenado(t_queue*cola, t_tcb* nuevo_hilo);
 
 #endif

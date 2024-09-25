@@ -325,3 +325,39 @@ int tam_pcb(t_pcb*pcb){
 int tam_tcb(t_tcb * tcb){
     return 5*sizeof(int) + tcb->pseudocodigo_length;
 }
+
+
+// Función auxiliar para insertar ordenado en una cola
+void insertar_ordenado(t_queue*cola, t_tcb* nuevo_hilo){
+    if (queue_is_empty(cola)) {
+        queue_push(cola, nuevo_hilo);
+        return;
+    }
+
+    t_queue *cola_temporal = queue_create();
+    bool inserted = false;
+
+    for (int i = 0; i < queue_size(cola); i++) {
+        t_tcb *hilo_actual = queue_peek(cola);
+
+        if (hilo_actual->prioridad > nuevo_hilo->prioridad) {
+            // Si la prioridad del hilo actual es mayor que la prioridad del nuevo hilo,
+            // insertamos el nuevo hilo antes del hilo actual
+            queue_push(cola_temporal, nuevo_hilo);
+            inserted = true;
+        }
+
+        queue_push(cola_temporal, hilo_actual);
+        queue_pop(cola);
+    }
+
+    if (!inserted) {
+        queue_push(cola_temporal, nuevo_hilo);
+    }
+
+    while (!queue_is_empty(cola_temporal)) {
+        queue_push(cola, queue_pop(cola_temporal));
+    }
+
+    queue_destroy(cola_temporal);
+}
