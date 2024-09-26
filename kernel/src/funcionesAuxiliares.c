@@ -365,3 +365,9 @@ void insertar_ordenado(t_queue*cola, t_tcb* nuevo_hilo){
 bool strings_iguales(char*c1,char*c2){
     return strcmp(c1,c2)==0;
 }
+
+bool es_motivo_devolucion(code_operacion motivo_devolucion){
+    return motivo_devolucion == INTERRUPCION || motivo_devolucion == INTERRUPCION_USUARIO || motivo_devolucion == ERROR || motivo_devolucion == LLAMADA_POR_INSTRUCCION;
+}
+
+

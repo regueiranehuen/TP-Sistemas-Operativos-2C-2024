@@ -8,7 +8,11 @@
 
 
 #include "../includes/cliente.h"
+
 #include <semaphore.h>
+
+
+#include "../../utils/src/utils/includes/utilsServer.h"
 
 extern sem_t semaforo_new_a_ready;
 extern sem_t semaforo_estado_a_exit;
