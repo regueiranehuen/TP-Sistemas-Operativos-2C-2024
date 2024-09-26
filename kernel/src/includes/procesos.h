@@ -16,11 +16,22 @@ extern pthread_mutex_t mutex_pthread_join;
 extern t_config* config;
 extern t_log* logger;
 extern t_list* lista_mutex;
+extern sockets_kernel *sockets;
+extern pthread_mutex_t mutex_conexion_cpu;
+extern sem_t semaforo_new_ready;
+extern sem_t semaforo_cola_new;
+extern t_queue* cola_exit;
 
 typedef enum{
     PCB_INIT,
-    DUMP_MEMORIA
+    DUMP_MEMORIA,
+    PROCESS_ELIMINATE_COLA, //Se elimina un proceso por la cola exit
+    PROCESS_ELIMINATE_SYSCALL, //Se elimina un proceso por una syscall
+    PROCESS_MEMORY,
+    THREAD_CREATE_AVISO,
+    THREAD_CANCEL_AVISO
 }code_operacion;
+
 
 typedef enum {
     TCB_NEW,
@@ -30,6 +41,7 @@ typedef enum {
     TCB_BLOCKED_MUTEX,
     TCB_EXIT
 } estado_hilo;
+
 
 typedef struct{
 int tid;
@@ -96,6 +108,7 @@ void THREAD_JOIN (int tid);
 void THREAD_CANCEL(int tid);
 
 void new_a_ready();
+void proceso_exit();
 
 void iniciar_kernel (char* archivo_pseudocodigo, int tamanio_proceso);
 

@@ -1,7 +1,10 @@
 #include "includes/procesos.h"
 #include "includes/funcionesAuxiliares.h"
+#include "includes/planificacion.h"
 
-sem_t semaforo;
+sem_t semaforo_new_ready;
+sem_t semaforo_cola_new;
+sem_t semaforo_cola_exit;
 t_queue* cola_new;
 t_queue* cola_ready;
 t_list* lista_pcbs;
@@ -10,6 +13,10 @@ t_pcb* proceso_exec;
 t_config* config;
 t_log* logger;
 t_list* lista_mutex;
+sockets_kernel *sockets;
+pthread_mutex_t mutex_conexion_cpu;
+t_queue* cola_exit;
+
 
 t_pcb *crear_pcb()
 {
@@ -60,24 +67,51 @@ tcb->pseudocodigo = pseudocodigo;
 queue_push(cola_new,pcb);
 pcb->tamanio_proceso=tamanio_proceso;
 pcb->prioridad=prioridad;
+sem_post(&semaforo_cola_new);
+}
+
+void proceso_exit(){//elimina los procesos que estan en la cola exit
+
+if(queue_size(cola_exit) < 1){
+    sem_wait(&semaforo_cola_exit);
+}
+
+int respuesta;
+code_operacion cod_op = PROCESS_ELIMINATE_COLA;
+int socket_memoria = cliente_Memoria_Kernel(logger,config);
+send(socket_memoria,&cod_op,sizeof(code_operacion),0);
+recv(socket_memoria,&respuesta,sizeof(int),0);
+close(socket_memoria);
+if(respuesta==-1){
+    printf("Memoria la concha de tu madre ");
+}
+else{
+t_pcb* proceso = queue_pop(cola_exit);
+liberar_proceso(proceso);
+sem_post(&semaforo_new_ready);
+}
 
 }
 
 void new_a_ready() // Verificar contra la memoria si el proceso se puede inicializar, si es asi se envia el proceso a ready
 {
-    int pedido = 1;
+    int respuesta = 1;
+    if(queue_size(cola_new)<1){
+        sem_wait(&semaforo_cola_new);
+    }
     t_pcb *pcb = queue_peek(cola_new);
+    
+    code_operacion cod_op = PROCESS_MEMORY;
 
-    char* ip = config_get_string_value(config,"IP_MEMORIA");
-    char* puerto = config_get_string_value(config,"PUERTO_MEMORIA");
-    int socket_memoria = crear_conexion(logger,ip,puerto);
-    // Hacer serializacion del tipo pcb
-    send(socket_memoria, pcb, sizeof(t_pcb), 0); // Enviar pcb para que memoria verifique si tiene espacio para inicializar el proximo proceso
-    recv(socket_memoria, &pedido, sizeof(int), 0);
+    int socket_memoria = cliente_Memoria_Kernel(logger,config);
+
+    send(socket_memoria,&cod_op,sizeof(code_operacion),0);
+    send_pcb(pcb,socket_memoria); // Enviar pcb para que memoria verifique si tiene espacio para inicializar el proximo proceso
+    recv(socket_memoria, &respuesta, sizeof(int), 0);
     close(socket_memoria);
-    if (pedido == -1)
+    if (respuesta == -1)
     {
-        sem_wait(&semaforo);
+        sem_wait(&semaforo_new_ready);
     }
     else
     {
@@ -96,19 +130,19 @@ y le deberá indicar a la memoria la finalización de dicho proceso.
 void PROCESS_EXIT(){ //Me parece que va sin parametros pero no se como verga saber que hilo llamo a esta funcion, aparte diría que hay que crear una conexion con memoria adentro de la función
 
 t_pcb* pcb = proceso_exec;
-int pedido;
-char* puerto = config_get_string_value(config,"PUERTO_MEMORIA");
-char* ip = config_get_string_value(config,"IP_MEMORIA");
-int socket_memoria = crear_conexion(logger,ip,puerto);
-send(socket_memoria,pcb,sizeof(t_pcb),0); 
-recv(socket_memoria,&pedido,sizeof(int),0);
+int respuesta;
+code_operacion cod_op = PROCESS_ELIMINATE_SYSCALL;
+int socket_memoria = cliente_Memoria_Kernel(logger,config);
+send(socket_memoria,&cod_op,sizeof(code_operacion),0);
+send_pcb(pcb,socket_memoria); 
+recv(socket_memoria,&respuesta,sizeof(int),0);
 close(socket_memoria);
-if(pedido==-1){
+if(respuesta==-1){
     printf("Memoria la concha de tu madre ");
 }
 else{
 liberar_proceso(pcb);
-sem_post(&semaforo);
+sem_post(&semaforo_new_ready);
 }
 }
 
@@ -120,7 +154,7 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
     pcb->tamanio_proceso=tamanio_proceso;
     queue_push(pcb->cola_hilos_new,tcb);
     list_add(lista_pcbs,pcb);
-    new_a_ready();
+    hilo_planificador_largo_plazo();
 }
 
 
@@ -141,18 +175,19 @@ void THREAD_CREATE (char* pseudocodigo,int prioridad){
 
 t_pcb* pcb = proceso_exec;
 int resultado = 0;
+code_operacion cod_op = THREAD_CREATE_AVISO;
 
-char* puerto = config_get_string_value(config,"PUERTO_MEMORIA");
-char* ip = config_get_string_value(config,"IP_MEMORIA");
+int socket_memoria = cliente_Memoria_Kernel(logger,config);
 
-int socket_memoria = crear_conexion(logger,ip,puerto);
-send(socket_memoria,&resultado,sizeof(int),0);
+send(socket_memoria,&cod_op,sizeof(code_operacion),0);
 recv(socket_memoria,&resultado,sizeof(int),0);
 close(socket_memoria);
+
 if (resultado == -1){
     printf("Re ortiva memoria");
     return;
 } else {
+
 t_tcb* tcb = crear_tcb(pcb);
 tcb -> prioridad = prioridad;
 tcb -> estado = TCB_READY;
@@ -192,7 +227,7 @@ void THREAD_CANCEL(int tid){// suponiendo que el proceso main esta ejecutando
 
 t_cola_prioridad* cola = malloc(sizeof(t_cola_prioridad));
 int respuesta;
-
+code_operacion cod_op = THREAD_CANCEL_AVISO;
 
 
 t_tcb* tcb = buscar_tcb(tid,proceso_exec->cola_hilos_new,proceso_exec->colas_hilos_prioridad_ready,proceso_exec->lista_hilos_blocked); //busca el tcb asociado al tid dado por parametro
@@ -206,23 +241,23 @@ if(lista_tcb(proceso_exec,tid) == -1 || tid_finalizado(proceso_exec,tid)==0){
     return;
 }
 
-char* puerto = config_get_string_value(config,"PUERTO_MEMORIA");
-char* ip = config_get_string_value(config,"IP_MEMORIA");
+int socket_memoria = cliente_Memoria_Kernel(logger,config);
 
-int socket_memoria = crear_conexion(logger,ip,puerto);
-
-send(socket_memoria,tcb,sizeof(t_tcb),0);
+send(socket_memoria,&cod_op,sizeof(code_operacion),0);
+send_tcb(tcb,socket_memoria);
 recv(socket_memoria,&respuesta,sizeof(int),0);
+
+close(socket_memoria);
 
 if(respuesta == -1){
 log_info(logger,"Error en la liberacion de memoria del hilo");
-close(socket_memoria);
-return;
+
 }
+else{
 
 move_tcb_to_exit(proceso_exec->cola_hilos_new,cola->cola,proceso_exec->lista_hilos_blocked,proceso_exec->cola_hilos_exit,tid);
 
-close(socket_memoria);
+}
 
 }
 
@@ -347,19 +382,16 @@ void DUMP_MEMORY(){
 
     t_tcb* tcb = proceso_exec->hilo_exec;
     int rta_cpu;
-
-    char* puerto_cpu = config_get_string_value(config, "PUERTO_CPU_INTERRUPT");
-    char* ip_cpu = config_get_string_value(config, "IP_CPU");
-    int socket_cpu = crear_conexion(logger, ip_cpu, puerto_cpu);
-
-    send_tcb(proceso_exec->hilo_exec,socket_cpu);
-    recv(socket_cpu,&rta_cpu,sizeof(int),0);
-
+    code_operacion cod_op = DUMP_MEMORIA;
+    pthread_mutex_lock(&mutex_conexion_cpu);
+    send(sockets->sockets_cliente_cpu->socket_Interrupt,&cod_op,sizeof(code_operacion),0);
+    recv(sockets->sockets_cliente_cpu->socket_Interrupt,&rta_cpu,sizeof(int),0);
+    pthread_mutex_unlock(&mutex_conexion_cpu);
     if(rta_cpu == -1){
         log_info(logger, "Error en el desalojo del hilo ");
         return;
     }
-    close(socket_cpu);
+
     tcb->estado = TCB_BLOCKED;
 
     list_add(proceso_exec->lista_hilos_blocked,tcb);
@@ -368,17 +400,15 @@ void DUMP_MEMORY(){
 
 
     // Conectar con memoria
-    char* puerto = config_get_string_value(config, "PUERTO_MEMORIA");
-    char* ip = config_get_string_value(config, "IP_MEMORIA");
-    int socket_memoria = crear_conexion(logger, ip, puerto);
+
+    int socket_memoria = cliente_Memoria_Kernel(logger,config);
 
     int pid = proceso_exec->pid;
-    int tid = tcb->tid; 
-    code_operacion codigo= DUMP_MEMORIA;
+    int tid = tcb->tid;
+    
     t_paquete *paquete_dump = crear_paquete();
     agregar_a_paquete(paquete_dump,&pid,sizeof(int));
     agregar_a_paquete(paquete_dump,&tid,sizeof(int));
-    agregar_a_paquete(paquete_dump,&codigo,sizeof(int));
     enviar_paquete(paquete_dump,socket_memoria);
 
     int rta_memoria;
@@ -399,3 +429,4 @@ void DUMP_MEMORY(){
 
     
 }
+
