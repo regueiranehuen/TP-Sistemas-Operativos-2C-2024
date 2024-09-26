@@ -161,14 +161,9 @@ void move_tcb_to_exit(t_pcb* pcb, t_tcb* tcb) {
     // Si no lo encuentra, buscar en la cola READY
     if (tcb == NULL) {
     char *planificacion = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
-         if (strcmp(planificacion, "FIFO") == 0)
+         if (strcmp(planificacion, "FIFO") == 0 || strcmp(planificacion,"PRIORIDADES")==0) 
     {
-        tcb = find_and_remove_tcb_in_queue(pcb->cola_hilos_ready_fifo, tcb->tid);
-    }
-
-    if (strcmp(planificacion, "PRIORIDADES") == 0)
-    {
-          tcb = find_and_remove_tcb_in_queue(pcb->cola_hilos_ready_prioridades, tcb->tid);
+        tcb = find_and_remove_tcb_in_queue(pcb->cola_hilos_ready, tcb->tid);
     }
 
     if (strcmp(planificacion, "MULTINIVEL") == 0)
@@ -184,7 +179,7 @@ void move_tcb_to_exit(t_pcb* pcb, t_tcb* tcb) {
     }
 
     // Si lo encuentra, moverlo a la cola EXIT
-    if (tcb == NULL) {
+    if (tcb != NULL) {
         queue_push(pcb->cola_hilos_exit, tcb);
         tcb->estado = TCB_EXIT;
         printf("TCB con TID %d movido a EXIT\n", tcb->tid);
@@ -322,8 +317,8 @@ t_tcb* buscar_tcb_por_tid(t_pcb* pcb, int tid) {
                     break;
 
                 case TCB_READY:
-                    for (int j = 0; j < queue_size(pcb->cola_hilos_ready_fifo); j++) {
-                        t_tcb* tcb_encontrado = (t_tcb*) queue_peek(pcb->cola_hilos_ready_fifo); // Igualmente, esto asume un acceso similar
+                    for (int j = 0; j < queue_size(pcb->cola_hilos_ready); j++) {
+                        t_tcb* tcb_encontrado = (t_tcb*) queue_peek(pcb->cola_hilos_ready); // Igualmente, esto asume un acceso similar
                         if (tcb_encontrado->tid == tid) {
                             return tcb_encontrado;
                         }
@@ -354,4 +349,46 @@ t_tcb* buscar_tcb_por_tid(t_pcb* pcb, int tid) {
 
     // Si no se encontró el tcb con el tid dado
     return NULL;
+}
+
+void insertar_ordenado(t_queue*cola, t_tcb* nuevo_hilo){
+    if (queue_is_empty(cola)) {
+        queue_push(cola, nuevo_hilo);
+        return;
+    }
+
+    t_queue *cola_temporal = queue_create();
+    bool inserted = false;
+
+    for (int i = 0; i < queue_size(cola); i++) {
+        t_tcb *hilo_actual = queue_peek(cola);
+
+        if (hilo_actual->prioridad > nuevo_hilo->prioridad) {
+            // Si la prioridad del hilo actual es mayor que la prioridad del nuevo hilo,
+            // insertamos el nuevo hilo antes del hilo actual
+            queue_push(cola_temporal, nuevo_hilo);
+            inserted = true;
+        }
+
+        queue_push(cola_temporal, hilo_actual);
+        queue_pop(cola);
+    }
+
+    if (!inserted) {
+        queue_push(cola_temporal, nuevo_hilo);
+    }
+
+    while (!queue_is_empty(cola_temporal)) {
+        queue_push(cola, queue_pop(cola_temporal));
+    }
+
+    queue_destroy(cola_temporal);
+}
+
+bool strings_iguales(char*c1,char*c2){
+    return strcmp(c1,c2)==0;
+}
+
+bool es_motivo_devolucion(code_operacion motivo_devolucion){
+    return motivo_devolucion == INTERRUPCION || motivo_devolucion == INTERRUPCION_USUARIO || motivo_devolucion == ERROR || motivo_devolucion == LLAMADA_POR_INSTRUCCION;
 }

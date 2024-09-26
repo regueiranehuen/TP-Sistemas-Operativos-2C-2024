@@ -36,7 +36,21 @@ typedef enum{
     THREAD_ELIMINATE_AVISO,
     THREAD_CANCEL_AVISO,
     THREAD_INTERRUPT,
-    PROCESS_INTERRUPT
+    PROCESS_INTERRUPT,
+
+    TERMINO_PROCESO,
+    INTERRUPCION,
+    INTERRUPCION_USUARIO,
+    ERROR,
+    LLAMADA_POR_INSTRUCCION,
+
+    FIN_QUANTUM_RR,
+    THREAD_EXIT_,
+    PEDIDO_MEMORIA_INICIALIZAR_PROCESO,
+    PEDIDO_MEMORIA_TERMINAR_PROCESO,
+    PEDIDO_MEMORIA_THREAD_CREATE,
+    PEDIDO_MEMORIA_THREAD_EXIT
+
 }code_operacion;
 
 
@@ -80,14 +94,15 @@ t_list* colas_hilos_prioridad_ready;
 t_list* lista_hilos_blocked;
 t_queue* cola_hilos_new;
 t_queue* cola_hilos_exit;
-t_queue* cola_hilos_ready_fifo;
-t_queue* cola_hilos_ready_prioridades;
+t_queue* cola_hilos_ready;
 t_tcb* hilo_exec;
 t_list* lista_mutex;
 estado_pcb estado;
 int tamanio_proceso;
 int prioridad;
 }t_pcb;
+
+extern t_pcb* proceso_exec;
 
 typedef struct {
     int prioridad;
@@ -115,6 +130,7 @@ void PROCESS_EXIT();
 void THREAD_CREATE (char* pseudocodigo,int prioridad);
 void THREAD_JOIN (int tid);
 void THREAD_CANCEL(int tid);
+void THREAD_EXIT();
 
 void new_a_ready_procesos();
 void proceso_exit();
@@ -129,5 +145,6 @@ void IO(int milisegundos);
 
 void DUMP_MEMORY();
 
+void ejecucion(t_tcb*hilo,t_queue*queue,int socket_dispatch);
 
 #endif

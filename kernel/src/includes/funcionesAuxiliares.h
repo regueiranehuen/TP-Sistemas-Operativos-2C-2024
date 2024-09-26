@@ -21,7 +21,12 @@ t_mutex* busqueda_mutex(t_list* lista_mutex, int mutex_id);
 int suma_tam_hilos_colas_en_lista(t_list*list);
 int size_tcbs_queue(t_queue* queue);
 int tam_tcb(t_tcb * tcb);
+int tam_pcb(t_tcb* pcb);
 void liberar_tcb(t_tcb* tcb);
 t_tcb* buscar_tcb_por_tid(t_pcb* pcb, int tid);
+void insertar_ordenado(t_queue*cola, t_tcb* nuevo_hilo);
+bool strings_iguales(char*c1,char*c2);
+bool es_motivo_devolucion(code_operacion motivo_devolucion);
+
 
 #endif

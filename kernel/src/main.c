@@ -1,8 +1,10 @@
 #include "includes/main.h"
 
-    sem_t semaforo_new_ready;
-    sem_t semaforo_cola_new;
-    sem_t semaforo_cola_exit;
+    sem_t semaforo_new_ready_procesos;
+    sem_t semaforo_cola_new_procesos;
+    sem_t semaforo_cola_new_hilos;
+    sem_t semaforo_cola_exit_procesos;
+    sem_t semaforo_cola_exit_hilos;
     pthread_mutex_t mutex_pthread_join;
     pthread_mutex_t mutex_conexion_cpu;
     int estado_kernel = 1;
@@ -45,15 +47,19 @@ void liberar_espacio(t_log *log, t_config *config, sockets_kernel *sockets)
 void inicializar_semaforo(){
   pthread_mutex_init(&mutex_pthread_join, NULL);
   pthread_mutex_init(&mutex_conexion_cpu, NULL);
-  sem_init(&semaforo_new_ready, 0, 0);
-  sem_init(&semaforo_cola_new, 0, 0);
-  sem_init(&semaforo_cola_exit, 0, 0);
+  sem_init(&semaforo_new_ready_procesos, 0, 0);
+  sem_init(&semaforo_cola_new_procesos, 0, 0);
+  sem_init(&semaforo_cola_new_hilos, 0, 0);
+  sem_init(&semaforo_cola_exit_procesos,0,0);
+  sem_init(&semaforo_cola_exit_hilos,0,0);
 }
 
 void destroy_semaforo(){
     pthread_mutex_destroy(&mutex_pthread_join);
     pthread_mutex_destroy(&mutex_conexion_cpu);
-    sem_destroy(&semaforo_new_ready);
-    sem_destroy(&semaforo_cola_new);
-    sem_destroy(&semaforo_cola_exit);
+    sem_destroy(&semaforo_new_ready_procesos);
+    sem_destroy(&semaforo_cola_new_procesos);
+    sem_destroy(&semaforo_cola_new_hilos);
+    sem_destroy(&semaforo_cola_exit_procesos);
+    sem_destroy(&semaforo_cola_exit_hilos);
 }

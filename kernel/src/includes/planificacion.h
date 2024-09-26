@@ -4,6 +4,7 @@
 #include "commons/collections/queue.h"
 #include "funcionesAuxiliares.h"
 #include "procesos.h"
+#include <semaphore.h>
 
 typedef enum{
 ENUM_PROCESS_CREATE,
@@ -20,7 +21,8 @@ ENUM_DUMP_MEMORY
 
 extern int estado_kernel;
 
-t_pcb *fifo(t_queue *cola_proceso);
+t_pcb *fifo_pcb(t_queue *cola_proceso);
+t_tcb *fifo_tcb(t_pcb* pcb);
 void* funcion_new_ready_procesos(void* void_args);
 void* funcion_procesos_exit(void* void_args);
 void* funcion_hilos_exit(void* void_args);
@@ -29,5 +31,12 @@ void hilo_atender_syscalls();
 void hilo_planificador_largo_plazo();
 void* planificador_largo_plazo(void* void_args);
 void* atender_syscall(void* void_args);
+void planificador_corto_plazo();
+
+t_tcb *fifo_tcb(t_pcb* pcb);
+t_tcb *prioridades(t_pcb *pcb);
+void round_robin(t_queue*cola);
+void colas_multinivel(t_pcb *pcb, int prioridad);
+int nueva_prioridad(t_list*colas_hilos_prioridad_ready,int priori_actual);
 
 #endif

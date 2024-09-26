@@ -134,16 +134,10 @@ void hilo_exit(t_pcb *pcb)
             t_pcb *pcb_asociado = lista_pcb(lista_pcbs, tcb->pid);
             char *planificacion = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
 
-            if (strcmp(planificacion, "FIFO") == 0)
+            if (strcmp(planificacion, "FIFO") == 0 || strcmp(planificacion, "PRIORIDADES")== 0)
             {
-                queue_push(pcb_asociado->cola_hilos_ready_fifo, tcb);
+                queue_push(pcb_asociado->cola_hilos_ready, tcb);
             }
-
-            else if (strcmp(planificacion, "PRIORIDADES") == 0)
-            {
-                queue_push(pcb_asociado->cola_hilos_ready_prioridades, tcb);
-            }
-
             else if (strcmp(planificacion, "MULTINIVEL") == 0)
             {
                 t_cola_prioridad *cola = cola_prioridad(pcb_asociado->colas_hilos_prioridad_ready, hilo->prioridad);
@@ -173,16 +167,10 @@ void new_a_ready_hilos(t_pcb *pcb)
     char *planificacion = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
     t_tcb *hilo = queue_pop(pcb->cola_hilos_new);
     hilo->estado = TCB_READY;
-    if (strcmp(planificacion, "FIFO") == 0)
+    if (strcmp(planificacion, "FIFO") == 0 || strcmp(planificacion,"PRIORIDADES")==0)
     {
-        queue_push(pcb->cola_hilos_ready_fifo, hilo);
+        queue_push(pcb->cola_hilos_ready, hilo);
     }
-
-    if (strcmp(planificacion, "PRIORIDADES") == 0)
-    {
-        queue_push(pcb->cola_hilos_ready_prioridades, hilo);
-    }
-
     if (strcmp(planificacion, "MULTINIVEL") == 0)
     {
         t_cola_prioridad *cola = cola_prioridad(pcb->colas_hilos_prioridad_ready, hilo->prioridad);
@@ -395,6 +383,17 @@ void THREAD_CANCEL(int tid)
         }
         move_tcb_to_exit(proceso_exec,tcb);
     }
+}
+
+/* THREAD_EXIT, esta syscall finaliza al hilo que lo invocó, 
+pasando el mismo al estado EXIT. Se deberá indicar a la Memoria 
+la finalización de dicho hilo.
+*/
+
+void THREAD_EXIT()
+{
+    move_tcb_to_exit(proceso_exec,proceso_exec->hilo_exec);
+    sem_post(&semaforo_cola_exit_hilos);
 }
 
 /*
