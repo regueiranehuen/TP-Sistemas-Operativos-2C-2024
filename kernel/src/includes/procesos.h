@@ -18,18 +18,25 @@ extern t_log* logger;
 extern t_list* lista_mutex;
 extern sockets_kernel *sockets;
 extern pthread_mutex_t mutex_conexion_cpu;
-extern sem_t semaforo_new_ready;
-extern sem_t semaforo_cola_new;
+extern sem_t semaforo_new_ready_procesos;
+extern sem_t semaforo_cola_new_procesos;
+extern sem_t semaforo_cola_new_hilos;
+extern sem_t semaforo_cola_exit_procesos;
+extern sem_t semaforo_cola_exit_hilos;
 extern t_queue* cola_exit;
+
 
 typedef enum{
     PCB_INIT,
     DUMP_MEMORIA,
     PROCESS_ELIMINATE_COLA, //Se elimina un proceso por la cola exit
     PROCESS_ELIMINATE_SYSCALL, //Se elimina un proceso por una syscall
-    PROCESS_MEMORY,
+    PROCESS_CREATE_AVISO,
     THREAD_CREATE_AVISO,
-    THREAD_CANCEL_AVISO
+    THREAD_ELIMINATE_AVISO,
+    THREAD_CANCEL_AVISO,
+    THREAD_INTERRUPT,
+    PROCESS_INTERRUPT
 }code_operacion;
 
 
@@ -50,6 +57,7 @@ int pid; // proceso asociado al hilo
 estado_hilo estado;
 char* pseudocodigo;
 int pseudocodigo_length;
+t_queue* cola_hilos_bloqueados;
 }t_tcb;
 
 typedef enum {
@@ -72,12 +80,13 @@ t_list* colas_hilos_prioridad_ready;
 t_list* lista_hilos_blocked;
 t_queue* cola_hilos_new;
 t_queue* cola_hilos_exit;
+t_queue* cola_hilos_ready_fifo;
+t_queue* cola_hilos_ready_prioridades;
 t_tcb* hilo_exec;
 t_list* lista_mutex;
 estado_pcb estado;
 int tamanio_proceso;
 int prioridad;
-
 }t_pcb;
 
 typedef struct {
@@ -107,7 +116,7 @@ void THREAD_CREATE (char* pseudocodigo,int prioridad);
 void THREAD_JOIN (int tid);
 void THREAD_CANCEL(int tid);
 
-void new_a_ready();
+void new_a_ready_procesos();
 void proceso_exit();
 
 void iniciar_kernel (char* archivo_pseudocodigo, int tamanio_proceso);

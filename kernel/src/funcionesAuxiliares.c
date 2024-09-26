@@ -153,28 +153,43 @@ t_tcb* find_and_remove_tcb_in_list(t_list* list, int tid) {
 }
 
 // Función principal para mover un TCB a la cola EXIT
-void move_tcb_to_exit(t_queue* queue_new, t_queue* queue_ready, t_list* list_blocked, t_queue* queue_exit, int tid) {
-    t_tcb* tcb = NULL;
-
+void move_tcb_to_exit(t_pcb* pcb, t_tcb* tcb) {
+    
     // Buscar en la cola NEW
-    tcb = find_and_remove_tcb_in_queue(queue_new, tid);
+    tcb = find_and_remove_tcb_in_queue(pcb->cola_hilos_new, tcb->tid);
 
     // Si no lo encuentra, buscar en la cola READY
     if (tcb == NULL) {
-        tcb = find_and_remove_tcb_in_queue(queue_ready, tid);
+    char *planificacion = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
+         if (strcmp(planificacion, "FIFO") == 0)
+    {
+        tcb = find_and_remove_tcb_in_queue(pcb->cola_hilos_ready_fifo, tcb->tid);
+    }
+
+    if (strcmp(planificacion, "PRIORIDADES") == 0)
+    {
+          tcb = find_and_remove_tcb_in_queue(pcb->cola_hilos_ready_prioridades, tcb->tid);
+    }
+
+    if (strcmp(planificacion, "MULTINIVEL") == 0)
+    {
+        t_cola_prioridad *cola = cola_prioridad(pcb->colas_hilos_prioridad_ready, tcb->prioridad);
+        tcb = find_and_remove_tcb_in_queue(cola->cola, tcb->tid);
+    }
     }
 
     // Si no lo encuentra, buscar en la lista BLOCKED
     if (tcb == NULL) {
-        tcb = find_and_remove_tcb_in_list(list_blocked, tid);
+        tcb = find_and_remove_tcb_in_list(pcb->lista_hilos_blocked, tcb->tid);
     }
 
     // Si lo encuentra, moverlo a la cola EXIT
-    if (tcb != NULL) {
-        queue_push(queue_exit, tcb);
-        printf("TCB con TID %d movido a EXIT\n", tid);
+    if (tcb == NULL) {
+        queue_push(pcb->cola_hilos_exit, tcb);
+        tcb->estado = TCB_EXIT;
+        printf("TCB con TID %d movido a EXIT\n", tcb->tid);
     } else {
-        printf("TCB con TID %d no encontrado\n", tid);
+        printf("TCB con TID %d no encontrado\n", tcb->tid);
     }
 }
 
@@ -275,4 +290,68 @@ int size_tcbs_queue(t_queue*queue){
 // Función auxiliar para conseguir el tamaño de un TCB
 int tam_tcb(t_tcb * tcb){
     return 5*sizeof(int) + tcb->pseudocodigo_length;
+}
+
+void liberar_tcb(t_tcb* tcb) {
+    if (tcb != NULL) {
+        // Liberar el pseudocódigo si fue asignado
+        if (tcb->pseudocodigo != NULL) {
+            free(tcb->pseudocodigo);
+            tcb->pseudocodigo = NULL;
+        }
+
+        // Liberar el propio tcb
+        free(tcb);
+    }
+}
+
+t_tcb* buscar_tcb_por_tid(t_pcb* pcb, int tid) {
+    // Primero busca el tcb en la lista de tids para verificar si existe
+    for (int i = 0; i < list_size(pcb->tids); i++) {
+        t_tcb* tcb = (t_tcb*) list_get(pcb->tids, i);
+        if (tcb->tid == tid) {
+            // Verifica en qué estado se encuentra el tcb y busca en la cola correcta
+            switch (tcb->estado) {
+                case TCB_NEW:
+                    for (int j = 0; j < queue_size(pcb->cola_hilos_new); j++) {
+                        t_tcb* tcb_encontrado = (t_tcb*) queue_peek(pcb->cola_hilos_new); // Asumiendo que queue_peek devuelve el elemento en la posición 0
+                        if (tcb_encontrado->tid == tid) {
+                            return tcb_encontrado;
+                        }
+                    }
+                    break;
+
+                case TCB_READY:
+                    for (int j = 0; j < queue_size(pcb->cola_hilos_ready_fifo); j++) {
+                        t_tcb* tcb_encontrado = (t_tcb*) queue_peek(pcb->cola_hilos_ready_fifo); // Igualmente, esto asume un acceso similar
+                        if (tcb_encontrado->tid == tid) {
+                            return tcb_encontrado;
+                        }
+                    }
+                    break;
+
+                case TCB_EXECUTE:
+                    if (pcb->hilo_exec != NULL && pcb->hilo_exec->tid == tid) {
+                        return pcb->hilo_exec;
+                    }
+                    break;
+
+                case TCB_BLOCKED:
+                case TCB_BLOCKED_MUTEX:
+                    for (int j = 0; j < list_size(pcb->lista_hilos_blocked); j++) {
+                        t_tcb* tcb_encontrado = (t_tcb*) list_get(pcb->lista_hilos_blocked, j);
+                        if (tcb_encontrado->tid == tid) {
+                            return tcb_encontrado;
+                        }
+                    }
+                    break;
+
+                default:
+                    return NULL; // Si el estado no es válido
+            }
+        }
+    }
+
+    // Si no se encontró el tcb con el tid dado
+    return NULL;
 }

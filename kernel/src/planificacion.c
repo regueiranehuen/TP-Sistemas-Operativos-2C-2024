@@ -1,6 +1,7 @@
 #include "includes/planificacion.h"
 
 int estado_kernel;
+pthread_mutex_t mutex_conexion_cpu;
 
 t_pcb *fifo(t_queue *cola_proceso)
 {
@@ -16,38 +17,59 @@ t_pcb *fifo(t_queue *cola_proceso)
 
 /*
 Planificador de Largo Plazo
-El Kernel será el encargado de gestionar las peticiones a la memoria para la creación y eliminación de procesos e hilos. 
+El Kernel será el encargado de gestionar las peticiones a la memoria para la creación y eliminación 
+de procesos e hilos. 
 Creación de procesos
 Se tendrá una cola NEW que será administrada estrictamente por FIFO para la creación de procesos. 
-Al llegar un nuevo proceso a esta cola y la misma esté vacía se enviará un pedido a Memoria para inicializar el mismo, 
-si la respuesta es positiva se crea el TID 0 de ese proceso y se lo pasa al estado READY y se sigue la misma lógica con el proceso que sigue. 
-Si la respuesta es negativa (ya que la Memoria no tiene espacio suficiente para inicializarlo) se deberá esperar la finalización de otro proceso 
+Al llegar un nuevo proceso a esta cola y la misma esté vacía se enviará un pedido a 
+Memoria para inicializar el mismo, 
+si la respuesta es positiva se crea el TID 0 de ese proceso y se lo pasa al estado READY 
+y se sigue la misma lógica con el proceso que sigue. 
+Si la respuesta es negativa (ya que la Memoria no tiene espacio suficiente para inicializarlo) 
+se deberá esperar la finalización de otro proceso 
 para volver a intentar inicializarlo.
 Al llegar un proceso a esta cola y haya otros esperando, el mismo simplemente se encola.
-Finalización de procesos
-Al momento de finalizar un proceso, el Kernel deberá informar a la Memoria la finalización del mismo y luego de recibir la confirmación por parte de 
-la Memoria deberá liberar su PCB asociado e intentar inicializar uno de los que estén esperando en estado NEW si los hubiere.
-Creación de hilos
-Para la creación de hilos, el Kernel deberá informar a la Memoria y luego ingresarlo directamente a la cola de READY correspondiente, según su nivel de prioridad.
-Finalización de hilos
-Al momento de finalizar un hilo, el Kernel deberá informar a la Memoria la finalización del mismo, liberar su TCB asociado y 
-deberá mover al estado READY a todos los hilos que se encontraban bloqueados por ese TID. De esta manera, se desbloquean aquellos hilos 
-bloqueados por THREAD_JOIN o por mutex tomados por el hilo finalizado (en caso que hubiera).
 */
 
-void* funcion_new_ready(void* void_args){
+void* funcion_new_ready_procesos(void* void_args){
 
 while(estado_kernel != 0){
-    new_a_ready();
+    new_a_ready_procesos();
 }
 return NULL;
 }
 
-void* funcion_process_exit(void* void_args){
+void* funcion_procesos_exit(void* void_args){
     while(estado_kernel != 0){
     proceso_exit();
     }
     return NULL;
+}
+
+void* funcion_hilos_exit(void* void_args){
+    while(estado_kernel != 0){
+        //hilo_exit(pcb) Me imagino que habra que hacer un hilo por proceso
+    }
+    return NULL;
+}
+
+void* funcion_new_ready_hilos(void* void_args){
+    while(estado_kernel != 0){
+        //new_a_ready_hilos(pcb) Lo mismo que arriba
+    }
+    return NULL;
+}
+
+void hilo_atender_syscalls(){
+    pthread_t hilo_syscalls;
+    int resultado;
+
+    resultado = pthread_create(&hilo_syscalls,NULL,atender_syscall,NULL);
+     if(resultado != 0){
+    log_error(logger,"Error al crear el hilo_planificador_largo_plazo");
+    return;
+}
+    pthread_detach(hilo_syscalls);
 }
 
 void hilo_planificador_largo_plazo(){
@@ -63,36 +85,45 @@ void hilo_planificador_largo_plazo(){
 }
 
 void* planificador_largo_plazo(void* void_args){
-pthread_t hilo_new_ready;
-pthread_t hilo_atender_syscalls;
-pthread_t hilo_exit;
+pthread_t hilo_new_ready_procesos;
+pthread_t hilo_exit_procesos;
+pthread_t hilo_new_ready_hilos;
+pthread_t hilo_exit_hilos;
 
 int resultado;
 
-resultado = pthread_create (&hilo_new_ready,NULL,funcion_new_ready,NULL);
+resultado = pthread_create (&hilo_new_ready_procesos,NULL,funcion_new_ready_procesos,NULL);
 
 if(resultado != 0){
-    log_error(logger,"Error al crear el hilo_new_ready");
+    log_error(logger,"Error al crear el hilo new_ready");
     return NULL;
 }
 
-resultado = pthread_create(&hilo_atender_syscalls,NULL,atender_syscall,NULL);
+resultado = pthread_create(&hilo_exit_procesos,NULL,funcion_procesos_exit,NULL);
 
 if(resultado != 0){
-    log_error(logger,"Error al crear el hilo_atender_syscall");
+    log_error(logger,"Error al crear el hilo procesos_exit");
     return NULL;
 }
 
-resultado = pthread_create(&hilo_exit,NULL,funcion_process_exit,NULL);
+resultado = pthread_create(&hilo_new_ready_hilos,NULL,funcion_new_ready_hilos,NULL);
 
 if(resultado != 0){
-    log_error(logger,"Error al crear el hilo_atender_syscall");
+    log_error(logger,"Error al crear el hilo new_ready_hilos");
     return NULL;
 }
 
-pthread_detach(hilo_new_ready);
-pthread_detach(hilo_atender_syscalls);
-pthread_detach(hilo_exit);
+resultado = pthread_create(&hilo_exit_hilos,NULL,funcion_hilos_exit,NULL);
+
+if(resultado != 0){
+    log_error(logger,"Error al crear el hilo hilos_exit");
+    return NULL;
+}
+
+pthread_detach(hilo_new_ready_procesos);
+pthread_detach(hilo_exit_procesos);
+pthread_detach(hilo_new_ready_hilos);
+pthread_detach(hilo_exit_hilos);
     return NULL;
 }
 

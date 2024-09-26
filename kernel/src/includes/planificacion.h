@@ -21,9 +21,12 @@ ENUM_DUMP_MEMORY
 extern int estado_kernel;
 
 t_pcb *fifo(t_queue *cola_proceso);
-void* funcion_new_ready(void* void_args);
-void* funcion_process_exit(void* void_args);
-void  hilo_planificador_largo_plazo();
+void* funcion_new_ready_procesos(void* void_args);
+void* funcion_procesos_exit(void* void_args);
+void* funcion_hilos_exit(void* void_args);
+void* funcion_new_ready_hilos(void* void_args);
+void hilo_atender_syscalls();
+void hilo_planificador_largo_plazo();
 void* planificador_largo_plazo(void* void_args);
 void* atender_syscall(void* void_args);
 

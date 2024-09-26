@@ -13,7 +13,7 @@ int lista_tcb(t_pcb* pcb, int tid);
 int tid_finalizado(t_pcb* pcb, int tid);
 t_tcb* find_and_remove_tcb_in_queue(t_queue* queue, int tid);
 t_tcb* find_and_remove_tcb_in_list(t_list* list, int tid);
-void move_tcb_to_exit(t_queue* queue_new, t_queue* queue_ready, t_list* list_blocked, t_queue* queue_exit, int tid);
+void move_tcb_to_exit(t_pcb* pcb, t_tcb* tcb);
 t_tcb* find_tcb_in_queue(t_queue* queue, int tid);
 t_tcb* find_tcb_in_list(t_list* list, int tid);
 t_tcb* buscar_tcb(int tid, t_queue* queue_new, t_list* queue_ready, t_list* list_blocked);
@@ -21,5 +21,7 @@ t_mutex* busqueda_mutex(t_list* lista_mutex, int mutex_id);
 int suma_tam_hilos_colas_en_lista(t_list*list);
 int size_tcbs_queue(t_queue* queue);
 int tam_tcb(t_tcb * tcb);
+void liberar_tcb(t_tcb* tcb);
+t_tcb* buscar_tcb_por_tid(t_pcb* pcb, int tid);
 
 #endif
