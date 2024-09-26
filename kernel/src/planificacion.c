@@ -73,10 +73,19 @@ void round_robin(t_queue *cola)
         // Simular que el hilo está en ejecución durante el tiempo del quantum
         usleep(quantum * 1000); // usleep trata con microsegundos, 1 microsegundo es igual a 1000 milisegundos
         
-        int rtaCPU=-1;
-        int fin_quantum_rr=FIN_QUANTUM_RR;
-        send(sockets->sockets_cliente_cpu->socket_Interrupt,&fin_quantum_rr,sizeof(int),0);
+        code_operacion rtaCPU;
+        code_operacion fin_quantum_rr=FIN_QUANTUM_RR;
+        send(sockets->sockets_cliente_cpu->socket_Interrupt,&fin_quantum_rr,sizeof(fin_quantum_rr),0);
+
+
+        // atenderSyscall()
+
+
         recv(sockets->sockets_cliente_cpu->socket_Interrupt,&rtaCPU,sizeof(rtaCPU),0);
+
+
+        
+
         if (rtaCPU == THREAD_EXIT_) // Al código de operación que está en la branch memoria_cpu le agregué un guión bajo pq se llamaría igual que la syscall. Ojo con eso
         {
             THREAD_EXIT();

@@ -75,7 +75,7 @@ void new_a_ready() // Verificar contra la memoria si el proceso se puede inicial
     int socket_memoria = crear_conexion(logger, ip, puerto);
     // Hacer serializacion del tipo pcb
     code_operacion code = PEDIDO_MEMORIA_INICIALIZAR_PROCESO;
-    send_pcb(pcb,code,socket_memoria);
+    send_pcb(pcb, code, socket_memoria);
     recv(socket_memoria, &pedido, sizeof(int), 0);
     close(socket_memoria);
     if (pedido == -1)
@@ -107,7 +107,7 @@ void PROCESS_EXIT()
 
     code_operacion code = PEDIDO_MEMORIA_TERMINAR_PROCESO;
 
-    send_pcb(pcb,code,socket_memoria);
+    send_pcb(pcb, code, socket_memoria);
     recv(socket_memoria, &pedido, sizeof(int), 0);
     close(socket_memoria);
     if (pedido == -1)
@@ -144,7 +144,7 @@ THREAD_CREATE, esta syscall recibirá como parámetro de la CPU el nombre del ar
 Al momento de crear el nuevo hilo, deberá generar el nuevo TCB con un TID autoincremental y poner al mismo en el estado READY.
 */
 
-void THREAD_CREATE(char *pseudocodigo, int prioridad) 
+void THREAD_CREATE(char *pseudocodigo, int prioridad)
 {
 
     t_pcb *pcb = proceso_exec;
@@ -154,7 +154,7 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
     char *ip = config_get_string_value(config, "IP_MEMORIA");
 
     int socket_memoria = crear_conexion(logger, ip, puerto);
-    send_pcb(pcb,PEDIDO_MEMORIA_THREAD_CREATE,socket_memoria);
+    send_pcb(pcb, PEDIDO_MEMORIA_THREAD_CREATE, socket_memoria);
     recv(socket_memoria, &resultado, sizeof(int), 0);
     close(socket_memoria);
     if (resultado == -1)
@@ -198,7 +198,7 @@ Se deberá indicar a la Memoria la finalización de dicho hilo. En caso de que e
 ya haya finalizado, esta syscall no hace nada. Finalmente, el hilo que la invocó continuará su ejecución.
 */
 
-void THREAD_CANCEL(int tid)  
+void THREAD_CANCEL(int tid)
 { // suponiendo que el proceso main esta ejecutando
 
     t_cola_prioridad *cola = malloc(sizeof(t_cola_prioridad));
@@ -216,15 +216,12 @@ void THREAD_CANCEL(int tid)
         return;
     }
 
-
-
     // Podriamos hacer las 3 lineas de abajo en una unica funcion
     char *puerto = config_get_string_value(config, "PUERTO_MEMORIA");
     char *ip = config_get_string_value(config, "IP_MEMORIA");
     int socket_memoria = crear_conexion(logger, ip, puerto);
 
-
-    send_tcb(tcb,PEDIDO_MEMORIA_THREAD_EXIT,socket_memoria);
+    send_tcb(tcb, PEDIDO_MEMORIA_THREAD_EXIT, socket_memoria);
     recv(socket_memoria, &respuesta, sizeof(int), 0);
 
     if (respuesta == -1)
@@ -326,19 +323,17 @@ void MUTEX_UNLOCK(int mutex_id)
     }
 }
 
-
-
 /*
 Entrada Salida
-Para la implementación de este trabajo práctico, el módulo Kernel simulará la existencia de un único dispositivo de Entrada Salida, 
-el cual atenderá las peticiones bajo el algoritmo FIFO. Para “utilizar” esta interfaz, se dispone de la syscall IO. Esta syscall recibe 
+Para la implementación de este trabajo práctico, el módulo Kernel simulará la existencia de un único dispositivo de Entrada Salida,
+el cual atenderá las peticiones bajo el algoritmo FIFO. Para utilizar esta interfaz, se dispone de la syscall IO. Esta syscall recibe
 como parámetro la cantidad de milisegundos que el hilo va a permanecer haciendo la operación de entrada/salida.
 */
 
-void IO(int milisegundos) {
+void IO(int milisegundos)
+{
 
-
-    t_tcb* tcb = proceso_exec->hilo_exec;
+    t_tcb *tcb = proceso_exec->hilo_exec;
 
     // Cambiar el estado del hilo a BLOCKED
     tcb->estado = TCB_BLOCKED;
@@ -352,175 +347,179 @@ void IO(int milisegundos) {
 
     // Sacar el hilo de la lista de bloqueados
     find_and_remove_tcb_in_list(proceso_exec->lista_hilos_blocked, tcb->tid);
-    
+
     // Mover el hilo a la cola de READY
     tcb->estado = TCB_READY;
-    t_cola_prioridad* cola = cola_prioridad(proceso_exec->colas_hilos_prioridad_ready,tcb->prioridad);
+    t_cola_prioridad *cola = cola_prioridad(proceso_exec->colas_hilos_prioridad_ready, tcb->prioridad);
     queue_push(cola->cola, tcb);
 }
 
-
-/* En este apartado solamente se tendrá la instrucción DUMP_MEMORY. Esta syscall le solicita a la memoria, 
+/* En este apartado solamente se tendrá la instrucción DUMP_MEMORY. Esta syscall le solicita a la memoria,
 junto al PID y TID que lo solicitó, que haga un Dump del proceso.
-Esta syscall bloqueará al hilo que la invocó hasta que el módulo memoria confirme la finalización de la operación, 
+Esta syscall bloqueará al hilo que la invocó hasta que el módulo memoria confirme la finalización de la operación,
 en caso de error, el proceso se enviará a EXIT. Caso contrario, el hilo se desbloquea normalmente pasando a READY.
 */
 
-void DUMP_MEMORY(){
+void DUMP_MEMORY()
+{
 
-    t_tcb* tcb = proceso_exec->hilo_exec;
+    t_tcb *tcb = proceso_exec->hilo_exec;
     int rta_cpu;
 
-    char* puerto_cpu = config_get_string_value(config, "PUERTO_CPU_INTERRUPT");
-    char* ip_cpu = config_get_string_value(config, "IP_CPU");
+    char *puerto_cpu = config_get_string_value(config, "PUERTO_CPU_INTERRUPT");
+    char *ip_cpu = config_get_string_value(config, "IP_CPU");
     int socket_cpu = crear_conexion(logger, ip_cpu, puerto_cpu);
 
     code_operacion code = DUMP_MEMORIA;
-    send_tcb(proceso_exec->hilo_exec,code,socket_cpu);
-    recv(socket_cpu,&rta_cpu,sizeof(int),0);
+    send_tcb(proceso_exec->hilo_exec, code, socket_cpu);
+    recv(socket_cpu, &rta_cpu, sizeof(int), 0);
 
-    if(rta_cpu == -1){
+    if (rta_cpu == -1)
+    {
         log_info(logger, "Error en el desalojo del hilo ");
         return;
     }
     close(socket_cpu);
     tcb->estado = TCB_BLOCKED;
 
-    list_add(proceso_exec->lista_hilos_blocked,tcb);
+    list_add(proceso_exec->lista_hilos_blocked, tcb);
 
     proceso_exec->hilo_exec = NULL;
 
-
     // Conectar con memoria
-    char* puerto = config_get_string_value(config, "PUERTO_MEMORIA");
-    char* ip = config_get_string_value(config, "IP_MEMORIA");
+    char *puerto = config_get_string_value(config, "PUERTO_MEMORIA");
+    char *ip = config_get_string_value(config, "IP_MEMORIA");
     int socket_memoria = crear_conexion(logger, ip, puerto);
 
-
     int pid = proceso_exec->pid;
-    int tid = tcb->tid; 
-    code_operacion codigo= DUMP_MEMORIA; ///////////////
+    int tid = tcb->tid;
+    code_operacion codigo = DUMP_MEMORIA; ///////////////
     t_paquete *paquete_dump = crear_paquete();
 
-    agregar_a_paquete(paquete_dump,&codigo,sizeof(int)); //////////////
-    agregar_a_paquete(paquete_dump,&pid,sizeof(int));
-    agregar_a_paquete(paquete_dump,&tid,sizeof(int));
-    enviar_paquete(paquete_dump,socket_memoria);
+    agregar_a_paquete(paquete_dump, &codigo, sizeof(int)); //////////////
+    agregar_a_paquete(paquete_dump, &pid, sizeof(int));
+    agregar_a_paquete(paquete_dump, &tid, sizeof(int));
+    enviar_paquete(paquete_dump, socket_memoria);
 
     int rta_memoria;
 
-    recv(socket_memoria,&rta_memoria,sizeof(int),0);
+    recv(socket_memoria, &rta_memoria, sizeof(int), 0);
     close(socket_memoria);
 
-    if(rta_memoria == -1){
+    if (rta_memoria == -1)
+    {
         log_info(logger, "Error en el dump de memoria ");
-        
+
         PROCESS_EXIT();
     }
-    else{
-        log_info(logger,"Dump de memoria exitoso");
+    else
+    {
+        log_info(logger, "Dump de memoria exitoso");
         tcb->estado = TCB_READY;
-        t_cola_prioridad* cola = cola_prioridad(proceso_exec->colas_hilos_prioridad_ready,tcb->prioridad);
+        t_cola_prioridad *cola = cola_prioridad(proceso_exec->colas_hilos_prioridad_ready, tcb->prioridad);
         queue_push(cola->cola, tcb);
     }
-
-
-    
 }
 
 // THREAD_EXIT, esta syscall finaliza al hilo que lo invocó, pasando el mismo al estado EXIT. Se deberá indicar a la Memoria la finalización de dicho hilo.
 
-void THREAD_EXIT(){
-    move_tcb_to_exit(proceso_exec->cola_hilos_new,proceso_exec->cola_hilos_ready,proceso_exec->lista_hilos_blocked,proceso_exec->cola_hilos_exit,proceso_exec->hilo_exec->tid);
+void THREAD_EXIT()
+{
+    move_tcb_to_exit(proceso_exec->cola_hilos_new, proceso_exec->cola_hilos_ready, proceso_exec->lista_hilos_blocked, proceso_exec->cola_hilos_exit, proceso_exec->hilo_exec->tid);
 }
 
-
-void planificador_largo_plazo(char*pseudocodigo,int tam_proceso,int prioridad,code_operacion code){
-    switch(code){
-        case PEDIDO_MEMORIA_INICIALIZAR_PROCESO:
+void planificador_largo_plazo(char *pseudocodigo, int tam_proceso, int prioridad, code_operacion code)
+{
+    switch (code)
+    {
+    case PEDIDO_MEMORIA_INICIALIZAR_PROCESO:
         new_a_ready();
         break;
-        case PEDIDO_MEMORIA_TERMINAR_PROCESO:
+    case PEDIDO_MEMORIA_TERMINAR_PROCESO:
         PROCESS_EXIT();
         new_a_ready();
         break;
-        case PEDIDO_MEMORIA_THREAD_CREATE:
-        THREAD_CREATE(pseudocodigo,prioridad);
+    case PEDIDO_MEMORIA_THREAD_CREATE:
+        THREAD_CREATE(pseudocodigo, prioridad);
 
-        if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO")==0)
-        queue_push(proceso_exec->cola_hilos_ready,proceso_exec->hilo_exec); // Capaz habria que hacer un insertar ordenado para la cola de ready en prioridades...
+        if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO") == 0)
+            queue_push(proceso_exec->cola_hilos_ready, proceso_exec->hilo_exec); // Capaz habria que hacer un insertar ordenado para la cola de ready en prioridades...
 
-        if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "PRIORIDADES")==0)   
-        insertar_ordenado(proceso_exec->cola_hilos_ready,proceso_exec->hilo_exec);
+        if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "PRIORIDADES") == 0)
+            insertar_ordenado(proceso_exec->cola_hilos_ready, proceso_exec->hilo_exec);
 
-        if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "CMN")==0)
-        queue_push(list_get(proceso_exec->colas_hilos_prioridad_ready,prioridad),proceso_exec->hilo_exec);
-        
+        if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "CMN") == 0)
+            queue_push(list_get(proceso_exec->colas_hilos_prioridad_ready, prioridad), proceso_exec->hilo_exec);
+
         break;
-        case PEDIDO_MEMORIA_THREAD_EXIT:
+    case PEDIDO_MEMORIA_THREAD_EXIT:
         THREAD_EXIT();
-        for (int i = 0; i < list_size(proceso_exec->lista_hilos_blocked); i++){
-            queue_push(proceso_exec->cola_hilos_ready,list_get(proceso_exec->lista_hilos_blocked,i));
+        for (int i = 0; i < list_size(proceso_exec->lista_hilos_blocked); i++)
+        {
+            queue_push(proceso_exec->cola_hilos_ready, list_get(proceso_exec->lista_hilos_blocked, i));
         }
         break;
-        default:
+    default:
         break;
     }
-
 }
-
-
 
 /* Faltaría la siguiente implementación:
 En caso que el algoritmo requiera desalojar al hilo en ejecución, se enviará una interrupción a través de la conexión de interrupt para forzar el desalojo del mismo.*/
-void planificador_corto_plazo(){
+void planificador_corto_plazo()
+{
 
-    if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO") == 0 || strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "PRIORIDADES") == 0){
-        proceso_exec->hilo_exec = fifo_tcb(proceso_exec); 
-        ejecucion(proceso_exec->hilo_exec,proceso_exec->cola_hilos_ready,sockets->sockets_cliente_cpu->socket_Dispatch);
+    if (strings_iguales(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO") || strings_iguales(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "PRIORIDADES"))
+    {
+        proceso_exec->hilo_exec = fifo_tcb(proceso_exec);
+        ejecucion(proceso_exec->hilo_exec, proceso_exec->cola_hilos_ready, sockets->sockets_cliente_cpu->socket_Dispatch);
     }
 
-    if (strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")==0){
-        colas_multinivel(proceso_exec,0); 
+    if (strings_iguales(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "CMN"))
+    {
+        colas_multinivel(proceso_exec, 0);
     }
-
 }
 
-void ejecucion(t_tcb*hilo,t_queue*queue,int socket_dispatch){
-    t_paquete*paquete = crear_paquete();
+void ejecucion(t_tcb *hilo, t_queue *queue, int socket_dispatch)
+{
+    t_paquete *paquete = crear_paquete();
 
-    hilo->estado=TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
+    hilo->estado = TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
 
+    agregar_a_paquete(paquete, &hilo->tid, sizeof(hilo->tid));
+    agregar_a_paquete(paquete, &hilo->pid, sizeof(hilo->pid));
 
+    int rtaCPU = -1;
 
-    agregar_a_paquete(paquete,&hilo->tid,sizeof(hilo->tid));
-    agregar_a_paquete(paquete,&hilo->pid,sizeof(hilo->pid));
+    // Se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
+    enviar_paquete(paquete, socket_dispatch);
+    recv(socket_dispatch, &rtaCPU, sizeof(rtaCPU), 0);
 
-    int rtaCPU =-1;
-
-// Se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
-    enviar_paquete(paquete,socket_dispatch); 
-    recv(socket_dispatch,&rtaCPU,sizeof(rtaCPU),0);
+    // Hacer un paquete con un tid y con un enum
+    
 
     /*Agregué algunos de los códigos de operación subidos al módulo CPU. Había conflicto con algunos nombres por llamarse igual a algunas funciones que tenemos
     hechas, así que no agregué todos*/
 
     // en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
 
-    if (rtaCPU == INTERRUPCION || rtaCPU == INTERRUPCION_USUARIO || rtaCPU == ERROR || rtaCPU == LLAMADA_POR_INSTRUCCION){ // 
-        hilo->estado=TCB_READY;
-        
+    if (rtaCPU == INTERRUPCION || rtaCPU == INTERRUPCION_USUARIO || rtaCPU == ERROR || rtaCPU == LLAMADA_POR_INSTRUCCION)
+    { //
+
+        hilo->estado = TCB_READY;
+
         // Antes de llamar al siguiente hilo, debo meter al actual en la cola de ready que le corresponda
-        if (strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO") == 0 || strcmp(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "CMN")==0)
-            queue_push(queue,hilo);
+        if (strings_iguales(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "FIFO") || strings_iguales(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "CMN"))
+            queue_push(queue, hilo);
         else
-            insertar_ordenado(queue,hilo);
+            insertar_ordenado(queue, hilo);
 
         planificador_corto_plazo();
     }
 
-    if (rtaCPU == THREAD_EXIT_){
+    if (rtaCPU == THREAD_EXIT_)
+    {
         THREAD_EXIT();
     }
-
 }

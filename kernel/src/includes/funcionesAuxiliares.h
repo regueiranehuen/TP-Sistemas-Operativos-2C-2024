@@ -23,5 +23,6 @@ int size_tcbs_queue(t_queue*queue);
 int tam_tcb(t_tcb * tcb);
 int tam_pcb(t_pcb*pcb);
 void insertar_ordenado(t_queue*cola, t_tcb* nuevo_hilo);
+bool strings_iguales(char*c1,char*c2);
 
 #endif

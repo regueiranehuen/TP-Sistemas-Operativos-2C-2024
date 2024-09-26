@@ -361,3 +361,7 @@ void insertar_ordenado(t_queue*cola, t_tcb* nuevo_hilo){
 
     queue_destroy(cola_temporal);
 }
+
+bool strings_iguales(char*c1,char*c2){
+    return strcmp(c1,c2)==0;
+}
