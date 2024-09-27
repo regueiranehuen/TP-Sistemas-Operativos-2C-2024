@@ -1,6 +1,6 @@
 #include "utils/includes/serializacion.h"
 
-void agregar_tcb_a_paquete(t_tcb*tcb,t_paquete*paquete){
+void agregar_tcb_a_paquete(t_tcb*tcb,t_paquete*paquete){  // AGREGAR LOS CAMPOS QUE FALTAN
     
     agregar_a_paquete(paquete,&(tcb->tid),sizeof(int));
     agregar_a_paquete(paquete,&(tcb->prioridad),sizeof(int));
@@ -21,7 +21,6 @@ void send_tcb(t_tcb*tcb,int socket_memoria){
 }
 
 void agregar_pcb_a_paquete(t_pcb*pcb,t_paquete*paquete){
-
     agregar_a_paquete(paquete,&(pcb->pid),sizeof(int));
     agregar_a_paquete(paquete,pcb->tids,list_size(pcb->tids)*sizeof(int));
     agregar_a_paquete(paquete,pcb->colas_hilos_prioridad_ready,suma_tam_hilos_colas_en_lista(pcb->colas_hilos_prioridad_ready));

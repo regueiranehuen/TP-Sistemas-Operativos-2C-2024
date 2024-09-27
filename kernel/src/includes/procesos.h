@@ -121,6 +121,15 @@ estado_mutex estado;
 t_tcb* hilo; // hilo que esta en la región crítica
 }t_mutex;
 
+
+typedef struct{
+    t_queue*cola;
+    t_tcb*nuevo_hilo;
+}t_args_insertar_ordenado;
+
+
+
+
 t_pcb* crear_pcb();
 t_tcb* crear_tcb(t_pcb *pcb);
 

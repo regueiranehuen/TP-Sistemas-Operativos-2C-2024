@@ -27,6 +27,7 @@ t_tcb* buscar_tcb_por_tid(t_pcb* pcb, int tid);
 void insertar_ordenado(t_queue*cola, t_tcb* nuevo_hilo);
 bool strings_iguales(char*c1,char*c2);
 bool es_motivo_devolucion(code_operacion motivo_devolucion);
+void* ordenar_cola(void*arg);
 
 
 #endif

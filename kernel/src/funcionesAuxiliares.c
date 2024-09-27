@@ -263,28 +263,38 @@ int suma_tam_hilos_colas_en_lista(t_list*list){
 }
 
 
-// Funcion auxiliar para calcular el tamaño de una cola con tcb y prioridad
-int size_tcbs_queue(t_queue*queue){
+int size_tcbs_queue(t_queue* queue) {
     int tam = 0;
 
-    t_queue*queue_aux = queue_create();
-
-    *queue_aux=*queue;
+    t_queue* queue_aux = queue_create();
     
-    while(!queue_is_empty(queue_aux)){
-        t_tcb*tcb=queue_pop(queue_aux);
-        tam+=tam_tcb(tcb);
-        tam+=sizeof(int); // Por la prioridad del tcb
+    // Recorrer la cola original sin modificarla
+    while (!queue_is_empty(queue)) {
+        t_tcb* tcb = queue_pop(queue);
+        
+        // Sumar el tamaño del TCB
+        tam += tam_tcb(tcb);
+        
+        // Volver a agregar el TCB a la cola auxiliar
+        queue_push(queue_aux, tcb);
     }
+
+    // Restaurar la cola original
+    while (!queue_is_empty(queue_aux)) {
+        t_tcb* tcb = queue_pop(queue_aux);
+        queue_push(queue, tcb);
+    }
+
     queue_destroy(queue_aux);
-    
+
     return tam;
 }
 
 
+
 // Función auxiliar para conseguir el tamaño de un TCB
 int tam_tcb(t_tcb * tcb){
-    return 5*sizeof(int) + tcb->pseudocodigo_length;
+    return 4*sizeof(int) + sizeof(estado_hilo) + tcb->pseudocodigo_length + size_tcbs_queue(tcb->cola_hilos_bloqueados);
 }
 
 void liberar_tcb(t_tcb* tcb) {
@@ -351,6 +361,7 @@ t_tcb* buscar_tcb_por_tid(t_pcb* pcb, int tid) {
     return NULL;
 }
 
+// Función auxiliar para insertar ordenado un hilo en una cola
 void insertar_ordenado(t_queue*cola, t_tcb* nuevo_hilo){
     if (queue_is_empty(cola)) {
         queue_push(cola, nuevo_hilo);
@@ -384,6 +395,49 @@ void insertar_ordenado(t_queue*cola, t_tcb* nuevo_hilo){
 
     queue_destroy(cola_temporal);
 }
+
+
+void* ordenar_cola(void*arg){
+    t_queue*cola = (t_queue*)arg;
+
+    t_queue *cola_temporal = queue_create();
+
+
+
+    for (int i = 0; i < queue_size(cola) && queue_size(cola)>1; i++) {
+        t_tcb *hilo_actual = queue_pop(cola);
+
+        t_tcb*hilo_sig=queue_pop(cola);
+
+        if (hilo_actual->prioridad <= hilo_sig->prioridad) {
+            // Si la prioridad del hilo actual es mayor que la prioridad del nuevo hilo,
+            // insertamos el nuevo hilo antes del hilo actual
+            queue_push(cola_temporal, hilo_actual);
+            queue_push(cola_temporal,hilo_sig);
+        }
+        else{
+            queue_push(cola_temporal,hilo_sig);
+            queue_push(cola_temporal, hilo_actual);
+        }
+
+        queue_push(cola_temporal, hilo_actual);
+        queue_pop(cola);
+    }
+
+    
+
+    while (!queue_is_empty(cola_temporal)) {
+        queue_push(cola, queue_pop(cola_temporal));
+    }
+
+    queue_destroy(cola_temporal);
+
+    return NULL;
+
+}
+
+
+
 
 bool strings_iguales(char*c1,char*c2){
     return strcmp(c1,c2)==0;

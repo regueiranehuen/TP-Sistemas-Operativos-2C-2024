@@ -572,3 +572,57 @@ void DUMP_MEMORY()
         queue_push(cola->cola, tcb);
     }
 }
+
+
+// Ejecución
+// Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC y se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
+// En caso que el algoritmo requiera desalojar al hilo en ejecución, se enviará una interrupción a través de la conexión de interrupt para forzar el desalojo del mismo.
+// Al recibir el TID del hilo en ejecución, en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
+
+void ejecucion(t_tcb *hilo, t_queue *queue, int socket_dispatch)
+{
+
+
+    t_paquete *paquete = crear_paquete();
+    hilo->estado = TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
+
+    agregar_a_paquete(paquete, &hilo->tid, sizeof(hilo->tid));
+    agregar_a_paquete(paquete, &hilo->pid, sizeof(hilo->pid));
+
+    //code_operacion rtaCPU;
+
+    // Se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
+    enviar_paquete(paquete, socket_dispatch);
+    //recv(socket_dispatch, &rtaCPU, sizeof(rtaCPU), 0);
+    
+    t_list* devolucionCPU = recibir_paquete(socket_dispatch);   // HAY QUE AGREGAR EL UTILS SERVER
+
+    // Hacer un paquete con un tid y con un enum
+   
+    
+    code_operacion motivo_devolucion = *(code_operacion*)list_get(devolucionCPU, 0);
+
+    /*Agregué algunos de los códigos de operación subidos al módulo CPU. Había conflicto con algunos nombres por llamarse igual a algunas funciones que tenemos
+    hechas, así que no agregué todos*/
+
+    // en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
+
+    if (es_motivo_devolucion(motivo_devolucion))
+    { //
+
+        hilo->estado = TCB_READY;
+
+        
+        queue_push(queue, hilo);
+        
+    }
+
+    if (motivo_devolucion == THREAD_EXIT_)
+    {
+        THREAD_EXIT();
+    }
+    
+    eliminar_paquete(paquete);
+    list_destroy(devolucionCPU);
+}
+

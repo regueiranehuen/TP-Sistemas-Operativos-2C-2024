@@ -31,12 +31,15 @@ void hilo_atender_syscalls();
 void hilo_planificador_largo_plazo();
 void* planificador_largo_plazo(void* void_args);
 void* atender_syscall(void* void_args);
-void planificador_corto_plazo();
+void planificador_corto_plazo(t_pcb*pcb);
 
 t_tcb *fifo_tcb(t_pcb* pcb);
 t_tcb *prioridades(t_pcb *pcb);
 void round_robin(t_queue*cola);
 void colas_multinivel(t_pcb *pcb, int prioridad);
 int nueva_prioridad(t_list*colas_hilos_prioridad_ready,int priori_actual);
+void hilo_ordena_cola_prioridades(t_pcb* pcb);
+
+void planificador_corto_plazo(t_pcb*pcb) ;
 
 #endif
