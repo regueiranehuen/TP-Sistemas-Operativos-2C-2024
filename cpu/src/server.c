@@ -3,7 +3,11 @@
 t_socket_cpu* servidor_CPU_Kernel(t_log* log, t_config* config){
 
 //declaración de variables
-
+char *puerto_dispatch,*puerto_interrupt;
+int socket_servidor_Dispatch, socket_servidor_Interrupt;
+int socket_cliente_Dispatch =-1, socket_cliente_Interrupt =-1;
+int respuesta_Dispatch, respuesta_Interrupt;
+t_socket_cpu* sockets=malloc(sizeof(t_socket_cpu));
 sockets->socket_Dispatch=-1;
 sockets->socket_Interrupt=-1;
 
@@ -67,6 +71,8 @@ sockets->socket_Interrupt=socket_servidor_Interrupt;
 
 int cliente_cpu_memoria (t_log* log, t_config * config){
 
+char * ip, * puerto;
+int socket_cliente, respuesta;
 
 ip = config_get_string_value(config, "IP_MEMORIA");
 puerto = config_get_string_value(config, "PUERTO_MEMORIA");
@@ -128,6 +134,57 @@ void* funcion_hilo_cliente_memoria(void* void_args){
     return (void*)(intptr_t)socket;
 }
 
+
+t_sockets_cpu* hilos_cpu(t_log* log, t_config* config){
+
+    pthread_t hilo_servidor;
+    pthread_t hilo_cliente;
+
+    args_hilo* args = malloc(sizeof(args_hilo)); 
+
+    t_sockets_cpu* sockets= malloc(sizeof(t_sockets_cpu));
+
+    args->config=config;
+    args->log=log;
+
+    void* socket_servidor_kernel;
+    void* socket_cliente_memoria;
+
+    int resultado;
+
+    resultado = pthread_create (&hilo_servidor,NULL,funcion_hilo_servidor_cpu,(void*)args);
+
+    if(resultado != 0){
+        log_error(log,"Error al crear el hilo");
+        free (args);
+        return NULL;
+    }
+
+    log_info(log,"El hilo servidor_kernel se creo correctamente");
+
+    resultado = pthread_create (&hilo_cliente,NULL,funcion_hilo_cliente_memoria,(void*)args);
+
+    if(resultado != 0){
+        log_error(log,"Error al crear el hilo");
+        free (args);
+        return NULL;
+    }
+
+    log_info(log,"El hilo cliente_memoria se creo correctamente");
+
+    pthread_join(hilo_servidor,&socket_servidor_kernel);
+
+    sockets->socket_servidor= (t_socket_cpu*)socket_servidor_kernel;
+
+    pthread_join(hilo_cliente,&socket_cliente_memoria);
+
+    sockets->socket_cliente= (intptr_t)socket_cliente_memoria;
+
+    free(args);
+    return sockets;
+}
+
+
 void recibir_kernel_dispatch(int SOCKET_CLIENTE_KERNEL_DISPATCH){
     enviar_string(SOCKET_CLIENTE_KERNEL_DISPATCH, "hola desde cpu dispatch", MENSAJE);
     int noFinalizar = 0;
@@ -174,53 +231,4 @@ void recibir_kernel_interrupt(int SOCKET_CLIENTE_KERNEL_INTERRUPT){
             break;
         }
     }
-}
-
-t_sockets_cpu* hilos_cpu(t_log* log, t_config* config){
-
-pthread_t hilo_servidor;
-pthread_t hilo_cliente;
-
-args_hilo* args = malloc(sizeof(args_hilo)); 
-
-t_sockets_cpu* sockets= malloc(sizeof(t_sockets_cpu));
-
-args->config=config;
-args->log=log;
-
-void* socket_servidor_kernel;
-void* socket_cliente_memoria;
-
-int resultado;
-
-resultado = pthread_create (&hilo_servidor,NULL,funcion_hilo_servidor_cpu,(void*)args);
-
-if(resultado != 0){
-    log_error(log,"Error al crear el hilo");
-    free (args);
-    return NULL;
-}
-
-log_info(log,"El hilo servidor_kernel se creo correctamente");
-
-resultado = pthread_create (&hilo_cliente,NULL,funcion_hilo_cliente_memoria,(void*)args);
-
-if(resultado != 0){
-    log_error(log,"Error al crear el hilo");
-    free (args);
-    return NULL;
-}
-
-log_info(log,"El hilo cliente_memoria se creo correctamente");
-
-pthread_join(hilo_servidor,&socket_servidor_kernel);
-
-sockets->socket_servidor= (t_socket_cpu*)socket_servidor_kernel;
-
-pthread_join(hilo_cliente,&socket_cliente_memoria);
-
-sockets->socket_cliente= (intptr_t)socket_cliente_memoria;
-
-free(args);
-return sockets;
 }
