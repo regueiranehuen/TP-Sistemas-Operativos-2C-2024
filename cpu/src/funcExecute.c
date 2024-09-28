@@ -112,7 +112,7 @@ void funcSUM(char* registroOrig, char* registroDest) {
         contexto->registros->HX = valor_registro_origen + valor_registro_destino;
 
     } else {
-        printf("Registro desconocido: %s\n", instruccion->parametros1);
+        printf("Registro desconocido: %s\n", registroOrig);
     }
 }
 
@@ -167,19 +167,35 @@ void funcSUB(char* registroDest, char* registroOrig) {
         contexto->registros->HX = valor_registro_origen - valor_registro_destino;
 
     } else {
-        printf("Registro desconocido: %s\n", instruccion->parametros1);
+        printf("Registro desconocido: %s\n", registroDest);
     }
 }
 
-void funcJNZ(char* registro, char* numInstruccion) {
-    uint32_t valorRegistro = obtener_valor_registro(registro);
-    
-    if (valorRegistro != 0) {
-        uint32_t nuevaInstruccion = atoi(numInstruccion);
-        contexto->pc = nuevaInstruccion;  // Actualizar el Program Counter
-        log_info(log_cpu, "JNZ: Salta a la instrucción %d", nuevaInstruccion);
+void funcJNZ(char* registro, char* num_instruccion) {
+    uint32_t reg_value;
+    if (strcmp(registro, "AX") == 0) {
+        reg_value = contexto->registros->AX;
+    } else if (strcmp(registro, "BX") == 0) {
+        reg_value = contexto->registros->BX;
+    } else if (strcmp(registro, "CX") == 0) {
+        reg_value = contexto->registros->CX;
+    } else if (strcmp(registro, "DX") == 0) {
+        reg_value = contexto->registros->DX;
+    } else if (strcmp(registro, "EX") == 0) {
+        reg_value = contexto->registros->EX;
+    } else if (strcmp(registro, "FX") == 0) {
+        reg_value = contexto->registros->FX;
+    } else if (strcmp(registro, "GX") == 0) {
+        reg_value = contexto->registros->GX;
+    } else if (strcmp(registro, "HX") == 0) {
+        reg_value = contexto->registros->HX;
     } else {
-        log_info(log_cpu, "JNZ: No se salta porque %s = 0", registro);
+        printf("Registro desconocido: %s\n", registro);
+        return;
+    }
+
+    if (reg_value != 0) {
+        contexto->pc = atoi(num_instruccion);
     }
 }
 
@@ -187,6 +203,8 @@ void funcLOG(char* registro) {
     uint32_t valorRegistro = obtener_valor_registro(registro);
     log_info(log_cpu, "LOG: Registro %s = %d", registro, valorRegistro);
 }
+
+//--FUNIONES EXTRAS
 
 uint32_t obtener_valor_registro(char* parametro){
     uint32_t valor_registro;
