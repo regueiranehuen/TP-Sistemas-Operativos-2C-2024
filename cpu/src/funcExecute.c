@@ -62,13 +62,58 @@ void funcWRITE_MEM(char* registroDireccion, char* registroDatos) {
 }
 
 void funcSUM(char* registroOrig, char* registroDest) {
-    uint32_t valorOrig = obtenerValorRegistro(registroOrig);
-    uint32_t valorDest = obtenerValorRegistro(registroDest);
     
-    uint32_t resultado = valorDest + valorOrig;
-    asignarValorRegistro(registroDest, resultado);
-    
-    log_info(log_cpu, "SUM: %s = %d + %d", registroDest, valorDest, valorOrig);
+     if (strcmp(registroOrig, "AX") == 0) {
+
+        uint8_t valor_registro_origen = obtener_valor_registro(registroOrig);
+        uint8_t valor_registro_destino = obtener_valor_registro(registroDest);
+        contexto->registros->AX = valor_registro_origen + valor_registro_destino;
+
+    } else if (strcmp(registroOrig, "BX") == 0) {
+
+        uint8_t valor_registro_origen = obtener_valor_registro(registroOrig);
+        uint8_t valor_registro_destino = obtener_valor_registro(registroDest);
+        contexto->registros->BX = valor_registro_origen + valor_registro_destino;
+
+    } else if (strcmp(registroOrig, "CX") == 0) {
+
+        uint8_t valor_registro_origen = obtener_valor_registro(registroOrig);
+        uint8_t valor_registro_destino = obtener_valor_registro(registroDest);
+        contexto->registros->CX = valor_registro_origen + valor_registro_destino;
+
+    } else if (strcmp(registroOrig, "DX") == 0) {
+
+        uint8_t valor_registro_origen = obtener_valor_registro(registroOrig);
+        uint8_t valor_registro_destino = obtener_valor_registro(registroDest);
+        contexto->registros->DX = valor_registro_origen + valor_registro_destino;
+
+    } else if (strcmp(registroOrig, "EAX") == 0) {
+
+        uint32_t valor_registro_origen = obtener_valor_registro(registroOrig);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroDest);
+        contexto->registros->EAX = valor_registro_origen + valor_registro_destino;
+
+    } else if (strcmp(registroOrig, "EBX") == 0) {
+
+        uint32_t valor_registro_origen = obtener_valor_registro(registroOrig);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroDest);
+        contexto->registros->EBX = valor_registro_origen + valor_registro_destino;
+
+    } else if (strcmp(registroOrig, "ECX") == 0) {
+
+        uint32_t valor_registro_origen = obtener_valor_registro(registroOrig);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroDest);
+        contexto->registros->ECX = valor_registro_origen + valor_registro_destino;
+
+    } else if (strcmp(registroOrig, "EDX") == 0) {
+
+        uint32_t valor_registro_origen = obtener_valor_registro(registroOrig);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroDest);
+        contexto->registros->EDX = valor_registro_origen + valor_registro_destino;
+
+    } else {
+        printf("Registro desconocido: %s\n", instruccion->parametros1);
+    }
 }
 
 void funcSUB(char* registroDest, char* registroOrig) {
@@ -98,3 +143,27 @@ void funcLOG(char* registro) {
     log_info(log_cpu, "LOG: Registro %s = %d", registro, valorRegistro);
 }
 
+uint32_t obtener_valor_registro(char* parametro){
+    uint32_t valor_registro;
+    if (strcmp(parametro, "AX") == 0) {
+        valor_registro = contexto->registros->AX;
+    } else if (strcmp(parametro, "BX") == 0) {
+        valor_registro = contexto->registros->BX;
+    } else if (strcmp(parametro, "CX") == 0) {
+        valor_registro = contexto->registros->CX;
+    } else if (strcmp(parametro, "DX") == 0) {
+        valor_registro = contexto->registros->DX;
+    } else if (strcmp(parametro, "EX") == 0) {
+        valor_registro = contexto->registros->EX;
+    } else if (strcmp(parametro, "FX") == 0) {
+        valor_registro = contexto->registros->FX;
+    } else if (strcmp(parametro, "GX") == 0) {
+        valor_registro = contexto->registros->GX;
+    } else if (strcmp(parametro, "HX") == 0) {
+        valor_registro = contexto->registros->HX;
+    }else {
+        printf("Registro desconocido: %s\n", parametro);
+        return 0;
+    }
+    return valor_registro;
+}

@@ -92,19 +92,19 @@ void execute(op_code instruccion_nombre, t_instruccion* instruccion) {
     switch (instruccion_nombre) {
         case SET:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
-            funcSet(instruccion);
+            funcSET(instruccion->parametros2, instruccion->parametros3);
             break;
         case SUM:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
-            funcSum(instruccion);
+            funcSUM(instruccion->parametros2, instruccion->parametros3);
             break;
         case SUB:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
-            funcSub(instruccion);
+            funcSUB(instruccion);
             break;
         case JNZ:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
-            funcJnz(instruccion);
+            funcJNZ(instruccion);
             break;
         case READ_MEM:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
