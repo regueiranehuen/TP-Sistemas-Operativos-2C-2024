@@ -29,38 +29,6 @@ void funcSET(char *registro, char* valor) {
     log_info(log_cpu, "SET: Registro %s = %d", registro, val);
 }
 
-void funcREAD_MEM(char* registroDatos, char* registroDireccion) {
-    // Traducir la dirección lógica a física usando la MMU
-    uint32_t dirLogica = obtenerValorRegistro(registroDireccion);
-    uint32_t dirFisica = traducirDireccionLogica(dirLogica);
-    
-    if (dirFisica == SEGMENTATION_FAULT) {
-        manejarSegmentationFault();
-        return;
-    }
-
-    uint32_t valorLeido = leerMemoria(dirFisica);  // Leer desde la memoria
-    asignarValorRegistro(registroDatos, valorLeido);
-    
-    log_info(log_cpu, "READ_MEM: Leído %d de la Dirección Física %d", valorLeido, dirFisica);
-}
-
-void funcWRITE_MEM(char* registroDireccion, char* registroDatos) {
-    // Traducir dirección lógica a física usando la MMU
-    uint32_t dirLogica = obtenerValorRegistro(registroDireccion);
-    uint32_t dirFisica = traducirDireccionLogica(dirLogica);
-
-    if (dirFisica == SEGMENTATION_FAULT) {
-        manejarSegmentationFault();
-        return;
-    }
-
-    uint32_t valorDatos = obtenerValorRegistro(registroDatos);
-    escribirMemoria(dirFisica, valorDatos);  // Escribir en memoria
-    
-    log_info(log_cpu, "WRITE_MEM: Escrito %d en la Dirección Física %d", valorDatos, dirFisica);
-}
-
 void funcSUM(char* registroOrig, char* registroDest) {
     
      if (strcmp(registroOrig, "AX") == 0) {
@@ -202,6 +170,13 @@ void funcJNZ(char* registro, char* num_instruccion) {
 void funcLOG(char* registro) {
     uint32_t valorRegistro = obtener_valor_registro(registro);
     log_info(log_cpu, "LOG: Registro %s = %d", registro, valorRegistro);
+}
+
+
+void funcREAD_MEM(char* registro_datos, char* registro_direccion) { 
+}
+
+void funcWRITE_MEM(char* registro_direccion, char* registro_datos) {
 }
 
 //--FUNIONES EXTRAS
