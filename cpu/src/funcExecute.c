@@ -65,51 +65,51 @@ void funcSUM(char* registroOrig, char* registroDest) {
     
      if (strcmp(registroOrig, "AX") == 0) {
 
-        uint8_t valor_registro_origen = obtener_valor_registro(registroOrig);
-        uint8_t valor_registro_destino = obtener_valor_registro(registroDest);
+        uint32_t valor_registro_origen = obtener_valor_registro(registroOrig);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroDest);
         contexto->registros->AX = valor_registro_origen + valor_registro_destino;
 
     } else if (strcmp(registroOrig, "BX") == 0) {
 
-        uint8_t valor_registro_origen = obtener_valor_registro(registroOrig);
-        uint8_t valor_registro_destino = obtener_valor_registro(registroDest);
+        uint32_t valor_registro_origen = obtener_valor_registro(registroOrig);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroDest);
         contexto->registros->BX = valor_registro_origen + valor_registro_destino;
 
     } else if (strcmp(registroOrig, "CX") == 0) {
 
-        uint8_t valor_registro_origen = obtener_valor_registro(registroOrig);
-        uint8_t valor_registro_destino = obtener_valor_registro(registroDest);
+        uint32_t valor_registro_origen = obtener_valor_registro(registroOrig);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroDest);
         contexto->registros->CX = valor_registro_origen + valor_registro_destino;
 
     } else if (strcmp(registroOrig, "DX") == 0) {
 
-        uint8_t valor_registro_origen = obtener_valor_registro(registroOrig);
-        uint8_t valor_registro_destino = obtener_valor_registro(registroDest);
+        uint32_t valor_registro_origen = obtener_valor_registro(registroOrig);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroDest);
         contexto->registros->DX = valor_registro_origen + valor_registro_destino;
 
-    } else if (strcmp(registroOrig, "EAX") == 0) {
+    } else if (strcmp(registroOrig, "EX") == 0) {
 
         uint32_t valor_registro_origen = obtener_valor_registro(registroOrig);
         uint32_t valor_registro_destino = obtener_valor_registro(registroDest);
-        contexto->registros->EAX = valor_registro_origen + valor_registro_destino;
+        contexto->registros->EX = valor_registro_origen + valor_registro_destino;
 
-    } else if (strcmp(registroOrig, "EBX") == 0) {
-
-        uint32_t valor_registro_origen = obtener_valor_registro(registroOrig);
-        uint32_t valor_registro_destino = obtener_valor_registro(registroDest);
-        contexto->registros->EBX = valor_registro_origen + valor_registro_destino;
-
-    } else if (strcmp(registroOrig, "ECX") == 0) {
+    } else if (strcmp(registroOrig, "FX") == 0) {
 
         uint32_t valor_registro_origen = obtener_valor_registro(registroOrig);
         uint32_t valor_registro_destino = obtener_valor_registro(registroDest);
-        contexto->registros->ECX = valor_registro_origen + valor_registro_destino;
+        contexto->registros->FX = valor_registro_origen + valor_registro_destino;
 
-    } else if (strcmp(registroOrig, "EDX") == 0) {
+    } else if (strcmp(registroOrig, "GX") == 0) {
 
         uint32_t valor_registro_origen = obtener_valor_registro(registroOrig);
         uint32_t valor_registro_destino = obtener_valor_registro(registroDest);
-        contexto->registros->EDX = valor_registro_origen + valor_registro_destino;
+        contexto->registros->GX = valor_registro_origen + valor_registro_destino;
+
+    } else if (strcmp(registroOrig, "HX") == 0) {
+
+        uint32_t valor_registro_origen = obtener_valor_registro(registroOrig);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroDest);
+        contexto->registros->HX = valor_registro_origen + valor_registro_destino;
 
     } else {
         printf("Registro desconocido: %s\n", instruccion->parametros1);
@@ -117,17 +117,62 @@ void funcSUM(char* registroOrig, char* registroDest) {
 }
 
 void funcSUB(char* registroDest, char* registroOrig) {
-    uint32_t valorOrig = obtenerValorRegistro(registroOrig);
-    uint32_t valorDest = obtenerValorRegistro(registroDest);
-    
-    uint32_t resultado = valorDest - valorOrig;
-    asignarValorRegistro(registroDest, resultado);
-    
-    log_info(log_cpu, "SUB: %s = %d - %d", registroDest, valorDest, valorOrig);
+
+    if (strcmp(registroDest, "AX") == 0) {
+
+        uint32_t valor_registro_origen = obtener_valor_registro_(registroDest);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroOrig);
+        contexto->registros->AX = valor_registro_origen - valor_registro_destino;
+
+    } else if (strcmp(registroDest, "BX") == 0) {
+
+        uint32_t valor_registro_origen = obtener_valor_registro(registroDest);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroOrig);
+        contexto->registros->BX = valor_registro_origen - valor_registro_destino;
+
+    } else if (strcmp(registroDest, "CX") == 0) {
+
+        uint32_t valor_registro_origen = obtener_valor_registro(registroDest);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroOrig);
+        contexto->registros->CX = valor_registro_origen - valor_registro_destino;
+
+    } else if (strcmp(registroDest, "DX") == 0) {
+
+        uint32_t valor_registro_origen = obtener_valor_registro(registroDest);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroOrig);
+        contexto->registros->DX = valor_registro_origen - valor_registro_destino;
+
+    } else if (strcmp(registroDest, "EX") == 0) {
+
+        uint32_t valor_registro_origen = obtener_valor_registro(registroDest);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroOrig);
+        contexto->registros->EX = valor_registro_origen - valor_registro_destino;
+
+    } else if (strcmp(registroDest, "EFX") == 0) {
+
+        uint32_t valor_registro_origen = obtener_valor_registro(registroDest);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroOrig);
+        contexto->registros->FX = valor_registro_origen - valor_registro_destino;
+
+    } else if (strcmp(registroDest, "GX") == 0) {
+
+        uint32_t valor_registro_origen = obtener_valor_registro(registroDest);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroOrig);
+        contexto->registros->GX = valor_registro_origen - valor_registro_destino;
+
+    } else if (strcmp(registroDest, "HX") == 0) {
+
+        uint32_t valor_registro_origen = obtener_valor_registro(registroDest);
+        uint32_t valor_registro_destino = obtener_valor_registro(registroOrig);
+        contexto->registros->HX = valor_registro_origen - valor_registro_destino;
+
+    } else {
+        printf("Registro desconocido: %s\n", instruccion->parametros1);
+    }
 }
 
 void funcJNZ(char* registro, char* numInstruccion) {
-    uint32_t valorRegistro = obtenerValorRegistro(registro);
+    uint32_t valorRegistro = obtener_valor_registro(registro);
     
     if (valorRegistro != 0) {
         uint32_t nuevaInstruccion = atoi(numInstruccion);
@@ -139,7 +184,7 @@ void funcJNZ(char* registro, char* numInstruccion) {
 }
 
 void funcLOG(char* registro) {
-    uint32_t valorRegistro = obtenerValorRegistro(registro);
+    uint32_t valorRegistro = obtener_valor_registro(registro);
     log_info(log_cpu, "LOG: Registro %s = %d", registro, valorRegistro);
 }
 
