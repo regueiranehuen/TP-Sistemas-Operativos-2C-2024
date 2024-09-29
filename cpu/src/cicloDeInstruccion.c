@@ -17,7 +17,7 @@ void ciclo_de_instruccion() {
 }
 }
 
-t_instruccion* fetch(uint32_t tid, uint32_t pc) {
+t_instruccion* fetch(uint32_t tid, uint32_t pc){
 
     pedir_instruccion_memoria(tid, pc, log_cpu);
     log_info(log_cpu, "PID: %i - FETCH - Program Counter: %i", tid, pc);
@@ -44,7 +44,7 @@ void pedir_instruccion_memoria(uint32_t tid, uint32_t pc, t_log *logg){
 
 }
 
-op_code decode() {
+op_code decode(t_instruccion *instruccion){
     if (strcmp(instruccion->parametros1, "SET") == 0) {
         return SET;
     } else if (strcmp(instruccion->parametros1, "READ_MEM") == 0) {
@@ -88,7 +88,7 @@ op_code decode() {
 }
 
 
-void execute(op_code instruccion_nombre, t_instruccion* instruccion) {
+void execute(op_code instruccion_nombre, t_instruccion* instruccion){
     switch (instruccion_nombre) {
         case SET:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
@@ -100,21 +100,19 @@ void execute(op_code instruccion_nombre, t_instruccion* instruccion) {
             break;
         case SUB:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
-            funcSUB(instruccion);
+            funcSUB(instruccion->parametros2, instruccion->parametros3);
             break;
         case JNZ:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
-            funcJNZ(instruccion);
+            funcJNZ(instruccion->parametros2, instruccion->parametros3);
             break;
         case READ_MEM:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
-            funcREAD_MEM(instruccion);
-            esperar_devolucion_pcb();
+            funcREAD_MEM(instruccion->parametros2, instruccion->parametros3);
             break;
         case WRITE_MEM:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s", instruccion->parametros1, instruccion->parametros2);
-            funcWait(instruccion);
-            funWRITE_MEM();
+            funWRITE_MEM(instruccion->parametros2, instruccion->parametros3);
             break;
         default:
             log_info(log_cpu, "Instrucción desconocida\n");
