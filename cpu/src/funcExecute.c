@@ -173,7 +173,8 @@ void funcLOG(char* registro) {
 }
 
 
-void funcREAD_MEM(char* registro_datos, char* registro_direccion) { 
+void funcREAD_MEM(char* registro_datos, char* registro_direccion) {
+    
 }
 
 void funcWRITE_MEM(char* registro_direccion, char* registro_datos) {

@@ -71,6 +71,7 @@ sockets->socket_Interrupt=socket_servidor_Interrupt;
 
 int cliente_cpu_memoria (t_log* log, t_config * config){
 
+
 char * ip, * puerto;
 int socket_cliente, respuesta;
 
@@ -84,14 +85,14 @@ puerto = config_get_string_value(config, "PUERTO_MEMORIA");
     }
 
     // Crear conexion
-    conexion_memoria = crear_conexion(log, ip, puerto);
+    socket_cliente = crear_conexion(log, ip, puerto);
 
-    if (conexion_memoria == -1) {
+    if (socket_cliente == -1) {
         log_info(log, "No se pudo crear la conexion");
         return -1;
     }
 
-   respuesta = cliente_handshake(conexion_memoria,log);
+   respuesta = cliente_handshake(socket_cliente,log);
    
 
    if (respuesta == 0){
@@ -103,7 +104,7 @@ puerto = config_get_string_value(config, "PUERTO_MEMORIA");
 
 
 
-    return conexion_memoria;
+    return socket_cliente;
 }
 
 void* funcion_hilo_servidor_cpu(void* void_args){
@@ -185,18 +186,16 @@ t_sockets_cpu* hilos_cpu(t_log* log, t_config* config){
 }
 
 
-void recibir_kernel_dispatch(int SOCKET_CLIENTE_KERNEL_DISPATCH){
-    enviar_string(SOCKET_CLIENTE_KERNEL_DISPATCH, "hola desde cpu dispatch", MENSAJE);
+void recibir_kernel_dispatch(int socket_cliente_Dispatch){
     int noFinalizar = 0;
     while(noFinalizar != -1){
-        int codOperacion = recibir_operacion(SOCKET_CLIENTE_KERNEL_DISPATCH);
+        int codOperacion = recibir_operacion(socket_cliente_Dispatch);
         switch (codOperacion)
         {
         case EXEC:
-            log_trace(log_cpu, "llego contexto de ejecucion");
-            contexto = recibir_contexto(SOCKET_CLIENTE_KERNEL_DISPATCH);
+            log_trace(log_cpu, "llego TID y PID asociado");
+            tcb = recibir_tcb(socket_cliente_Dispatch);
             ejecutar_ciclo_de_instruccion(log_cpu);
-            //sem_post(&sem_fin_de_ciclo);
             log_trace(log_cpu, "ejecute correctamente el ciclo de instruccion");
             break;
         case -1:
@@ -208,20 +207,15 @@ void recibir_kernel_dispatch(int SOCKET_CLIENTE_KERNEL_DISPATCH){
     }
 }
 
-void recibir_kernel_interrupt(int SOCKET_CLIENTE_KERNEL_INTERRUPT){
-    enviar_string(SOCKET_CLIENTE_KERNEL_INTERRUPT, "hola desde cpu interrupt", MENSAJE);
+void recibir_kernel_interrupt(int socket_cliente_Interrupt){
+    enviar_string(socket_cliente_Interrupt, "hola desde cpu interrupt", MENSAJE);
     int noFinalizar = 0;
     while(noFinalizar != -1){
-        int codOperacion = recibir_operacion(SOCKET_CLIENTE_KERNEL_INTERRUPT);
+        int codOperacion = recibir_operacion(socket_cliente_Interrupt);
         switch (codOperacion)
         {
-        case FIN_QUANTUM_RR:
-            tid_interrupt = recibir_entero_uint32(SOCKET_CLIENTE_KERNEL_INTERRUPT,log_cpu);
-            hay_interrupcion = 1;
-            log_trace(log_cpu,"recibi una interrupcion para el pid: %d", tid_interrupt);
-            break;
         case INTERRUPCION_USUARIO:
-            tid_interrupt = recibir_entero_uint32(SOCKET_CLIENTE_KERNEL_INTERRUPT,log_cpu);
+            tid_interrupt = recibir_entero_uint32(socket_cliente_Interrupt,log_cpu);
             hay_interrupcion = 1;
             es_por_usuario = 1;
         case -1:

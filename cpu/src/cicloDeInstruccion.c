@@ -1,4 +1,7 @@
 #include "cicloDeInstruccion.h"
+#include "funcExecute.h"
+#include "mmu.h"
+#include "server.h"
 
 void ciclo_de_instruccion() {
 
@@ -111,8 +114,12 @@ void execute(op_code instruccion_nombre, t_instruccion* instruccion){
             funcREAD_MEM(instruccion->parametros2, instruccion->parametros3);
             break;
         case WRITE_MEM:
-            log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s", instruccion->parametros1, instruccion->parametros2);
-            funWRITE_MEM(instruccion->parametros2, instruccion->parametros3);
+            log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
+            funcWRITE_MEM(instruccion->parametros2, instruccion->parametros3);
+            break;
+        case LOG:
+            log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s ", instruccion->parametros1, instruccion->parametros2);
+            funcLOG(instruccion->parametros2);
             break;
         default:
             log_info(log_cpu, "Instrucción desconocida\n");

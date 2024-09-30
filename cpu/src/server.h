@@ -16,11 +16,12 @@ typedef struct{
 
 
 t_contexto* contexto;
-int conexion_memoria;
 uint32_t tid_interrupt;
 int hay_interrupcion;
 int es_por_usuario;
 int seguir_ejecutando;
+
+
 t_socket_cpu* servidor_CPU_Kernel(t_log* log, t_config* config);
 int cliente_cpu_memoria (t_log* log, t_config * config);
 void* funcion_hilo_servidor_cpu(void* void_args);
