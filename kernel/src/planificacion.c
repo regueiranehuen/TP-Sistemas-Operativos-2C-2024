@@ -223,11 +223,11 @@ void *atender_syscall(void *void_args)
 
 t_tcb* prioridades (t_pcb* pcb){
 
-if(!list_is_empty(pcb->lista_prioridad_ready)){
+    if(!list_is_empty(pcb->lista_prioridad_ready)){
 
-t_tcb* tcb_prioritario = list_remove(pcb->lista_prioridad_ready,0);
+    t_tcb* tcb_prioritario = list_remove(pcb->lista_prioridad_ready,0);
 
-return tcb_prioritario;
+    return tcb_prioritario;
 
 }
 
@@ -235,48 +235,47 @@ return NULL;
 
 }
 
-void round_robin(t_queue *cola) {
-    if (!queue_is_empty(cola)) {
-        int quantum = config_get_int_value(config, "QUANTUM");
-        t_tcb *tcb = queue_pop(cola); // Sacar el primer hilo de la cola
+void round_robin(t_queue *cola_ready_prioridad)
+{
+    if (!queue_is_empty(cola_ready_prioridad))
+    {
+        int quantum = config_get_int_value(config, "QUANTUM"); // Cantidad máxima de tiempo que obtiene la CPU un proceso/hilo (EN MILISEGUNDOS)
 
-        tcb->estado = TCB_EXECUTE;
+        t_tcb *tcb = queue_pop(cola_ready_prioridad); // Sacar el primer hilo de la cola
 
-        int tiempo_ejecutado = 0;
+        ejecucion(tcb, cola_ready_prioridad, sockets->sockets_cliente_cpu->socket_Dispatch);
 
-        while (tiempo_ejecutado < quantum) {
-            // Enviar el hilo a la CPU y esperar la devolución
-            t_paquete *paquete = crear_paquete();
-            agregar_a_paquete(paquete, &tcb->tid, sizeof(tcb->tid));
-            agregar_a_paquete(paquete, &tcb->pid, sizeof(tcb->pid));
-            enviar_paquete(paquete, sockets->sockets_cliente_cpu->socket_Dispatch);
-            eliminar_paquete(paquete);
+        // Simular que el hilo está en ejecución durante el tiempo del quantum
+        usleep(quantum * 1000); // usleep trata con microsegundos, 1 microsegundo es igual a 1000 milisegundos
 
-            // Esperar la devolución desde la CPU
-            t_list *devolucionCPU = recibir_paquete(sockets->sockets_cliente_cpu->socket_Dispatch);
-            code_operacion motivo_devolucion = *(code_operacion *)list_get(devolucionCPU, 0);
+        code_operacion rtaCPU;
+        code_operacion fin_quantum_rr = FIN_QUANTUM_RR;
 
-            if (motivo_devolucion == THREAD_EXIT_) {
-                THREAD_EXIT();
-                break;
-            } else if (es_motivo_devolucion(motivo_devolucion)) {
-                // Si se debe replanificar, cambiar estado y volver a poner en la cola
-                tcb->estado = TCB_READY;
-                queue_push(cola, tcb);
-                break;
-            }
+        send(sockets->sockets_cliente_cpu->socket_Interrupt, &fin_quantum_rr, sizeof(fin_quantum_rr), 0);
+        recv(sockets->sockets_cliente_cpu->socket_Interrupt, &rtaCPU, sizeof(rtaCPU), 0);
 
-            tiempo_ejecutado++;
-            usleep(1000); // Dormir un corto período para no consumir CPU innecesariamente
+        if (rtaCPU == THREAD_EXIT_SYSCALL) // Al código de operación que está en la branch memoria_cpu le agregué un guión bajo pq se llamaría igual que la syscall. Ojo con eso
+        {
+            THREAD_EXIT();
         }
-
-        // Si se alcanzó el quantum y el hilo sigue en ejecución, se cambia su estado
-        if (tiempo_ejecutado >= quantum) {
+        else
+        {
             tcb->estado = TCB_READY;
-            queue_push(cola, tcb);
-        }
-    }
+            queue_push(cola_ready_prioridad, tcb); // Lo reinsertas si no ha terminado
+        }
+    }
 }
+
+void*contar_hasta_quantum(void*args){
+    t_args_esperar_quantum*args_esperar_quantum = (t_args_esperar_quantum*)(args);
+    usleep(args_esperar_quantum->quantum*1000);
+    args_esperar_quantum->termino=true;
+    return NULL;
+}
+
+
+
+
 
 /*
 Colas Multinivel
@@ -299,7 +298,7 @@ void colas_multinivel(t_pcb *pcb)
         }
         else
         {
-        colas_multinivel(pcb);
+            colas_multinivel(pcb);
         }
     }
 }
@@ -329,7 +328,7 @@ while(estado_kernel!=0){
 
     ordenar_por_prioridad(lista_prioridades);
 }
-return NULL;
+    return NULL;
 }
 
 void *funcion_ready_exec_hilos(void *arg)
@@ -364,6 +363,7 @@ void planificador_corto_plazo(t_pcb *pcb) // Si llega un pcb nuevo a la cola rea
     if (strings_iguales(algoritmo, "PRIORIDADES")){
         hilo_ordena_lista_prioridades(pcb);
     }
+
     pthread_t hilo_ready_exec;
 
     int resultado = pthread_create(&hilo_ready_exec, NULL, funcion_ready_exec_hilos, algoritmo);

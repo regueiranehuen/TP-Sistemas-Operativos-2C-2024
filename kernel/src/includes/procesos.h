@@ -33,6 +33,7 @@ typedef enum{
     PROCESS_ELIMINATE_SYSCALL, //Se elimina un proceso por una syscall
     PROCESS_CREATE_AVISO,
     THREAD_CREATE_AVISO,
+    THREAD_EXECUTE_AVISO, //// NUEVO CODIGO
     THREAD_ELIMINATE_AVISO,
     THREAD_CANCEL_AVISO,
     THREAD_INTERRUPT,
@@ -128,7 +129,15 @@ typedef struct{
     t_tcb*nuevo_hilo;
 }t_args_insertar_ordenado;
 
+typedef struct{
+    t_tcb*tcb;
+    int milisegundos;
+}t_args_espera_io;
 
+typedef struct{
+    int quantum;
+    bool termino;
+}t_args_esperar_quantum;
 
 
 t_pcb* crear_pcb();
@@ -156,5 +165,8 @@ void IO(int milisegundos);
 void DUMP_MEMORY();
 
 void ejecucion(t_tcb*hilo,t_queue*queue,int socket_dispatch);
+
+void* manejar_espera_io(void* arg);
+void hilo_termino_io(t_tcb* tcb);
 
 #endif

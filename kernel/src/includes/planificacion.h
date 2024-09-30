@@ -42,4 +42,6 @@ void hilo_ordena_cola_prioridades(t_pcb* pcb);
 void* ordenamiento_continuo(void* void_args);
 void planificador_corto_plazo(t_pcb*pcb) ;
 void *funcion_ready_exec_hilos(void *arg);
+
+void*contar_hasta_quantum(void*args);
 #endif

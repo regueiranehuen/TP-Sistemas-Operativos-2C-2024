@@ -10,6 +10,7 @@ void send_tid(t_tcb* tcb, int socket_memoria) {
     t_paquete* paquete = crear_paquete();
     agregar_tid_a_paquete(tcb, paquete);
     enviar_paquete(paquete, socket_memoria);
+    // eliminar_paquete(paquete);
 }
 
 
@@ -22,6 +23,7 @@ void send_pid(t_pcb* pcb, int socket_memoria) {
     t_paquete* paquete = crear_paquete();
     agregar_pid_a_paquete(pcb, paquete);
     enviar_paquete(paquete, socket_memoria);
+    // eliminar_paquete(paquete);
 }
 
 void* serializar_paquete(t_paquete* paquete, int bytes)
@@ -85,7 +87,30 @@ void liberar_conexion(int socket_cliente)
 {
     close(socket_cliente);
 }
-/*
+
+
+void send_operacion_tid(int tid, code_operacion code, int socket_cliente){
+    t_paquete* paquete = crear_paquete();
+    agregar_a_paquete(paquete,&code,sizeof(code_operacion));
+    agregar_a_paquete(paquete,&tid,sizeof(tid));
+
+    enviar_paquete(paquete,socket_cliente);
+
+    // ??? eliminar_paquete(paquete);
+}
+
+void send_operacion_tid_pid(int pid,int tid,code_operacion code, int socket_cliente){
+    t_paquete* paquete = crear_paquete();
+    agregar_a_paquete(paquete,&code,sizeof(code_operacion));
+    agregar_a_paquete(paquete,&pid,sizeof(pid));
+    agregar_a_paquete(paquete,&tid,sizeof(tid));
+
+    enviar_paquete(paquete,socket_cliente);
+
+    // ??? eliminar_paquete(paquete);
+}
+
+
 t_list* recibir_paquete(int socket_cliente)
 {
 	int size;
@@ -106,8 +131,8 @@ t_list* recibir_paquete(int socket_cliente)
 	}
 	free(buffer);
 	return valores;
-}*/
-/*
+}
+
 void* recibir_buffer(int* size, int socket_cliente)
 {
 	void * buffer;
@@ -130,8 +155,7 @@ int recibir_operacion(int socket_cliente)
 		return -1;
 	}
 }
-*/
-/*
+
 void agregar_tcb_a_paquete(t_tcb*tcb,t_paquete*paquete){  // AGREGAR LOS CAMPOS QUE FALTAN
     
     agregar_a_paquete(paquete,&(tcb->tid),sizeof(int));
@@ -144,8 +168,7 @@ void agregar_tcb_a_paquete(t_tcb*tcb,t_paquete*paquete){  // AGREGAR LOS CAMPOS 
     agregar_a_paquete(paquete,tcb->pseudocodigo,sizeof(tcb->pseudocodigo_length));
 
 }
-*/
-/*
+
 void send_tcb(t_tcb*tcb,int socket_memoria){
     t_paquete* paquete = crear_paquete();
     agregar_tcb_a_paquete(tcb,paquete);
@@ -166,7 +189,6 @@ void agregar_pcb_a_paquete(t_pcb*pcb,t_paquete*paquete){
     agregar_a_paquete(paquete,&(pcb->estado),sizeof(int));
     agregar_a_paquete(paquete,&(pcb->tamanio_proceso),sizeof(int));
     agregar_a_paquete(paquete,&(pcb->prioridad),sizeof(int));
-
 }
 
 
@@ -175,4 +197,3 @@ void send_pcb(t_pcb*pcb,int socket_memoria){
     agregar_pcb_a_paquete(pcb,paquete);
     enviar_paquete(paquete,socket_memoria);
 }
-*/

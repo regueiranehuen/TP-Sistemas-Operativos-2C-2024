@@ -7,6 +7,7 @@ sem_t semaforo_cola_new_procesos;
 sem_t semaforo_cola_exit_procesos;
 sem_t semaforo_cola_new_hilos;
 sem_t semaforo_cola_exit_hilos;
+sem_t semaforo_cola_io;
 sem_t sem_lista_prioridades;
 t_queue *cola_new;
 t_queue *cola_ready;
@@ -358,8 +359,12 @@ void THREAD_CANCEL(int tid)
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
 
-    send(socket_memoria, &cod_op, sizeof(code_operacion), 0);
-    send_tcb(tcb, socket_memoria);
+    // send(socket_memoria, &cod_op, sizeof(code_operacion), 0);
+    // send(socket_memoria,&tid,sizeof(int),0);
+
+    send_operacion_tid(tid,cod_op,socket_memoria);
+    
+
     recv(socket_memoria, &respuesta, sizeof(int), 0);
 
     close(socket_memoria);
@@ -396,8 +401,22 @@ la finalización de dicho hilo.
 
 void THREAD_EXIT()
 {
+    code_operacion cod_op = THREAD_EXIT_SYSCALL;
+    int respuesta;
+
+    int socket_memoria= cliente_Memoria_Kernel(logger,config);
+
     move_tcb_to_exit(proceso_exec,proceso_exec->hilo_exec);
+    send_operacion_tid(proceso_exec->hilo_exec->tid,cod_op,socket_memoria);
+    recv(socket_memoria, &respuesta, sizeof(int), 0);
+
+    if(respuesta == -1){
+        log_info(logger, "Error en la liberación de memoria del hilo");
+    }
+
     sem_post(&semaforo_cola_exit_hilos);
+
+    close(socket_memoria);
 }
 
 /*
@@ -494,6 +513,7 @@ el cual atenderá las peticiones bajo el algoritmo FIFO. Para utilizar esta inte
 como parámetro la cantidad de milisegundos que el hilo va a permanecer haciendo la operación de entrada/salida.
 */
 
+/*
 void IO(int milisegundos)
 {
 
@@ -509,6 +529,7 @@ void IO(int milisegundos)
     // Simular la espera por E/S
     usleep(milisegundos * 1000);
 
+
     // Sacar el hilo de la lista de bloqueados
     find_and_remove_tcb_in_list(proceso_exec->lista_hilos_blocked, tcb->tid);
 
@@ -517,6 +538,59 @@ void IO(int milisegundos)
     t_cola_prioridad *cola = cola_prioridad(proceso_exec->colas_hilos_prioridad_ready, tcb->prioridad);
     queue_push(cola->cola, tcb);
 }
+*/
+
+void IO(int milisegundos)
+{
+    t_tcb *tcb = proceso_exec->hilo_exec;
+
+    // Cambiar el estado del hilo a BLOCKED
+    tcb->estado = TCB_BLOCKED;
+    proceso_exec->hilo_exec = NULL;
+
+    // Agregar el hilo a la lista de hilos bloqueados
+    list_add(proceso_exec->lista_hilos_blocked, tcb);
+
+    // Simular la espera de IO mediante un hilo o manejador de IO
+    pthread_t hilo_io;
+
+    t_args_espera_io *args_espera_io=malloc(sizeof(int)+tam_tcb(tcb));
+
+    pthread_create(&hilo_io, NULL, manejar_espera_io, args_espera_io);
+
+    // Desbloquear el hilo IO cuando termine
+    sem_post(&semaforo_cola_io);
+
+    // El hilo principal no debe quedarse esperando, así que no usaremos usleep()
+    pthread_detach(hilo_io);  // Permite que el hilo termine de manera independiente
+}
+
+// Función que manejará la simulación de IO en un hilo separado
+void* manejar_espera_io(void* arg) {
+    t_args_espera_io*args_espera_io = (t_args_espera_io*)arg;
+
+
+    usleep(args_espera_io->milisegundos * 1000);  // Simulación de espera en IO
+    
+    // Notificar que el hilo finalizó IO y mover a READY
+    hilo_termino_io(args_espera_io->tcb);
+    return NULL;
+}
+
+// Función que mueve el hilo de BLOCKED a READY una vez que termina IO
+void hilo_termino_io(t_tcb* tcb) {
+    // Sacar el hilo de la lista de hilos bloqueados
+    find_and_remove_tcb_in_list(proceso_exec->lista_hilos_blocked, tcb->tid);
+
+    // Cambiar el estado del hilo a READY
+    tcb->estado = TCB_READY;
+
+    // Mover el hilo a la cola de READY según su prioridad
+    t_cola_prioridad *cola = cola_prioridad(proceso_exec->colas_hilos_prioridad_ready, tcb->prioridad);
+    queue_push(cola->cola, tcb);
+}
+
+
 
 /* En este apartado solamente se tendrá la instrucción DUMP_MEMORY. Esta syscall le solicita a la memoria,
 junto al PID y TID que lo solicitó, que haga un Dump del proceso.
@@ -553,10 +627,12 @@ void DUMP_MEMORY()
     int pid = proceso_exec->pid;
     int tid = tcb->tid;
 
-    t_paquete *paquete_dump = crear_paquete();
-    agregar_a_paquete(paquete_dump, &pid, sizeof(int));
-    agregar_a_paquete(paquete_dump, &tid, sizeof(int));
-    enviar_paquete(paquete_dump, socket_memoria);
+    
+
+    code_operacion code = DUMP_MEMORIA;
+
+    send_operacion_tid_pid(pid,tid,code,DUMP_MEMORIA);
+
 
     int rta_memoria;
 
@@ -593,24 +669,18 @@ void ejecucion(t_tcb *hilo, t_queue *queue, int socket_dispatch)
     agregar_a_paquete(paquete, &hilo->tid, sizeof(hilo->tid));
     agregar_a_paquete(paquete, &hilo->pid, sizeof(hilo->pid));
 
-    //code_operacion rtaCPU;
+
 
     // Se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
     enviar_paquete(paquete, socket_dispatch);
-    //recv(socket_dispatch, &rtaCPU, sizeof(rtaCPU), 0);
-    
-    t_list* devolucionCPU = list_create(); //hago esto solamente para que no me tire error 
-    // = recibir_paquete(socket_dispatch);   // HAY QUE AGREGAR EL UTILS SERVER
 
-    // Hacer un paquete con un tid y con un enum
+    
+   
+    t_list* devolucionCPU = recibir_paquete(socket_dispatch);   
+
    
     
     code_operacion motivo_devolucion = *(code_operacion*)list_get(devolucionCPU, 0);
-
-    /*Agregué algunos de los códigos de operación subidos al módulo CPU. Había conflicto con algunos nombres por llamarse igual a algunas funciones que tenemos
-    hechas, así que no agregué todos*/
-
-    // en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
 
     if (es_motivo_devolucion(motivo_devolucion))
     { //
