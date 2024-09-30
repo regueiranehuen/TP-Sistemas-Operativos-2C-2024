@@ -45,7 +45,7 @@ typedef enum{
     LLAMADA_POR_INSTRUCCION,
 
     FIN_QUANTUM_RR,
-    THREAD_EXIT_,
+    THREAD_EXIT_SYSCALL,
     PEDIDO_MEMORIA_INICIALIZAR_PROCESO,
     PEDIDO_MEMORIA_TERMINAR_PROCESO,
     PEDIDO_MEMORIA_THREAD_CREATE,
@@ -91,6 +91,7 @@ typedef struct{
 int pid;
 t_list* tids;
 t_list* colas_hilos_prioridad_ready;
+t_list* lista_prioridad_ready;
 t_list* lista_hilos_blocked;
 t_queue* cola_hilos_new;
 t_queue* cola_hilos_exit;

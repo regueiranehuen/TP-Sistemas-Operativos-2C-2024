@@ -6,6 +6,7 @@ sem_t semaforo_cola_new_procesos;
 sem_t semaforo_cola_exit_procesos;
 sem_t semaforo_cola_new_hilos;
 sem_t semaforo_cola_exit_hilos;
+sem_t sem_lista_prioridades;
 t_queue *cola_new;
 t_queue *cola_ready;
 t_list *lista_pcbs;
@@ -101,7 +102,7 @@ void hilo_atender_syscalls()
     resultado = pthread_create(&hilo_syscalls, NULL, atender_syscall, NULL);
     if (resultado != 0)
     {
-        log_error(logger, "Error al crear el hilo_planificador_largo_plazo");
+        log_error(logger, "Error al crear el hilo_atender_syscall");
         return;
     }
     pthread_detach(hilo_syscalls);
@@ -183,7 +184,7 @@ void *atender_syscall(void *void_args)
         {
 
         case ENUM_PROCESS_CREATE:
-            // PROCESS_CREATE(); lo mismo que lo de abajo
+            //PROCESS_CREATE(); 
             break;
         case ENUM_PROCESS_EXIT:
             PROCESS_EXIT();
@@ -220,143 +221,123 @@ void *atender_syscall(void *void_args)
     return NULL;
 }
 
-t_tcb *prioridades(t_pcb *pcb)
-{
-    if (!queue_is_empty(pcb->cola_hilos_ready))
-    {
-        t_tcb *hilo_actual = queue_pop(pcb->cola_hilos_ready); // Sacamos el primer hilo (actual)
+t_tcb* prioridades (t_pcb* pcb){
 
-        // Recorremos el resto de la cola para comparar con el hilo actual
-        for (int i = 0; i < queue_size(pcb->cola_hilos_ready); i++)
-        {
-            t_tcb *hilo_siguiente = queue_pop(pcb->cola_hilos_ready); // Siguiente hilo a comparar
+if(!list_is_empty(pcb->lista_prioridad_ready)){
 
-            if (hilo_siguiente == NULL)
-            { // Si hay un único hilo en la cola
+t_tcb* tcb_prioritario = list_remove(pcb->lista_prioridad_ready,0);
 
-                return hilo_actual;
-            }
+return tcb_prioritario;
 
-            // Si la prioridad del siguiente es menor, actualizamos el hilo seleccionado
-            if (hilo_siguiente->prioridad < hilo_actual->prioridad)
-            {
-                queue_push(pcb->cola_hilos_ready, hilo_actual); // Reinserta el actual
-                hilo_actual = hilo_siguiente;                   // Actualiza el hilo seleccionado
-            }
-            else
-            {
-                queue_push(pcb->cola_hilos_ready, hilo_siguiente); // Reinserta el siguiente si no es seleccionado
-            }
-        }
-
-        // El hilo actual es el de menor prioridad, ya no se reinserta
-        return hilo_actual;
-    }
-    return NULL;
 }
 
-void round_robin(t_queue *cola)
+return NULL;
+
+}
+
+void round_robin(t_queue *cola_ready_prioridad)
 {
-    if (!queue_is_empty(cola))
+    if (!queue_is_empty(cola_ready_prioridad))
     {
         int quantum = config_get_int_value(config, "QUANTUM"); // Cantidad máxima de tiempo que obtiene la CPU un proceso/hilo (EN MILISEGUNDOS)
 
-        t_tcb *tcb = queue_pop(cola); // Sacar el primer hilo de la cola
+        t_tcb *tcb = queue_pop(cola_ready_prioridad); // Sacar el primer hilo de la cola
 
-        ejecucion(tcb, cola, sockets->sockets_cliente_cpu->socket_Dispatch);
+        ejecucion(tcb, cola_ready_prioridad, sockets->sockets_cliente_cpu->socket_Dispatch);
 
         // Simular que el hilo está en ejecución durante el tiempo del quantum
         usleep(quantum * 1000); // usleep trata con microsegundos, 1 microsegundo es igual a 1000 milisegundos
 
         code_operacion rtaCPU;
         code_operacion fin_quantum_rr = FIN_QUANTUM_RR;
+
         send(sockets->sockets_cliente_cpu->socket_Interrupt, &fin_quantum_rr, sizeof(fin_quantum_rr), 0);
-
-        // atenderSyscall()
-
         recv(sockets->sockets_cliente_cpu->socket_Interrupt, &rtaCPU, sizeof(rtaCPU), 0);
 
-        if (rtaCPU == THREAD_EXIT_) // Al código de operación que está en la branch memoria_cpu le agregué un guión bajo pq se llamaría igual que la syscall. Ojo con eso
+        if (rtaCPU == THREAD_EXIT_SYSCALL) // Al código de operación que está en la branch memoria_cpu le agregué un guión bajo pq se llamaría igual que la syscall. Ojo con eso
         {
             THREAD_EXIT();
         }
         else
         {
             tcb->estado = TCB_READY;
-            queue_push(cola, tcb); // Lo reinsertas si no ha terminado
+            queue_push(cola_ready_prioridad, tcb); // Lo reinsertas si no ha terminado
         }
     }
 }
-
-void colas_multinivel(t_pcb *pcb, int prioridad)
+/*
+Colas Multinivel
+Se elegirá al siguiente hilo a ejecutar según el siguiente esquema de colas multinivel:
+- Se tendrá una cola por cada nivel de prioridad existente entre los hilos del sistema.
+- El algoritmo entre colas es de prioridades sin desalojo.
+- Cada cola implementará un algoritmo Round Robin con un quantum (Q) definido por archivo de configuración.
+- Al llegar un hilo a ready se posiciona siempre al final de la cola que le corresponda.
+*/
+void colas_multinivel(t_pcb *pcb)
 {
-
-    if (list_is_empty(pcb->colas_hilos_prioridad_ready))
+    
+    if (!list_is_empty(pcb->colas_hilos_prioridad_ready))
     {
-        return;
-    }
-
-    else
-    {
-        int priori = nueva_prioridad(pcb->colas_hilos_prioridad_ready, prioridad);
-        t_cola_prioridad *cola_prioridad_actual = cola_prioridad(pcb->colas_hilos_prioridad_ready, priori);
-        if (!queue_is_empty(cola_prioridad_actual->cola))
+    int prioridad_mayor = obtener_menor_prioridad(pcb->colas_hilos_prioridad_ready);
+    t_cola_prioridad* cola_prioritaria = obtener_cola_por_prioridad(pcb->colas_hilos_prioridad_ready, prioridad_mayor);
+        if (cola_prioritaria != NULL && !queue_is_empty(cola_prioritaria->cola))
         {
-            round_robin(cola_prioridad_actual->cola);
+            round_robin(cola_prioritaria->cola);
         }
         else
         {
-            int prioridadSig = priori + 1;
-            colas_multinivel(pcb, prioridadSig);
+        colas_multinivel(pcb);
         }
     }
 }
 
-int nueva_prioridad(t_list *colas_hilos_prioridad_ready, int priori_actual)
+
+void hilo_ordena_lista_prioridades(t_pcb *pcb)
 {
+    pthread_t hilo_prioridades;
 
-    for (int i = 0; i <= priori_actual && i < list_size(colas_hilos_prioridad_ready); i++)
-    {
-        t_cola_prioridad *cola_prioridad_i = list_get(colas_hilos_prioridad_ready, i);
-
-        if (cola_prioridad_i != NULL && !queue_is_empty(cola_prioridad_i->cola))
-        {
-            return i;
-        }
-    }
-
-    return -1; // no deberia pasar
-}
-
-void hilo_ordena_cola_prioridades(t_pcb *pcb)
-{
-    pthread_t hilo_ordena_cola_prioridades;
-
-    int resultado = pthread_create(&hilo_ordena_cola_prioridades, NULL, ordenar_cola, pcb->cola_hilos_ready);
+    int resultado = pthread_create(&hilo_prioridades, NULL, ordenamiento_continuo, pcb->lista_prioridad_ready);
     
-
     if (resultado != 0)
     {
-        log_error(logger, "Error al crear el hilo_ordena_cola_prioridades");
+        log_error(logger, "Error al crear el hilo_prioridades");
         return;
     }
-    pthread_detach(hilo_ordena_cola_prioridades);
+    pthread_detach(hilo_prioridades);
+}
+
+void* ordenamiento_continuo (void* void_args){
+
+t_list* lista_prioridades = (t_list*)void_args;
+
+while(estado_kernel!=0){
+
+    sem_wait(&sem_lista_prioridades);
+
+    ordenar_por_prioridad(lista_prioridades);
+}
+return NULL;
 }
 
 void *funcion_ready_exec_hilos(void *arg)
 {
     char*algoritmo=(char*)arg;
     while (estado_kernel != 0)
-    {
-        if (strings_iguales(algoritmo, "FIFO") || strings_iguales(algoritmo, "PRIORIDADES"))
+    { 
+        if (strings_iguales(algoritmo, "FIFO")){
+        proceso_exec->hilo_exec = fifo_tcb(proceso_exec);
+        ejecucion(proceso_exec->hilo_exec,proceso_exec->cola_hilos_ready,sockets->sockets_cliente_cpu->socket_Dispatch);
+        
+        } else if (strings_iguales(algoritmo, "PRIORIDADES"))
         {
-            proceso_exec->hilo_exec = fifo_tcb(proceso_exec);
-            ejecucion(proceso_exec->hilo_exec, proceso_exec->cola_hilos_ready, sockets->sockets_cliente_cpu->socket_Dispatch);
+        proceso_exec->hilo_exec = prioridades(proceso_exec);
+        ejecucion(proceso_exec->hilo_exec, proceso_exec->cola_hilos_ready, sockets->sockets_cliente_cpu->socket_Dispatch);
         }
 
-        if (strings_iguales(algoritmo, "CMN"))
+        if (strings_iguales(algoritmo, "MULTINIVEL"))
         {
-            colas_multinivel(proceso_exec, 0);
+            colas_multinivel(proceso_exec);
+           
         }
     }
     return NULL;
@@ -367,9 +348,9 @@ void planificador_corto_plazo(t_pcb *pcb) // Si llega un pcb nuevo a la cola rea
 
     char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
 
-    if (strings_iguales(algoritmo, "PRIORIDADES"))
-        hilo_ordena_cola_prioridades(pcb);
-
+    if (strings_iguales(algoritmo, "PRIORIDADES")){
+        hilo_ordena_lista_prioridades(pcb);
+    }
     pthread_t hilo_ready_exec;
 
     int resultado = pthread_create(&hilo_ready_exec, NULL, funcion_ready_exec_hilos, algoritmo);

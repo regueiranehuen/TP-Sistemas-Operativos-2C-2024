@@ -7,6 +7,7 @@ sem_t semaforo_cola_new_procesos;
 sem_t semaforo_cola_exit_procesos;
 sem_t semaforo_cola_new_hilos;
 sem_t semaforo_cola_exit_hilos;
+sem_t sem_lista_prioridades;
 t_queue *cola_new;
 t_queue *cola_ready;
 t_list *lista_pcbs;
@@ -167,9 +168,12 @@ void new_a_ready_hilos(t_pcb *pcb)
     char *planificacion = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
     t_tcb *hilo = queue_pop(pcb->cola_hilos_new);
     hilo->estado = TCB_READY;
-    if (strcmp(planificacion, "FIFO") == 0 || strcmp(planificacion,"PRIORIDADES")==0)
-    {
+    if (strcmp(planificacion, "FIFO") == 0){
         queue_push(pcb->cola_hilos_ready, hilo);
+    } else if(strcmp(planificacion,"PRIORIDADES")==0)
+    {
+        list_add(pcb->colas_hilos_prioridad_ready,hilo);
+        sem_post(&sem_lista_prioridades);
     }
     if (strcmp(planificacion, "MULTINIVEL") == 0)
     {
@@ -486,7 +490,7 @@ void MUTEX_UNLOCK(int mutex_id)
 /*
 Entrada Salida
 Para la implementación de este trabajo práctico, el módulo Kernel simulará la existencia de un único dispositivo de Entrada Salida,
-el cual atenderá las peticiones bajo el algoritmo FIFO. Para “utilizar” esta interfaz, se dispone de la syscall IO. Esta syscall recibe
+el cual atenderá las peticiones bajo el algoritmo FIFO. Para utilizar esta interfaz, se dispone de la syscall IO. Esta syscall recibe
 como parámetro la cantidad de milisegundos que el hilo va a permanecer haciendo la operación de entrada/salida.
 */
 
@@ -595,7 +599,8 @@ void ejecucion(t_tcb *hilo, t_queue *queue, int socket_dispatch)
     enviar_paquete(paquete, socket_dispatch);
     //recv(socket_dispatch, &rtaCPU, sizeof(rtaCPU), 0);
     
-    t_list* devolucionCPU = recibir_paquete(socket_dispatch);   // HAY QUE AGREGAR EL UTILS SERVER
+    t_list* devolucionCPU = list_create(); //hago esto solamente para que no me tire error 
+    // = recibir_paquete(socket_dispatch);   // HAY QUE AGREGAR EL UTILS SERVER
 
     // Hacer un paquete con un tid y con un enum
    
@@ -617,7 +622,7 @@ void ejecucion(t_tcb *hilo, t_queue *queue, int socket_dispatch)
         
     }
 
-    if (motivo_devolucion == THREAD_EXIT_)
+    if (motivo_devolucion == THREAD_EXIT_SYSCALL)
     {
         THREAD_EXIT();
     }

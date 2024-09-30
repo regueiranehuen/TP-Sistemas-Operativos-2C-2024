@@ -2,10 +2,12 @@
 #include "includes/procesos.h"
 
 void inicializar_estados_hilos (t_pcb* pcb){
-    pcb ->cola_hilos_new = queue_create();
-    pcb ->colas_hilos_prioridad_ready = list_create();
-    pcb ->lista_hilos_blocked = list_create();
-    pcb ->cola_hilos_exit = queue_create();
+    pcb -> cola_hilos_new = queue_create();
+    pcb -> cola_hilos_ready = queue_create();
+    pcb -> lista_prioridad_ready = list_create();
+    pcb -> colas_hilos_prioridad_ready = list_create();
+    pcb -> lista_hilos_blocked = list_create();
+    pcb -> cola_hilos_exit = queue_create();
 }
 
 t_pcb* lista_pcb(t_list* lista_pcbs, int pid){
@@ -436,13 +438,83 @@ void* ordenar_cola(void*arg){
 
 }
 
-
-
-
 bool strings_iguales(char*c1,char*c2){
     return strcmp(c1,c2)==0;
 }
 
 bool es_motivo_devolucion(code_operacion motivo_devolucion){
     return motivo_devolucion == INTERRUPCION || motivo_devolucion == INTERRUPCION_USUARIO || motivo_devolucion == ERROR || motivo_devolucion == LLAMADA_POR_INSTRUCCION;
+}
+
+int obtener_menor_prioridad(t_list* lista_cola_prioridad) {
+    if (list_is_empty(lista_cola_prioridad)) {
+        return -1;  // Retorna -1 si la lista está vacía (puedes usar otro valor indicativo)
+    }
+
+    int menor_prioridad = -1;
+
+    // Iterar a través de la lista para encontrar la menor prioridad
+    for (int i = 0; i < list_size(lista_cola_prioridad); i++) {
+        t_cola_prioridad* elemento = list_get(lista_cola_prioridad, i);
+        
+        if (menor_prioridad == -1 && !queue_is_empty(elemento->cola)){
+            menor_prioridad = elemento->prioridad;
+        }
+        else if (elemento->prioridad < menor_prioridad && !queue_is_empty(elemento->cola)) {
+            menor_prioridad = elemento->prioridad;  // Actualiza la menor prioridad
+        }
+    }
+
+    return menor_prioridad;  // Retorna la menor prioridad encontrada
+}
+t_cola_prioridad* obtener_cola_por_prioridad(t_list *colas_hilos_prioridad_ready, int prioridad_buscada)
+{
+    for (int i = 0; i < list_size(colas_hilos_prioridad_ready); i++)
+    {
+        t_cola_prioridad *cola_prioridad_i = list_get(colas_hilos_prioridad_ready, i);
+
+        if (cola_prioridad_i != NULL && cola_prioridad_i->prioridad == prioridad_buscada && !queue_is_empty(cola_prioridad_i->cola))
+        {
+            return cola_prioridad_i; // Devuelve la estructura de la cola con la prioridad buscada
+        }
+    }
+
+    return NULL; // No se encontró una cola con la prioridad buscada
+}
+
+void ordenar_por_prioridad(t_list* lista) {
+    if (list_size(lista) <= 1) {
+        return; // No hay nada que ordenar
+    }
+
+    t_list* lista_ordenada = list_create(); // Crear una nueva lista para almacenar los elementos ordenados
+
+    while (list_size(lista) > 0) {
+        // Encontrar el elemento con la prioridad más alta
+        t_tcb* min_elem = list_get(lista, 0);
+        int min_index = 0;
+
+        for (int i = 1; i < list_size(lista); i++) {
+            t_tcb* current_elem = list_get(lista, i);
+            if (current_elem->prioridad < min_elem->prioridad) {
+                min_elem = current_elem;
+                min_index = i;
+            }
+        }
+
+        // Eliminar el elemento de la lista original
+        list_remove(lista, min_index);
+        // Agregarlo a la lista ordenada
+        list_add(lista_ordenada, min_elem);
+    }
+
+    // Reemplazar la lista original con la lista ordenada
+    // Para esto, eliminamos los elementos de la lista original uno por uno
+    while (list_size(lista_ordenada) > 0) {
+        t_tcb* elem = list_get(lista_ordenada, 0); // Obtenemos el primer elemento
+        list_add(lista, elem); // Agregar a la lista original
+        list_remove(lista_ordenada, 0); // Eliminarlo de la lista ordenada
+    }
+
+    list_destroy(lista_ordenada); // Limpiar la lista ordenada si ya no es necesaria
 }
