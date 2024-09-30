@@ -235,36 +235,49 @@ return NULL;
 
 }
 
-void round_robin(t_queue *cola_ready_prioridad)
-{
-    if (!queue_is_empty(cola_ready_prioridad))
-    {
-        int quantum = config_get_int_value(config, "QUANTUM"); // Cantidad máxima de tiempo que obtiene la CPU un proceso/hilo (EN MILISEGUNDOS)
+void round_robin(t_queue *cola) {
+    if (!queue_is_empty(cola)) {
+        int quantum = config_get_int_value(config, "QUANTUM");
+        t_tcb *tcb = queue_pop(cola); // Sacar el primer hilo de la cola
 
-        t_tcb *tcb = queue_pop(cola_ready_prioridad); // Sacar el primer hilo de la cola
+        tcb->estado = TCB_EXECUTE;
 
-        ejecucion(tcb, cola_ready_prioridad, sockets->sockets_cliente_cpu->socket_Dispatch);
+        int tiempo_ejecutado = 0;
 
-        // Simular que el hilo está en ejecución durante el tiempo del quantum
-        usleep(quantum * 1000); // usleep trata con microsegundos, 1 microsegundo es igual a 1000 milisegundos
+        while (tiempo_ejecutado < quantum) {
+            // Enviar el hilo a la CPU y esperar la devolución
+            t_paquete *paquete = crear_paquete();
+            agregar_a_paquete(paquete, &tcb->tid, sizeof(tcb->tid));
+            agregar_a_paquete(paquete, &tcb->pid, sizeof(tcb->pid));
+            enviar_paquete(paquete, sockets->sockets_cliente_cpu->socket_Dispatch);
+            eliminar_paquete(paquete);
 
-        code_operacion rtaCPU;
-        code_operacion fin_quantum_rr = FIN_QUANTUM_RR;
+            // Esperar la devolución desde la CPU
+            t_list *devolucionCPU = recibir_paquete(sockets->sockets_cliente_cpu->socket_Dispatch);
+            code_operacion motivo_devolucion = *(code_operacion *)list_get(devolucionCPU, 0);
 
-        send(sockets->sockets_cliente_cpu->socket_Interrupt, &fin_quantum_rr, sizeof(fin_quantum_rr), 0);
-        recv(sockets->sockets_cliente_cpu->socket_Interrupt, &rtaCPU, sizeof(rtaCPU), 0);
+            if (motivo_devolucion == THREAD_EXIT_) {
+                THREAD_EXIT();
+                break;
+            } else if (es_motivo_devolucion(motivo_devolucion)) {
+                // Si se debe replanificar, cambiar estado y volver a poner en la cola
+                tcb->estado = TCB_READY;
+                queue_push(cola, tcb);
+                break;
+            }
 
-        if (rtaCPU == THREAD_EXIT_SYSCALL) // Al código de operación que está en la branch memoria_cpu le agregué un guión bajo pq se llamaría igual que la syscall. Ojo con eso
-        {
-            THREAD_EXIT();
+            tiempo_ejecutado++;
+            usleep(1000); // Dormir un corto período para no consumir CPU innecesariamente
         }
-        else
-        {
+
+        // Si se alcanzó el quantum y el hilo sigue en ejecución, se cambia su estado
+        if (tiempo_ejecutado >= quantum) {
             tcb->estado = TCB_READY;
-            queue_push(cola_ready_prioridad, tcb); // Lo reinsertas si no ha terminado
-        }
-    }
+            queue_push(cola, tcb);
+        }
+    }
 }
+
 /*
 Colas Multinivel
 Se elegirá al siguiente hilo a ejecutar según el siguiente esquema de colas multinivel:
