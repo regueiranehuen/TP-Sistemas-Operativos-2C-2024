@@ -692,7 +692,7 @@ void ejecucion(t_tcb *hilo, t_queue *queue)
         
     }
 
-    if (motivo_devolucion == THREAD_EXIT_SYSCALL)
+    if (motivo_devolucion == THREAD_EXIT_SYSCALL)  // THREAD_ELIMINATE (??)
     {
         THREAD_EXIT();
     }

@@ -291,18 +291,25 @@ void round_robin(t_queue *cola_ready_prioridad)
         t_paquete *paquete = crear_paquete();
 
         tcb->estado = TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
+        
 
-        agregar_a_paquete(paquete, &tcb->tid, sizeof(tcb->tid));
-        agregar_a_paquete(paquete, &tcb->pid, sizeof(tcb->pid));
-
-        // Se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
+        // HAY QUE SIMPLIFICAR ESTO
+        code_operacion code = THREAD_EXECUTE_AVISO;
+        agregar_a_paquete(paquete,&code,sizeof(code));
+        agregar_a_paquete(paquete,&tcb->pid,sizeof(tcb->pid));
+        agregar_a_paquete(paquete,&tcb->tid,sizeof(tcb->tid));
+        
         enviar_paquete(paquete, sockets->sockets_cliente_cpu->socket_Dispatch);
+        //
+
 
         pthread_create(&hilo_espera_recibir_operacion_cpu, NULL, esperar_devolucion_cpu, dev);
         pthread_create(&hilo_espera_fin_quantum, NULL, contar_hasta_quantum, esp_q);
 
         pthread_join(hilo_espera_recibir_operacion_cpu, NULL);
         pthread_join(hilo_espera_fin_quantum, NULL);
+
+        // HAY QUE VER EL CASO EN EL QUE HAYA FIN DE QUANTUM Y A LA VEZ TERMINE UN HILO/PROCESO //
 
         if (dev->recibio_algo == true)
         { // Si llega una interrupción de la CPU se hace lo que corresponda (hay que ver si el hilo terminó o si le queda por ejecutar)
@@ -331,7 +338,7 @@ void ejecucionRR(t_tcb *hilo, code_operacion code, t_queue *queue, t_paquete *pa
         queue_push(queue, hilo);
     }
 
-    else if (code == THREAD_ELIMINATE_AVISO)
+    else if (code == THREAD_EXIT_SYSCALL)// THREAD_ELIMINATE (??)
     {
         THREAD_EXIT();
     }
