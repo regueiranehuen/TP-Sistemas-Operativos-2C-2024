@@ -139,6 +139,13 @@ typedef struct{
     bool termino;
 }t_args_esperar_quantum;
 
+typedef struct{
+    t_tcb*hilo;
+    t_queue*queue;
+    bool recibio_algo;
+    code_operacion code;
+}t_args_esperar_devolucion_cpu;
+
 
 t_pcb* crear_pcb();
 t_tcb* crear_tcb(t_pcb *pcb);
@@ -164,7 +171,7 @@ void IO(int milisegundos);
 
 void DUMP_MEMORY();
 
-void ejecucion(t_tcb*hilo,t_queue*queue,int socket_dispatch);
+void ejecucion(t_tcb*hilo,t_queue*queue);
 
 void* manejar_espera_io(void* arg);
 void hilo_termino_io(t_tcb* tcb);

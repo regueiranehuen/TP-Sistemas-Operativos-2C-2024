@@ -44,4 +44,8 @@ void planificador_corto_plazo(t_pcb*pcb) ;
 void *funcion_ready_exec_hilos(void *arg);
 
 void*contar_hasta_quantum(void*args);
+void*esperar_devolucion_cpu(void*args);
+
+
+void ejecucionRR(t_tcb*hilo,code_operacion code,t_queue*queue,t_paquete*paquete);
 #endif
