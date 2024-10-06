@@ -1,13 +1,28 @@
 #include "includes/funcionesAuxiliares.h"
 #include "includes/procesos.h"
 
-void inicializar_estados_hilos (t_pcb* pcb){
-    pcb -> cola_hilos_new = queue_create();
-    pcb -> cola_hilos_ready = queue_create();
-    pcb -> lista_prioridad_ready = list_create();
-    pcb -> colas_hilos_prioridad_ready = list_create();
-    pcb -> lista_hilos_blocked = list_create();
-    pcb -> cola_hilos_exit = queue_create();
+t_list* lista_tcbs;
+t_queue* cola_exit;
+sem_t semaforo_cola_exit_hilos;
+
+
+void inicializar_mutex_procesos(t_pcb* pcb) {
+    sem_init(&pcb->sem_hilos_exit, 0, 0);
+    pthread_mutex_init(&(pcb->mutex_lista_mutex), NULL);
+    pthread_mutex_init(&(pcb->mutex_tids), NULL);
+}
+
+void destruir_mutex_procesos(t_pcb* pcb) {
+    pthread_mutex_destroy(&(pcb->mutex_lista_mutex));
+    pthread_mutex_destroy(&(pcb->mutex_tids));
+}
+
+void inicializar_mutex_hilo(t_tcb* tcb){
+    pthread_mutex_init(&(tcb->mutex_cola_hilos_bloqueados), NULL);
+}
+
+void destruir_mutex_hilo(t_tcb* tcb){
+    pthread_mutex_destroy(&(tcb->mutex_cola_hilos_bloqueados));
 }
 
 t_pcb* lista_pcb(t_list* lista_pcbs, int pid){
@@ -26,57 +41,22 @@ return NULL;
 
 void liberar_proceso (t_pcb * pcb){
 
-//Mandar todos los hilos de la cola new a la cola exit y destruir la primera
-
- int tamanio_cola_new = queue_size (pcb->cola_hilos_new);
-    
-    for(int i=0;i< tamanio_cola_new;i++){
-        t_tcb* tcb = queue_pop (pcb->cola_hilos_new);
-        queue_push(pcb->cola_hilos_exit,tcb);
-    }
-
-queue_destroy(pcb->cola_hilos_new);
-
-//Mandar todos los hilos de la cola ready a la cola exit y destruir la primera 
-
-int tamanio_lista = list_size(pcb->colas_hilos_prioridad_ready);
-
-
-for(int i=0;i< tamanio_lista;i++){
-    t_cola_prioridad* cola = list_get(pcb->colas_hilos_prioridad_ready,i);
-    int tamanio_cola = queue_size(cola->cola);
-
-for(int j=0;j< tamanio_cola;j++){
-    t_tcb* tcb = queue_pop(cola->cola);
-    queue_push(pcb->cola_hilos_exit,tcb);
-}
-queue_destroy(cola->cola);
-free(cola);
-}
-list_destroy(pcb->colas_hilos_prioridad_ready);
-
-//Mandar todos los hilos de la lista blocked a la cola exit y destruir la primera
-
-int tamanio_lista_blocked = list_size(pcb->lista_hilos_blocked);
-
-for(int i=0;i<tamanio_lista_blocked;i++){
-t_tcb* tcb = list_get(pcb->lista_hilos_blocked,i);
-queue_push(pcb->cola_hilos_exit,tcb);
-}
-list_destroy(pcb->lista_hilos_blocked);
-if(pcb->hilo_exec->estado==TCB_EXECUTE){
-    //mandar interrupcion a cpu
-    queue_push(pcb->cola_hilos_exit,pcb->hilo_exec);
-}
-
-//Destruir la cola exit, lista de tids y liberar el espacio del pcb
-
-queue_destroy(pcb->cola_hilos_exit);
-
+enviar_tcbs_a_cola_exit_por_pid(lista_tcbs, cola_exit, pcb->pid);
 list_destroy(pcb->tids);
-
 free(pcb);
+}
 
+void enviar_tcbs_a_cola_exit_por_pid(t_list* lista_tcbs, t_queue* cola_exit, int pid_buscado) {
+    for (int i = 0; i < list_size(lista_tcbs); i++) {
+        t_tcb* tcb_actual = list_get(lista_tcbs, i);  // Obtener el TCB de la lista
+        if (tcb_actual->pid == pid_buscado) {
+            // Remover el TCB de la lista y enviarlo a la cola EXIT
+            t_tcb* tcb_a_mover = list_remove(lista_tcbs, i);
+            queue_push(cola_exit, tcb_a_mover);  // Enviar a la cola EXIT
+            sem_post(&semaforo_cola_exit_hilos);
+            i--;  // Ajustar el índice ya que la lista se reduce
+        }
+    }
 }
 
 t_cola_prioridad* cola_prioridad(t_list* lista_colas_prioridad, int prioridad){ //Busca la cola con la prioridad del parametro en la lista de colas, si la encuentra devuelve la info de la posición de dicha lista, si no crea una y la devuelve
@@ -155,34 +135,39 @@ t_tcb* find_and_remove_tcb_in_list(t_list* list, int tid) {
 }
 
 // Función principal para mover un TCB a la cola EXIT
-void move_tcb_to_exit(t_pcb* pcb, t_tcb* tcb) {
-    
-    // Buscar en la cola NEW
-    tcb = find_and_remove_tcb_in_queue(pcb->cola_hilos_new, tcb->tid);
+void move_tcb_to_exit(t_tcb* tcb, t_queue* cola_new, t_queue* cola_ready_fifo, t_list* lista_ready_prioridades, t_list* colas_ready_prioridades, t_list* lista_blocked) {
+    // Intentar encontrar y eliminar el TCB en la cola NEW
+    tcb = find_and_remove_tcb_in_queue(cola_new, tcb->tid);
 
-    // Si no lo encuentra, buscar en la cola READY
+    // Si no lo encuentra, buscar en la cola FIFO
     if (tcb == NULL) {
-    char *planificacion = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
-         if (strcmp(planificacion, "FIFO") == 0 || strcmp(planificacion,"PRIORIDADES")==0) 
-    {
-        tcb = find_and_remove_tcb_in_queue(pcb->cola_hilos_ready, tcb->tid);
+        tcb = find_and_remove_tcb_in_queue(cola_ready_fifo, tcb->tid);
     }
 
-    if (strcmp(planificacion, "MULTINIVEL") == 0)
-    {
-        t_cola_prioridad *cola = cola_prioridad(pcb->colas_hilos_prioridad_ready, tcb->prioridad);
-        tcb = find_and_remove_tcb_in_queue(cola->cola, tcb->tid);
-    }
+    // Si no lo encuentra, buscar en la lista de prioridades
+    if (tcb == NULL) {
+        char *planificacion = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
+
+        if (strcmp(planificacion, "PRIORIDADES") == 0) {
+            // Buscar en la lista de prioridades
+            tcb = find_and_remove_tcb_in_list(lista_ready_prioridades, tcb->tid);
+        } else if (strcmp(planificacion, "MULTINIVEL") == 0) {
+            // Buscar en la lista de colas por prioridad
+            t_cola_prioridad* cola_prioridad = find_prioridad_in_list(colas_ready_prioridades, tcb->prioridad);
+            if (cola_prioridad != NULL) {
+                tcb = find_and_remove_tcb_in_queue(cola_prioridad->cola, tcb->tid);
+            }
+        }
     }
 
     // Si no lo encuentra, buscar en la lista BLOCKED
     if (tcb == NULL) {
-        tcb = find_and_remove_tcb_in_list(pcb->lista_hilos_blocked, tcb->tid);
+        tcb = find_and_remove_tcb_in_list(lista_blocked, tcb->tid);
     }
 
     // Si lo encuentra, moverlo a la cola EXIT
     if (tcb != NULL) {
-        queue_push(pcb->cola_hilos_exit, tcb);
+        queue_push(pcb->cola_hilos_exit, tcb);  // Asegúrate de pasar la cola de salida también
         tcb->estado = TCB_EXIT;
         printf("TCB con TID %d movido a EXIT\n", tcb->tid);
     } else {
@@ -242,13 +227,13 @@ t_tcb* buscar_tcb(int tid, t_queue* queue_new, t_list* queue_ready, t_list* list
     return NULL;  // No encontrado en ninguna cola/lista
 }
 
-t_mutex* busqueda_mutex(t_list* lista_mutex, int mutex_id){
+t_mutex* busqueda_mutex(t_list* lista_mutex, char* recurso){
 
 int tamanio_lista = list_size(lista_mutex);
 
 for(int i=0; i< tamanio_lista;i++){
 t_mutex* mutex_aux = list_get(lista_mutex,i);
-if(mutex_aux->mutex_id == mutex_id){
+if(strcmp(mutex_aux->nombre, recurso)== 0){
     return mutex_aux;
 }
 }

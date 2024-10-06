@@ -9,9 +9,14 @@
 #include <semaphore.h>
 
 extern sem_t semaforo;
+
 extern t_queue* cola_new;
-extern t_queue* cola_ready;
+extern t_queue* cola_ready_fifo;
+extern t_list* lista_ready_prioridad;
+extern t_list* colas_ready_prioridad;
 extern t_list* lista_pcbs;
+extern t_tcb* hilo_exec;
+
 extern pthread_mutex_t mutex_pthread_join;
 extern t_config* config;
 extern t_log* logger;
@@ -29,8 +34,7 @@ extern t_queue* cola_exit;
 typedef enum{
     PCB_INIT,
     DUMP_MEMORIA,
-    PROCESS_ELIMINATE_COLA, //Se elimina un proceso por la cola exit
-    PROCESS_ELIMINATE_SYSCALL, //Se elimina un proceso por una syscall
+    PROCESS_EXIT_AVISO, 
     PROCESS_CREATE_AVISO,
     THREAD_CREATE_AVISO,
     THREAD_ELIMINATE_AVISO,
@@ -72,6 +76,7 @@ estado_hilo estado;
 char* pseudocodigo;
 int pseudocodigo_length;
 t_queue* cola_hilos_bloqueados;
+pthread_mutex_t mutex_cola_hilos_bloqueados;
 }t_tcb;
 
 typedef enum {
@@ -88,22 +93,24 @@ PCB_EXIT
 }estado_pcb;
 
 typedef struct{
+
+sem_t sem_hilos_exit; 
+
 int pid;
 t_list* tids;
-t_list* colas_hilos_prioridad_ready;
-t_list* lista_prioridad_ready;
-t_list* lista_hilos_blocked;
-t_queue* cola_hilos_new;
-t_queue* cola_hilos_exit;
-t_queue* cola_hilos_ready;
-t_tcb* hilo_exec;
 t_list* lista_mutex;
 estado_pcb estado;
 int tamanio_proceso;
-int prioridad;
-}t_pcb;
 
-extern t_pcb* proceso_exec;
+t_tcb* tcb_main;
+
+pthread_mutex_t mutex_lista_mutex;
+pthread_mutex_t mutex_tids;
+
+int contador_tid; 
+int contador_mutex;
+
+}t_pcb;
 
 typedef struct {
     int prioridad;
@@ -120,6 +127,7 @@ int mutex_id;
 t_queue* cola_tcbs;
 estado_mutex estado;
 t_tcb* hilo; // hilo que esta en la región crítica
+char* nombre;
 }t_mutex;
 
 
@@ -144,6 +152,8 @@ void THREAD_EXIT();
 
 void new_a_ready_procesos();
 void proceso_exit();
+void hilo_exit();
+void new_a_ready_hilos(t_pcb *pcb);
 
 void iniciar_kernel (char* archivo_pseudocodigo, int tamanio_proceso);
 

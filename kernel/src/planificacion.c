@@ -18,6 +18,8 @@ t_list *lista_mutex;
 sockets_kernel *sockets;
 pthread_mutex_t mutex_conexion_cpu;
 t_queue *cola_exit;
+int procesos_exit_con_hilo = 0;
+sem_t sem_lista_pcbs;
 
 t_pcb *fifo_pcb(t_queue *cola_proceso)
 {
@@ -78,18 +80,24 @@ void *funcion_procesos_exit(void *void_args)
 
 void *funcion_hilos_exit(void *void_args)
 {
+t_pcb* args = ((t_pcb*)void_args);
     while (estado_kernel != 0)
     {
-        // hilo_exit(pcb) Me imagino que habra que hacer un hilo por proceso
+        
+        hilo_exit(args);
     }
     return NULL;
 }
 
+
+
 void *funcion_new_ready_hilos(void *void_args)
 {
+t_pcb* args = ((t_pcb*)void_args);
+
     while (estado_kernel != 0)
     {
-        // new_a_ready_hilos(pcb) Lo mismo que arriba
+        new_a_ready_hilos(args);
     }
     return NULL;
 }
@@ -126,8 +134,7 @@ void *planificador_largo_plazo(void *void_args)
 {
     pthread_t hilo_new_ready_procesos;
     pthread_t hilo_exit_procesos;
-    pthread_t hilo_new_ready_hilos;
-    pthread_t hilo_exit_hilos;
+    pthread_t hilo_manejo_procesos;
 
     int resultado;
 
@@ -147,26 +154,54 @@ void *planificador_largo_plazo(void *void_args)
         return NULL;
     }
 
-    resultado = pthread_create(&hilo_new_ready_hilos, NULL, funcion_new_ready_hilos, NULL);
+    resultado = pthread_create(&hilo_manejo_procesos, NULL, funcion_manejo_procesos, NULL);
 
     if (resultado != 0)
     {
-        log_error(logger, "Error al crear el hilo new_ready_hilos");
+        log_error(logger, "Error al crear el hilo_manejo_procesos");
         return NULL;
     }
-
-    resultado = pthread_create(&hilo_exit_hilos, NULL, funcion_hilos_exit, NULL);
-
-    if (resultado != 0)
-    {
-        log_error(logger, "Error al crear el hilo hilos_exit");
-        return NULL;
-    }
-
+  
     pthread_detach(hilo_new_ready_procesos);
     pthread_detach(hilo_exit_procesos);
-    pthread_detach(hilo_new_ready_hilos);
-    pthread_detach(hilo_exit_hilos);
+    pthread_detach(hilo_manejo_procesos);
+    return NULL;
+}
+
+void *funcion_manejo_procesos(void *arg)
+{
+    while (estado_kernel != 0) {
+        // Esperar hasta que el semáforo se desbloquee (cuando se agregue un nuevo proceso)
+        sem_wait(&sem_lista_pcbs);
+
+        // Procesar los PCBs que no han sido manejados aún
+        int cantidad_pcbs = list_size(lista_pcbs);
+
+        // Iteramos desde donde quedaron los últimos procesos procesados
+        for (int i = procesos_exit_con_hilo; i < cantidad_pcbs; i++) {
+            t_pcb* pcb = list_get(lista_pcbs, i);
+
+            // Aquí puedes realizar las operaciones que necesites con cada pcb
+            // Por ejemplo, crear un hilo para manejar cada proceso/hilo en exit
+            pthread_t hilo_exit_hilos;
+            pthread_t hilo_new_ready_hilos;
+            int resultado = pthread_create(&hilo_exit_hilos, NULL, funcion_hilos_exit, pcb);
+            if (resultado != 0) {
+                 log_error(logger, "Error al crear el hilo hilos_exit para PCB ID %d", pcb->pid);
+                return NULL;
+            }
+            resultado = pthread_create(&hilo_new_ready_hilos,NULL,funcion_new_ready_hilos,pcb);
+            if (resultado != 0) {
+                log_info(logger, "Hilo new_ready_hilos creado para PCB ID %d", pcb->pid);
+                return NULL;
+            }
+            pthread_detach(hilo_new_ready_hilos);
+            pthread_detach(hilo_exit_hilos); // Liberar el hilo para que se limpie automáticamente al finalizar
+        }
+
+        // Actualizamos el número de procesos procesados
+        procesos_exit_con_hilo = cantidad_pcbs;
+    }
     return NULL;
 }
 

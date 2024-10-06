@@ -5,7 +5,7 @@
 #include "../../utils/src/utils/includes/serializacion.h"
 #include "commons/string.h"
 
-void inicializar_estados_hilos (t_pcb* pcb);
+
 t_pcb* lista_pcb(t_list* lista_pcbs, int pid);
 void liberar_proceso (t_pcb * pcb);
 t_cola_prioridad* cola_prioridad(t_list* lista_colas_prioridad, int prioridad);
@@ -32,6 +32,9 @@ void ordenar_por_prioridad(t_list* lista);
 int obtener_menor_prioridad(t_list* lista_cola_prioridad);
 t_cola_prioridad* obtener_cola_por_prioridad(t_list *colas_hilos_prioridad_ready, int prioridad_buscada);
 void ordenar_por_prioridad(t_list* lista);
-
+void inicializar_mutex_procesos(t_pcb* pcb);
+void destruir_mutex_procesos(t_pcb* pcb);
+void inicializar_mutex_hilo(t_tcb* tcb);
+void destruir_mutex_hilo(t_tcb* tcb);
 
 #endif
