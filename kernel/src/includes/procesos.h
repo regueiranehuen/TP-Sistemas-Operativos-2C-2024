@@ -25,6 +25,8 @@ extern sem_t semaforo_cola_exit_procesos;
 extern sem_t semaforo_cola_exit_hilos;
 extern t_queue* cola_exit;
 
+extern sem_t sem_planificar;
+
 
 typedef enum{
     PCB_INIT,
@@ -141,10 +143,10 @@ typedef struct{
 
 typedef struct{
     t_tcb*hilo;
-    t_queue*queue;
-    bool recibio_algo;
     code_operacion code;
 }t_args_esperar_devolucion_cpu;
+
+
 
 
 t_pcb* crear_pcb();

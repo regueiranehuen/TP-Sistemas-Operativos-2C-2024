@@ -29,7 +29,7 @@ bool strings_iguales(char*c1,char*c2);
 bool es_motivo_devolucion(code_operacion motivo_devolucion);
 void* ordenar_cola(void*arg);
 void ordenar_por_prioridad(t_list* lista);
-int obtener_menor_prioridad(t_list* lista_cola_prioridad);
+int obtener_mayor_prioridad(t_list* lista_cola_prioridad);
 t_cola_prioridad* obtener_cola_por_prioridad(t_list *colas_hilos_prioridad_ready, int prioridad_buscada);
 void ordenar_por_prioridad(t_list* lista);
 

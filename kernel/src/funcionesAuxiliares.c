@@ -446,26 +446,26 @@ bool es_motivo_devolucion(code_operacion motivo_devolucion){
     return motivo_devolucion == INTERRUPCION || motivo_devolucion == INTERRUPCION_USUARIO || motivo_devolucion == ERROR || motivo_devolucion == LLAMADA_POR_INSTRUCCION;
 }
 
-int obtener_menor_prioridad(t_list* lista_cola_prioridad) {
+int obtener_mayor_prioridad(t_list* lista_cola_prioridad) {
     if (list_is_empty(lista_cola_prioridad)) {
         return -1;  // Retorna -1 si la lista está vacía (puedes usar otro valor indicativo)
     }
 
-    int menor_prioridad = -1;
+    int mayor_prioridad = -1;
 
-    // Iterar a través de la lista para encontrar la menor prioridad
+    // Iterar a través de la lista para encontrar la mayor prioridad
     for (int i = 0; i < list_size(lista_cola_prioridad); i++) {
         t_cola_prioridad* elemento = list_get(lista_cola_prioridad, i);
         
-        if (menor_prioridad == -1 && !queue_is_empty(elemento->cola)){
-            menor_prioridad = elemento->prioridad;
+        if (mayor_prioridad == -1 && !queue_is_empty(elemento->cola)){
+            mayor_prioridad = elemento->prioridad;
         }
-        else if (elemento->prioridad < menor_prioridad && !queue_is_empty(elemento->cola)) {
-            menor_prioridad = elemento->prioridad;  // Actualiza la menor prioridad
+        else if (elemento->prioridad < mayor_prioridad && !queue_is_empty(elemento->cola)) {
+            mayor_prioridad = elemento->prioridad;  // Actualiza la mayor prioridad
         }
     }
 
-    return menor_prioridad;  // Retorna la menor prioridad encontrada
+    return mayor_prioridad;  // Retorna la mayor prioridad encontrada
 }
 t_cola_prioridad* obtener_cola_por_prioridad(t_list *colas_hilos_prioridad_ready, int prioridad_buscada)
 {
