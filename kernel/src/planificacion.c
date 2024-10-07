@@ -1,6 +1,7 @@
 #include "includes/planificacion.h"
 
 int estado_kernel;
+
 sem_t semaforo_new_ready_procesos;
 sem_t semaforo_cola_new_procesos;
 sem_t semaforo_cola_exit_procesos;
@@ -248,56 +249,54 @@ t_tcb *prioridades(t_pcb *pcb)
 }
 
 
-t_tcb* round_robin(t_queue *cola_ready_prioridad,t_paquete*paquete,t_args_esperar_devolucion_cpu*dev,t_args_esperar_quantum*esp_q)
+t_tcb* round_robin(t_queue *cola_ready_prioridad)
 {
     if (!queue_is_empty(cola_ready_prioridad))
     {
         sem_init(&sem_fin_quantum_o_dev_cpu,0,0);
-        int quantum = config_get_int_value(config, "QUANTUM"); // Cantidad máxima de tiempo que obtiene la CPU un proceso/hilo (EN MILISEGUNDOS)
 
         t_tcb *tcb = queue_pop(cola_ready_prioridad); // Sacar el primer hilo de la cola
 
-        dev = malloc(tam_tcb(tcb) + sizeof(code_operacion));
-        dev->hilo = tcb;
 
-        esp_q = malloc(sizeof(int) + sizeof(bool));
-        esp_q->quantum = quantum;
-        esp_q->termino = false;
-
-        tcb->estado = TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
-        
-
-        // HAY QUE SIMPLIFICAR ESTO
-        code_operacion code = THREAD_EXECUTE_AVISO;
-        agregar_a_paquete(paquete,&code,sizeof(code));
-        agregar_a_paquete(paquete,&tcb->pid,sizeof(tcb->pid));
-        agregar_a_paquete(paquete,&tcb->tid,sizeof(tcb->tid));
-        
-        enviar_paquete(paquete, sockets->sockets_cliente_cpu->socket_Dispatch);
-        //
-
-
-        pthread_create(&hilo_espera_recibir_operacion_cpu, NULL, esperar_devolucion_cpu, dev);
-        pthread_create(&hilo_espera_fin_quantum, NULL, contar_hasta_quantum, esp_q);
-        
-        pthread_detach(hilo_espera_recibir_operacion_cpu);
-        pthread_detach(hilo_espera_fin_quantum);
-
-        sem_wait(&sem_fin_quantum_o_dev_cpu); // Algún hilo le hará el signal al semáforo 
-        // Por las dudas llamo a pthread cancel para ambos hilos, en caso de que alguno aun siga ejecutando
-        pthread_cancel(hilo_espera_recibir_operacion_cpu);
-        pthread_cancel(hilo_espera_fin_quantum);
-        sem_destroy(&sem_fin_quantum_o_dev_cpu);
         return tcb;
-
     }
     return NULL;
 }
 
 
 
-void ejecucionRR(t_tcb *hilo, t_queue *queue, t_paquete *paquete,t_args_esperar_devolucion_cpu*dev,t_args_esperar_quantum*esp_q)
+void ejecucionRR(t_tcb *tcb, t_queue *queue, t_paquete *paquete,t_args_esperar_devolucion_cpu*dev,t_args_esperar_quantum*esp_q)
 {
+    int quantum = config_get_int_value(config, "QUANTUM"); // Cantidad máxima de tiempo que obtiene la CPU un proceso/hilo (EN MILISEGUNDOS)
+    dev = malloc(tam_tcb(tcb) + sizeof(code_operacion));
+    dev->hilo = tcb;
+
+    esp_q = malloc(sizeof(int) + sizeof(bool));
+    esp_q->quantum = quantum;
+    esp_q->termino = false;
+
+    tcb->estado = TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
+
+    // HAY QUE SIMPLIFICAR ESTO
+    code_operacion code = THREAD_EXECUTE_AVISO;
+    agregar_a_paquete(paquete, &code, sizeof(code));
+    agregar_a_paquete(paquete, &tcb->pid, sizeof(tcb->pid));
+    agregar_a_paquete(paquete, &tcb->tid, sizeof(tcb->tid));
+
+    enviar_paquete(paquete, sockets->sockets_cliente_cpu->socket_Dispatch);
+    //
+
+    pthread_create(&hilo_espera_recibir_operacion_cpu, NULL, esperar_devolucion_cpu, dev);
+    pthread_create(&hilo_espera_fin_quantum, NULL, contar_hasta_quantum, esp_q);
+
+    pthread_detach(hilo_espera_recibir_operacion_cpu);
+    pthread_detach(hilo_espera_fin_quantum);
+
+    sem_wait(&sem_fin_quantum_o_dev_cpu); // Algún hilo le hará el signal al semáforo
+    // Por las dudas llamo a pthread cancel para ambos hilos, en caso de que alguno aun siga ejecutando
+    pthread_cancel(hilo_espera_recibir_operacion_cpu);
+    pthread_cancel(hilo_espera_fin_quantum);
+    sem_destroy(&sem_fin_quantum_o_dev_cpu);
 
     if (esp_q->termino == true)
     {
@@ -309,9 +308,9 @@ void ejecucionRR(t_tcb *hilo, t_queue *queue, t_paquete *paquete,t_args_esperar_
 
         if (es_motivo_devolucion(rtaCPU))
         {
-            hilo->estado = TCB_READY;
+            tcb->estado = TCB_READY;
 
-            queue_push(queue, hilo);
+            queue_push(queue, tcb);
         }
 
         else if (rtaCPU == THREAD_EXIT_SYSCALL) // THREAD_ELIMINATE (??)
@@ -325,9 +324,9 @@ void ejecucionRR(t_tcb *hilo, t_queue *queue, t_paquete *paquete,t_args_esperar_
 
         if (es_motivo_devolucion(dev->code))
         {
-            hilo->estado = TCB_READY;
+            tcb->estado = TCB_READY;
 
-            queue_push(queue, hilo);
+            queue_push(queue, tcb);
         }
 
         else if (dev->code == THREAD_EXIT_SYSCALL) // THREAD_ELIMINATE (??)
@@ -372,17 +371,16 @@ Se elegirá al siguiente hilo a ejecutar según el siguiente esquema de colas mu
 - Cada cola implementará un algoritmo Round Robin con un quantum (Q) definido por archivo de configuración.
 - Al llegar un hilo a ready se posiciona siempre al final de la cola que le corresponda.
 */
-t_tcb* colas_multinivel(t_pcb *pcb,t_cola_prioridad*cola_prioritaria,t_paquete*paquete,t_args_esperar_devolucion_cpu*dev,t_args_esperar_quantum*esp_q)
+t_tcb* colas_multinivel(t_pcb *pcb,t_cola_prioridad*cola_prioritaria)
 {
     sem_wait(&sem_planificar);
     if (!list_is_empty(pcb->colas_hilos_prioridad_ready))
     {
         int prioridad_mayor = obtener_mayor_prioridad(pcb->colas_hilos_prioridad_ready);
         cola_prioritaria = obtener_cola_por_prioridad(pcb->colas_hilos_prioridad_ready, prioridad_mayor);
-        paquete=crear_paquete();
         if (cola_prioritaria != NULL && !queue_is_empty(cola_prioritaria->cola))
         {
-            return round_robin(cola_prioritaria->cola,paquete,dev,esp_q);
+            return round_robin(cola_prioritaria->cola);
         }
         else
         {
@@ -446,7 +444,7 @@ void *funcion_ready_exec_hilos(void *arg)
             t_cola_prioridad*cola_prioritaria=NULL;
             t_args_esperar_devolucion_cpu*dev=NULL;
             t_args_esperar_quantum*esp_q=NULL;
-            proceso_exec->hilo_exec=colas_multinivel(proceso_exec,cola_prioritaria,paquete,dev,esp_q);
+            proceso_exec->hilo_exec=colas_multinivel(proceso_exec,cola_prioritaria);
             ejecucionRR(proceso_exec->hilo_exec,cola_prioritaria->cola,paquete,dev,esp_q);
             sem_post(&sem_planificar);
         }
@@ -458,6 +456,8 @@ void planificador_corto_plazo(t_pcb *pcb) // Si llega un pcb nuevo a la cola rea
 {
 
     char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
+
+    sem_init(&sem_planificar,0,1);
 
     if (strings_iguales(algoritmo, "PRIORIDADES"))
     {

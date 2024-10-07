@@ -35,8 +35,8 @@ void planificador_corto_plazo(t_pcb*pcb);
 
 t_tcb *fifo_tcb(t_pcb* pcb);
 t_tcb *prioridades(t_pcb *pcb);
-t_tcb* round_robin(t_queue *cola_ready_prioridad,t_paquete*paquete,t_args_esperar_devolucion_cpu*dev,t_args_esperar_quantum*esp_q);
-t_tcb* colas_multinivel(t_pcb *pcb,t_cola_prioridad*cola_prioritaria,t_paquete*paquete,t_args_esperar_devolucion_cpu*dev,t_args_esperar_quantum*esp_q);
+t_tcb* round_robin(t_queue *cola_ready_prioridad);
+t_tcb* colas_multinivel(t_pcb *pcb,t_cola_prioridad*cola_prioritaria);
 int nueva_prioridad(t_list*colas_hilos_prioridad_ready,int priori_actual);
 void hilo_ordena_cola_prioridades(t_pcb* pcb);
 void* ordenamiento_continuo(void* void_args);
