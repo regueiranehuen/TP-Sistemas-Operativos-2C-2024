@@ -67,6 +67,9 @@ void PROCESS_CREATE(char *pseudocodigo, int tamanio_proceso, int prioridad)
 
     t_pcb *pcb = crear_pcb();
     pcb->estado = PCB_NEW;
+
+    log_info(logger, "## (%d:0) Se crea el proceso - Estado: NEW", pcb->pid);
+
     t_tcb* tcb = queue_peek(pcb->cola_hilos_new);
     tcb->pseudocodigo = pseudocodigo;
     queue_push(cola_new, pcb);
@@ -91,7 +94,7 @@ void proceso_exit()
     close(socket_memoria);
     if (respuesta == -1)
     {
-        printf("Memoria la concha de tu madre ");
+        log_error(logger, "Memoria no pudo eliminar el proceso. Respuesta: -1");
     }
     else
     {
@@ -169,6 +172,9 @@ void new_a_ready_hilos(t_pcb *pcb)
     char *planificacion = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
     t_tcb *hilo = queue_pop(pcb->cola_hilos_new);
     hilo->estado = TCB_READY;
+
+    log_info(logger, "## (%d:%d) Se crea el Hilo - Estado: READY", pcb->pid, hilo->tid);
+
     if (strcmp(planificacion, "FIFO") == 0){
         queue_push(pcb->cola_hilos_ready, hilo);
     } else if(strcmp(planificacion,"PRIORIDADES")==0)
@@ -245,6 +251,7 @@ void PROCESS_EXIT()
         {
             sem_post(&semaforo_new_ready_procesos);
         }
+
     }
 }
 
@@ -257,6 +264,7 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
     queue_push(pcb->cola_hilos_new, tcb);
     list_add(lista_pcbs, pcb);
     hilo_planificador_largo_plazo();
+
 }
 
 /*Creación de hilos
@@ -542,31 +550,33 @@ void IO(int milisegundos)
 
 void IO(int milisegundos)
 {
-    t_tcb *tcb = proceso_exec->hilo_exec;
+    t_tcb*hiloAux;
 
     // Cambiar el estado del hilo a BLOCKED
-    tcb->estado = TCB_BLOCKED;
+    proceso_exec->hilo_exec->estado = TCB_BLOCKED;
+    hiloAux = proceso_exec->hilo_exec;
     proceso_exec->hilo_exec = NULL;
 
     // Agregar el hilo a la lista de hilos bloqueados
-    list_add(proceso_exec->lista_hilos_blocked, tcb);
+    list_add(proceso_exec->lista_hilos_blocked, hiloAux);
 
-    // Simular la espera de IO mediante un hilo o manejador de IO
-    pthread_t hilo_io;
+    usleep(milisegundos*1000);
 
-    t_args_espera_io *args_espera_io=malloc(sizeof(int)+tam_tcb(tcb));
-
-    pthread_create(&hilo_io, NULL, manejar_espera_io, args_espera_io);
-
-    // Desbloquear el hilo IO cuando termine
-    sem_post(&semaforo_cola_io);
-
-    // El hilo principal no debe quedarse esperando, así que no usaremos usleep()
-    pthread_detach(hilo_io);  // Permite que el hilo termine de manera independiente
+    hilo_termino_io(hiloAux);
+    
 }
 
+
+void* funcion_ready_blocked(void*args){
+    sem_wait(&sem_IO);
+    // IO(); // No se cuantos milisegundos
+    sem_post(&sem_IO);
+    return NULL;
+}
+
+
 // Función que manejará la simulación de IO en un hilo separado
-void* manejar_espera_io(void* arg) {
+/*void* manejar_espera_io(void* arg) {
     t_args_espera_io*args_espera_io = (t_args_espera_io*)arg;
 
 
@@ -575,7 +585,7 @@ void* manejar_espera_io(void* arg) {
     // Notificar que el hilo finalizó IO y mover a READY
     hilo_termino_io(args_espera_io->tcb);
     return NULL;
-}
+}*/
 
 // Función que mueve el hilo de BLOCKED a READY una vez que termina IO
 void hilo_termino_io(t_tcb* tcb) {
@@ -585,9 +595,16 @@ void hilo_termino_io(t_tcb* tcb) {
     // Cambiar el estado del hilo a READY
     tcb->estado = TCB_READY;
 
-    // Mover el hilo a la cola de READY según su prioridad
-    t_cola_prioridad *cola = cola_prioridad(proceso_exec->colas_hilos_prioridad_ready, tcb->prioridad);
-    queue_push(cola->cola, tcb);
+
+    char*algoritmo=config_get_string_value(config,"ALGORITMO");
+    if (strings_iguales(algoritmo,"CMN")){
+        t_cola_prioridad *cola = cola_prioridad(proceso_exec->colas_hilos_prioridad_ready, tcb->prioridad);
+        queue_push(cola->cola, tcb);
+    }
+    else{
+        queue_push(cola_ready,tcb);//////
+    }
+    
 }
 
 
@@ -654,50 +671,4 @@ void DUMP_MEMORY()
 }
 
 
-// Ejecución
-// Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC y se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
-// En caso que el algoritmo requiera desalojar al hilo en ejecución, se enviará una interrupción a través de la conexión de interrupt para forzar el desalojo del mismo.
-// Al recibir el TID del hilo en ejecución, en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
-
-void ejecucion(t_tcb *hilo, t_queue *queue)
-{
-
-
-    t_paquete *paquete = crear_paquete();
-    hilo->estado = TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
-
-    agregar_a_paquete(paquete, &hilo->tid, sizeof(hilo->tid));
-    agregar_a_paquete(paquete, &hilo->pid, sizeof(hilo->pid));
-
-
-
-    // Se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
-    enviar_paquete(paquete, sockets->sockets_cliente_cpu->socket_Dispatch);
-
-    
-   
-    t_list* devolucionCPU = recibir_paquete(sockets->sockets_cliente_cpu->socket_Dispatch);   
-
-   
-    
-    code_operacion motivo_devolucion = *(code_operacion*)list_get(devolucionCPU, 0);
-
-    if (es_motivo_devolucion(motivo_devolucion))
-    { //
-
-        hilo->estado = TCB_READY;
-
-        
-        queue_push(queue, hilo);
-        
-    }
-
-    if (motivo_devolucion == THREAD_EXIT_SYSCALL)  // THREAD_ELIMINATE (??)
-    {
-        THREAD_EXIT();
-    }
-    
-    eliminar_paquete(paquete);
-    list_destroy(devolucionCPU);
-}
 

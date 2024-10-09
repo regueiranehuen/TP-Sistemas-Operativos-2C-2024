@@ -37,6 +37,7 @@ void eliminar_paquete(t_paquete* paquete);
 t_list* recibir_paquete(int socket_cliente);
 void* recibir_buffer(int* size, int socket_cliente);
 void send_operacion_tid(int tid, code_operacion code, int socket_cliente);
-void send_operacion_tid_pid(int pid,int tid,code_operacion code, int socket_cliente);
+
+t_paquete* send_operacion_tid_pid(int pid,int tid,code_operacion code, int socket_cliente);
 
 #endif

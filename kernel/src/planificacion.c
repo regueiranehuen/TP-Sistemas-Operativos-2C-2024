@@ -9,7 +9,6 @@ sem_t semaforo_cola_new_hilos;
 sem_t semaforo_cola_exit_hilos;
 sem_t sem_lista_prioridades;
 
-sem_t sem_fin_quantum_o_dev_cpu;
 
 t_queue *cola_new;
 t_queue *cola_ready;
@@ -30,8 +29,8 @@ pthread_t hilo_espera_fin_rr;
 
 sem_t sem_planificar;
 
-
-
+sem_t sem_IO;
+sem_t sem_termina_ejecucion;
 
 t_pcb *fifo_pcb(t_queue *cola_proceso)
 {
@@ -183,14 +182,14 @@ void *planificador_largo_plazo(void *void_args)
     return NULL;
 }
 
-void *atender_syscall(void *void_args)
+void *atender_syscall(void *void_args)  //////////////////////////
 { // el problema es que todas las funciones que tengan recv con cpu tienen la posiblidad de recibir la syscall entonces hay que buscar la manera que solamente lo reciba el que corresponda
 
     syscalls syscall;
 
     while (estado_kernel != 0)
     {
-
+        
         recv(sockets->sockets_cliente_cpu->socket_Dispatch, &syscall, sizeof(syscall), 0);
 
         switch (syscall)
@@ -221,7 +220,9 @@ void *atender_syscall(void *void_args)
             // MUTEX_UNLOCK(mutex_id); la misma situación
             break;
         case ENUM_IO:
-            // IO(milisegundos); la misma situación
+            sem_post(&sem_termina_ejecucion);
+            sem_post(&sem_IO);
+            //IO(milisegundos); la misma situación
             break;
         case ENUM_DUMP_MEMORY:
             DUMP_MEMORY();
@@ -253,7 +254,6 @@ t_tcb* round_robin(t_queue *cola_ready_prioridad)
 {
     if (!queue_is_empty(cola_ready_prioridad))
     {
-        sem_init(&sem_fin_quantum_o_dev_cpu,0,0);
 
         t_tcb *tcb = queue_pop(cola_ready_prioridad); // Sacar el primer hilo de la cola
 
@@ -265,103 +265,24 @@ t_tcb* round_robin(t_queue *cola_ready_prioridad)
 
 
 
-void ejecucionRR(t_tcb *tcb, t_queue *queue, t_paquete *paquete,t_args_esperar_devolucion_cpu*dev,t_args_esperar_quantum*esp_q)
+void ejecucionRR(t_tcb *tcb, t_queue *queue)
 {
     int quantum = config_get_int_value(config, "QUANTUM"); // Cantidad máxima de tiempo que obtiene la CPU un proceso/hilo (EN MILISEGUNDOS)
-    dev = malloc(tam_tcb(tcb) + sizeof(code_operacion));
-    dev->hilo = tcb;
 
-    esp_q = malloc(sizeof(int) + sizeof(bool));
-    esp_q->quantum = quantum;
-    esp_q->termino = false;
 
     tcb->estado = TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
 
-    // HAY QUE SIMPLIFICAR ESTO
-    code_operacion code = THREAD_EXECUTE_AVISO;
-    agregar_a_paquete(paquete, &code, sizeof(code));
-    agregar_a_paquete(paquete, &tcb->pid, sizeof(tcb->pid));
-    agregar_a_paquete(paquete, &tcb->tid, sizeof(tcb->tid));
 
-    enviar_paquete(paquete, sockets->sockets_cliente_cpu->socket_Dispatch);
-    //
-
-    pthread_create(&hilo_espera_recibir_operacion_cpu, NULL, esperar_devolucion_cpu, dev);
-    pthread_create(&hilo_espera_fin_quantum, NULL, contar_hasta_quantum, esp_q);
-
-    pthread_detach(hilo_espera_recibir_operacion_cpu);
-    pthread_detach(hilo_espera_fin_quantum);
-
-    sem_wait(&sem_fin_quantum_o_dev_cpu); // Algún hilo le hará el signal al semáforo
-    // Por las dudas llamo a pthread cancel para ambos hilos, en caso de que alguno aun siga ejecutando
-    pthread_cancel(hilo_espera_recibir_operacion_cpu);
-    pthread_cancel(hilo_espera_fin_quantum);
-    sem_destroy(&sem_fin_quantum_o_dev_cpu);
-
-    if (esp_q->termino == true)
-    {
-        code_operacion rtaCPU;
-        code_operacion fin_quantum_rr = FIN_QUANTUM_RR;
-
-        send(sockets->sockets_cliente_cpu->socket_Interrupt, &fin_quantum_rr, sizeof(fin_quantum_rr), 0);
-        recv(sockets->sockets_cliente_cpu->socket_Interrupt, &rtaCPU, sizeof(rtaCPU), 0);
-
-        if (es_motivo_devolucion(rtaCPU))
-        {
-            tcb->estado = TCB_READY;
-
-            queue_push(queue, tcb);
-        }
-
-        else if (rtaCPU == THREAD_EXIT_SYSCALL) // THREAD_ELIMINATE (??)
-        {
-            THREAD_EXIT();
-        }
-    }
-
-    else
-    { // Si llega una interrupción de la CPU se hace lo que corresponda (hay que ver si el hilo terminó o si le queda por ejecutar)
-
-        if (es_motivo_devolucion(dev->code))
-        {
-            tcb->estado = TCB_READY;
-
-            queue_push(queue, tcb);
-        }
-
-        else if (dev->code == THREAD_EXIT_SYSCALL) // THREAD_ELIMINATE (??)
-        {
-            THREAD_EXIT();
-        }
-    }
-
+    t_paquete* paquete = send_operacion_tid_pid(tcb->pid,tcb->tid,THREAD_EXECUTE_AVISO,sockets->sockets_cliente_cpu->socket_Dispatch);
+    usleep(quantum*1000); // verificar en los test
     eliminar_paquete(paquete);
+    t_paquete* paquete_finalizacion = send_operacion_tid_pid(tcb->pid,tcb->tid,INTERRUPCION,sockets->sockets_cliente_cpu->socket_Interrupt); 
+    sem_wait(&sem_IO);
+    eliminar_paquete(paquete_finalizacion);
+
 }
 
-void *contar_hasta_quantum(void *args)
-{
-    t_args_esperar_quantum *args_esperar_quantum = (t_args_esperar_quantum *)(args);
-    usleep(args_esperar_quantum->quantum * 1000);
-    args_esperar_quantum->termino = true;
-    sem_post(&sem_fin_quantum_o_dev_cpu);
-    return NULL;
-}
 
-void *esperar_devolucion_cpu(void *args)
-{
-    t_args_esperar_devolucion_cpu *dev = (t_args_esperar_devolucion_cpu *)args;
-    t_list *devolucionCPU = recibir_paquete(sockets->sockets_cliente_cpu->socket_Dispatch);
-    dev->code = *(code_operacion *)list_get(devolucionCPU, 0);
-    
-
-    list_destroy(devolucionCPU);
-
-
-
-    sem_post(&sem_fin_quantum_o_dev_cpu);
-
-    return NULL;
-}
 
 /*
 Colas Multinivel
@@ -439,13 +360,9 @@ void *funcion_ready_exec_hilos(void *arg)
 
         if (strings_iguales(algoritmo, "CMN"))
         {
-            // Las 4 variables de abajo las inicializo en NULL, despues en las colas multinivel se les da los valores correspondientes
-            t_paquete*paquete=NULL;
             t_cola_prioridad*cola_prioritaria=NULL;
-            t_args_esperar_devolucion_cpu*dev=NULL;
-            t_args_esperar_quantum*esp_q=NULL;
             proceso_exec->hilo_exec=colas_multinivel(proceso_exec,cola_prioritaria);
-            ejecucionRR(proceso_exec->hilo_exec,cola_prioritaria->cola,paquete,dev,esp_q);
+            ejecucionRR(proceso_exec->hilo_exec,cola_prioritaria->cola);
             sem_post(&sem_planificar);
         }
     }
@@ -458,14 +375,17 @@ void planificador_corto_plazo(t_pcb *pcb) // Si llega un pcb nuevo a la cola rea
     char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
 
     sem_init(&sem_planificar,0,1);
+    sem_init(&sem_IO,0,0);
+    sem_init(&sem_termina_ejecucion,0,0);
 
     if (strings_iguales(algoritmo, "PRIORIDADES"))
     {
         hilo_ordena_lista_prioridades(pcb);
     }
-
+    
 
     pthread_t hilo_ready_exec;
+    pthread_t hilo_exec_blocked;
 
     int resultado = pthread_create(&hilo_ready_exec, NULL, funcion_ready_exec_hilos, algoritmo);
 
@@ -475,7 +395,31 @@ void planificador_corto_plazo(t_pcb *pcb) // Si llega un pcb nuevo a la cola rea
         return;
     }
     
+    resultado = pthread_create(&hilo_exec_blocked,NULL,funcion_ready_blocked,NULL);
+    if (resultado != 0)
+    {
+        log_error(logger, "Error al crear el hilo ready_blocked");
+        return;
+    }
 
     pthread_detach(hilo_ready_exec);
+    pthread_detach(hilo_exec_blocked); // En este mismo hilo también se hace el FIFO para pasar de blocked a ready
     
+}
+
+
+// Ejecución
+// Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC y se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
+// En caso que el algoritmo requiera desalojar al hilo en ejecución, se enviará una interrupción a través de la conexión de interrupt para forzar el desalojo del mismo.
+// Al recibir el TID del hilo en ejecución, en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
+
+void ejecucion(t_tcb *hilo, t_queue *queue)
+{
+
+    hilo->estado = TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
+
+    t_paquete *paquete = send_operacion_tid_pid(hilo->pid,hilo->tid,THREAD_EXECUTE_AVISO,sockets->sockets_cliente_cpu->socket_Dispatch);
+
+    sem_wait(&sem_termina_ejecucion);
+    eliminar_paquete(paquete);
 }

@@ -99,7 +99,7 @@ void send_operacion_tid(int tid, code_operacion code, int socket_cliente){
     // ??? eliminar_paquete(paquete);
 }
 
-void send_operacion_tid_pid(int pid,int tid,code_operacion code, int socket_cliente){
+t_paquete* send_operacion_tid_pid(int pid,int tid,code_operacion code, int socket_cliente){
     t_paquete* paquete = crear_paquete();
     agregar_a_paquete(paquete,&code,sizeof(code_operacion));
     agregar_a_paquete(paquete,&pid,sizeof(pid));
@@ -108,6 +108,7 @@ void send_operacion_tid_pid(int pid,int tid,code_operacion code, int socket_clie
     enviar_paquete(paquete,socket_cliente);
 
     // ??? eliminar_paquete(paquete);
+    return paquete;
 }
 
 

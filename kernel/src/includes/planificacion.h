@@ -47,5 +47,5 @@ void*contar_hasta_quantum(void*args);
 void*esperar_devolucion_cpu(void*args);
 
 
-void ejecucionRR(t_tcb *hilo, t_queue *queue, t_paquete *paquete,t_args_esperar_devolucion_cpu*dev,t_args_esperar_quantum*esp_q);
+void ejecucionRR(t_tcb *tcb, t_queue *queue);
 #endif

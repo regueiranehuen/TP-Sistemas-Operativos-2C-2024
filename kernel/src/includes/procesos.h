@@ -26,6 +26,8 @@ extern sem_t semaforo_cola_exit_hilos;
 extern t_queue* cola_exit;
 
 extern sem_t sem_planificar;
+extern sem_t sem_IO;
+extern sem_t sem_termina_ejecucion;
 
 
 typedef enum{
@@ -177,5 +179,7 @@ void ejecucion(t_tcb*hilo,t_queue*queue);
 
 void* manejar_espera_io(void* arg);
 void hilo_termino_io(t_tcb* tcb);
+
+void* funcion_ready_blocked(void*args);
 
 #endif
