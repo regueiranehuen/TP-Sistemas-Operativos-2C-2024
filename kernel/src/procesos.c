@@ -5,13 +5,13 @@
 sem_t semaforo_new_ready_procesos;
 sem_t semaforo_cola_new_procesos;
 sem_t semaforo_cola_exit_procesos;
-sem_t semaforo_cola_new_hilos;
+
 sem_t semaforo_cola_exit_hilos;
 sem_t sem_lista_prioridades;
 sem_t sem_lista_pcbs;
 
+sem_t sem_syscall;
 
-t_list *lista_new;
 t_queue *cola_ready_fifo;
 t_list *lista_ready_prioridad;
 t_list *colas_ready_prioridad;
@@ -39,6 +39,10 @@ pthread_mutex_t mutex_lista_blocked;
 pthread_mutex_t mutex_ready_fifo;
 pthread_mutex_t mutex_ready_prioridades;
 pthread_mutex_t mutex_ready_multinivel;
+
+sem_t sem_desalojado;
+
+bool desalojado;
 
 t_pcb *crear_pcb()
 {
@@ -136,7 +140,7 @@ aquellos hilos bloqueados por THREAD_JOIN o por mutex tomados por el hilo
 finalizado (en caso que hubiera).
 */
 
-void hilo_exit(t_pcb *pcb)
+void hilo_exit()
 {
    
     sem_wait(&semaforo_cola_exit_hilos);
@@ -168,7 +172,7 @@ void hilo_exit(t_pcb *pcb)
             } else if(strcmp(planificacion, "PRIORIDADES")== 0)
             {
                 pthread_mutex_lock(&mutex_ready_prioridades);
-                queue_push(lista_ready_prioridad, tcb);
+                list_add(lista_ready_prioridad, tcb);
                 pthread_mutex_unlock(&mutex_ready_prioridades);
             }
             else if (strcmp(planificacion, "MULTINIVEL") == 0)
@@ -181,53 +185,8 @@ void hilo_exit(t_pcb *pcb)
     liberar_tcb(hilo);
 }
 
-void buscar_y_eliminar_tcb(t_list* lista_tcbs, t_tcb* tcb) {
-    // Bloquear el mutex para asegurar acceso exclusivo a la lista
 
-    for (int i = 0; i < list_size(lista_tcbs); i++) {
-        t_tcb* tcb_actual = list_get(lista_tcbs, i);  // Obtener el TCB en la posición 'i'
-        if (tcb_actual->tid == tcb->tid) {
-            // Eliminar el TCB encontrado y retornarlo
-            pthread_mutex_lock(&mutex_lista_blocked);
-            t_tcb* tcb_eliminado = list_remove(lista_tcbs, i);
-            pthread_mutex_unlock(&mutex_lista_blocked);
-            // Desbloquear el mutex antes de retornar
-            pthread_mutex_unlock(&mutex_lista_blocked);
-        }
-    }    
-}
 
-/*
-Creación de hilos
-Para la creación de hilos, el Kernel deberá informar a la Memoria y luego ingresarlo
-directamente a la cola de READY correspondiente, según su nivel de prioridad.
-*/
-void new_a_ready_hilos(t_pcb *pcb)
-{
-    
-    sem_wait(&semaforo_cola_new_hilos);
-    
-    int socket_memoria = cliente_Memoria_Kernel(logger, config);
-    code_operacion cod_op = THREAD_CREATE_AVISO;
-
-    send(socket_memoria, &cod_op, sizeof(int), 0);
-    close(socket_memoria);
-    char *planificacion = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
-    t_tcb *hilo = queue_pop(pcb->cola_hilos_new);
-    hilo->estado = TCB_READY;
-    if (strcmp(planificacion, "FIFO") == 0){
-        queue_push(cola_ready_fifo, hilo);
-    } else if(strcmp(planificacion,"PRIORIDADES")==0)
-    {
-        list_add(lista_ready_prioridad,hilo);
-        sem_post(&sem_lista_prioridades);
-    }
-    if (strcmp(planificacion, "MULTINIVEL") == 0)
-    {
-        t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, hilo->prioridad);
-        queue_push(cola->cola, hilo);
-    }
-}
 /*
 Creación de procesos
 Se tendrá una cola NEW que será administrada estrictamente por FIFO para la creación de procesos. 
@@ -332,18 +291,10 @@ void PROCESS_EXIT()
         pthread_mutex_unlock(&mutex_cola_exit_procesos);
 
         sem_post(&semaforo_cola_exit_procesos);
+        sem_post(&sem_desalojado);
+        desalojado = true;
 }
 
-
-t_pcb* buscar_pcb_por_pid(t_list* lista_pcbs, int pid_buscado) {
-    for (int i = 0; i < list_size(lista_pcbs); i++) {
-        t_pcb* pcb_actual = list_get(lista_pcbs, i); // Obtener el PCB de la lista
-        if (pcb_actual->pid == pid_buscado) {
-            return pcb_actual; // Retorna el PCB si coincide el PID
-        }
-    }
-    return NULL; // Retorna NULL si no encuentra coincidencia
-}
 
 /*Creación de hilos
 Para la creación de hilos, el Kernel deberá informar a la Memoria y luego ingresarlo directamente a la cola de READY correspondiente, según su nivel de prioridad.
@@ -382,7 +333,7 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
         tcb->prioridad = prioridad;
         tcb->estado = TCB_READY;
         tcb->pseudocodigo = pseudocodigo;
-        int planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
+        char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
         if (strcmp(planificacion, "FIFO") == 0){
         queue_push(cola_ready_fifo, tcb);
     } else if(strcmp(planificacion,"PRIORIDADES")==0)
@@ -403,17 +354,6 @@ THREAD_JOIN, esta syscall recibe como parámetro un TID, mueve el hilo que la in
 estado BLOCK hasta que el TID pasado por parámetro finalice. En caso de que el TID pasado
  por parámetro no exista o ya haya finalizado,
 esta syscall no hace nada y el hilo que la invocó continuará su ejecución.*/
-
-t_tcb* buscar_tcb_por_tid(t_list* lista_tcbs, int tid_buscado) {
-    for (int i = 0; i < list_size(lista_tcbs); i++) {
-        t_tcb* tcb_actual = list_get(lista_tcbs, i);  // Obtener el TCB en la posición 'i'
-        if (tcb_actual->tid == tid_buscado) {
-            return tcb_actual;  // Devolver el TCB encontrado
-        }
-    }
-    // Si no se encuentra, retornar NULL
-    return NULL;
-}
 
 void THREAD_JOIN(int tid)
 {
@@ -440,6 +380,8 @@ void THREAD_JOIN(int tid)
 
     t_tcb *tcb_bloqueante = buscar_tcb_por_tid(lista_tcbs, tid);
     queue_push(tcb_bloqueante->cola_hilos_bloqueados, tcb_aux);
+    sem_post(&sem_desalojado);
+    desalojado = true;
 }
 
 /*
@@ -469,7 +411,7 @@ void THREAD_CANCEL(int tid)
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
 
     send(socket_memoria, &cod_op, sizeof(code_operacion), 0);
-    send_tid(tcb->tid, socket_memoria);
+    send_tid(tcb, socket_memoria);
     recv(socket_memoria, &respuesta, sizeof(int), 0);
 
     close(socket_memoria);
@@ -498,6 +440,8 @@ void THREAD_EXIT()
 {
     move_tcb_to_exit(hilo_exec, cola_new, cola_ready_fifo, lista_ready_prioridad, colas_ready_prioridad, lista_bloqueados);
     sem_post(&semaforo_cola_exit_hilos);
+    sem_post(&sem_desalojado);
+    desalojado = true;
 }
 
 /*
@@ -534,48 +478,69 @@ void MUTEX_CREATE(char* recurso)//supongo que el recurso es el nombre del mutex
 void MUTEX_LOCK(char* recurso)
 {
     t_mutex *mutex_asociado = busqueda_mutex(lista_mutex, recurso);
-
+    t_tcb* hilo_aux = hilo_exec;
     if (mutex_asociado == NULL)
     {
-        t_tcb* hilo_aux = hilo_exec;
         queue_push(cola_exit, hilo_aux);
+        sem_post(&sem_desalojado);
+        desalojado = true;
         hilo_exec = NULL;
         return;
     }
 
     if (mutex_asociado->estado == UNLOCKED)
     {
-        mutex_asociado->hilo = hilo_exec;
+        mutex_asociado->hilo = hilo_aux;
         mutex_asociado->estado = LOCKED;
     }
     else
     {
-        hilo_exec->estado = TCB_BLOCKED_MUTEX;
-        queue_push(mutex_asociado->cola_tcbs, hilo_exec);
+        hilo_aux->estado = TCB_BLOCKED_MUTEX;
+        hilo_exec = NULL;
+        list_add(lista_bloqueados,hilo_aux);
+        queue_push(mutex_asociado->cola_tcbs, hilo_aux);
+        sem_post(&sem_desalojado);
+        desalojado = true;
     }
 }
 
 void MUTEX_UNLOCK(char* recurso)
 {
     t_mutex *mutex_asociado = busqueda_mutex(lista_mutex, recurso);
-
+    t_tcb* hilo_aux = hilo_exec;
     if (mutex_asociado == NULL)
     {
-
-        t_tcb* hilo_aux = hilo_exec;
         queue_push(cola_exit, hilo_aux);
         hilo_exec = NULL;
+        sem_post(&sem_desalojado);
+        desalojado = true;
         return;
     }
 
-    if (mutex_asociado->hilo != proceso_exec->hilo_exec)
+    if (mutex_asociado->hilo != hilo_exec)
     {
         return;
     }
     if (!queue_is_empty(mutex_asociado->cola_tcbs))
     {
         mutex_asociado->hilo = queue_pop(mutex_asociado->cola_tcbs);
+        sacar_tcb_por_tid(lista_bloqueados,mutex_asociado->hilo->tid);
         mutex_asociado->hilo->estado = TCB_READY;
+        t_tcb* tcb = mutex_asociado->hilo;
+        char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
+        if (strcmp(planificacion, "FIFO") == 0){
+        queue_push(cola_ready_fifo, tcb);
+    } else if(strcmp(planificacion,"PRIORIDADES")==0)
+    {
+        list_add(lista_ready_prioridad,tcb);
+        sem_post(&sem_lista_prioridades);
+    }
+    if (strcmp(planificacion, "MULTINIVEL") == 0)
+    {
+        t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, tcb->prioridad);
+        queue_push(cola->cola, tcb);
+    }
+
     }
     else
     {
@@ -598,7 +563,7 @@ void IO(int milisegundos)
 
     // Cambiar el estado del hilo a BLOCKED
     tcb->estado = TCB_BLOCKED;
-    proceso_exec->hilo_exec = NULL;
+    hilo_exec = NULL;
 
     // Agregar el hilo a la lista de hilos bloqueados
     list_add(lista_bloqueados, tcb);
@@ -611,7 +576,7 @@ void IO(int milisegundos)
 
     // Mover el hilo a la cola de READY
     tcb->estado = TCB_READY;
-    int planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
+    char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
     if (strcmp(planificacion, "FIFO") == 0){
         queue_push(cola_ready_fifo, tcb);
     } else if(strcmp(planificacion,"PRIORIDADES")==0)
@@ -656,7 +621,7 @@ void DUMP_MEMORY()
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
 
-    int pid = proceso_exec->pid;
+    int pid = tcb->pid;
     int tid = tcb->tid;
 
     t_paquete *paquete_dump = crear_paquete();
@@ -678,7 +643,7 @@ void DUMP_MEMORY()
     {
         log_info(logger, "Dump de memoria exitoso");
         tcb->estado = TCB_READY;
-        int planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
+        char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
         if (strcmp(planificacion, "FIFO") == 0){
         queue_push(cola_ready_fifo, tcb);
     } else if(strcmp(planificacion,"PRIORIDADES")==0)
@@ -695,45 +660,40 @@ void DUMP_MEMORY()
 }
 
 
-// Ejecución
-// Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC y se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
-// En caso que el algoritmo requiera desalojar al hilo en ejecución, se enviará una interrupción a través de la conexión de interrupt para forzar el desalojo del mismo.
-// Al recibir el TID del hilo en ejecución, en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
+/*Ejecución
+Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC y se enviará al módulo CPU el TID y su PID 
+asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
+En caso que el algoritmo requiera desalojar al hilo en ejecución, se enviará una interrupción a través de la conexión de interrupt para forzar el desalojo del mismo.
+Al recibir el TID del hilo en ejecución, en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique 
+el algoritmo. Durante este período la CPU se quedará esperando.
+*/
+void espera_con_quantum(int quantum) {
+    desalojado = false;
+    fd_set read_fds;
+    struct timeval timeout;
 
-void ejecucion(t_tcb *hilo, t_queue *queue, int socket_dispatch)
-{
+    // Establecer el tiempo de espera
+    timeout.tv_sec = quantum / 1000; // Convertir a segundos
+    timeout.tv_usec = (quantum % 1000) * 1000; // Convertir a microsegundos
 
+    // Inicializar el conjunto de descriptores
+    FD_ZERO(&read_fds);
+    FD_SET(sockets->sockets_cliente_cpu->socket_Dispatch, &read_fds); // Añadir el socket de la CPU
 
-    t_paquete *paquete = crear_paquete();
-    hilo->estado = TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
+    // Realizar la espera una vez, no en un bucle
 
-    agregar_a_paquete(paquete, &hilo->tid, sizeof(hilo->tid));
-    agregar_a_paquete(paquete, &hilo->pid, sizeof(hilo->pid));
+    while(desalojado == true){//se vuelve false cuando se acaba el quantum o hay syscall de finalización o bloqueante
+    int resultado = select(sockets->sockets_cliente_cpu->socket_Dispatch + 1, &read_fds, NULL, NULL, &timeout);
 
-    //code_operacion rtaCPU;
-
-    // Se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
-    enviar_paquete(paquete, socket_dispatch);
-    //recv(socket_dispatch, &rtaCPU, sizeof(rtaCPU), 0);
+    if (resultado == -1) {
+        perror("Error en select");
     
-    t_list* devolucionCPU = list_create(); //hago esto solamente para que no me tire error 
-    // = recibir_paquete(socket_dispatch);   // HAY QUE AGREGAR EL UTILS SERVER
-
-    // Hacer un paquete con un tid y con un enum
-   
-    
-    code_operacion motivo_devolucion = *(code_operacion*)list_get(devolucionCPU, 0);
-
-    /*Agregué algunos de los códigos de operación subidos al módulo CPU. Había conflicto con algunos nombres por llamarse igual a algunas funciones que tenemos
-    hechas, así que no agregué todos*/
-
-    // en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
-
-    if (es_motivo_devolucion(motivo_devolucion))
-    { //
-
+    } else if (resultado == 0) { //pasa el tiempo de quantum, desalojo. 
+        code_operacion cod_op = THREAD_INTERRUPT;
+        send(sockets->sockets_cliente_cpu->socket_Interrupt,&cod_op,sizeof(code_operacion),0);
+        t_tcb* hilo = hilo_exec;
         hilo->estado = TCB_READY;
-        int planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
+        char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
         if (strcmp(planificacion, "FIFO") == 0){
         queue_push(cola_ready_fifo, hilo);
     } else if(strcmp(planificacion,"PRIORIDADES")==0)
@@ -746,15 +706,82 @@ void ejecucion(t_tcb *hilo, t_queue *queue, int socket_dispatch)
         t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, hilo->prioridad);
         queue_push(cola->cola, hilo);
     }
-        
+    desalojado = true;
+    sem_post(&sem_desalojado);
+    } else {// se atiende la syscall recibida
+        // Hay datos disponibles en el socket
+        atender_syscall();
     }
+    }
+}
+void ejecucion(t_tcb *hilo)
+{
 
-    if (motivo_devolucion == THREAD_EXIT_SYSCALL)
-    {
-        THREAD_EXIT();
-    }
-    
+//el planificador de corto plazo se encarga de atender las syscalls del hilo en ejecución por lo tanto por cada llamada a la funcion ejecucion, luego de enviar el hilo a ejecutar se encarga de atender las syscalls de dicho hilo
+
+    t_paquete *paquete = crear_paquete();
+    hilo->estado = TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
+    hilo_exec = hilo;
+    agregar_a_paquete(paquete, &hilo->tid, sizeof(hilo->tid));
+    agregar_a_paquete(paquete, &hilo->pid, sizeof(hilo->pid));
+
+    //code_operacion rtaCPU;
+
+    pthread_mutex_lock(&mutex_conexion_cpu);
+    enviar_paquete(paquete, sockets->sockets_cliente_cpu->socket_Dispatch);
+    pthread_mutex_unlock(&mutex_conexion_cpu);
     eliminar_paquete(paquete);
-    list_destroy(devolucionCPU);
+  
+    /*Agregué algunos de los códigos de operación subidos al módulo CPU. Había conflicto con algunos nombres por llamarse igual a algunas funciones que tenemos
+    hechas, así que no agregué todos*/
+
+    // en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
+    char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
+
+if(strcmp(algoritmo,"MULTINIVEL")==0){
+    char* quantum_char = config_get_string_value(config,"QUANTUM");
+    int quantum = atoi(quantum_char);
+    espera_con_quantum(quantum);
+}
+else{
+    desalojado = false;
+    while(desalojado == false){
+atender_syscall();
+
+    }
 }
 
+}
+
+/*
+Creación de hilos
+Para la creación de hilos, el Kernel deberá informar a la Memoria y luego ingresarlo
+directamente a la cola de READY correspondiente, según su nivel de prioridad.
+
+void new_a_ready_hilos(t_pcb *pcb)
+{
+    
+    sem_wait(&semaforo_cola_new_hilos);
+    
+    int socket_memoria = cliente_Memoria_Kernel(logger, config);
+    code_operacion cod_op = THREAD_CREATE_AVISO;
+
+    send(socket_memoria, &cod_op, sizeof(int), 0);
+    close(socket_memoria);
+    char *planificacion = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
+    t_tcb *hilo = queue_pop(pcb->cola_hilos_new);
+    hilo->estado = TCB_READY;
+    if (strcmp(planificacion, "FIFO") == 0){
+        queue_push(cola_ready_fifo, hilo);
+    } else if(strcmp(planificacion,"PRIORIDADES")==0)
+    {
+        list_add(lista_ready_prioridad,hilo);
+        sem_post(&sem_lista_prioridades);
+    }
+    if (strcmp(planificacion, "MULTINIVEL") == 0)
+    {
+        t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, hilo->prioridad);
+        queue_push(cola->cola, hilo);
+    }
+}
+*/

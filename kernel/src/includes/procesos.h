@@ -15,7 +15,6 @@ extern t_queue* cola_ready_fifo;
 extern t_list* lista_ready_prioridad;
 extern t_list* colas_ready_prioridad;
 extern t_list* lista_pcbs;
-extern t_tcb* hilo_exec;
 
 extern pthread_mutex_t mutex_pthread_join;
 extern t_config* config;
@@ -30,6 +29,7 @@ extern sem_t semaforo_cola_exit_procesos;
 extern sem_t semaforo_cola_exit_hilos;
 extern t_queue* cola_exit;
 
+extern sem_t sem_syscall;
 
 typedef enum{
     PCB_INIT,
@@ -78,6 +78,8 @@ int pseudocodigo_length;
 t_queue* cola_hilos_bloqueados;
 pthread_mutex_t mutex_cola_hilos_bloqueados;
 }t_tcb;
+
+extern t_tcb* hilo_exec;
 
 typedef enum {
     UNLOCKED,
@@ -153,18 +155,18 @@ void THREAD_EXIT();
 void new_a_ready_procesos();
 void proceso_exit();
 void hilo_exit();
-void new_a_ready_hilos(t_pcb *pcb);
 
 void iniciar_kernel (char* archivo_pseudocodigo, int tamanio_proceso);
 
 void MUTEX_CREATE();
-void MUTEX_LOCK(int mutex_id);
-void MUTEX_UNLOCK(int mutex_id);
+void MUTEX_LOCK(char* recurso);
+void MUTEX_UNLOCK(char* recurso);
 
 void IO(int milisegundos);
 
 void DUMP_MEMORY();
 
-void ejecucion(t_tcb*hilo,t_queue*queue,int socket_dispatch);
+void espera_con_quantum(int quantum);
+void ejecucion(t_tcb*hilo);
 
 #endif

@@ -4,7 +4,7 @@
 t_list* lista_tcbs;
 t_queue* cola_exit;
 sem_t semaforo_cola_exit_hilos;
-
+pthread_mutex_t mutex_lista_blocked;
 
 void inicializar_mutex_procesos(t_pcb* pcb) {
     sem_init(&pcb->sem_hilos_exit, 0, 0);
@@ -89,7 +89,7 @@ int lista_tcb(t_pcb* pcb, int tid) {
     }
     return -1;
 }
-
+/*
 int tid_finalizado(t_pcb* pcb, int tid) {
     // Accedemos directamente a la lista interna de la cola de EXIT
     int tamanio = queue_size(pcb->cola_hilos_exit);
@@ -101,6 +101,7 @@ int tid_finalizado(t_pcb* pcb, int tid) {
     }
     return 0;  // No se encontró el TID en la cola de EXIT
 }
+*/
 
 // Función auxiliar para buscar y remover un TCB de una cola
 t_tcb* find_and_remove_tcb_in_queue(t_queue* queue, int tid) {
@@ -133,7 +134,7 @@ t_tcb* find_and_remove_tcb_in_list(t_list* list, int tid) {
 
     return tcb;  // Devuelve el TCB encontrado, o NULL si no lo encontró
 }
-
+/*
 // Función principal para mover un TCB a la cola EXIT
 void move_tcb_to_exit(t_tcb* tcb, t_queue* cola_new, t_queue* cola_ready_fifo, t_list* lista_ready_prioridades, t_list* colas_ready_prioridades, t_list* lista_blocked) {
     // Intentar encontrar y eliminar el TCB en la cola NEW
@@ -174,7 +175,7 @@ void move_tcb_to_exit(t_tcb* tcb, t_queue* cola_new, t_queue* cola_ready_fifo, t
         printf("TCB con TID %d no encontrado\n", tcb->tid);
     }
 }
-
+*/
 // Función auxiliar para buscar un TCB en una cola
 t_tcb* find_tcb_in_queue(t_queue* queue, int tid) {
     for (int i = 0; i < queue_size(queue); i++) {
@@ -296,7 +297,7 @@ void liberar_tcb(t_tcb* tcb) {
         free(tcb);
     }
 }
-
+/*
 t_tcb* buscar_tcb_por_tid(t_pcb* pcb, int tid) {
     // Primero busca el tcb en la lista de tids para verificar si existe
     for (int i = 0; i < list_size(pcb->tids); i++) {
@@ -346,7 +347,7 @@ t_tcb* buscar_tcb_por_tid(t_pcb* pcb, int tid) {
 
     // Si no se encontró el tcb con el tid dado
     return NULL;
-}
+}*/
 
 // Función auxiliar para insertar ordenado un hilo en una cola
 void insertar_ordenado(t_queue*cola, t_tcb* nuevo_hilo){
@@ -502,4 +503,41 @@ void ordenar_por_prioridad(t_list* lista) {
     }
 
     list_destroy(lista_ordenada); // Limpiar la lista ordenada si ya no es necesaria
+}
+
+void buscar_y_eliminar_tcb(t_list* lista_tcbs, t_tcb* tcb) {
+    // Bloquear el mutex para asegurar acceso exclusivo a la lista
+
+    for (int i = 0; i < list_size(lista_tcbs); i++) {
+        t_tcb* tcb_actual = list_get(lista_tcbs, i);  // Obtener el TCB en la posición 'i'
+        if (tcb_actual->tid == tcb->tid) {
+            // Eliminar el TCB encontrado y retornarlo
+            pthread_mutex_lock(&mutex_lista_blocked);
+            list_remove(lista_tcbs, i);
+            pthread_mutex_unlock(&mutex_lista_blocked);
+            // Desbloquear el mutex antes de retornar
+        }
+    }    
+}
+
+t_tcb* buscar_tcb_por_tid(t_list* lista_tcbs, int tid_buscado) {
+    for (int i = 0; i < list_size(lista_tcbs); i++) {
+        t_tcb* tcb_actual = list_get(lista_tcbs, i);  // Obtener el TCB en la posición 'i'
+        if (tcb_actual->tid == tid_buscado) {
+            return tcb_actual;  // Devolver el TCB encontrado
+        }
+    }
+    // Si no se encuentra, retornar NULL
+    return NULL;
+}
+
+
+t_pcb* buscar_pcb_por_pid(t_list* lista_pcbs, int pid_buscado) {
+    for (int i = 0; i < list_size(lista_pcbs); i++) {
+        t_pcb* pcb_actual = list_get(lista_pcbs, i); // Obtener el PCB de la lista
+        if (pcb_actual->pid == pid_buscado) {
+            return pcb_actual; // Retorna el PCB si coincide el PID
+        }
+    }
+    return NULL; // Retorna NULL si no encuentra coincidencia
 }

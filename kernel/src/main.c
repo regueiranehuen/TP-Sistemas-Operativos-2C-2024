@@ -18,10 +18,6 @@ int main(int argc, char *argv[])
     char *archivo_pseudocodigo = argv[1];
     int tamanio_proceso = atoi(argv[2]);
     
-
-    cola_new = queue_create();
-    cola_ready = queue_create();
-
     log = log_create("kernel.log", "tp", true, LOG_LEVEL_TRACE);
     config = config_create("kernel.config");
 
