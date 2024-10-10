@@ -39,6 +39,7 @@ pthread_mutex_t mutex_lista_blocked;
 pthread_mutex_t mutex_ready_fifo;
 pthread_mutex_t mutex_ready_prioridades;
 pthread_mutex_t mutex_ready_multinivel;
+pthread_mutex_t mutex_cola_ready;
 
 sem_t sem_desalojado;
 
@@ -99,7 +100,8 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
     queue_push(cola_new_procesos, pcb);
     pthread_mutex_unlock(&mutex_cola_new_procesos);
     
-    hilo_planificador_largo_plazo();
+    planificador_largo_plazo();
+    planificador_corto_plazo();
 
     sem_post(&semaforo_cola_new_procesos);
  
@@ -163,23 +165,8 @@ void hilo_exit()
             t_tcb *tcb = queue_pop(hilo->cola_hilos_bloqueados);
             pthread_mutex_unlock(&hilo->mutex_cola_hilos_bloqueados);
             tcb->estado = TCB_READY;
-            char *planificacion = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
             buscar_y_eliminar_tcb(lista_bloqueados,tcb);
-            if (strcmp(planificacion, "FIFO") == 0){
-            pthread_mutex_lock(&mutex_ready_fifo);
-            queue_push(cola_ready_fifo,tcb);
-            pthread_mutex_unlock(&mutex_ready_fifo);
-            } else if(strcmp(planificacion, "PRIORIDADES")== 0)
-            {
-                pthread_mutex_lock(&mutex_ready_prioridades);
-                list_add(lista_ready_prioridad, tcb);
-                pthread_mutex_unlock(&mutex_ready_prioridades);
-            }
-            else if (strcmp(planificacion, "MULTINIVEL") == 0)
-            {
-                t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, tcb->prioridad);
-                queue_push(cola->cola, tcb);
-            }
+            pushear_cola_ready(tcb);
         }
     }
     liberar_tcb(hilo);
@@ -203,7 +190,9 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
     
     sem_wait(&semaforo_cola_new_procesos);
     
+    pthread_mutex_lock(&mutex_cola_new_procesos);
     t_pcb *pcb = queue_peek(cola_new_procesos);
+    pthread_mutex_unlock(&mutex_cola_new_procesos);
 
     code_operacion cod_op = PROCESS_CREATE_AVISO;
 
@@ -224,19 +213,7 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
         pthread_mutex_unlock(&mutex_cola_new_procesos);
         pcb->estado = PCB_READY;
         pcb->tcb_main->estado = TCB_READY;
-        char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
-        if (strcmp(planificacion, "FIFO") == 0){
-        queue_push(cola_ready_fifo, pcb->tcb_main);
-        } else if(strcmp(planificacion,"PRIORIDADES")==0)
-        {
-        list_add(lista_ready_prioridad,pcb->tcb_main);
-        sem_post(&sem_lista_prioridades);
-        }
-        if (strcmp(planificacion, "MULTINIVEL") == 0)
-        {
-        t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, pcb->tcb_main->prioridad);
-        queue_push(cola->cola, pcb->tcb_main);
-        }
+        pushear_cola_ready(pcb->tcb_main);
     }
 }
 
@@ -333,19 +310,7 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
         tcb->prioridad = prioridad;
         tcb->estado = TCB_READY;
         tcb->pseudocodigo = pseudocodigo;
-        char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
-        if (strcmp(planificacion, "FIFO") == 0){
-        queue_push(cola_ready_fifo, tcb);
-    } else if(strcmp(planificacion,"PRIORIDADES")==0)
-    {
-        list_add(lista_ready_prioridad,tcb);
-        sem_post(&sem_lista_prioridades);
-    }
-    if (strcmp(planificacion, "MULTINIVEL") == 0)
-    {
-        t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, tcb->prioridad);
-        queue_push(cola->cola, tcb);
-    }
+        pushear_cola_ready(tcb);
     }
 }
 
@@ -423,9 +388,32 @@ void THREAD_CANCEL(int tid)
     else
     {
 
-    
+    if (tcb->estado == TCB_READY){
+        char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
+        if(strcmp(algoritmo,"FIFO")== 0){
+            pthread_mutex_lock(&mutex_cola_ready);
+            sacar_tcb_de_cola(cola_ready_fifo,tcb);
+            pthread_mutex_unlock(&mutex_cola_ready);
+        }
+        else if(strcmp(algoritmo,"PRIORIDADES")){
+            pthread_mutex_lock(&mutex_cola_ready);
+            sacar_tcb_de_lista(lista_ready_prioridad,tcb);
+            pthread_mutex_unlock(&mutex_cola_ready);
+        }
+        else if(strcmp(algoritmo,"MULTINIVEL")){
+            pthread_mutex_lock(&mutex_cola_ready);
+            t_cola_prioridad* cola = cola_prioridad(colas_ready_prioridad,tcb->prioridad);
+            sacar_tcb_de_cola(cola->cola,tcb);
+            pthread_mutex_unlock(&mutex_cola_ready);
+        }
+    }
+    else{
+        sacar_tcb_de_lista(lista_bloqueados,tcb);
+    }
     tcb->estado = TCB_EXIT;
-    move_tcb_to_exit(tcb, cola_new, cola_ready_fifo, lista_ready_prioridad, colas_ready_prioridad, lista_bloqueados);
+    pthread_mutex_lock(&mutex_cola_exit_hilos);
+    queue_push(cola_exit,tcb);
+    pthread_mutex_unlock(&mutex_cola_exit_hilos);
     sem_post(&semaforo_cola_exit_hilos);
     }
     } 
@@ -438,7 +426,12 @@ la finalización de dicho hilo.
 
 void THREAD_EXIT()
 {
-    move_tcb_to_exit(hilo_exec, cola_new, cola_ready_fifo, lista_ready_prioridad, colas_ready_prioridad, lista_bloqueados);
+    t_tcb* hilo = hilo_exec;
+    hilo->estado = TCB_EXIT;
+    hilo_exec = NULL;
+    pthread_mutex_lock(&mutex_cola_exit_hilos);
+    queue_push(cola_exit,hilo);
+    pthread_mutex_unlock(&mutex_cola_exit_hilos);
     sem_post(&semaforo_cola_exit_hilos);
     sem_post(&sem_desalojado);
     desalojado = true;
@@ -481,7 +474,9 @@ void MUTEX_LOCK(char* recurso)
     t_tcb* hilo_aux = hilo_exec;
     if (mutex_asociado == NULL)
     {
-        queue_push(cola_exit, hilo_aux);
+        pthread_mutex_lock(&mutex_cola_exit_hilos);
+        queue_push(cola_exit,hilo_aux);
+        pthread_mutex_unlock(&mutex_cola_exit_hilos);
         sem_post(&sem_desalojado);
         desalojado = true;
         hilo_exec = NULL;
@@ -510,7 +505,9 @@ void MUTEX_UNLOCK(char* recurso)
     t_tcb* hilo_aux = hilo_exec;
     if (mutex_asociado == NULL)
     {
-        queue_push(cola_exit, hilo_aux);
+        pthread_mutex_lock(&mutex_cola_exit_hilos);
+        queue_push(cola_exit,hilo_aux);
+        pthread_mutex_unlock(&mutex_cola_exit_hilos);
         hilo_exec = NULL;
         sem_post(&sem_desalojado);
         desalojado = true;
@@ -527,20 +524,7 @@ void MUTEX_UNLOCK(char* recurso)
         sacar_tcb_por_tid(lista_bloqueados,mutex_asociado->hilo->tid);
         mutex_asociado->hilo->estado = TCB_READY;
         t_tcb* tcb = mutex_asociado->hilo;
-        char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
-        if (strcmp(planificacion, "FIFO") == 0){
-        queue_push(cola_ready_fifo, tcb);
-    } else if(strcmp(planificacion,"PRIORIDADES")==0)
-    {
-        list_add(lista_ready_prioridad,tcb);
-        sem_post(&sem_lista_prioridades);
-    }
-    if (strcmp(planificacion, "MULTINIVEL") == 0)
-    {
-        t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, tcb->prioridad);
-        queue_push(cola->cola, tcb);
-    }
-
+        pushear_cola_ready(tcb);
     }
     else
     {
@@ -576,19 +560,7 @@ void IO(int milisegundos)
 
     // Mover el hilo a la cola de READY
     tcb->estado = TCB_READY;
-    char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
-    if (strcmp(planificacion, "FIFO") == 0){
-        queue_push(cola_ready_fifo, tcb);
-    } else if(strcmp(planificacion,"PRIORIDADES")==0)
-    {
-        list_add(lista_ready_prioridad,tcb);
-        sem_post(&sem_lista_prioridades);
-    }
-    if (strcmp(planificacion, "MULTINIVEL") == 0)
-    {
-        t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, tcb->prioridad);
-        queue_push(cola->cola, tcb);
-    }
+    pushear_cola_ready(tcb);
 }
 
 /* En este apartado solamente se tendrá la instrucción DUMP_MEMORY. Esta syscall le solicita a la memoria,
@@ -643,19 +615,7 @@ void DUMP_MEMORY()
     {
         log_info(logger, "Dump de memoria exitoso");
         tcb->estado = TCB_READY;
-        char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
-        if (strcmp(planificacion, "FIFO") == 0){
-        queue_push(cola_ready_fifo, tcb);
-    } else if(strcmp(planificacion,"PRIORIDADES")==0)
-    {
-        list_add(lista_ready_prioridad,tcb);
-        sem_post(&sem_lista_prioridades);
-    }
-    if (strcmp(planificacion, "MULTINIVEL") == 0)
-    {
-        t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, tcb->prioridad);
-        queue_push(cola->cola, tcb);
-    }
+        pushear_cola_ready(tcb);
     }
 }
 
@@ -682,38 +642,55 @@ void espera_con_quantum(int quantum) {
 
     // Realizar la espera una vez, no en un bucle
 
-    while(desalojado == true){//se vuelve false cuando se acaba el quantum o hay syscall de finalización o bloqueante
+    while(desalojado == false){//se vuelve false cuando se acaba el quantum o hay syscall de finalización o bloqueante
     int resultado = select(sockets->sockets_cliente_cpu->socket_Dispatch + 1, &read_fds, NULL, NULL, &timeout);
 
     if (resultado == -1) {
         perror("Error en select");
     
     } else if (resultado == 0) { //pasa el tiempo de quantum, desalojo. 
-        code_operacion cod_op = THREAD_INTERRUPT;
+        code_operacion cod_op = FIN_QUANTUM_RR;
+        pthread_mutex_lock(&mutex_conexion_cpu);
         send(sockets->sockets_cliente_cpu->socket_Interrupt,&cod_op,sizeof(code_operacion),0);
+        pthread_mutex_unlock(&mutex_conexion_cpu);
         t_tcb* hilo = hilo_exec;
         hilo->estado = TCB_READY;
-        char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
-        if (strcmp(planificacion, "FIFO") == 0){
-        queue_push(cola_ready_fifo, hilo);
-    } else if(strcmp(planificacion,"PRIORIDADES")==0)
-    {
-        list_add(lista_ready_prioridad,hilo);
-        sem_post(&sem_lista_prioridades);
-    }
-    if (strcmp(planificacion, "MULTINIVEL") == 0)
-    {
-        t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, hilo->prioridad);
-        queue_push(cola->cola, hilo);
-    }
-    desalojado = true;
-    sem_post(&sem_desalojado);
+        pushear_cola_ready(hilo);
+        desalojado = true;
+        sem_post(&sem_desalojado);
     } else {// se atiende la syscall recibida
         // Hay datos disponibles en el socket
         atender_syscall();
     }
     }
 }
+
+void pushear_cola_ready(t_tcb* hilo){
+    char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
+    
+    if (strcmp(planificacion, "FIFO") == 0){
+        pthread_mutex_lock(&mutex_cola_ready);
+        queue_push(cola_ready_fifo, hilo);
+        pthread_mutex_unlock(&mutex_cola_ready);
+
+    } else if(strcmp(planificacion,"PRIORIDADES")==0)
+    {
+        pthread_mutex_lock(&mutex_cola_ready);
+        list_add(lista_ready_prioridad,hilo);
+        pthread_mutex_unlock(&mutex_cola_ready);
+        sem_post(&sem_lista_prioridades);
+    }
+    if (strcmp(planificacion, "MULTINIVEL") == 0)
+    {
+        pthread_mutex_lock(&mutex_cola_ready);
+        t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, hilo->prioridad);
+        pthread_mutex_unlock(&mutex_cola_ready);
+        queue_push(cola->cola, hilo);
+    }
+
+}
+
+
 void ejecucion(t_tcb *hilo)
 {
 
@@ -746,7 +723,7 @@ if(strcmp(algoritmo,"MULTINIVEL")==0){
 else{
     desalojado = false;
     while(desalojado == false){
-atender_syscall();
+    atender_syscall();
 
     }
 }

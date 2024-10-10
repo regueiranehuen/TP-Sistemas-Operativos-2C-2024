@@ -4,7 +4,9 @@
 t_list* lista_tcbs;
 t_queue* cola_exit;
 sem_t semaforo_cola_exit_hilos;
+sem_t sem_multinivel;
 pthread_mutex_t mutex_lista_blocked;
+pthread_mutex_t mutex_cola_exit_hilos;
 
 void inicializar_mutex_procesos(t_pcb* pcb) {
     sem_init(&pcb->sem_hilos_exit, 0, 0);
@@ -52,7 +54,9 @@ void enviar_tcbs_a_cola_exit_por_pid(t_list* lista_tcbs, t_queue* cola_exit, int
         if (tcb_actual->pid == pid_buscado) {
             // Remover el TCB de la lista y enviarlo a la cola EXIT
             t_tcb* tcb_a_mover = list_remove(lista_tcbs, i);
+            pthread_mutex_lock(&mutex_cola_exit_hilos);
             queue_push(cola_exit, tcb_a_mover);  // Enviar a la cola EXIT
+            pthread_mutex_unlock(&mutex_cola_exit_hilos);
             sem_post(&semaforo_cola_exit_hilos);
             i--;  // Ajustar el índice ya que la lista se reduce
         }
@@ -432,40 +436,25 @@ bool es_motivo_devolucion(code_operacion motivo_devolucion){
     return motivo_devolucion == INTERRUPCION || motivo_devolucion == INTERRUPCION_USUARIO || motivo_devolucion == ERROR || motivo_devolucion == LLAMADA_POR_INSTRUCCION;
 }
 
-int obtener_menor_prioridad(t_list* lista_cola_prioridad) {
-    if (list_is_empty(lista_cola_prioridad)) {
-        return -1;  // Retorna -1 si la lista está vacía (puedes usar otro valor indicativo)
+t_cola_prioridad* obtener_cola_con_mayor_prioridad(t_list* colas_hilos_prioridad_ready) {
+    if (list_is_empty(colas_hilos_prioridad_ready)) {
+        sem_wait(&sem_multinivel)  // Espera hasta que haya elementos en alguna cola
     }
 
-    int menor_prioridad = -1;
+    t_cola_prioridad* cola_con_mayor_prioridad = NULL;
 
-    // Iterar a través de la lista para encontrar la menor prioridad
-    for (int i = 0; i < list_size(lista_cola_prioridad); i++) {
-        t_cola_prioridad* elemento = list_get(lista_cola_prioridad, i);
-        
-        if (menor_prioridad == -1 && !queue_is_empty(elemento->cola)){
-            menor_prioridad = elemento->prioridad;
-        }
-        else if (elemento->prioridad < menor_prioridad && !queue_is_empty(elemento->cola)) {
-            menor_prioridad = elemento->prioridad;  // Actualiza la menor prioridad
-        }
-    }
+    // Iterar a través de la lista para encontrar la cola con la mayor prioridad y al menos un TCB
+    for (int i = 0; i < list_size(colas_hilos_prioridad_ready); i++) {
+        t_cola_prioridad* elemento = list_get(colas_hilos_prioridad_ready, i);
 
-    return menor_prioridad;  // Retorna la menor prioridad encontrada
-}
-t_cola_prioridad* obtener_cola_por_prioridad(t_list *colas_hilos_prioridad_ready, int prioridad_buscada)
-{
-    for (int i = 0; i < list_size(colas_hilos_prioridad_ready); i++)
-    {
-        t_cola_prioridad *cola_prioridad_i = list_get(colas_hilos_prioridad_ready, i);
-
-        if (cola_prioridad_i != NULL && cola_prioridad_i->prioridad == prioridad_buscada && !queue_is_empty(cola_prioridad_i->cola))
-        {
-            return cola_prioridad_i; // Devuelve la estructura de la cola con la prioridad buscada
+        if (!queue_is_empty(elemento->cola)) {
+            if (cola_con_mayor_prioridad == NULL || elemento->prioridad < cola_con_mayor_prioridad->prioridad) {
+                cola_con_mayor_prioridad = elemento;  // Actualiza la cola con mayor prioridad
+            }
         }
     }
 
-    return NULL; // No se encontró una cola con la prioridad buscada
+    return cola_con_mayor_prioridad;  // Devuelve la cola con la mayor prioridad encontrada o NULL si no hay colas con TCBs
 }
 
 void ordenar_por_prioridad(t_list* lista) {
@@ -540,4 +529,53 @@ t_pcb* buscar_pcb_por_pid(t_list* lista_pcbs, int pid_buscado) {
         }
     }
     return NULL; // Retorna NULL si no encuentra coincidencia
+}
+
+t_tcb* sacar_tcb_de_cola(t_queue* cola, t_tcb* tcb_a_sacar) {
+    if (cola == NULL || queue_is_empty(cola)) {
+        return NULL;  // Retorna NULL si la cola es NULL o está vacía
+    }
+
+    t_queue* cola_temporal = queue_create();  // Crear una cola temporal
+    t_tcb* tcb_encontrado = NULL;
+
+    // Recorremos la cola original
+    while (!queue_is_empty(cola)) {
+        t_tcb* tcb_actual = queue_pop(cola);  // Sacamos el primer elemento
+
+        if (tcb_actual == tcb_a_sacar) {
+            tcb_encontrado = tcb_actual;  // Encontramos el TCB que queremos sacar
+        } else {
+            queue_push(cola_temporal, tcb_actual);  // Lo metemos en la cola temporal si no es el TCB que buscamos
+        }
+    }
+
+    // Restauramos los elementos en la cola original, excepto el TCB eliminado
+    while (!queue_is_empty(cola_temporal)) {
+        queue_push(cola, queue_pop(cola_temporal));
+    }
+
+    queue_destroy(cola_temporal);  // Destruimos la cola temporal
+
+    return tcb_encontrado;  // Devolvemos el TCB sacado, o NULL si no se encontró
+}
+
+t_tcb* sacar_tcb_de_lista(t_list* lista, t_tcb* tcb_a_sacar) {
+    if (lista == NULL || list_is_empty(lista)) {
+        return NULL;  // Retorna NULL si la lista es NULL o está vacía
+    }
+
+    t_tcb* tcb_encontrado = NULL;
+
+    // Iterar sobre la lista para buscar el TCB específico
+    for (int i = 0; i < list_size(lista); i++) {
+        t_tcb* tcb_actual = list_get(lista, i);
+
+        if (tcb_actual == tcb_a_sacar) {
+            tcb_encontrado = list_remove(lista, i);  // Elimina el TCB de la lista y lo guarda
+            break;  // Salimos del bucle una vez encontrado
+        }
+    }
+
+    return tcb_encontrado;  // Retorna el TCB extraído, o NULL si no se encontró
 }

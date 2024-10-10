@@ -23,13 +23,17 @@ sem_t sem_lista_pcbs;
 sem_t sem_despierto;
 sem_t sem_syscall;
 sem_t sem_desalojado;
+sem_t sem_multinivel;
+pthread_mutex_t mutex_cola_ready;
 
 t_tcb *fifo_tcb()
 {
 
     if (queue_size(cola_ready_fifo) > 0)
     {
+        pthread_mutex_lock(&mutex_cola_ready);
         t_tcb *tcb = queue_pop(cola_ready_fifo);
+        pthread_mutex_unlock(&mutex_cola_ready);
         return tcb;
     }
     return NULL;
@@ -81,12 +85,12 @@ void *funcion_hilos_exit(void *void_args)
     return NULL;
 }
 
-void hilo_planificador_largo_plazo()
+void planificador_largo_plazo()
 {
     pthread_t hilo_plani_largo_plazo;
     int resultado;
 
-    resultado = pthread_create(&hilo_plani_largo_plazo, NULL, planificador_largo_plazo, NULL);
+    resultado = pthread_create(&hilo_plani_largo_plazo, NULL, hilo_planificador_largo_plazo, NULL);
     if (resultado != 0)
     {
         log_error(logger, "Error al crear el hilo_planificador_largo_plazo");
@@ -95,10 +99,11 @@ void hilo_planificador_largo_plazo()
     pthread_detach(hilo_plani_largo_plazo);
 }
 
-void *planificador_largo_plazo(void *void_args)
+void *hilo_planificador_largo_plazo(void *void_args)
 {
     pthread_t hilo_new_ready_procesos;
     pthread_t hilo_exit_procesos;
+    pthread_t hilo_hilos_exit;
 
     int resultado;
 
@@ -117,7 +122,16 @@ void *planificador_largo_plazo(void *void_args)
         log_error(logger, "Error al crear el hilo procesos_exit");
         return NULL;
     }
+
+    resultado = pthread_create(&hilo_hilos_exit, NULL, funcion_hilos_exit, NULL);
   
+    if (resultado != 0)
+    {
+        log_error(logger, "Error al crear el hilo hilos_exit");
+        return NULL;
+    }
+
+    pthread_detach(hilo_hilos_exit);
     pthread_detach(hilo_new_ready_procesos);
     pthread_detach(hilo_exit_procesos);
 
@@ -128,8 +142,9 @@ void *planificador_largo_plazo(void *void_args)
 void atender_syscall()
 {
     code_operacion syscall; 
+        pthread_mutex_unlock(&mutex_conexion_cpu);
         recv(sockets->sockets_cliente_cpu->socket_Dispatch, &syscall, sizeof(syscall), 0);
-
+        pthread_mutex_unlock(&mutex_conexion_cpu);
         switch (syscall)
         {
 
@@ -185,11 +200,10 @@ void atender_syscall()
 t_tcb* prioridades (t_pcb* pcb){
 
 if(!list_is_empty(lista_ready_prioridad)){
-
+pthread_mutex_lock(&mutex_cola_ready);
 t_tcb* tcb_prioritario = list_remove(lista_ready_prioridad,0);
-
+pthread_mutex_unlock(&mutex_cola_ready);
 return tcb_prioritario;
-
 }
 
 return NULL;
@@ -201,29 +215,11 @@ void round_robin(t_queue *cola_ready_prioridad)
     if (!queue_is_empty(cola_ready_prioridad))
     {
         int quantum = config_get_int_value(config, "QUANTUM"); // Cantidad máxima de tiempo que obtiene la CPU un proceso/hilo (EN MILISEGUNDOS)
-
+        pthread_mutex_lock(&mutex_cola_ready);
         t_tcb *tcb = queue_pop(cola_ready_prioridad); // Sacar el primer hilo de la cola
-
+        pthread_mutex_unlock(&mutex_cola_ready);
         ejecucion(tcb);
 
-        // Simular que el hilo está en ejecución durante el tiempo del quantum
-        usleep(quantum * 1000); // usleep trata con microsegundos, 1 microsegundo es igual a 1000 milisegundos
-
-        code_operacion rtaCPU;
-        code_operacion fin_quantum_rr = FIN_QUANTUM_RR;
-
-        send(sockets->sockets_cliente_cpu->socket_Interrupt, &fin_quantum_rr, sizeof(fin_quantum_rr), 0);
-        recv(sockets->sockets_cliente_cpu->socket_Interrupt, &rtaCPU, sizeof(rtaCPU), 0);
-
-        if (rtaCPU == THREAD_EXIT_SYSCALL) // Al código de operación que está en la branch memoria_cpu le agregué un guión bajo pq se llamaría igual que la syscall. Ojo con eso
-        {
-            THREAD_EXIT();
-        }
-        else
-        {
-            tcb->estado = TCB_READY;
-            queue_push(cola_ready_prioridad, tcb); // Lo reinsertas si no ha terminado
-        }
     }
 }
 /*
@@ -234,23 +230,14 @@ Se elegirá al siguiente hilo a ejecutar según el siguiente esquema de colas mu
 - Cada cola implementará un algoritmo Round Robin con un quantum (Q) definido por archivo de configuración.
 - Al llegar un hilo a ready se posiciona siempre al final de la cola que le corresponda.
 */
-void colas_multinivel()
-{
-    
-    if (!list_is_empty(colas_ready_prioridad))
-    {
-    int prioridad_mayor = obtener_menor_prioridad(colas_ready_prioridad);
-    t_cola_prioridad* cola_prioritaria = obtener_cola_por_prioridad(colas_ready_prioridad, prioridad_mayor);
-        if (cola_prioritaria != NULL && !queue_is_empty(cola_prioritaria->cola))
-        {
-            round_robin(cola_prioritaria->cola);
-        }
-        else
-        {
-        colas_multinivel();
-        }
-    }
+void colas_multinivel(){
+    pthread_mutex_lock(&mutex_cola_ready);
+    t_cola_prioridad* cola_prioritaria = obtener_cola_con_mayor_prioridad(colas_ready_prioridad);
+    pthread_mutex_unlock(&mutex_cola_ready);
+    round_robin(cola_prioritaria->cola);
+        
 }
+
 
 
 void hilo_ordena_lista_prioridades()
@@ -274,20 +261,21 @@ t_list* lista_prioridades = (t_list*)void_args;
 while(estado_kernel!=0){
 
     sem_wait(&sem_lista_prioridades);
-
+    pthread_mutex_lock(&mutex_cola_ready);
     ordenar_por_prioridad(lista_prioridades);
+    pthread_mutex_unlock(&mutex_cola_ready);
 }
 return NULL;
 }
 
 void *hilo_planificador_corto_plazo(void *arg)
 {
+    char*algoritmo=(char*)arg;
+
     while(estado_kernel!=0){
 
     sem_wait(&sem_desalojado);// tiene que empezar con valor 1 
-    char*algoritmo=(char*)arg;
-    while (estado_kernel != 0)
-    { 
+
         t_tcb* hilo_a_ejecutar;
         if (strings_iguales(algoritmo, "FIFO")){
         hilo_a_ejecutar = fifo_tcb();
@@ -303,7 +291,6 @@ void *hilo_planificador_corto_plazo(void *arg)
         {
             colas_multinivel(proceso_exec);
         }
-    }
     }
     return NULL;
 }
@@ -322,7 +309,7 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
 
     if (resultado != 0)
     {
-        log_error(logger, "Error al crear el hilo_ready_exec");
+        log_error(logger, "Error al crear el hilo del planificador_corto_plazo");
         return;
     }
 

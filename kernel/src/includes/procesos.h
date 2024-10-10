@@ -28,6 +28,7 @@ extern sem_t semaforo_cola_new_hilos;
 extern sem_t semaforo_cola_exit_procesos;
 extern sem_t semaforo_cola_exit_hilos;
 extern t_queue* cola_exit;
+extern sem_t sem_multinivel;
 
 extern sem_t sem_syscall;
 
@@ -168,5 +169,6 @@ void DUMP_MEMORY();
 
 void espera_con_quantum(int quantum);
 void ejecucion(t_tcb*hilo);
+void pushear_cola_ready(t_tcb* hilo);
 
 #endif

@@ -28,9 +28,6 @@ bool strings_iguales(char*c1,char*c2);
 bool es_motivo_devolucion(code_operacion motivo_devolucion);
 void* ordenar_cola(void*arg);
 void ordenar_por_prioridad(t_list* lista);
-int obtener_menor_prioridad(t_list* lista_cola_prioridad);
-t_cola_prioridad* obtener_cola_por_prioridad(t_list *colas_hilos_prioridad_ready, int prioridad_buscada);
-void ordenar_por_prioridad(t_list* lista);
 void inicializar_mutex_procesos(t_pcb* pcb);
 void destruir_mutex_procesos(t_pcb* pcb);
 void inicializar_mutex_hilo(t_tcb* tcb);
@@ -40,4 +37,8 @@ t_tcb* buscar_tcb_por_tid(t_list* lista_tcbs, int tid_buscado);
 t_tcb* sacar_tcb_por_tid(t_list* lista_tcbs, int tid_buscado);
 t_pcb* buscar_pcb_por_pid(t_list* lista_pcbs, int pid_buscado);
 void enviar_tcbs_a_cola_exit_por_pid(t_list* lista_tcbs, t_queue* cola_exit, int pid_buscado);
+t_cola_prioridad* obtener_cola_con_mayor_prioridad(t_list* colas_hilos_prioridad_ready);
+t_tcb* sacar_tcb_de_cola(t_queue* cola, t_tcb* tcb_a_sacar);
+t_tcb* sacar_tcb_de_lista(t_list* lista, t_tcb* tcb_a_sacar);
+
 #endif
