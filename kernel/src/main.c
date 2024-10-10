@@ -14,6 +14,10 @@ int main(int argc, char *argv[])
     log = log_create("kernel.log", "tp", true, LOG_LEVEL_TRACE);
     config = config_create("kernel.config");
 
+    inicializar_estados();
+    inicializar_semaforos();
+    inicializar_mutex();
+
     sockets = hilos_kernel(log, config);
     iniciar_kernel(archivo_pseudocodigo, tamanio_proceso);
     estado_kernel = 0;
@@ -28,5 +32,8 @@ void liberar_espacio(t_log *log, t_config *config, sockets_kernel *sockets)
     close(sockets->socket_cliente_memoria);
     close(sockets->sockets_cliente_cpu->socket_Dispatch);
     close(sockets->sockets_cliente_cpu->socket_Interrupt);
+    destruir_estados();
+    destruir_mutex();
+    destruir_semaforos();
     free(sockets);
 }

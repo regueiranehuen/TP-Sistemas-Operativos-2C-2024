@@ -5,21 +5,20 @@
 sem_t semaforo_new_ready_procesos;
 sem_t semaforo_cola_new_procesos;
 sem_t semaforo_cola_exit_procesos;
+sem_t sem_desalojado;
 
 sem_t semaforo_cola_exit_hilos;
 sem_t sem_lista_prioridades;
-sem_t sem_lista_pcbs;
 
-sem_t sem_syscall;
+t_queue *cola_new_procesos;
+t_queue *cola_exit_procesos;
 
 t_queue *cola_ready_fifo;
 t_list *lista_ready_prioridad;
 t_list *colas_ready_prioridad;
-t_queue *cola_exit;
-t_queue *cola_exit_procesos;
-t_tcb *hilo_exec;
-t_queue *cola_new_procesos;
 t_list* lista_bloqueados;
+t_tcb *hilo_exec;
+t_queue *cola_exit;
 
 t_list *lista_tcbs;
 t_list *lista_pcbs;
@@ -33,15 +32,8 @@ pthread_mutex_t mutex_lista_pcbs;
 pthread_mutex_t mutex_cola_new_procesos;
 pthread_mutex_t mutex_cola_exit_procesos;
 pthread_mutex_t mutex_cola_exit_hilos;
-pthread_mutex_t mutex_pthread_join;
 pthread_mutex_t mutex_conexion_cpu;
-pthread_mutex_t mutex_lista_blocked;
-pthread_mutex_t mutex_ready_fifo;
-pthread_mutex_t mutex_ready_prioridades;
-pthread_mutex_t mutex_ready_multinivel;
 pthread_mutex_t mutex_cola_ready;
-
-sem_t sem_desalojado;
 
 bool desalojado;
 
@@ -55,11 +47,11 @@ t_pcb *crear_pcb()
     pid += 1;
     pcb ->contador_tid = 0;
     pcb ->contador_mutex = 0;
-    inicializar_mutex_procesos(pcb);
     pthread_mutex_lock(&mutex_lista_pcbs);
     list_add(lista_pcbs, pcb);
-    sem_post(&sem_lista_pcbs);
     pthread_mutex_unlock(&mutex_lista_pcbs);
+    pthread_mutex_init(&pcb->mutex_lista_mutex, NULL);
+    pthread_mutex_init(&pcb->mutex_tids, NULL);
     return pcb;
 }
 
@@ -75,10 +67,12 @@ t_tcb *crear_tcb(t_pcb *pcb)
     pthread_mutex_lock(&pcb->mutex_tids);
     list_add(pcb->tids, tid);
     pthread_mutex_unlock(&pcb->mutex_tids);
+    list_add(lista_tcbs,tcb);
     if (tcb->tid == 0)
     {
         tcb->prioridad = 0;
     }
+    pthread_mutex_init(&tcb->mutex_cola_hilos_bloqueados, NULL);
     pcb->contador_tid += 1;
     return tcb;
 }
@@ -99,12 +93,13 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
     pthread_mutex_lock(&mutex_cola_new_procesos);
     queue_push(cola_new_procesos, pcb);
     pthread_mutex_unlock(&mutex_cola_new_procesos);
-    
+
+    sem_post(&semaforo_cola_new_procesos);
+
     planificador_largo_plazo();
     planificador_corto_plazo();
 
-    sem_post(&semaforo_cola_new_procesos);
- 
+//no se en que momento termina de ejecutar kernel
 }
 
 void proceso_exit()
@@ -556,7 +551,7 @@ void IO(int milisegundos)
     usleep(milisegundos * 1000);
 
     // Sacar el hilo de la lista de bloqueados
-    find_and_remove_tcb_in_list(lista_bloqueados, tcb->tid);
+    sacar_tcb_de_lista(lista_bloqueados, tcb);
 
     // Mover el hilo a la cola de READY
     tcb->estado = TCB_READY;
@@ -729,36 +724,3 @@ else{
 }
 
 }
-
-/*
-Creación de hilos
-Para la creación de hilos, el Kernel deberá informar a la Memoria y luego ingresarlo
-directamente a la cola de READY correspondiente, según su nivel de prioridad.
-
-void new_a_ready_hilos(t_pcb *pcb)
-{
-    
-    sem_wait(&semaforo_cola_new_hilos);
-    
-    int socket_memoria = cliente_Memoria_Kernel(logger, config);
-    code_operacion cod_op = THREAD_CREATE_AVISO;
-
-    send(socket_memoria, &cod_op, sizeof(int), 0);
-    close(socket_memoria);
-    char *planificacion = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
-    t_tcb *hilo = queue_pop(pcb->cola_hilos_new);
-    hilo->estado = TCB_READY;
-    if (strcmp(planificacion, "FIFO") == 0){
-        queue_push(cola_ready_fifo, hilo);
-    } else if(strcmp(planificacion,"PRIORIDADES")==0)
-    {
-        list_add(lista_ready_prioridad,hilo);
-        sem_post(&sem_lista_prioridades);
-    }
-    if (strcmp(planificacion, "MULTINIVEL") == 0)
-    {
-        t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, hilo->prioridad);
-        queue_push(cola->cola, hilo);
-    }
-}
-*/

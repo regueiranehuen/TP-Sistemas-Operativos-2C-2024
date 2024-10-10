@@ -1,29 +1,25 @@
 #include "includes/planificacion.h"
 
 int estado_kernel;
+
 sem_t semaforo_new_ready_procesos;
 sem_t semaforo_cola_new_procesos;
 sem_t semaforo_cola_exit_procesos;
-sem_t semaforo_cola_new_hilos;
 sem_t semaforo_cola_exit_hilos;
 sem_t sem_lista_prioridades;
-t_queue *cola_new;
-t_queue *cola_ready;
+
 t_list *lista_pcbs;
-pthread_mutex_t mutex_pthread_join;
-t_pcb *proceso_exec;
+t_list *lista_mutex;
+
 t_config *config;
 t_log *logger;
-t_list *lista_mutex;
+
 sockets_kernel *sockets;
+
 pthread_mutex_t mutex_conexion_cpu;
-t_queue *cola_exit;
-int procesos_exit_con_hilo = 0;
-sem_t sem_lista_pcbs;
-sem_t sem_despierto;
-sem_t sem_syscall;
+
 sem_t sem_desalojado;
-sem_t sem_multinivel;
+
 pthread_mutex_t mutex_cola_ready;
 
 t_tcb *fifo_tcb()
@@ -141,7 +137,7 @@ void *hilo_planificador_largo_plazo(void *void_args)
 
 void atender_syscall()
 {
-    code_operacion syscall; 
+    syscalls syscall; 
         pthread_mutex_unlock(&mutex_conexion_cpu);
         recv(sockets->sockets_cliente_cpu->socket_Dispatch, &syscall, sizeof(syscall), 0);
         pthread_mutex_unlock(&mutex_conexion_cpu);
@@ -149,6 +145,7 @@ void atender_syscall()
         {
 
         case ENUM_PROCESS_CREATE:
+            
             //PROCESS_CREATE(); 
             
             break;
@@ -197,7 +194,7 @@ void atender_syscall()
     }
 
 
-t_tcb* prioridades (t_pcb* pcb){
+t_tcb* prioridades (){
 
 if(!list_is_empty(lista_ready_prioridad)){
 pthread_mutex_lock(&mutex_cola_ready);
@@ -214,12 +211,12 @@ void round_robin(t_queue *cola_ready_prioridad)
 {
     if (!queue_is_empty(cola_ready_prioridad))
     {
-        int quantum = config_get_int_value(config, "QUANTUM"); // Cantidad máxima de tiempo que obtiene la CPU un proceso/hilo (EN MILISEGUNDOS)
         pthread_mutex_lock(&mutex_cola_ready);
         t_tcb *tcb = queue_pop(cola_ready_prioridad); // Sacar el primer hilo de la cola
         pthread_mutex_unlock(&mutex_cola_ready);
+        tcb->estado = TCB_EXECUTE;
+        hilo_exec = tcb;
         ejecucion(tcb);
-
     }
 }
 /*
@@ -237,8 +234,6 @@ void colas_multinivel(){
     round_robin(cola_prioritaria->cola);
         
 }
-
-
 
 void hilo_ordena_lista_prioridades()
 {
@@ -279,17 +274,21 @@ void *hilo_planificador_corto_plazo(void *arg)
         t_tcb* hilo_a_ejecutar;
         if (strings_iguales(algoritmo, "FIFO")){
         hilo_a_ejecutar = fifo_tcb();
+        hilo_a_ejecutar->estado = TCB_EXECUTE;
+        hilo_exec = hilo_a_ejecutar;
         ejecucion(hilo_a_ejecutar);
         
         } else if (strings_iguales(algoritmo, "PRIORIDADES"))
         {
-        hilo_a_ejecutar = prioridades(proceso_exec);
+        hilo_a_ejecutar = prioridades();
+        hilo_a_ejecutar->estado = TCB_EXECUTE;
+        hilo_exec = hilo_a_ejecutar;
         ejecucion(hilo_a_ejecutar);
         }
 
         if (strings_iguales(algoritmo, "MULTINIVEL"))
         {
-            colas_multinivel(proceso_exec);
+            colas_multinivel();
         }
     }
     return NULL;
@@ -315,69 +314,3 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
 
     pthread_detach(hilo_ready_exec);
 }
-
-/*
-void *funcion_new_ready_hilos(void *void_args)
-{
-t_pcb* args = ((t_pcb*)void_args);
-
-    while (estado_kernel != 0)
-    {
-        new_a_ready_hilos(args);
-    }
-    return NULL;
-}
-*/
-
-/*
-void *funcion_manejo_procesos(void *arg)
-{
-    while (estado_kernel != 0) {
-        // Esperar hasta que el semáforo se desbloquee (cuando se agregue un nuevo proceso)
-        sem_wait(&sem_lista_pcbs);
-
-        // Procesar los PCBs que no han sido manejados aún
-        int cantidad_pcbs = list_size(lista_pcbs);
-
-        // Iteramos desde donde quedaron los últimos procesos procesados
-        for (int i = procesos_exit_con_hilo; i < cantidad_pcbs; i++) {
-            t_pcb* pcb = list_get(lista_pcbs, i);
-
-            // Aquí puedes realizar las operaciones que necesites con cada pcb
-            // Por ejemplo, crear un hilo para manejar cada proceso/hilo en exit
-            pthread_t hilo_exit_hilos;
-            pthread_t hilo_new_ready_hilos;
-            int resultado = pthread_create(&hilo_exit_hilos, NULL, funcion_hilos_exit, pcb);
-            if (resultado != 0) {
-                 log_error(logger, "Error al crear el hilo hilos_exit para PCB ID %d", pcb->pid);
-                return NULL;
-            }
-            resultado = pthread_create(&hilo_new_ready_hilos,NULL,funcion_new_ready_hilos,pcb);
-            if (resultado != 0) {
-                log_info(logger, "Hilo new_ready_hilos creado para PCB ID %d", pcb->pid);
-                return NULL;
-            }
-            pthread_detach(hilo_new_ready_hilos);
-            pthread_detach(hilo_exit_hilos); // Liberar el hilo para que se limpie automáticamente al finalizar
-        }
-
-        // Actualizamos el número de procesos procesados
-        procesos_exit_con_hilo = cantidad_pcbs;
-    }
-    return NULL;
-}*/
-
-/*
-void hilo_atender_syscalls()
-{
-    pthread_t hilo_syscalls;
-    int resultado;
-
-    resultado = pthread_create(&hilo_syscalls, NULL, atender_syscall, NULL);
-    if (resultado != 0)
-    {
-        log_error(logger, "Error al crear el hilo_atender_syscall");
-        return;
-    }
-    pthread_detach(hilo_syscalls);
-}*/

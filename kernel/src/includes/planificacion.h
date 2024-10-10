@@ -20,7 +20,6 @@ ENUM_DUMP_MEMORY,
 ENUM_SEGMENTATION_FAULT
 }syscalls;
 
-extern int estado_kernel;
 extern sem_t sem_desalojado;
 
 t_tcb *fifo_tcb();

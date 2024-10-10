@@ -8,32 +8,42 @@
 #include "../includes/cliente.h"
 #include <semaphore.h>
 
-extern sem_t semaforo;
+extern int estado_kernel;
 
-extern t_queue* cola_new;
+extern t_queue* cola_new_procesos;
+
 extern t_queue* cola_ready_fifo;
 extern t_list* lista_ready_prioridad;
 extern t_list* colas_ready_prioridad;
-extern t_list* lista_pcbs;
+extern t_list* lista_bloqueados;
+extern t_queue* cola_exit;
 
-extern pthread_mutex_t mutex_pthread_join;
+extern t_list* lista_tcbs;
+extern t_list* lista_pcbs;
+extern t_list* lista_mutex;
+
 extern t_config* config;
 extern t_log* logger;
-extern t_list* lista_mutex;
 extern sockets_kernel *sockets;
-extern pthread_mutex_t mutex_conexion_cpu;
-extern sem_t semaforo_new_ready_procesos;
-extern sem_t semaforo_cola_new_procesos;
-extern sem_t semaforo_cola_new_hilos;
-extern sem_t semaforo_cola_exit_procesos;
-extern sem_t semaforo_cola_exit_hilos;
-extern t_queue* cola_exit;
-extern sem_t sem_multinivel;
 
-extern sem_t sem_syscall;
+extern pthread_mutex_t mutex_lista_pcbs;
+extern pthread_mutex_t mutex_cola_new_procesos;
+extern pthread_mutex_t mutex_cola_exit_procesos;
+extern pthread_mutex_t mutex_cola_exit_hilos;
+extern pthread_mutex_t mutex_conexion_cpu;
+extern pthread_mutex_t mutex_cola_ready;
+
+sem_t semaforo_new_ready_procesos;
+sem_t semaforo_cola_new_procesos;
+sem_t semaforo_cola_exit_procesos;
+sem_t sem_desalojado;
+
+sem_t semaforo_cola_exit_hilos;
+sem_t sem_lista_prioridades;
+
+extern bool desalojado;
 
 typedef enum{
-    PCB_INIT,
     DUMP_MEMORIA,
     PROCESS_EXIT_AVISO, 
     PROCESS_CREATE_AVISO,
@@ -41,21 +51,7 @@ typedef enum{
     THREAD_ELIMINATE_AVISO,
     THREAD_CANCEL_AVISO,
     THREAD_INTERRUPT,
-    PROCESS_INTERRUPT,
-
-    TERMINO_PROCESO,
-    INTERRUPCION,
-    INTERRUPCION_USUARIO,
-    ERROR,
-    LLAMADA_POR_INSTRUCCION,
-
     FIN_QUANTUM_RR,
-    THREAD_EXIT_SYSCALL,
-    PEDIDO_MEMORIA_INICIALIZAR_PROCESO,
-    PEDIDO_MEMORIA_TERMINAR_PROCESO,
-    PEDIDO_MEMORIA_THREAD_CREATE,
-    PEDIDO_MEMORIA_THREAD_EXIT
-
 }code_operacion;
 
 
@@ -67,7 +63,6 @@ typedef enum {
     TCB_BLOCKED_MUTEX,
     TCB_EXIT
 } estado_hilo;
-
 
 typedef struct{
 int tid;
@@ -97,8 +92,6 @@ PCB_EXIT
 
 typedef struct{
 
-sem_t sem_hilos_exit; 
-
 int pid;
 t_list* tids;
 t_list* lista_mutex;
@@ -121,26 +114,12 @@ typedef struct {
 } t_cola_prioridad;
 
 typedef struct{
-t_pcb* pcb;
-t_tcb* tcb;
-}t_proceso;
-
-typedef struct{
 int mutex_id;
 t_queue* cola_tcbs;
 estado_mutex estado;
 t_tcb* hilo; // hilo que esta en la región crítica
 char* nombre;
 }t_mutex;
-
-
-typedef struct{
-    t_queue*cola;
-    t_tcb*nuevo_hilo;
-}t_args_insertar_ordenado;
-
-
-
 
 t_pcb* crear_pcb();
 t_tcb* crear_tcb(t_pcb *pcb);

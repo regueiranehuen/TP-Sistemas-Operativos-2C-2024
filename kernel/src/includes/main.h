@@ -6,6 +6,7 @@
 #include "funcionesAuxiliares.h"
 #include "planificacion.h"
 
+
 void liberar_espacio(t_log *log, t_config *config, sockets_kernel *sockets);
 void destroy_mutex();
 void inicializar_semaforo();
