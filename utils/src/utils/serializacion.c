@@ -253,8 +253,7 @@ void send_paquete_code_operacion(code_operacion code, t_buffer*buffer, int socke
     free(paquete);
 }
 
-/////////// REVISAR BIEN ESTA
-t_list* recibir_paquete_code_operacion(int socket_cliente){ // Se sabe que voy a recibir un codigo de operacion, minimo un int (tid/pid) y maximo dos int (pid y tid)
+t_list* recibir_paquete_code_operacion(int socket_cliente){ // Se sabe que se recibe un codigo de operacion, minimo un int (tid/pid) y maximo dos int (pid y tid)
     t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
     t_list*valores = list_create();
     paquete->buffer = malloc(sizeof(t_buffer));
@@ -267,9 +266,10 @@ t_list* recibir_paquete_code_operacion(int socket_cliente){ // Se sabe que voy a
     recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
 
 
-    int* valor=malloc(sizeof(int));
+    
     int offset = 0;
     while (offset < paquete->buffer->size){
+        int* valor=malloc(sizeof(int));
         memcpy(valor,paquete->buffer->stream + offset,sizeof(int));
         offset+=sizeof(int);
         list_add(valores,valor);
