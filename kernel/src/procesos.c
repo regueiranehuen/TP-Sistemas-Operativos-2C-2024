@@ -6,6 +6,7 @@ sem_t semaforo_new_ready_procesos;
 sem_t semaforo_cola_new_procesos;
 sem_t semaforo_cola_exit_procesos;
 sem_t sem_desalojado;
+sem_t sem_multinivel;
 
 sem_t semaforo_cola_exit_hilos;
 sem_t sem_lista_prioridades;
@@ -516,7 +517,7 @@ void MUTEX_UNLOCK(char* recurso)
     if (!queue_is_empty(mutex_asociado->cola_tcbs))
     {
         mutex_asociado->hilo = queue_pop(mutex_asociado->cola_tcbs);
-        sacar_tcb_por_tid(lista_bloqueados,mutex_asociado->hilo->tid);
+        sacar_tcb_de_lista(lista_bloqueados,mutex_asociado->hilo);
         mutex_asociado->hilo->estado = TCB_READY;
         t_tcb* tcb = mutex_asociado->hilo;
         pushear_cola_ready(tcb);
@@ -681,6 +682,7 @@ void pushear_cola_ready(t_tcb* hilo){
         t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, hilo->prioridad);
         pthread_mutex_unlock(&mutex_cola_ready);
         queue_push(cola->cola, hilo);
+        sem_post(&sem_multinivel);
     }
 
 }

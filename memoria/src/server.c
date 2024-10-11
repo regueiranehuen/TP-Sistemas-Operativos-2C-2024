@@ -1,8 +1,8 @@
 #include "includes/server.h"
 
-int estado_servidor;
 static pthread_mutex_t cliente_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int client_count = 0; //numero incremental del numero del cliente
+sem_t sem_conexion_hecha;
 
 void* hilo_por_cliente (void* void_args){
 
@@ -20,11 +20,12 @@ int cliente_n;
 pthread_mutex_lock(&cliente_count_mutex);
 cliente_n = ++client_count;
 pthread_mutex_unlock(&cliente_count_mutex);
-
-servidor_handshake(socket_cliente,args->log);
+if(cliente_n <= 2){//conexiones iniciales de cpu y kernel
+servidor_handshake(socket_cliente,args->log); 
 log_info(args->log, "Handshake memoria -> cliente_%d realizado correctamente", cliente_n);
-
-close(socket_cliente); // en vez de cerrarlo aca, que en otro archivo de memoria, por ejemplo almacenamiento.c, este la funcion que gestione los datos de entrada de kernel
+}
+sem_post(&sem_conexion_hecha);
+atender_conexiones(socket_cliente);
 free(args);
 return NULL;
 }
@@ -34,8 +35,8 @@ void* gestor_clientes(void* void_args){// Crear un hilo que crea hilos que crean
 
 hilo_clientes *args = (hilo_clientes*)void_args;
 int respuesta;
-printf("Estado_servidor: %d\n", estado_servidor);
-while(estado_servidor != 0){// mientras el servidor este abierto
+printf("Estado_servidor: %d\n", estado_cpu);
+while(estado_cpu != 0){// mientras el servidor este abierto
 
 hilo_clientes* args_hilo = malloc(sizeof(hilo_clientes));
 args_hilo ->log = args->log;
@@ -51,8 +52,8 @@ if(respuesta != 0){
     free(args_hilo);
     continue;
 }
-
-pthread_join(hilo_cliente,NULL); //esperar a que un cliente se conecte para esperar otro
+sem_wait(&sem_conexion_hecha); //esperar a que un cliente se conecte para esperar otro
+pthread_detach(hilo_cliente); 
 }
 return NULL;
 }

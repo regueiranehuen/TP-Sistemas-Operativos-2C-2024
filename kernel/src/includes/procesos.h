@@ -8,8 +8,6 @@
 #include "../includes/cliente.h"
 #include <semaphore.h>
 
-extern int estado_kernel;
-
 extern t_queue* cola_new_procesos;
 
 extern t_queue* cola_ready_fifo;
@@ -33,13 +31,14 @@ extern pthread_mutex_t mutex_cola_exit_hilos;
 extern pthread_mutex_t mutex_conexion_cpu;
 extern pthread_mutex_t mutex_cola_ready;
 
-sem_t semaforo_new_ready_procesos;
-sem_t semaforo_cola_new_procesos;
-sem_t semaforo_cola_exit_procesos;
-sem_t sem_desalojado;
+extern sem_t semaforo_new_ready_procesos;
+extern sem_t semaforo_cola_new_procesos;
+extern sem_t semaforo_cola_exit_procesos;
+extern sem_t sem_desalojado;
+extern sem_t sem_multinivel;
 
-sem_t semaforo_cola_exit_hilos;
-sem_t sem_lista_prioridades;
+extern sem_t semaforo_cola_exit_hilos;
+extern sem_t sem_lista_prioridades;
 
 extern bool desalojado;
 

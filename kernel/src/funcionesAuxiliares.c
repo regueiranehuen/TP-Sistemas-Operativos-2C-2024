@@ -1,12 +1,6 @@
 #include "includes/funcionesAuxiliares.h"
-#include "includes/procesos.h"
 
-t_list* lista_tcbs;
-t_queue* cola_exit;
-sem_t semaforo_cola_exit_hilos;
-sem_t sem_multinivel;
 pthread_mutex_t mutex_lista_blocked;
-pthread_mutex_t mutex_cola_exit_hilos;
 
 void inicializar_estados() {
     // Inicialización de colas

@@ -1,27 +1,5 @@
 #include "includes/planificacion.h"
 
-int estado_kernel;
-
-sem_t semaforo_new_ready_procesos;
-sem_t semaforo_cola_new_procesos;
-sem_t semaforo_cola_exit_procesos;
-sem_t semaforo_cola_exit_hilos;
-sem_t sem_lista_prioridades;
-
-t_list *lista_pcbs;
-t_list *lista_mutex;
-
-t_config *config;
-t_log *logger;
-
-sockets_kernel *sockets;
-
-pthread_mutex_t mutex_conexion_cpu;
-
-sem_t sem_desalojado;
-
-pthread_mutex_t mutex_cola_ready;
-
 t_tcb *fifo_tcb()
 {
 

@@ -5,6 +5,7 @@
 #include "funcionesAuxiliares.h"
 #include "procesos.h"
 #include <semaphore.h>
+#include "main.h"
 
 typedef enum{
 ENUM_PROCESS_CREATE,
@@ -19,8 +20,6 @@ ENUM_IO,
 ENUM_DUMP_MEMORY,
 ENUM_SEGMENTATION_FAULT
 }syscalls;
-
-extern sem_t sem_desalojado;
 
 t_tcb *fifo_tcb();
 void* funcion_new_ready_procesos(void* void_args);

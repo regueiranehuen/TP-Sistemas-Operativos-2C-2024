@@ -1,24 +1,26 @@
 #include "includes/main.h"
 
+int estado_cpu = 1;
+t_log* logger;
+t_config* config;
+
 int main(int argc, char* argv[]) {
 
-t_log* log;
-t_config* config;
 sockets_memoria* sockets;
 
-log = log_create("memoria.log", "tp", true, LOG_LEVEL_TRACE);
+logger = log_create("memoria.log", "tp", true, LOG_LEVEL_TRACE);
 config= config_create("memoria.config");
 
 if (config == NULL) {
-    log_error(log, "Error al crear la configuración");
+    log_error(logger, "Error al crear la configuración");
 }
-estado_servidor = 1;
-sockets = hilos_memoria(log,config);
+
+sockets = hilos_memoria(logger,config);
 
 
 
     config_destroy(config);
-	log_destroy(log);
+	log_destroy(logger);
     close(sockets->socket_servidor);
     close(sockets->socket_cliente);
     free(sockets);
