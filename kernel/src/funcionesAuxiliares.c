@@ -435,9 +435,6 @@ bool strings_iguales(char*c1,char*c2){
     return strcmp(c1,c2)==0;
 }
 
-bool es_motivo_devolucion(code_operacion motivo_devolucion){
-    return motivo_devolucion == INTERRUPCION || motivo_devolucion == INTERRUPCION_USUARIO || motivo_devolucion == ERROR || motivo_devolucion == LLAMADA_POR_INSTRUCCION;
-}
 
 t_cola_prioridad* obtener_cola_con_mayor_prioridad(t_list* colas_hilos_prioridad_ready) {
     if (list_is_empty(colas_hilos_prioridad_ready)) {

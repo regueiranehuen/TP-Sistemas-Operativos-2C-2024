@@ -141,34 +141,32 @@ void *hilo_planificador_largo_plazo(void *void_args)
 
 void atender_syscall()
 {
-        //syscalls syscall; 
         pthread_mutex_unlock(&mutex_conexion_cpu);
-        //recv(sockets->sockets_cliente_cpu->socket_Dispatch, &syscall, sizeof(syscall), 0);
-        t_paquete_syscall*paquete = recibir_paquete_syscall();
+        t_paquete_syscall*paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch);
         pthread_mutex_unlock(&mutex_conexion_cpu);
         switch (paquete->syscall)
         {
 
         case ENUM_PROCESS_CREATE:
-            t_list* paramProcessCreate= parametros_process_create(paquete->buffer);
-            PROCESS_CREATE((char*)list_get(paramProcessCreate,0),*(int*)list_get(paramProcessCreate,1),*(int*)list_get(paramProcessCreate,2));            
+            t_process_create* paramProcessCreate= parametros_process_create(paquete);
+            PROCESS_CREATE(paramProcessCreate->nombreArchivo,paramProcessCreate->tamProceso,paramProcessCreate->prioridad);            
             break;
         case ENUM_PROCESS_EXIT:
             PROCESS_EXIT();
             
             break;
         case ENUM_THREAD_CREATE:
-            t_list* paramThreadCreate = parametros_thread_create(paquete->buffer);
-            THREAD_CREATE((char*)list_get(paramThreadCreate,0),*(int*)list_get(paramThreadCreate,1)); 
+            t_thread_create* paramThreadCreate = parametros_thread_create(paquete);
+            THREAD_CREATE(paramThreadCreate->nombreArchivo,paramThreadCreate->prioridad); 
             
             break;
         case ENUM_THREAD_JOIN:
-            int tid_thread_join = recibir_entero_buffer(paquete->buffer);
+            int tid_thread_join = recibir_entero_paquete_syscall(paquete);
             THREAD_JOIN(tid_thread_join);
             
             break;
         case ENUM_THREAD_CANCEL:
-            int tid_thread_cancel = recibir_entero_buffer(paquete->buffer);
+            int tid_thread_cancel = recibir_entero_paquete_syscall(paquete);
             THREAD_CANCEL(tid_thread_cancel);
             
             break;
@@ -177,15 +175,15 @@ void atender_syscall()
             
             break;
         case ENUM_MUTEX_LOCK:
-            char*recurso_a_bloquear = recibir_string_buffer(paquete->buffer);
+            char*recurso_a_bloquear = recibir_string_paquete_syscall(paquete);
             MUTEX_LOCK(recurso_a_bloquear);            
             break;
         case ENUM_MUTEX_UNLOCK:
-            char*recurso_a_desbloquear = recibir_string_buffer(paquete->buffer);
+            char*recurso_a_desbloquear = recibir_string_paquete_syscall(paquete);
             MUTEX_UNLOCK(recurso_a_desbloquear);
             break;
         case ENUM_IO:
-            int milisegundos = recibir_entero_buffer(paquete->buffer);
+            int milisegundos = recibir_entero_paquete_syscall(paquete);
             IO(milisegundos);
             
             break;
@@ -364,21 +362,23 @@ void ejecucion(t_tcb *hilo)
 
 //el planificador de corto plazo se encarga de atender las syscalls del hilo en ejecución por lo tanto por cada llamada a la funcion ejecucion, luego de enviar el hilo a ejecutar se encarga de atender las syscalls de dicho hilo
 
-    t_paquete *paquete = crear_paquete();
+    //t_paquete *paquete = crear_paquete();
     hilo->estado = TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
     hilo_exec = hilo;
-    agregar_a_paquete(paquete, &hilo->tid, sizeof(hilo->tid));
-    agregar_a_paquete(paquete, &hilo->pid, sizeof(hilo->pid));
+
+    //send_operacion_tid_pid(THREA)
+    
+    // agregar_a_paquete(paquete, &hilo->tid, sizeof(hilo->tid));
+    // agregar_a_paquete(paquete, &hilo->pid, sizeof(hilo->pid));
 
     //code_operacion rtaCPU;
 
     pthread_mutex_lock(&mutex_conexion_cpu);
-    enviar_paquete(paquete, sockets->sockets_cliente_cpu->socket_Dispatch);
+    //enviar_paquete(paquete, sockets->sockets_cliente_cpu->socket_Dispatch); //////
+    send_operacion_tid_pid(THREAD_EXECUTE_AVISO,hilo->tid,hilo->pid,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_cpu);
-    eliminar_paquete(paquete);
-  
-    /*Agregué algunos de los códigos de operación subidos al módulo CPU. Había conflicto con algunos nombres por llamarse igual a algunas funciones que tenemos
-    hechas, así que no agregué todos*/
+    //eliminar_paquete(paquete); /////
+
 
     // en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
     char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
