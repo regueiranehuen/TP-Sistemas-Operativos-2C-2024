@@ -6,6 +6,7 @@
 #include "procesos.h"
 #include <semaphore.h>
 
+
 typedef enum{
 ENUM_PROCESS_CREATE,
 ENUM_PROCESS_EXIT,
@@ -16,36 +17,33 @@ ENUM_MUTEX_CREATE,
 ENUM_MUTEX_LOCK,
 ENUM_MUTEX_UNLOCK,
 ENUM_IO,
-ENUM_DUMP_MEMORY
+ENUM_DUMP_MEMORY,
+ENUM_SEGMENTATION_FAULT
 }syscalls;
 
-extern int estado_kernel;
 
-t_pcb *fifo_pcb(t_queue *cola_proceso);
-t_tcb *fifo_tcb(t_pcb* pcb);
+extern int estado_kernel;
+extern sem_t sem_desalojado;
+
+
+
+t_tcb *fifo_tcb();
 void* funcion_new_ready_procesos(void* void_args);
 void* funcion_procesos_exit(void* void_args);
 void* funcion_hilos_exit(void* void_args);
 void* funcion_new_ready_hilos(void* void_args);
 void hilo_atender_syscalls();
-void hilo_planificador_largo_plazo();
-void* planificador_largo_plazo(void* void_args);
-void* atender_syscall(void* void_args);
-void planificador_corto_plazo(t_pcb*pcb);
+void planificador_largo_plazo();
+void* hilo_planificador_largo_plazo(void* void_args);
+void atender_syscall();
 
-t_tcb *fifo_tcb(t_pcb* pcb);
-t_tcb *prioridades(t_pcb *pcb);
-t_tcb* round_robin(t_queue *cola_ready_prioridad);
-t_tcb* colas_multinivel(t_pcb *pcb,t_cola_prioridad*cola_prioritaria);
+t_tcb *prioridades();
+void round_robin(t_queue*cola);
+void colas_multinivel();
 int nueva_prioridad(t_list*colas_hilos_prioridad_ready,int priori_actual);
-void hilo_ordena_cola_prioridades(t_pcb* pcb);
+void hilo_ordena_cola_prioridades();
 void* ordenamiento_continuo(void* void_args);
-void planificador_corto_plazo(t_pcb*pcb) ;
-void *funcion_ready_exec_hilos(void *arg);
-
-void*contar_hasta_quantum(void*args);
-void*esperar_devolucion_cpu(void*args);
-
-
-void ejecucionRR(t_tcb *tcb, t_queue *queue);
+void planificador_corto_plazo() ;
+void *hilo_planificador_corto_plazo(void *arg);
+void *funcion_manejo_procesos(void *arg);
 #endif

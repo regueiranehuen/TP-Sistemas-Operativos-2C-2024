@@ -21,6 +21,7 @@
 #include<commons/config.h>
 #include <errno.h>
 #include <pthread.h>
+#include <time.h>
 
 typedef struct{
 t_log* log;

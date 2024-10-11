@@ -1,30 +1,287 @@
 #include "utils/includes/serializacion.h"
 
+void send_process_create(char*nombreArchivo,int tamProceso,int prioridad){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
 
-void agregar_tid_a_paquete(t_tcb* tcb, t_paquete* paquete) {  
-    agregar_a_paquete(paquete, &(tcb->tid), sizeof(int));
+    buffer->size = 3*sizeof(int) + strlen(nombreArchivo)+1;
+
+    int offset = 0;
+    buffer->stream = malloc(buffer->size);
+
+    int sizeNombreArchivo = strlen(nombreArchivo)+1;
+    memcpy(buffer->stream + offset, &sizeNombreArchivo,sizeof(int));
+    offset += sizeof(int);
+    memcpy(buffer->stream + offset, &nombreArchivo,sizeNombreArchivo);
+    offset += sizeNombreArchivo;
+    memcpy(buffer->stream + offset, &tamProceso,sizeof(int));
+    offset += sizeof(int);
+    memcpy(buffer->stream + offset, &prioridad,sizeof(int));
+
+    send_paquete_syscall(buffer);
+
+}
+
+void send_thread_create(char*nombreArchivo,int tamProceso,int prioridad){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
+
+    buffer->size = 2*sizeof(int) + strlen(nombreArchivo)+1;
+
+    int offset = 0;
+    buffer->stream = malloc(buffer->size);
+
+    int sizeNombreArchivo = strlen(nombreArchivo)+1;
+    memcpy(buffer->stream + offset, &sizeNombreArchivo,sizeof(int));
+    offset += sizeof(int);
+    memcpy(buffer->stream + offset, &nombreArchivo,sizeNombreArchivo);
+    offset += sizeNombreArchivo;
+    memcpy(buffer->stream + offset, &prioridad,sizeof(int));
+
+    send_paquete_syscall(buffer);
+}
+
+void send_paquete_syscall(t_buffer*buffer){
+    t_paquete_syscall*paquete=malloc(sizeof(t_paquete_syscall));
+
+    paquete->buffer=buffer;
+
+    // Armamos el stream a enviar
+    void *a_enviar = malloc(buffer->size + sizeof(paquete->syscall) + sizeof(int));
+    int offset = 0;
+
+    memcpy(a_enviar + offset, &(paquete->syscall), sizeof(paquete->syscall));
+    offset += sizeof(paquete->syscall);
+    memcpy(a_enviar + offset, &(paquete->buffer->size), sizeof(int));
+    offset += sizeof(int);
+    memcpy(a_enviar + offset, paquete->buffer->stream, paquete->buffer->size);
+
+    // Por último enviamos
+    send(sockets->sockets_cliente_cpu->socket_Dispatch, a_enviar, buffer->size + sizeof(paquete->syscall) + sizeof(int),0);
+
+    // No nos olvidamos de liberar la memoria que ya no usaremos
+    free(a_enviar);
+    free(paquete->buffer->stream);
+    free(paquete->buffer);
+    free(paquete);
 }
 
 
-void send_tid(t_tcb* tcb, int socket_memoria) {
-    t_paquete* paquete = crear_paquete();
-    agregar_tid_a_paquete(tcb, paquete);
-    enviar_paquete(paquete, socket_memoria);
-    // eliminar_paquete(paquete);
+t_paquete_syscall* recibir_paquete_syscall(void){
+    t_paquete_syscall*paquete=malloc(sizeof(t_paquete_syscall));
+    paquete->buffer=malloc(sizeof(paquete->buffer));
+
+    // Primero recibimos el codigo de operacion
+    recv(sockets->sockets_cliente_cpu->socket_Dispatch, &(paquete->syscall), sizeof(paquete->syscall), 0);
+
+    // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
+    recv(sockets->sockets_cliente_cpu->socket_Dispatch, &(paquete->buffer->size), sizeof(int), 0);
+    paquete->buffer->stream = malloc(paquete->buffer->size);
+    recv(sockets->sockets_cliente_cpu->socket_Dispatch, paquete->buffer->stream, paquete->buffer->size, 0);
+
+    return paquete;
+}
+
+int recibir_entero_buffer(t_buffer*buffer){
+    int valor;
+    memcpy(&valor,buffer->stream,sizeof(int));
+    // stream+=sizeof(int);
+    free(buffer);
+    return valor;
+}   
+
+
+/*t_list* recibir_paquete(int socket_cliente)
+{
+	int size;
+	int desplazamiento = 0;
+	void * buffer;
+	t_list* valores = list_create();
+	int tamanio;
+
+	buffer = recibir_buffer(&size, socket_cliente);
+	while(desplazamiento < size)
+	{
+		memcpy(&tamanio, buffer + desplazamiento, sizeof(int));
+		desplazamiento+=sizeof(int);
+		char* valor = malloc(tamanio);
+		memcpy(valor, buffer+desplazamiento, tamanio);
+		desplazamiento+=tamanio;
+		list_add(valores, valor);
+	}
+	free(buffer);
+	return valores;
+}*/
+
+
+t_list* parametros_process_create(t_buffer*buffer){
+    t_list*lista=list_create();
+
+    void * stream = buffer->stream;
+
+    int sizeNombreArchivo;
+
+    // Deserializamos los campos que tenemos en el buffer
+    memcpy(&sizeNombreArchivo, stream, sizeof(int)); // Recibimos el size del nombre del archivo de pseudocodigo
+    stream += sizeof(int);
+
+    char*nombre_archivo = malloc(sizeNombreArchivo);
+    memcpy(nombre_archivo, stream, sizeNombreArchivo); // Primer parámetro para la syscall: nombre del archivo
+    stream += sizeNombreArchivo;
+    list_add(lista,nombre_archivo);
+
+    int* prioridad = malloc(sizeof(int));
+    memcpy(prioridad, stream, sizeof(int));
+    stream += sizeof(int);
+    list_add(lista,prioridad);
+
+    free(buffer);
+
+    return lista;
+}
+
+t_list* parametros_thread_create(t_buffer*buffer){
+    t_list*lista=list_create();
+
+    void * stream = buffer->stream;
+
+    int sizeNombreArchivo;
+
+    // Deserializamos los campos que tenemos en el buffer
+    memcpy(&sizeNombreArchivo, stream, sizeof(int)); // Recibimos el size del nombre del archivo de pseudocodigo
+    stream += sizeof(int);
+
+    char*nombre_archivo = malloc(sizeNombreArchivo);
+    memcpy(nombre_archivo, stream, sizeNombreArchivo); // Primer parámetro para la syscall: nombre del archivo
+    stream += sizeNombreArchivo;
+    list_add(lista,nombre_archivo);
+
+    int* tam_proceso =malloc(sizeof(int));
+    memcpy(tam_proceso, stream, sizeof(int));
+    stream += sizeof(int);
+    list_add(lista,tam_proceso);
+
+    int* prioridad = malloc(sizeof(int));
+    memcpy(prioridad, stream, sizeof(int));
+    stream += sizeof(int);
+    list_add(lista,prioridad);
+
+    free(buffer);
+
+    return lista;
+}
+
+char* recibir_string_buffer(t_buffer*buffer){
+
+    void * stream = buffer->stream;
+
+    int sizeString;
+
+    // Deserializamos los campos que tenemos en el buffer
+    memcpy(&sizeString, stream, sizeof(int)); // Recibimos el size del nombre del archivo de pseudocodigo
+    stream += sizeof(int);
+
+    char*string = malloc(sizeString);
+    memcpy(string, stream, sizeString); // Primer parámetro para la syscall: nombre del archivo
+    
+
+    free(buffer);
+
+    return string;
 }
 
 
-void agregar_pid_a_paquete(t_pcb* pcb, t_paquete* paquete) {
-    agregar_a_paquete(paquete, &(pcb->pid), sizeof(int));
+void send_operacion_tid_pid(code_operacion code, int tid, int pid, int socket_cliente){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
+
+    buffer->size = 2*sizeof(int);
+
+    int offset = 0;
+    buffer->stream = malloc(buffer->size);
+
+    memcpy(buffer->stream + offset, &tid,sizeof(int));
+    offset += sizeof(int);
+    memcpy(buffer->stream + offset, &pid,sizeof(int));
+    
+    send_paquete_code_operacion(code,buffer,socket_cliente);
+    
+}
+
+void send_operacion_entero(code_operacion code, int entero, int socket_cliente){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
+
+    buffer->size = sizeof(int);
+
+    buffer->stream = malloc(buffer->size);
+
+    memcpy(buffer->stream, &entero,sizeof(int));
+
+    send_paquete_code_operacion(code,buffer,socket_cliente);
+    
+}
+
+void send_operacion_pid(code_operacion code, int pid, int socket_cliente){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
+
+    buffer->size = sizeof(int);
+
+    buffer->stream = malloc(buffer->size);
+
+    memcpy(buffer->stream, &pid,sizeof(int));
+
+    send_paquete_code_operacion(code,buffer,socket_cliente);
+    
 }
 
 
-void send_pid(t_pcb* pcb, int socket_memoria) {
-    t_paquete* paquete = crear_paquete();
-    agregar_pid_a_paquete(pcb, paquete);
-    enviar_paquete(paquete, socket_memoria);
-    // eliminar_paquete(paquete);
+void send_paquete_code_operacion(code_operacion code, t_buffer*buffer, int socket_cliente){
+    t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
+
+    paquete->code = code;
+    paquete->buffer=buffer;
+
+    void*a_enviar=malloc(buffer->size + sizeof(code)+sizeof(int));
+    int offset = 0;
+
+    memcpy(a_enviar + offset, &(paquete->code), sizeof(code));
+    offset += sizeof(code);
+    memcpy(a_enviar + offset, paquete->buffer->stream,paquete->buffer->size); 
+
+    send(socket_cliente,a_enviar,buffer->size + sizeof(code) + sizeof(int),0);
+
+    free(a_enviar);
+    free(paquete->buffer->stream);
+    free(paquete->buffer);
+    free(paquete);
 }
+
+/////////// REVISAR BIEN ESTA
+t_list* recibir_paquete_code_operacion(int socket_cliente){ // Se sabe que voy a recibir un codigo de operacion, minimo un int (tid/pid) y maximo dos int (pid y tid)
+    t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
+    t_list*valores = list_create();
+    paquete->buffer = malloc(sizeof(t_buffer));
+    // Primero recibimos el codigo de operacion
+    recv(socket_cliente, &(paquete->code), sizeof(code_operacion), 0);
+
+    // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
+    recv(socket_cliente, &(paquete->buffer->size), sizeof(int), 0);
+    paquete->buffer->stream = malloc(paquete->buffer->size);
+    recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
+
+
+    int* valor=malloc(sizeof(int));
+    int offset = 0;
+    while (offset < paquete->buffer->size){
+        memcpy(valor,paquete->buffer->stream + offset,sizeof(int));
+        offset+=sizeof(int);
+        list_add(valores,valor);
+    }
+
+    return valores;
+    
+}
+
+
+
+
 
 void* serializar_paquete(t_paquete* paquete, int bytes)
 {
@@ -89,27 +346,7 @@ void liberar_conexion(int socket_cliente)
 }
 
 
-void send_operacion_tid(int tid, code_operacion code, int socket_cliente){
-    t_paquete* paquete = crear_paquete();
-    agregar_a_paquete(paquete,&code,sizeof(code_operacion));
-    agregar_a_paquete(paquete,&tid,sizeof(tid));
 
-    enviar_paquete(paquete,socket_cliente);
-
-    // ??? eliminar_paquete(paquete);
-}
-
-t_paquete* send_operacion_tid_pid(int pid,int tid,code_operacion code, int socket_cliente){
-    t_paquete* paquete = crear_paquete();
-    agregar_a_paquete(paquete,&code,sizeof(code_operacion));
-    agregar_a_paquete(paquete,&pid,sizeof(pid));
-    agregar_a_paquete(paquete,&tid,sizeof(tid));
-
-    enviar_paquete(paquete,socket_cliente);
-
-    // ??? eliminar_paquete(paquete);
-    return paquete;
-}
 
 
 t_list* recibir_paquete(int socket_cliente)
@@ -157,44 +394,4 @@ int recibir_operacion(int socket_cliente)
 	}
 }
 
-void agregar_tcb_a_paquete(t_tcb*tcb,t_paquete*paquete){  // AGREGAR LOS CAMPOS QUE FALTAN
-    
-    agregar_a_paquete(paquete,&(tcb->tid),sizeof(int));
-    agregar_a_paquete(paquete,&(tcb->prioridad),sizeof(int));
-    agregar_a_paquete(paquete,&(tcb->pid),sizeof(int));
-    agregar_a_paquete(paquete,&(tcb->estado),sizeof(int));
 
-    tcb->pseudocodigo_length = string_length(tcb->pseudocodigo);
-    agregar_a_paquete(paquete,&(tcb->pseudocodigo_length),sizeof(int));
-    agregar_a_paquete(paquete,tcb->pseudocodigo,sizeof(tcb->pseudocodigo_length));
-
-}
-
-void send_tcb(t_tcb*tcb,int socket_memoria){
-    t_paquete* paquete = crear_paquete();
-    agregar_tcb_a_paquete(tcb,paquete);
-    enviar_paquete(paquete,socket_memoria);
-}
-
-void agregar_pcb_a_paquete(t_pcb*pcb,t_paquete*paquete){
-    agregar_a_paquete(paquete,&(pcb->pid),sizeof(int));
-    agregar_a_paquete(paquete,pcb->tids,list_size(pcb->tids)*sizeof(int));
-    agregar_a_paquete(paquete,pcb->colas_hilos_prioridad_ready,suma_tam_hilos_colas_en_lista(pcb->colas_hilos_prioridad_ready));
-    agregar_a_paquete(paquete,pcb->lista_hilos_blocked,list_size(pcb->lista_hilos_blocked)*sizeof(pthread_t));
-    agregar_a_paquete(paquete,pcb->cola_hilos_new,queue_size(pcb->cola_hilos_new)*sizeof(pthread_t));
-    agregar_a_paquete(paquete,pcb->cola_hilos_exit,queue_size(pcb->cola_hilos_exit)*sizeof(pthread_t));
-    agregar_tcb_a_paquete(pcb->hilo_exec,paquete);
-
-    agregar_a_paquete(paquete,pcb->lista_mutex,list_size(pcb->lista_mutex)*sizeof(int));
-
-    agregar_a_paquete(paquete,&(pcb->estado),sizeof(int));
-    agregar_a_paquete(paquete,&(pcb->tamanio_proceso),sizeof(int));
-    agregar_a_paquete(paquete,&(pcb->prioridad),sizeof(int));
-}
-
-
-void send_pcb(t_pcb*pcb,int socket_memoria){
-    t_paquete*paquete=crear_paquete();
-    agregar_pcb_a_paquete(pcb,paquete);
-    enviar_paquete(paquete,socket_memoria);
-}

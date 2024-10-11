@@ -9,10 +9,15 @@
 #include <semaphore.h>
 
 extern sem_t semaforo;
+
 extern t_queue* cola_new;
-extern t_queue* cola_ready;
+extern t_queue* cola_ready_fifo;
+extern t_list* lista_ready_prioridad;
+extern t_list* colas_ready_prioridad;
 extern t_list* lista_pcbs;
+
 extern pthread_mutex_t mutex_pthread_join;
+extern pthread_mutex_t mutex_cola_ready;
 extern t_config* config;
 extern t_log* logger;
 extern t_list* lista_mutex;
@@ -24,20 +29,18 @@ extern sem_t semaforo_cola_new_hilos;
 extern sem_t semaforo_cola_exit_procesos;
 extern sem_t semaforo_cola_exit_hilos;
 extern t_queue* cola_exit;
+extern sem_t sem_multinivel;
+extern sem_t sem_lista_prioridades;
+extern sem_t sem_syscall;
 
-extern sem_t sem_planificar;
-extern sem_t sem_IO;
-extern sem_t sem_termina_ejecucion;
-
+extern bool desalojado;
 
 typedef enum{
     PCB_INIT,
     DUMP_MEMORIA,
-    PROCESS_ELIMINATE_COLA, //Se elimina un proceso por la cola exit
-    PROCESS_ELIMINATE_SYSCALL, //Se elimina un proceso por una syscall
+    PROCESS_EXIT_AVISO, 
     PROCESS_CREATE_AVISO,
     THREAD_CREATE_AVISO,
-    THREAD_EXECUTE_AVISO, //// NUEVO CODIGO
     THREAD_ELIMINATE_AVISO,
     THREAD_CANCEL_AVISO,
     THREAD_INTERRUPT,
@@ -77,7 +80,10 @@ estado_hilo estado;
 char* pseudocodigo;
 int pseudocodigo_length;
 t_queue* cola_hilos_bloqueados;
+pthread_mutex_t mutex_cola_hilos_bloqueados;
 }t_tcb;
+
+extern t_tcb* hilo_exec;
 
 typedef enum {
     UNLOCKED,
@@ -93,22 +99,24 @@ PCB_EXIT
 }estado_pcb;
 
 typedef struct{
+
+sem_t sem_hilos_exit; 
+
 int pid;
 t_list* tids;
-t_list* colas_hilos_prioridad_ready;
-t_list* lista_prioridad_ready;
-t_list* lista_hilos_blocked;
-t_queue* cola_hilos_new;
-t_queue* cola_hilos_exit;
-t_queue* cola_hilos_ready;
-t_tcb* hilo_exec;
 t_list* lista_mutex;
 estado_pcb estado;
 int tamanio_proceso;
-int prioridad;
-}t_pcb;
 
-extern t_pcb* proceso_exec;
+t_tcb* tcb_main;
+
+pthread_mutex_t mutex_lista_mutex;
+pthread_mutex_t mutex_tids;
+
+int contador_tid; 
+int contador_mutex;
+
+}t_pcb;
 
 typedef struct {
     int prioridad;
@@ -125,6 +133,7 @@ int mutex_id;
 t_queue* cola_tcbs;
 estado_mutex estado;
 t_tcb* hilo; // hilo que esta en la región crítica
+char* nombre;
 }t_mutex;
 
 
@@ -132,21 +141,6 @@ typedef struct{
     t_queue*cola;
     t_tcb*nuevo_hilo;
 }t_args_insertar_ordenado;
-
-typedef struct{
-    t_tcb*tcb;
-    int milisegundos;
-}t_args_espera_io;
-
-typedef struct{
-    int quantum;
-    bool termino;
-}t_args_esperar_quantum;
-
-typedef struct{
-    t_tcb*hilo;
-    code_operacion code;
-}t_args_esperar_devolucion_cpu;
 
 
 
@@ -164,22 +158,19 @@ void THREAD_EXIT();
 
 void new_a_ready_procesos();
 void proceso_exit();
+void hilo_exit();
 
 void iniciar_kernel (char* archivo_pseudocodigo, int tamanio_proceso);
 
 void MUTEX_CREATE();
-void MUTEX_LOCK(int mutex_id);
-void MUTEX_UNLOCK(int mutex_id);
+void MUTEX_LOCK(char* recurso);
+void MUTEX_UNLOCK(char* recurso);
 
 void IO(int milisegundos);
 
 void DUMP_MEMORY();
 
-void ejecucion(t_tcb*hilo,t_queue*queue);
-
-void* manejar_espera_io(void* arg);
-void hilo_termino_io(t_tcb* tcb);
-
-void* funcion_ready_blocked(void*args);
+void espera_con_quantum(int quantum);
+void ejecucion(t_tcb*hilo);
 
 #endif
