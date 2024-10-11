@@ -174,10 +174,53 @@ void funcLOG(char* registro) {
 
 
 void funcREAD_MEM(char* registro_datos, char* registro_direccion) {
+    log_info(log_cpu, "Instrucción READ_MEM ejecutada");
     
+    // Obtener la dirección lógica desde el registro de dirección
+    uint32_t direccionLogica = obtener_valor_registro(registro_direccion);
+    
+    // Traducir la dirección lógica a física
+    uint32_t direccionFisica = traducirDireccion(direccionLogica);
+    
+    // Verificar si la dirección es válida
+    if (direccionFisica >= 0) {
+        // Leer el valor desde la memoria en esa dirección física
+        int tamanio_bytes = tamanio_registro(registro_datos);
+        uint32_t valorMemoria = leer_valor_de_memoria(direccionFisica, tamanio_bytes);
+        
+        // Almacenar el valor leído en el registro de datos
+        char buffer[20];
+        sprintf(buffer, "%d", valorMemoria);
+        valor_registro_cpu(registro_datos, buffer);
+        
+        log_info(log_cpu, "TID: %d - Acción: LEER - Dirección Física: %d - Valor leído: %d", contexto->tid, direccionFisica, valorMemoria);
+    } else {
+        log_error(log_cpu, "Dirección física inválida: %d", direccionFisica);
+    }
 }
 
 void funcWRITE_MEM(char* registro_direccion, char* registro_datos) {
+    log_info(log_cpu, "Instrucción WRITE_MEM ejecutada");
+    
+    // Obtener la dirección lógica desde el registro de dirección
+    uint32_t direccionLogica = obtener_valor_registro(registro_direccion);
+    
+    // Traducir la dirección lógica a física
+    uint32_t direccionFisica = traducirDireccion(direccionLogica);
+    
+    // Verificar si la dirección es válida
+    if (direccionFisica >= 0) {
+        // Obtener el valor del registro de datos
+        uint32_t tamanio_bytes = tamanio_registro(registro_datos);
+        char* valor = encontrarValorDeRegistro(registro_datos);
+        
+        // Escribir el valor en la memoria en esa dirección física
+        escribir_valor_en_memoria(direccionFisica, valor, tamanio_bytes);
+        
+        log_info(log_cpu, "TID: %d - Acción: ESCRIBIR - Dirección Física: %d - Valor escrito: %s", contexto->tid, direccionFisica, valor);
+    } else {
+        log_error(log_cpu, "Dirección física inválida: %d", direccionFisica);
+    }
 }
 
 //--FUNIONES EXTRAS
@@ -205,4 +248,62 @@ uint32_t obtener_valor_registro(char* parametro){
         return 0;
     }
     return valor_registro;
+}
+
+void valor_registro_cpu(char* registro, char* valor) {
+    if (strcmp(registro, "PC") == 0) //no se si este hace falta
+        contexto->pc = atoi(valor);
+    if (strcmp(registro, "AX") == 0)
+        contexto->registros->AX = atoi(valor);
+    if (strcmp(registro, "BX") == 0)
+        contexto->registros->BX = atoi(valor);
+    if (strcmp(registro, "CX") == 0)
+        contexto->registros->CX = atoi(valor);
+    if (strcmp(registro, "DX") == 0)
+        contexto->registros->DX = atoi(valor);
+    if (strcmp(registro, "EX") == 0)
+        contexto->registros->EX = atoi(valor);
+    if (strcmp(registro, "FX") == 0)
+        contexto->registros->FX = atoi(valor);
+    if (strcmp(registro, "GX") == 0)
+        contexto->registros->GX = atoi(valor);
+    if (strcmp(registro, "HX") == 0)
+        contexto->registros->HX = atoi(valor);
+}
+
+char* encontrarValorDeRegistro(char* register_to_find_value) {
+    char* retorno = malloc(12); // Asigna suficiente espacio para el string
+    if (retorno == NULL) {
+        // Manejo de error en caso de que la asignación de memoria falle
+        return NULL;
+    }
+
+    if (strcmp(register_to_find_value, "AX") == 0) {
+        sprintf(retorno, "%u", contexto->registros->AX);
+        return retorno;
+    } else if (strcmp(register_to_find_value, "BX") == 0) {
+        sprintf(retorno, "%u", contexto->registros->BX);
+        return retorno;
+    } else if (strcmp(register_to_find_value, "CX") == 0) {
+        sprintf(retorno, "%u", contexto->registros->CX);
+        return retorno;
+    } else if (strcmp(register_to_find_value, "DX") == 0) {
+        sprintf(retorno, "%u", contexto->registros->DX);
+        return retorno;
+    } else if (strcmp(register_to_find_value, "EX") == 0) {
+        sprintf(retorno, "%u", contexto->registros->EX);
+        return retorno;
+    } else if (strcmp(register_to_find_value, "FX") == 0) {
+        sprintf(retorno, "%u", contexto->registros->FX);
+        return retorno;
+    } else if (strcmp(register_to_find_value, "GX") == 0) {
+        sprintf(retorno, "%u", contexto->registros->GX);
+        return retorno;
+    } else if (strcmp(register_to_find_value, "HX") == 0) {
+        sprintf(retorno, "%u", contexto->registros->HX);
+        return retorno;
+
+    // Manejo del caso en que no se encuentre el registro
+    free(retorno);
+    return NULL;
 }

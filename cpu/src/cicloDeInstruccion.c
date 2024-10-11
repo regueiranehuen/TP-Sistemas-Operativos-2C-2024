@@ -23,7 +23,7 @@ void ciclo_de_instruccion() {
 t_instruccion* fetch(uint32_t tid, uint32_t pc){
 
     pedir_instruccion_memoria(tid, pc, log_cpu);
-    log_info(log_cpu, "PID: %i - FETCH - Program Counter: %i", tid, pc);
+    log_info(log_cpu, "TID: %i - FETCH - Program Counter: %i", tid, pc);
     t_instruccion* instruccion = malloc(sizeof(t_instruccion));
     op_code codigo = recibir_operacion(sockets->socket_cliente); // TODO ver como modelar la operacion
     if(codigo == READY){

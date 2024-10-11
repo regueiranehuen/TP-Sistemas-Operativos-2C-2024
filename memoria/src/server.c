@@ -1,4 +1,4 @@
-#include "includes/server.h"
+#include "server.h"
 
 
 void* hilo_gestor_clientes (void* void_args){
