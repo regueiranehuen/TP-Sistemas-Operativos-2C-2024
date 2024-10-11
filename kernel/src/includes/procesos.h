@@ -35,10 +35,13 @@ extern sem_t semaforo_new_ready_procesos;
 extern sem_t semaforo_cola_new_procesos;
 extern sem_t semaforo_cola_exit_procesos;
 extern sem_t sem_desalojado;
-extern sem_t sem_multinivel;
+
+extern sem_t semaforo_cola_ready;
 
 extern sem_t semaforo_cola_exit_hilos;
 extern sem_t sem_lista_prioridades;
+
+extern sem_t sem_fin_kernel;
 
 extern bool desalojado;
 
@@ -48,6 +51,7 @@ typedef enum{
     PROCESS_CREATE_AVISO,
     THREAD_CREATE_AVISO,
     THREAD_ELIMINATE_AVISO,
+    THREAD_EXECUTE_AVISO,
     THREAD_CANCEL_AVISO,
     THREAD_INTERRUPT,
     FIN_QUANTUM_RR,
@@ -137,7 +141,7 @@ void hilo_exit();
 
 void iniciar_kernel (char* archivo_pseudocodigo, int tamanio_proceso);
 
-void MUTEX_CREATE();
+void MUTEX_CREATE(char* recurso);
 void MUTEX_LOCK(char* recurso);
 void MUTEX_UNLOCK(char* recurso);
 

@@ -20,6 +20,7 @@ int main(int argc, char *argv[])
 
     sockets = hilos_kernel(log, config);
     iniciar_kernel(archivo_pseudocodigo, tamanio_proceso);
+    sem_wait(&sem_fin_kernel);
     estado_kernel = 0;
     liberar_espacio(log, config, sockets);
     return 0;

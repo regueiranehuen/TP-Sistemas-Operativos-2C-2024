@@ -33,6 +33,8 @@ void destruir_estados() {
 }
 
 void inicializar_semaforos() {
+    sem_init(&semaforo_cola_ready,0,0);
+    sem_init(&sem_fin_kernel,0,0);
     sem_init(&semaforo_new_ready_procesos, 0, 0);   // Inicializa en 0
     sem_init(&semaforo_cola_new_procesos, 0, 0);    // Inicializa en 0
     sem_init(&semaforo_cola_exit_procesos, 0, 0);   // Inicializa en 0
@@ -42,6 +44,8 @@ void inicializar_semaforos() {
 }
 
 void destruir_semaforos() {
+    sem_destroy(&semaforo_cola_ready);
+    sem_destroy(&sem_fin_kernel);
     sem_destroy(&semaforo_new_ready_procesos);
     sem_destroy(&semaforo_cola_new_procesos);
     sem_destroy(&semaforo_cola_exit_procesos);

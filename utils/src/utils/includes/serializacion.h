@@ -1,39 +1,81 @@
-#ifndef SERIALIZACION_H_
-#define SERIALIZACION_H_
+#ifndef SERIALIZACION_H
+#define SERIALIZACION_H
 
-#include "utils/includes/sockets.h"
-#include "../../kernel/src/includes/funcionesAuxiliares.h"
+#include "sockets.h"
 
-typedef enum
-{
-	MENSAJE,
-	PAQUETE
-}op_code;
+typedef enum{
+    DUMP_MEMORIA,
+    PROCESS_EXIT_AVISO, 
+    PROCESS_CREATE_AVISO,
+    THREAD_CREATE_AVISO,
+    THREAD_ELIMINATE_AVISO,
+    THREAD_EXECUTE_AVISO,
+    THREAD_CANCEL_AVISO,
+    THREAD_INTERRUPT,
+    FIN_QUANTUM_RR,
+}code_operacion;
 
-typedef struct
-{
-	int size;
-	void* stream;
+typedef enum{
+ENUM_PROCESS_CREATE,
+ENUM_PROCESS_EXIT,
+ENUM_THREAD_CREATE,
+ENUM_THREAD_JOIN,
+ENUM_THREAD_CANCEL,
+ENUM_MUTEX_CREATE,
+ENUM_MUTEX_LOCK,
+ENUM_MUTEX_UNLOCK,
+ENUM_IO,
+ENUM_DUMP_MEMORY,
+ENUM_SEGMENTATION_FAULT
+}syscalls;
+
+typedef struct {
+    int size; // Tamaño del payload
+    void* stream; // Payload (todo lo que viene después del codigo de operacion)
 } t_buffer;
 
+typedef struct{
+	code_operacion code; // Header
+	t_buffer*buffer;
+}t_paquete_code_operacion;
+
+
+
 typedef struct
 {
-	op_code codigo_operacion;
+	syscalls syscall; // Header
 	t_buffer* buffer;
-} t_paquete;
+} t_paquete_syscall;
 
-void agregar_tid_a_paquete(t_tcb* tcb, t_paquete* paquete);
-void agregar_pid_a_paquete(t_pcb* pcb, t_paquete* paquete);
-void send_tid(t_tcb* tcb, int socket_memoria);
-void send_pid(t_pcb* pcb, int socket_memoria);
 
-void enviar_mensaje(char* mensaje, int socket_cliente);
-t_paquete* crear_paquete(void);
-void agregar_a_paquete(t_paquete* paquete, void* valor, int tamanio);
-void enviar_paquete(t_paquete* paquete, int socket_cliente);
+typedef struct{
+	char*nombreArchivo;
+	int tamProceso;
+	int prioridad;
+}t_process_create;
+
+typedef struct{
+	char*nombreArchivo;
+	int prioridad;
+}t_thread_create;
+
+
+
+
+t_process_create* parametros_process_create(t_paquete_syscall*paquete);
+t_thread_create* parametros_thread_create(t_paquete_syscall*paquete);
+int recibir_entero_paquete_syscall(t_paquete_syscall*paquete);
+char* recibir_string_paquete_syscall(t_paquete_syscall*paquete);
+void send_operacion_tid_pid(code_operacion code, int tid, int pid, int socket_cliente);
+void send_operacion_entero(code_operacion code, int entero, int socket_cliente);
+void send_operacion_pid(code_operacion code, int pid, int socket_cliente);
+void send_paquete_syscall(t_buffer*buffer, int socket_cliente);
+void send_paquete_code_operacion(code_operacion code, t_buffer*buffer, int socket_cliente);
+t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch);
+t_list* recibir_paquete_code_operacion(int socket_cliente);
 void liberar_conexion(int socket_cliente);
-void eliminar_paquete(t_paquete* paquete);
-void* serializar_paquete(t_paquete* paquete, int bytes);
-void crear_buffer(t_paquete* paquete);
+
+void eliminar_paquete_syscall(t_paquete_syscall*paquete);
+void eliminar_paquete_code_op(t_paquete_code_operacion*paquete);
 
 #endif

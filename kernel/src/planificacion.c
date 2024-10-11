@@ -3,13 +3,13 @@
 t_tcb *fifo_tcb()
 {
 
-    if (queue_size(cola_ready_fifo) > 0)
-    {
+    sem_wait(&semaforo_cola_ready);//espera que haya elementos en la cola;
+
         pthread_mutex_lock(&mutex_cola_ready);
         t_tcb *tcb = queue_pop(cola_ready_fifo);
         pthread_mutex_unlock(&mutex_cola_ready);
         return tcb;
-    }
+
     return NULL;
 }
 
@@ -113,50 +113,53 @@ void *hilo_planificador_largo_plazo(void *void_args)
 }
 
 
-void atender_syscall()
+void atender_syscall()//recibir un paquete con un codigo de operacion, entrar al switch con dicho codigo de operacion y luego serializar el paquete 
 {
-    syscalls syscall; 
+
+        pthread_mutex_lock(&mutex_conexion_cpu);
+        t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch);
         pthread_mutex_unlock(&mutex_conexion_cpu);
-        recv(sockets->sockets_cliente_cpu->socket_Dispatch, &syscall, sizeof(syscall), 0);
-        pthread_mutex_unlock(&mutex_conexion_cpu);
-        switch (syscall)
+         switch (paquete->syscall)
         {
 
         case ENUM_PROCESS_CREATE:
-            
-            //PROCESS_CREATE(); 
-            
+            t_process_create* paramProcessCreate= parametros_process_create(paquete);
+            PROCESS_CREATE(paramProcessCreate->nombreArchivo,paramProcessCreate->tamProceso,paramProcessCreate->prioridad);            
             break;
         case ENUM_PROCESS_EXIT:
             PROCESS_EXIT();
             
             break;
         case ENUM_THREAD_CREATE:
-            // THREAD_CREATE(); lo mismo que lo de abajo
+            t_thread_create* paramThreadCreate = parametros_thread_create(paquete);
+            THREAD_CREATE(paramThreadCreate->nombreArchivo,paramThreadCreate->prioridad); 
             
             break;
         case ENUM_THREAD_JOIN:
-            // THREAD_JOIN(tid);hay que ver como recibir el tid de cpu
+            int tid_thread_join = recibir_entero_paquete_syscall(paquete);
+            THREAD_JOIN(tid_thread_join);
             
             break;
         case ENUM_THREAD_CANCEL:
-            // THREAD_CANCEL(tid);lo mismo que arriba
+            int tid_thread_cancel = recibir_entero_paquete_syscall(paquete);
+            THREAD_CANCEL(tid_thread_cancel);
             
             break;
         case ENUM_MUTEX_CREATE:
-            MUTEX_CREATE();
-            
+            char* recurso = recibir_string_paquete_syscall(paquete);
+            MUTEX_CREATE(recurso);
             break;
         case ENUM_MUTEX_LOCK:
-            // MUTEX_LOCK(mutex_id);la misma situación
-            
+            char*recurso_a_bloquear = recibir_string_paquete_syscall(paquete);
+            MUTEX_LOCK(recurso_a_bloquear);            
             break;
         case ENUM_MUTEX_UNLOCK:
-            // MUTEX_UNLOCK(mutex_id); la misma situación
-            
+            char*recurso_a_desbloquear = recibir_string_paquete_syscall(paquete);
+            MUTEX_UNLOCK(recurso_a_desbloquear);
             break;
         case ENUM_IO:
-            // IO(milisegundos); la misma situación
+            int milisegundos = recibir_entero_paquete_syscall(paquete);
+            IO(milisegundos);
             
             break;
         case ENUM_DUMP_MEMORY:
@@ -174,14 +177,13 @@ void atender_syscall()
 
 t_tcb* prioridades (){
 
-if(!list_is_empty(lista_ready_prioridad)){
+sem_wait(&semaforo_cola_ready);
+
 pthread_mutex_lock(&mutex_cola_ready);
 t_tcb* tcb_prioritario = list_remove(lista_ready_prioridad,0);
 pthread_mutex_unlock(&mutex_cola_ready);
-return tcb_prioritario;
-}
 
-return NULL;
+return tcb_prioritario;
 
 }
 
@@ -206,6 +208,9 @@ Se elegirá al siguiente hilo a ejecutar según el siguiente esquema de colas mu
 - Al llegar un hilo a ready se posiciona siempre al final de la cola que le corresponda.
 */
 void colas_multinivel(){
+
+    sem_wait(&semaforo_cola_ready);
+
     pthread_mutex_lock(&mutex_cola_ready);
     t_cola_prioridad* cola_prioritaria = obtener_cola_con_mayor_prioridad(colas_ready_prioridad);
     pthread_mutex_unlock(&mutex_cola_ready);

@@ -5,11 +5,15 @@
 sem_t semaforo_new_ready_procesos;
 sem_t semaforo_cola_new_procesos;
 sem_t semaforo_cola_exit_procesos;
+
+sem_t semaforo_cola_ready;
+
 sem_t sem_desalojado;
-sem_t sem_multinivel;
 
 sem_t semaforo_cola_exit_hilos;
 sem_t sem_lista_prioridades;
+
+sem_t sem_fin_kernel;
 
 t_queue *cola_new_procesos;
 t_queue *cola_exit_procesos;
@@ -51,6 +55,7 @@ t_pcb *crear_pcb()
     pthread_mutex_lock(&mutex_lista_pcbs);
     list_add(lista_pcbs, pcb);
     pthread_mutex_unlock(&mutex_lista_pcbs);
+    
     pthread_mutex_init(&pcb->mutex_lista_mutex, NULL);
     pthread_mutex_init(&pcb->mutex_tids, NULL);
     return pcb;
@@ -87,9 +92,6 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
     tcb->prioridad = 0;
     pcb->tcb_main = tcb;
     pcb->estado = PCB_NEW;
-    pthread_mutex_lock(&mutex_lista_pcbs);
-    list_add(lista_pcbs,pcb);
-    pthread_mutex_unlock(&mutex_lista_pcbs);
 
     pthread_mutex_lock(&mutex_cola_new_procesos);
     queue_push(cola_new_procesos, pcb);
@@ -113,6 +115,12 @@ void proceso_exit()
     code_operacion cod_op = PROCESS_EXIT_AVISO;
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
     send(socket_memoria, &cod_op, sizeof(code_operacion), 0);
+
+    pthread_mutex_lock(&mutex_cola_exit_procesos);
+    t_pcb *proceso = queue_peek(cola_exit_procesos);
+    pthread_mutex_unlock(&mutex_cola_exit_procesos);
+
+    send_pid(proceso->pid,socket_memoria);
     recv(socket_memoria, &respuesta, sizeof(int), 0);
     close(socket_memoria);
     if (respuesta == -1)
@@ -146,11 +154,14 @@ void hilo_exit()
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
     code_operacion cod_op = THREAD_ELIMINATE_AVISO;
 
-    send(socket_memoria, &cod_op, sizeof(int), 0);
-    close(socket_memoria);
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     t_tcb *hilo = queue_pop(cola_exit);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
+
+    send(socket_memoria, &cod_op, sizeof(int), 0);
+    send_tid(hilo->tid,socket_memoria);
+    close(socket_memoria);
+    
     int tam_cola = queue_size(hilo->cola_hilos_bloqueados);
     if (tam_cola != 0)
     {
@@ -355,7 +366,7 @@ void THREAD_CANCEL(int tid)
 { // suponiendo que el proceso main esta ejecutando
 
     int respuesta;
-    code_operacion cod_op = THREAD_CANCEL_AVISO;
+    code_operacion cod_op = THREAD_ELIMINATE_AVISO;
 
     t_tcb *tcb = buscar_tcb_por_tid(lista_tcbs,tid); // Debido a que solamente hilos vinculados por un mismo proceso se pueden cancelar entre si, el tid a cancelar debe ser del proceso del hilo que llamo a la funcion
 
@@ -682,34 +693,20 @@ void pushear_cola_ready(t_tcb* hilo){
         t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, hilo->prioridad);
         pthread_mutex_unlock(&mutex_cola_ready);
         queue_push(cola->cola, hilo);
-        sem_post(&sem_multinivel);
     }
-
+    sem_post(&semaforo_cola_ready);
 }
 
 
 void ejecucion(t_tcb *hilo)
 {
 
-//el planificador de corto plazo se encarga de atender las syscalls del hilo en ejecución por lo tanto por cada llamada a la funcion ejecucion, luego de enviar el hilo a ejecutar se encarga de atender las syscalls de dicho hilo
+code_operacion cod_op = THREAD_EXECUTE_AVISO;
 
-    t_paquete *paquete = crear_paquete();
-    hilo->estado = TCB_EXECUTE; // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC
-    hilo_exec = hilo;
-    agregar_a_paquete(paquete, &hilo->tid, sizeof(hilo->tid));
-    agregar_a_paquete(paquete, &hilo->pid, sizeof(hilo->pid));
+pthread_mutex_lock(&mutex_conexion_cpu);
+send_operacion_tid_pid(cod_op, hilo->tid, hilo->pid, sockets->sockets_cliente_cpu->socket_Dispatch);
+pthread_mutex_unlock(&mutex_conexion_cpu);
 
-    //code_operacion rtaCPU;
-
-    pthread_mutex_lock(&mutex_conexion_cpu);
-    enviar_paquete(paquete, sockets->sockets_cliente_cpu->socket_Dispatch);
-    pthread_mutex_unlock(&mutex_conexion_cpu);
-    eliminar_paquete(paquete);
-  
-    /*Agregué algunos de los códigos de operación subidos al módulo CPU. Había conflicto con algunos nombres por llamarse igual a algunas funciones que tenemos
-    hechas, así que no agregué todos*/
-
-    // en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
     char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
 
 if(strcmp(algoritmo,"MULTINIVEL")==0){

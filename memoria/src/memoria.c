@@ -18,20 +18,24 @@ if (bytes == 0) {
 }
 
 switch (cod_op)
-{
-case ENUM_DUMP_MEMORY:
+{// hay que enviar el pid/tid correspondiente que vamos a crear o eliminar. Por ejemplo: Para thread_exit o thread_cancel hay que mandarle a memoria el tid que vamos a eliminar
+case DUMP_MEMORIA:
 send(socket_cliente,&respuesta,sizeof(int),0);
     break;
-case ENUM_PROCESS_EXIT:
+case PROCESS_EXIT_AVISO:
 send(socket_cliente,&respuesta,sizeof(int),0);
     break;
-case ENUM_PROCESS_CREATE:
+case PROCESS_CREATE_AVISO:
+int tamanio_proceso;
+recv(socket_cliente,&tamanio_proceso,sizeof(int),0);
 send(socket_cliente,&respuesta,sizeof(int),0);
     break;
-case ENUM_THREAD_CREATE:
+case THREAD_CREATE_AVISO:
 send(socket_cliente,&respuesta,sizeof(int),0);
     break;
-case ENUM_THREAD_EXIT:
+case THREAD_ELIMINATE_AVISO:
+int tid;
+recv(socket_cliente,&tid,sizeof(int),0);
 send(socket_cliente,&respuesta,sizeof(int),0);
     break;
 default:

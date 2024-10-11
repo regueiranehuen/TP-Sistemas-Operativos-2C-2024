@@ -8,12 +8,11 @@
 void atender_conexiones(int socket_cliente);
 
 typedef enum{
-    ENUM_DUMP_MEMORY,
-    ENUM_PROCESS_EXIT, 
-    ENUM_PROCESS_CREATE,
-    ENUM_THREAD_CREATE,
-    ENUM_THREAD_EXIT,
-    ENUM_THREAD_CANCEL,
+    DUMP_MEMORIA,
+    PROCESS_EXIT_AVISO, 
+    PROCESS_CREATE_AVISO,
+    THREAD_CREATE_AVISO,
+    THREAD_ELIMINATE_AVISO
 }code_operacion;
 
 #endif
