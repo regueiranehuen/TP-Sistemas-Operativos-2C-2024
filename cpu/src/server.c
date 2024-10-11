@@ -1,13 +1,13 @@
 #include "server.h"
 
-t_socket_cpu* servidor_CPU_Kernel(t_log* log, t_config* config){
+t_socket* servidor_CPU_Kernel(t_log* log, t_config* config){
 
 //declaración de variables
 char *puerto_dispatch,*puerto_interrupt;
 int socket_servidor_Dispatch, socket_servidor_Interrupt;
 int socket_cliente_Dispatch =-1, socket_cliente_Interrupt =-1;
 int respuesta_Dispatch, respuesta_Interrupt;
-t_socket_cpu* sockets=malloc(sizeof(t_socket_cpu));
+t_socket* sockets=malloc(sizeof(t_socket));
 sockets->socket_Dispatch=-1;
 sockets->socket_Interrupt=-1;
 
@@ -112,7 +112,7 @@ void* funcion_hilo_servidor_cpu(void* void_args){
   args_hilo* args = ((args_hilo*)void_args);
 
 
-    t_socket_cpu* sockets = servidor_CPU_Kernel(args->log, args->config);
+    t_socket* sockets = servidor_CPU_Kernel(args->log, args->config);
    
     if (sockets->socket_Dispatch == -1 || sockets->socket_Interrupt == -1) {
         log_error(args->log, "No se pudo establecer la conexion con Kernel");
@@ -175,7 +175,7 @@ t_sockets_cpu* hilos_cpu(t_log* log, t_config* config){
 
     pthread_join(hilo_servidor,&socket_servidor_kernel);
 
-    sockets->socket_servidor= (t_socket_cpu*)socket_servidor_kernel;
+    sockets->socket_servidor= (t_socket*)socket_servidor_kernel;
 
     pthread_join(hilo_cliente,&socket_cliente_memoria);
 
@@ -194,7 +194,7 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch){
         {
         case EXEC:
             log_trace(log_cpu, "llego TID y PID asociado");
-            tcb = recibir_tcb(socket_cliente_Dispatch);
+            contexto = recibir_contexto(socket_cliente_Dispatch);
             ejecutar_ciclo_de_instruccion(log_cpu);
             log_trace(log_cpu, "ejecute correctamente el ciclo de instruccion");
             break;

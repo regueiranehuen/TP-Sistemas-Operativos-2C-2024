@@ -1,6 +1,5 @@
 #include "server.h"
 
-
 void* hilo_gestor_clientes (void* void_args){
 hilo_clientes *args = (hilo_clientes*)void_args;
 

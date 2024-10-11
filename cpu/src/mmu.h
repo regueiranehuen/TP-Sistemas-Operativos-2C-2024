@@ -1,7 +1,7 @@
 #ifndef MMU_H
 #define MMU_H
 
-#include "main.h"
+#include "server.h"
 
 int traducir_direccion_logica(int direccion_logica);
 

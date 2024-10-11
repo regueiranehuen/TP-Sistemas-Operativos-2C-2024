@@ -5,9 +5,9 @@ int main(int argc, char* argv[]) {
     log_cpu = log_create("CPU.log", "tp", true, LOG_LEVEL_TRACE);
     config = config_create("CPU.config");
 
-    sockets = hilos_cpu(log, config);
+    sockets_cpu = hilos_cpu(log, config);
 
-    liberarMemoria(sockets,log,config);
+    liberarMemoria(sockets_cpu,log,config);
 
     return 0;
 

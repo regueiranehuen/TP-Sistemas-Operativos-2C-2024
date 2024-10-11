@@ -1,8 +1,7 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include <utils/includes/sockets.h>
-#include <commons/config.h>
+#include "utils/sockets.h"
 
 typedef struct{
     int socket_servidor;

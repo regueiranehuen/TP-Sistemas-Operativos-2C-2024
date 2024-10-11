@@ -25,10 +25,10 @@ t_instruccion* fetch(uint32_t tid, uint32_t pc){
     pedir_instruccion_memoria(tid, pc, log_cpu);
     log_info(log_cpu, "TID: %i - FETCH - Program Counter: %i", tid, pc);
     t_instruccion* instruccion = malloc(sizeof(t_instruccion));
-    op_code codigo = recibir_operacion(sockets->socket_cliente); // TODO ver como modelar la operacion
+    op_code codigo = recibir_operacion(sockets_cpu->socket_cliente); // TODO ver como modelar la operacion
     if(codigo == READY){
         log_info(log_cpu, "COPOP: %i", codigo);
-        instruccion = recibir_instruccion(sockets->socket_cliente); // 
+        instruccion = recibir_instruccion(sockets_cpu->socket_cliente); // 
     }else{
         return -1;
     }
@@ -42,7 +42,7 @@ void pedir_instruccion_memoria(uint32_t tid, uint32_t pc, t_log *logg){
     agregar_entero_a_paquete(paquete,pc);
     
     //log_info(logg, "serializacion %i %i", tid, pc); ya esta el log
-    enviar_paquete(paquete,sockets->socket_cliente);
+    enviar_paquete(paquete,sockets_cpu->socket_cliente);
     eliminar_paquete(paquete);
 
 }
@@ -135,9 +135,9 @@ void checkInterrupt(uint32_t tid){
         if(contexto->tid == tid_interrupt){
             seguir_ejecutando = 0;
             if(!es_por_usuario){
-                enviar_contexto(sockets->socket_Dispatch, contexto,INTERRUPCION);
+                enviar_contexto(sockets_cpu->socket_servidor->socket_Interrupt, contexto,INTERRUPCION);
             }else{
-                enviar_contexto(sockets->socket_Dispatch, contexto,INTERRUPCION_USUARIO);
+                enviar_contexto(sockets_cpu->socket_servidor->socket_Dispatch, contexto,INTERRUPCION_USUARIO);
             }
         }
     }

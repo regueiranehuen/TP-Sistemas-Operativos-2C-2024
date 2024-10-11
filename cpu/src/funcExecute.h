@@ -1,7 +1,7 @@
 #ifndef FUNCEXECUTE_H
 #define FUNCEXECUTE_H
 
-#include "main.h"
+#include "server.h"
 
 
 void funcSET(char *registro, char* valor);

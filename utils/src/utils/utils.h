@@ -33,8 +33,8 @@ typedef struct{
     uint32_t FX;
     uint32_t GX;
     uint32_t HX;
-    uint32_t Base;
-    uint32_t Limite;
+    uint32_t base;
+    uint32_t limite;
 }t_registros_cpu;
 
 typedef struct {
@@ -55,6 +55,7 @@ typedef enum {
     INVALID_INTERFACE,
     OUT_OF_MEMORY,
     INTERRUPTED_BY_USER,
+    SEGMENTATION_FAULT
 }motivo_exit;
 
 typedef struct {
@@ -118,8 +119,9 @@ typedef enum
     ACCESO_ESPACIO_USUARIO,
     //INSTRUCCION FINALIZADA
     PEDIR_TAM_MEMORIA,
-    TAMANIO_RECIBIDO
-
+    TAMANIO_RECIBIDO,
+    ACTUALIZAR_CONTEXTO_MEMORIA,
+    TERMINACION_PROCESO
 }op_code;
 
 typedef struct

@@ -2,15 +2,15 @@
 #include "server.h"
 
 int traducir_direccion_logica(int direccion_logica) {
-    uint32_t base = contexto->base;
-    uint32_t limite = contexto->limite;  
+    uint32_t base = contexto->registros->base;
+    uint32_t limite = contexto->registros->limite;  
 
     log_info(log_cpu, "Base de la partición: %d", base);
     log_info(log_cpu, "Límite de la partición: %d", limite);
 
     if (direccion_logica >= limite) {
         log_error(log_cpu, "Segmentation Fault: Dirección lógica fuera del límite (%d)", direccion_logica);
-        contexto->razon_salida = SEGMENTATION_FAULT;
+        pcb_salida->motivo = SEGMENTATION_FAULT;
         actualizar_contexto_en_memoria(contexto);
         notificar_kernel_terminacion(contexto->tid, SEGMENTATION_FAULT);
         return -1;  // Retorna error
@@ -26,12 +26,12 @@ void actualizar_contexto_en_memoria(t_contexto *contexto) {
     t_paquete *paquete = crear_paquete_op(ACTUALIZAR_CONTEXTO_MEMORIA);
     
     agregar_entero_a_paquete(paquete, contexto->tid);
-    agregar_entero_a_paquete(paquete, contexto->razon_salida);
+    agregar_entero_a_paquete(paquete, pcb_salida->motivo);
     
-    log_info(log_cpu, "Actualizando contexto en memoria para TID: %d con razón de salida: %d", contexto->tid, contexto->razon_salida);
+    log_info(log_cpu, "Actualizando contexto en memoria para TID: %d con razón de salida: %d", contexto->tid, pcb_salida->motivo);
     
 
-    enviar_paquete(paquete, conexion_memoria);
+    enviar_paquete(paquete, sockets_cpu->socket_cliente); //creo q la conexion a memoria es socket cliente, hay q revisar o cambiarle el nombre
     
     eliminar_paquete(paquete);
     
@@ -47,7 +47,7 @@ void notificar_kernel_terminacion(int tid, int razon_salida) {
     
     log_info(log_cpu, "Notificando al Kernel la terminación del TID: %d con razón de salida: %d", tid, razon_salida);
     
-    enviar_paquete(paquete, conexion_kernel);
+    enviar_paquete(paquete, sockets_cpu->socket_servidor->socket_Interrupt); //lo mismo aca, ni idea
     
     eliminar_paquete(paquete);
     
