@@ -3,7 +3,10 @@
 #include "mmu.h"
 #include "server.h"
 
-void ciclo_de_instruccion() {
+t_instruccion instruccion;
+bool seguir_ejecutando;
+
+void ciclo_de_instruccion(t_log* loggs) {
 
     seguir_ejecutando=1;
 
@@ -151,7 +154,7 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch) {
             case EXEC:
                 log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
                 contexto = recibir_contexto(socket_cliente_Dispatch);
-                ciclo_de_instruccion();
+                ciclo_de_instruccion(log_cpu);
                 break;
             case -1:
                 noFinalizar = codOperacion;

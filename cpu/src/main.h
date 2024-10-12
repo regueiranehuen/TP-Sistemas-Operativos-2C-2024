@@ -1,10 +1,10 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include "cicloDeInstruccion.c"
-#include "funcExecute.c"
-#include "mmu.c"
-#include "server.c"
+#include "cicloDeInstruccion.h"
+#include "funcExecute.h"
+#include "mmu.h"
+#include "server.h"
 
 
 void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config);

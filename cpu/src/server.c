@@ -1,5 +1,32 @@
 #include "server.h"
 
+t_log* log_cpu = NULL;
+t_config* config = NULL;
+t_sockets_cpu* sockets_cpu = NULL;
+t_contexto* contexto = NULL;
+t_pcb_exit* pcb_salida = NULL;
+
+char* ip_memoria = NULL;
+int puerto_memoria = 0;
+int puerto_escucha_dispatch = 0;
+int puerto_escucha_interrupt = 0;
+char* log_level = NULL;
+
+int socket_servidor_Dispatch = 0, socket_servidor_Interrupt = 0;
+int socket_cliente_Dispatch = 0, socket_cliente_Interrupt = 0;
+int respuesta_Dispatch = 0, respuesta_Interrupt = 0;
+
+t_socket_cpu* sockets = NULL;
+
+pthread_t hilo_servidor;
+pthread_t hilo_cliente;
+void* socket_servidor_kernel = NULL;
+void* socket_cliente_memoria = NULL;
+
+uint32_t tid_interrupt = 0;
+int hay_interrupcion = 0;
+int es_por_usuario = 0;
+
 // Lectura de configuración
 void leer_config(char* path) {
     config = iniciar_config(path);
