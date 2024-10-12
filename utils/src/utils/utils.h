@@ -23,6 +23,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <pthread.h>
+#include <arpa/inet.h>
 
 typedef struct{
     uint32_t AX;
@@ -55,7 +56,6 @@ typedef enum {
     INVALID_INTERFACE,
     OUT_OF_MEMORY,
     INTERRUPTED_BY_USER,
-    SEGMENTATION_FAULT
 }motivo_exit;
 
 typedef struct {

@@ -472,8 +472,8 @@ t_list *recibir_doble_entero(int socket)
     buffer = recibir_buffer(&size, socket);
     u_int32_t entero_nuevo1 = leer_entero_uint32(buffer, &desp);
     u_int32_t entero_nuevo2 = leer_entero_uint32(buffer, &desp);
-    list_add(devolver, entero_nuevo1);
-    list_add(devolver, entero_nuevo2);
+    list_add(devolver, (void *)(uintptr_t)entero_nuevo1);
+    list_add(devolver, (void *)(uintptr_t)entero_nuevo2);
     free(buffer);
 
     return devolver;
@@ -512,8 +512,7 @@ void recibir_string_mas_u32_con_contexto(int conexion_kernel_cpu_dispatch, char 
     int size = 0;
     char *buffer;
     int desp = 0;
-    *numero = malloc(sizeof(uint32_t));
-    *contexto = malloc(sizeof(t_contexto));
+    *numero = *(uint32_t *)malloc(sizeof(uint32_t));  // Línea 515    *contexto = malloc(sizeof(t_contexto));
     t_registros_cpu *registros = malloc(sizeof(t_registros_cpu));
     (*contexto)->registros = registros;
     buffer = recibir_buffer(&size, conexion_kernel_cpu_dispatch);

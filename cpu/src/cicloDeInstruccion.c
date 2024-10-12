@@ -30,7 +30,7 @@ t_instruccion* fetch(uint32_t tid, uint32_t pc){
         log_info(log_cpu, "COPOP: %i", codigo);
         instruccion = recibir_instruccion(sockets_cpu->socket_cliente); // 
     }else{
-        return -1;
+        return NULL;
     }
   return instruccion;
     
@@ -138,6 +138,26 @@ void checkInterrupt(uint32_t tid){
             }else{
                 enviar_contexto(sockets_cpu->socket_servidor->socket_Dispatch, contexto,INTERRUPCION_USUARIO);
             }
+        }
+    }
+}
+
+// Recepción de mensajes de Kernel Dispatch
+void recibir_kernel_dispatch(int socket_cliente_Dispatch) {
+    int noFinalizar = 0;
+    while (noFinalizar != -1) {
+        int codOperacion = recibir_operacion(socket_cliente_Dispatch);
+        switch (codOperacion) {
+            case EXEC:
+                log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
+                contexto = recibir_contexto(socket_cliente_Dispatch);
+                ciclo_de_instruccion();
+                break;
+            case -1:
+                noFinalizar = codOperacion;
+                break;
+            default:
+                break;
         }
     }
 }

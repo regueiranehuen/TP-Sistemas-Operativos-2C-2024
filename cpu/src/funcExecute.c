@@ -88,7 +88,7 @@ void funcSUB(char* registroDest, char* registroOrig) {
 
     if (strcmp(registroDest, "AX") == 0) {
 
-        uint32_t valor_registro_origen = obtener_valor_registro_(registroDest);
+        uint32_t valor_registro_origen = obtener_valor_registro(registroDest);
         uint32_t valor_registro_destino = obtener_valor_registro(registroOrig);
         contexto->registros->AX = valor_registro_origen - valor_registro_destino;
 
@@ -175,11 +175,8 @@ void funcLOG(char* registro) {
 void funcREAD_MEM(char* registro_datos, char* registro_direccion) {
     log_info(log_cpu, "Instrucción READ_MEM ejecutada");
     
-    // Obtener la dirección lógica desde el registro de dirección
     uint32_t direccionLogica = obtener_valor_registro(registro_direccion);
-    
-    // Traducir la dirección lógica a física
-    uint32_t direccionFisica = traducirDireccion(direccionLogica);
+    uint32_t direccionFisica = traducir_direccion_logica(direccionLogica);
     
     // Verificar si la dirección es válida
     if (direccionFisica >= 0) {
@@ -205,15 +202,13 @@ void funcWRITE_MEM(char* registro_direccion, char* registro_datos) {
     uint32_t direccionLogica = obtener_valor_registro(registro_direccion);
     
     // Traducir la dirección lógica a física
-    uint32_t direccionFisica = traducirDireccion(direccionLogica);
+    uint32_t direccionFisica = traducir_direccion_logica(direccionLogica);
     
     // Verificar si la dirección es válida
     if (direccionFisica >= 0) {
         // Obtener el valor del registro de datos
         uint32_t tamanio_bytes = tamanio_registro(registro_datos);
-        char* valor = encontrarValorDeRegistro(registro_datos);
-        
-        // Escribir el valor en la memoria en esa dirección física
+        uint32_t valor = obtener_valor_registro(registro_datos);
         escribir_valor_en_memoria(direccionFisica, valor, tamanio_bytes);
         
         log_info(log_cpu, "TID: %d - Acción: ESCRIBIR - Dirección Física: %d - Valor escrito: %s", contexto->tid, direccionFisica, valor);
@@ -222,35 +217,112 @@ void funcWRITE_MEM(char* registro_direccion, char* registro_datos) {
     }
 }
 
+uint32_t tamanio_registro(char *registro){
+    if (strcmp(registro, "AX") == 0) return 1;
+    else if (strcmp(registro, "BX") == 0) return 1;
+    else if (strcmp(registro, "CX") == 0) return 1;
+    else if (strcmp(registro, "DX") == 0) return 1;
+    else if (strcmp(registro, "EX") == 0) return 1;
+    else if (strcmp(registro, "FX") == 0) return 1;
+    else if (strcmp(registro, "GX") == 0) return 1;
+    else if (strcmp(registro, "HX") == 0) return 1;
+    return 0;
+}
+
+char *leer_valor_de_memoria(uint32_t direccionFisica, uint32_t tamanio) {
+
+    t_paquete *paquete = crear_paquete_op(READ_MEM);
+    agregar_entero_a_paquete(paquete, direccionFisica);
+    agregar_entero_a_paquete(paquete, contexto->tid);
+    agregar_entero_a_paquete(paquete, tamanio);
+
+    enviar_paquete(paquete, sockets_cpu->socket_cliente);
+    eliminar_paquete(paquete);
+    log_trace(log_cpu, "MOV IV enviado");
+
+    
+    int cod_op = recibir_operacion(sockets_cpu->socket_cliente);
+    switch (cod_op)
+    {
+    case 0:
+        log_error(log_cpu, "Llego codigo operacion 0");
+        break;
+    case READ_MEM:
+        log_info(log_cpu, "Codigo de operacion recibido en cpu : %d", cod_op);
+        
+        char *valor_recibido = recibir_string(sockets_cpu->socket_cliente, log_cpu);
+
+        log_info(log_cpu, "PID: %d - Acción: LEER - Dirección física: %d - Valor: %s",
+                    contexto->tid, direccionFisica, valor_recibido);
+        log_info(log_cpu, "Recibo string :%s", valor_recibido);
+        return valor_recibido;
+        break;
+    default:
+        log_warning(log_cpu, "Llego un codigo de operacion desconocido, %d", cod_op);
+        break;
+    }
+}
+
+void escribir_valor_en_memoria(uint32_t direccionFisica, char *valor, uint32_t tamanio) {
+    t_paquete *paquete = crear_paquete_op(WRITE_MEM);
+    agregar_entero_a_paquete(paquete, direccionFisica);
+    agregar_entero_a_paquete(paquete, contexto->tid);
+    agregar_entero_a_paquete(paquete, tamanio);
+    agregar_a_paquete(paquete, valor, strlen(valor)+1);
+
+    enviar_paquete(paquete, sockets_cpu->socket_cliente);
+    eliminar_paquete(paquete);
+    log_trace(log_cpu, "MOV OUT enviado");
+
+    op_code operacion = recibir_operacion(sockets_cpu->socket_cliente);
+    
+    switch (operacion){
+        case 0:
+            log_error(log_cpu, "Llego código operación 0");
+            break;
+        case WRITE_MEM:
+            log_info(log_cpu, "Código de operación recibido en cpu: %d", operacion);
+            log_info(log_cpu, "Valor escrito en memoria correctamente");
+            log_info(log_cpu, "PID: %d - Acción: ESCRIBIR - Dirección física: %i - Valor: %s",
+                        contexto->tid, tamanio, valor);
+            break;
+        default:
+            log_warning(log_cpu, "Llegó un código de operación desconocido, %i", operacion);
+            break;
+        }
+    
+    int codigo_operaciones = recibir_operacion(sockets_cpu->socket_cliente);
+
+}
 //--FUNIONES EXTRAS
 
-uint32_t obtener_valor_registro(char* parametro){
+uint32_t obtener_valor_registro(char* registro){
     uint32_t valor_registro;
-    if (strcmp(parametro, "AX") == 0) {
+    if (strcmp(registro, "AX") == 0) {
         valor_registro = contexto->registros->AX;
-    } else if (strcmp(parametro, "BX") == 0) {
+    } else if (strcmp(registro, "BX") == 0) {
         valor_registro = contexto->registros->BX;
-    } else if (strcmp(parametro, "CX") == 0) {
+    } else if (strcmp(registro, "CX") == 0) {
         valor_registro = contexto->registros->CX;
-    } else if (strcmp(parametro, "DX") == 0) {
+    } else if (strcmp(registro, "DX") == 0) {
         valor_registro = contexto->registros->DX;
-    } else if (strcmp(parametro, "EX") == 0) {
+    } else if (strcmp(registro, "EX") == 0) {
         valor_registro = contexto->registros->EX;
-    } else if (strcmp(parametro, "FX") == 0) {
+    } else if (strcmp(registro, "FX") == 0) {
         valor_registro = contexto->registros->FX;
-    } else if (strcmp(parametro, "GX") == 0) {
+    } else if (strcmp(registro, "GX") == 0) {
         valor_registro = contexto->registros->GX;
-    } else if (strcmp(parametro, "HX") == 0) {
+    } else if (strcmp(registro, "HX") == 0) {
         valor_registro = contexto->registros->HX;
     }else {
-        printf("Registro desconocido: %s\n", parametro);
+        printf("Registro desconocido: %s\n", registro);
         return 0;
     }
     return valor_registro;
 }
 
 void valor_registro_cpu(char* registro, char* valor) {
-    if (strcmp(registro, "PC") == 0) //no se si este hace falta
+    if (strcmp(registro, "PC") == 0) //no se si este hace falta, como los de base y limite
         contexto->pc = atoi(valor);
     if (strcmp(registro, "AX") == 0)
         contexto->registros->AX = atoi(valor);
@@ -270,35 +342,35 @@ void valor_registro_cpu(char* registro, char* valor) {
         contexto->registros->HX = atoi(valor);
 }
 
-char* encontrarValorDeRegistro(char* register_to_find_value){
+char* encontrarValorDeRegistro(char* registro){
     char* retorno = malloc(12); // Asigna suficiente espacio para el string
     if (retorno == NULL) {
         // Manejo de error en caso de que la asignación de memoria falle
         return NULL;
     }
 
-    if (strcmp(register_to_find_value, "AX") == 0) {
+    if (strcmp(registro, "AX") == 0) {
         sprintf(retorno, "%u", contexto->registros->AX);
         return retorno;
-    } else if (strcmp(register_to_find_value, "BX") == 0) {
+    } else if (strcmp(registro, "BX") == 0) {
         sprintf(retorno, "%u", contexto->registros->BX);
         return retorno;
-    } else if (strcmp(register_to_find_value, "CX") == 0) {
+    } else if (strcmp(registro, "CX") == 0) {
         sprintf(retorno, "%u", contexto->registros->CX);
         return retorno;
-    } else if (strcmp(register_to_find_value, "DX") == 0) {
+    } else if (strcmp(registro, "DX") == 0) {
         sprintf(retorno, "%u", contexto->registros->DX);
         return retorno;
-    } else if (strcmp(register_to_find_value, "EX") == 0) {
+    } else if (strcmp(registro, "EX") == 0) {
         sprintf(retorno, "%u", contexto->registros->EX);
         return retorno;
-    } else if (strcmp(register_to_find_value, "FX") == 0) {
+    } else if (strcmp(registro, "FX") == 0) {
         sprintf(retorno, "%u", contexto->registros->FX);
         return retorno;
-    } else if (strcmp(register_to_find_value, "GX") == 0) {
+    } else if (strcmp(registro, "GX") == 0) {
         sprintf(retorno, "%u", contexto->registros->GX);
         return retorno;
-    } else if (strcmp(register_to_find_value, "HX") == 0) {
+    } else if (strcmp(registro, "HX") == 0) {
         sprintf(retorno, "%u", contexto->registros->HX);
         return retorno;
     }

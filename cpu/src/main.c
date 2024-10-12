@@ -6,9 +6,9 @@ int main(int argc, char** argv) {
     config = config_create("CPU.config");
     leer_config(argv[1]);
 
-    sockets_cpu = hilos_cpu(log, config);
+    sockets_cpu = hilos_cpu(log_cpu, config);
 
-    liberarMemoria(sockets_cpu,log,config);
+    liberarMemoria(sockets_cpu,log_cpu,config);
 
     return 0;
 
