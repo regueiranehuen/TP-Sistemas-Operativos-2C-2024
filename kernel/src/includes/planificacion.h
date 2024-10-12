@@ -7,19 +7,6 @@
 #include <semaphore.h>
 #include "main.h"
 
-typedef enum{
-ENUM_PROCESS_CREATE,
-ENUM_PROCESS_EXIT,
-ENUM_THREAD_CREATE,
-ENUM_THREAD_JOIN,
-ENUM_THREAD_CANCEL,
-ENUM_MUTEX_CREATE,
-ENUM_MUTEX_LOCK,
-ENUM_MUTEX_UNLOCK,
-ENUM_IO,
-ENUM_DUMP_MEMORY,
-ENUM_SEGMENTATION_FAULT
-}syscalls;
 
 t_tcb *fifo_tcb();
 void* funcion_new_ready_procesos(void* void_args);

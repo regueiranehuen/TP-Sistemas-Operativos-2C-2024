@@ -19,10 +19,6 @@ void send_process_create(char* nombreArchivo, int tamProceso, int prioridad, int
     memcpy(buffer->stream + offset, &prioridad, sizeof(int));
 
     send_paquete_syscall(buffer, socket_cliente, syscall);
-
-    // Liberamos el buffer
-    free(buffer->stream);
-    free(buffer);
 }
 
 void send_thread_create(char*nombreArchivo,int tamProceso,int prioridad,int socket_cliente){
@@ -325,6 +321,18 @@ char* recibir_string_paquete_syscall(t_paquete_syscall*paquete){
 }
 
 
+void eliminar_paquete_syscall(t_paquete_syscall*paquete){
+    free(paquete->buffer->stream);
+    free(paquete->buffer);
+    free(paquete);
+}
+
+void eliminar_paquete_code_op(t_paquete_code_operacion*paquete){
+    free(paquete->buffer->stream);
+    free(paquete->buffer);
+    free(paquete);
+}
+
 void send_operacion_tid_pid(code_operacion code, int tid, int pid, int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
 
@@ -354,6 +362,8 @@ void send_operacion_entero(code_operacion code, int entero, int socket_cliente){
     
 }
 
+
+
 void send_operacion_pid(code_operacion code, int pid, int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
 
@@ -367,68 +377,121 @@ void send_operacion_pid(code_operacion code, int pid, int socket_cliente){
     
 }
 
+void send_operacion_pid_tamanio_proceso(code_operacion code, int pid, int tamanio_proceso, int socket_cliente){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
 
-void send_paquete_code_operacion(code_operacion code, t_buffer*buffer, int socket_cliente){
-    t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
-
-    paquete->code = code;
-    paquete->buffer=buffer;
-
-    void*a_enviar=malloc(buffer->size + sizeof(code)+sizeof(int));
     int offset = 0;
 
-    memcpy(a_enviar + offset, &(paquete->code), sizeof(code));
-    offset += sizeof(code);
-    memcpy(a_enviar + offset, paquete->buffer->stream,paquete->buffer->size); 
+    buffer->size = sizeof(int);
 
-    send(socket_cliente,a_enviar,buffer->size + sizeof(code) + sizeof(int),0);
+    buffer->stream = malloc(buffer->size);
 
+    memcpy(buffer->stream, &pid,sizeof(int));
+    offset += sizeof(int);
+    memcpy(buffer->stream,&tamanio_proceso,sizeof(int));
+
+    send_paquete_code_operacion(code,buffer,socket_cliente);
+    
+}
+
+
+void send_paquete_solo_code_operacion(int socket_cliente,code_operacion code,t_paquete_code_operacion*paquete){
+    paquete->code=code;
+    void *a_enviar = malloc(sizeof(paquete->code)); // Solo enviamos la syscall
+    memcpy(a_enviar, &(paquete->code), sizeof(paquete->code));
+
+    send(socket_cliente, a_enviar, sizeof(paquete->code), 0);
+
+    // Liberar la memoria que ya no usamos
     free(a_enviar);
     eliminar_paquete_code_op(paquete);
 }
 
-t_list* recibir_paquete_code_operacion(int socket_cliente){ // Se sabe que se recibe un codigo de operacion, minimo un int (tid/pid) y maximo dos int (pid y tid)
+
+
+void send_paquete_code_operacion(code_operacion code, t_buffer*buffer, int socket_cliente){
     t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
-    t_list*valores = list_create();
-    paquete->buffer = malloc(sizeof(t_buffer));
-    // Primero recibimos el codigo de operacion
-    recv(socket_cliente, &(paquete->code), sizeof(code_operacion), 0);
 
-    // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
-    recv(socket_cliente, &(paquete->buffer->size), sizeof(int), 0);
-    paquete->buffer->stream = malloc(paquete->buffer->size);
-    recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
-
-
-    
-    int offset = 0;
-    while (offset < paquete->buffer->size){
-        int* valor=malloc(sizeof(int));
-        memcpy(valor,paquete->buffer->stream + offset,sizeof(int));
-        offset+=sizeof(int);
-        list_add(valores,valor);
+    if (code == DUMP_MEMORIA){ // Hay que ver si hay otros casos en los que solo se manda el codigo sin buffer
+        send_paquete_solo_code_operacion(socket_cliente,code,paquete);
     }
+    else{
+        paquete->code = code;
+        paquete->buffer = buffer;
+
+        void *a_enviar = malloc(buffer->size + sizeof(code) + sizeof(int));
+        int offset = 0;
+
+        memcpy(a_enviar + offset, &(paquete->code), sizeof(code));
+        offset += sizeof(code);
+        memcpy(a_enviar + offset, paquete->buffer->stream, paquete->buffer->size);
+
+        send(socket_cliente, a_enviar, buffer->size + sizeof(code) + sizeof(int), 0);
+
+        free(a_enviar);
+        eliminar_paquete_code_op(paquete);
+    }    
+}
+
+
+
+t_paquete_code_operacion* recibir_paquete_code_operacion(int socket_cliente){
+    t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
+
+    paquete->buffer=malloc(sizeof(paquete->buffer));
+
+    // Primero recibimos el codigo de operacion
+    int bytes = recv(socket_cliente, &(paquete->code), sizeof(paquete->code), 0);
+
+    if (bytes == 0){
+        return NULL;
+    }
+    else{
+        // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
+        
+        recv(socket_cliente, &(paquete->buffer->size), sizeof(uint32_t), 0);
+        paquete->buffer->stream = malloc(paquete->buffer->size);
+        recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
+        return paquete;
+    }
+}
+
+t_tid_pid* recepcionar_tid_pid_code_op(t_paquete_code_operacion* paquete){
+    t_tid_pid* info = malloc(sizeof(t_tid_pid));
+
+    void* stream = paquete->buffer->stream;
+
+    memcpy(&(info->tid),stream,sizeof(int));
+    stream += sizeof(int);
+    memcpy(&(info->pid), stream,sizeof(int)); // Primer parámetro para la syscall: nombre del archivo
 
     eliminar_paquete_code_op(paquete);
 
-    return valores;
-    
+    return info;
 }
 
+int recepcionar_int_code_op(t_paquete_code_operacion* paquete){
 
-void liberar_conexion(int socket_cliente)
-{
-    close(socket_cliente);
+
+    void* stream = paquete->buffer->stream;
+
+    int valor;
+
+    memcpy(&valor,stream,sizeof(int));
+    eliminar_paquete_code_op(paquete);
+
+    return valor;
 }
 
-void eliminar_paquete_syscall(t_paquete_syscall*paquete){
-    free(paquete->buffer->stream);
-    free(paquete->buffer);
-    free(paquete);
-}
+t_process_create_mem* recepcionar_pid_tamanio(t_paquete_code_operacion* paquete){
+    t_process_create_mem* info = malloc(sizeof(t_process_create_mem));
 
-void eliminar_paquete_code_op(t_paquete_code_operacion*paquete){
-    free(paquete->buffer->stream);
-    free(paquete->buffer);
-    free(paquete);
+    void* stream = paquete->buffer->stream;
+
+    memcpy(&info->pid,stream,sizeof(int));
+    stream+=sizeof(int);
+    memcpy(&info->tamanio_proceso,stream,sizeof(int));
+
+    eliminar_paquete_code_op(paquete);
+    return info;
 }

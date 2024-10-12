@@ -45,18 +45,6 @@ extern sem_t sem_fin_kernel;
 
 extern bool desalojado;
 
-typedef enum{
-    DUMP_MEMORIA,
-    PROCESS_EXIT_AVISO, 
-    PROCESS_CREATE_AVISO,
-    THREAD_CREATE_AVISO,
-    THREAD_ELIMINATE_AVISO,
-    THREAD_EXECUTE_AVISO,
-    THREAD_CANCEL_AVISO,
-    THREAD_INTERRUPT,
-    FIN_QUANTUM_RR,
-}code_operacion;
-
 
 typedef enum {
     TCB_NEW,

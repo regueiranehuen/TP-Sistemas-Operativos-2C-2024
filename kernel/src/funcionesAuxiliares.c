@@ -149,7 +149,7 @@ bool strings_iguales(char*c1,char*c2){
 
 t_cola_prioridad* obtener_cola_con_mayor_prioridad(t_list* colas_hilos_prioridad_ready) {
     if (list_is_empty(colas_hilos_prioridad_ready)) {
-        sem_wait(&sem_multinivel);  // Espera hasta que haya elementos en alguna cola
+        sem_wait(&semaforo_cola_ready);  // Espera hasta que haya elementos en alguna cola
     }
 
     t_cola_prioridad* cola_con_mayor_prioridad = NULL;

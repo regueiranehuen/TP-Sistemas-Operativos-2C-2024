@@ -13,6 +13,7 @@ typedef enum{
     THREAD_CANCEL_AVISO,
     THREAD_INTERRUPT,
     FIN_QUANTUM_RR,
+    OK
 }code_operacion;
 
 typedef enum{
@@ -30,8 +31,9 @@ ENUM_SEGMENTATION_FAULT
 }syscalls;
 
 typedef struct {
-    int size; // Tamaño del payload
-    void* stream; // Payload (todo lo que viene después del codigo de operacion)
+    uint32_t size; // Tamaño del payload
+    uint32_t offset; // Desplazamiento dentro del payload
+    void* stream; // Payload
 } t_buffer;
 
 typedef struct{
@@ -39,14 +41,16 @@ typedef struct{
 	t_buffer*buffer;
 }t_paquete_code_operacion;
 
-
-
 typedef struct
 {
 	syscalls syscall; // Header
 	t_buffer* buffer;
 } t_paquete_syscall;
 
+typedef struct{
+    int tid;
+    int pid;
+}t_tid_pid;
 
 typedef struct{
 	char*nombreArchivo;
@@ -59,8 +63,27 @@ typedef struct{
 	int prioridad;
 }t_thread_create;
 
+typedef struct{
+    int tamanio_proceso;
+    int pid;
+}t_process_create_mem;
 
+void send_process_create(char* nombreArchivo, int tamProceso, int prioridad, int socket_cliente);
+void send_thread_create(char*nombreArchivo,int tamProceso,int prioridad,int socket_cliente);
+void send_process_exit(int socket_cliente);
+void send_thread_join(int tid, int socket_cliente);
+void send_thread_cancel(int tid, int socket_cliente);
+void send_mutex_create(char* recurso, int socket_cliente);
+void send_mutex_lock(char* recurso, int socket_cliente);
+void send_mutex_unlock(char* recurso, int socket_cliente);
+void send_IO(int milisegundos, int socket_cliente);
+void send_dump_memory(int socket_cliente);
 
+void send_paquete_syscall_sin_parametros(int socket_cliente, syscalls syscall, t_paquete_syscall* paquete);
+void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall);
+t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch);
+
+int recibir_entero_buffer(t_paquete_syscall*paquete);
 
 t_process_create* parametros_process_create(t_paquete_syscall*paquete);
 t_thread_create* parametros_thread_create(t_paquete_syscall*paquete);
@@ -69,11 +92,16 @@ char* recibir_string_paquete_syscall(t_paquete_syscall*paquete);
 void send_operacion_tid_pid(code_operacion code, int tid, int pid, int socket_cliente);
 void send_operacion_entero(code_operacion code, int entero, int socket_cliente);
 void send_operacion_pid(code_operacion code, int pid, int socket_cliente);
-void send_paquete_syscall(t_buffer*buffer, int socket_cliente);
+void send_paquete_syscall(t_buffer*buffer, int socket_cliente, syscalls syscall);
 void send_paquete_code_operacion(code_operacion code, t_buffer*buffer, int socket_cliente);
 t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch);
-t_list* recibir_paquete_code_operacion(int socket_cliente);
 void liberar_conexion(int socket_cliente);
+void send_paquete_solo_code_operacion(int socket_cliente,code_operacion code,t_paquete_code_operacion*paquete);
+t_paquete_code_operacion* recibir_paquete_code_operacion(int socket_cliente);
+t_tid_pid* recepcionar_tid_pid_code_op(t_paquete_code_operacion* paquete);
+int recepcionar_int_code_op(t_paquete_code_operacion* paquete);
+t_process_create_mem* recepcionar_pid_tamanio(t_paquete_code_operacion* paquete);
+void send_operacion_pid_tamanio_proceso(code_operacion code, int pid, int tamanio_proceso, int socket_cliente);
 
 void eliminar_paquete_syscall(t_paquete_syscall*paquete);
 void eliminar_paquete_code_op(t_paquete_code_operacion*paquete);

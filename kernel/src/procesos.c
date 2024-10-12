@@ -114,13 +114,12 @@ void proceso_exit()
     int respuesta;
     code_operacion cod_op = PROCESS_EXIT_AVISO;
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
-    send(socket_memoria, &cod_op, sizeof(code_operacion), 0);
-
+    
     pthread_mutex_lock(&mutex_cola_exit_procesos);
     t_pcb *proceso = queue_peek(cola_exit_procesos);
     pthread_mutex_unlock(&mutex_cola_exit_procesos);
 
-    send_pid(proceso->pid,socket_memoria);
+    send_operacion_pid(cod_op,proceso->pid,socket_memoria);
     recv(socket_memoria, &respuesta, sizeof(int), 0);
     close(socket_memoria);
     if (respuesta == -1)
@@ -158,8 +157,7 @@ void hilo_exit()
     t_tcb *hilo = queue_pop(cola_exit);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
 
-    send(socket_memoria, &cod_op, sizeof(int), 0);
-    send_tid(hilo->tid,socket_memoria);
+    send_operacion_entero(cod_op,hilo->tid,socket_memoria);
     close(socket_memoria);
     
     int tam_cola = queue_size(hilo->cola_hilos_bloqueados);
@@ -204,9 +202,9 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
     code_operacion cod_op = PROCESS_CREATE_AVISO;
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
-    int tamanio_proceso = pcb -> tamanio_proceso;
-    send(socket_memoria, &cod_op, sizeof(code_operacion), 0);
-    send(socket_memoria, &tamanio_proceso, sizeof(int),0);
+
+    send_operacion_pid_tamanio_proceso(cod_op,pcb->pid,pcb->tamanio_proceso, socket_memoria);
+
     recv(socket_memoria, &respuesta, sizeof(int), 0);
     close(socket_memoria);
     if (respuesta == -1)
@@ -299,9 +297,11 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
     int resultado = 0;
     code_operacion cod_op = THREAD_CREATE_AVISO;
 
+      t_pcb* pcb = buscar_pcb_por_pid(lista_pcbs,hilo_exec->pid);
+
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
 
-    send(socket_memoria, &cod_op, sizeof(code_operacion), 0);
+    send_operacion_entero(cod_op,pcb->contador_tid , socket_memoria);
     recv(socket_memoria, &resultado, sizeof(int), 0);
     close(socket_memoria);
 
@@ -312,7 +312,6 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
     }
     else
     {
-        t_pcb* pcb = buscar_pcb_por_pid(lista_pcbs,hilo_exec->pid);
         t_tcb *tcb = crear_tcb(pcb);
         tcb->prioridad = prioridad;
         tcb->estado = TCB_READY;
@@ -329,7 +328,7 @@ esta syscall no hace nada y el hilo que la invocó continuará su ejecución.*/
 
 void THREAD_JOIN(int tid)
 {
-    int respuesta;
+
     if (buscar_tcb_por_tid(lista_tcbs,tid) == NULL || buscar_tcb_por_tid(lista_bloqueados, tid) != NULL)
     {
         return;
@@ -339,13 +338,8 @@ void THREAD_JOIN(int tid)
     code_operacion cod_op = THREAD_INTERRUPT;
     pthread_mutex_lock(&mutex_conexion_cpu);
     send(sockets->sockets_cliente_cpu->socket_Interrupt, &cod_op, sizeof(code_operacion), 0);
-    recv(sockets->sockets_cliente_cpu->socket_Interrupt, &respuesta, sizeof(int), 0);
     pthread_mutex_unlock(&mutex_conexion_cpu);
-    if (respuesta == -1)
-    {
-        log_info(logger,"Error en el desalojo del proceso");
-        return;
-    }
+   
     hilo_exec = NULL;
     tcb_aux->estado = TCB_BLOCKED;
     list_add(lista_bloqueados, tcb_aux);
@@ -382,8 +376,7 @@ void THREAD_CANCEL(int tid)
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
 
-    send(socket_memoria, &cod_op, sizeof(code_operacion), 0);
-    send_tid(tcb, socket_memoria);
+    send_operacion_entero(cod_op,tcb->tid, socket_memoria);
     recv(socket_memoria, &respuesta, sizeof(int), 0);
 
     close(socket_memoria);
@@ -580,17 +573,12 @@ void DUMP_MEMORY()
 {
 
     t_tcb *tcb = hilo_exec;
-    int rta_cpu;
+
     code_operacion cod_op = DUMP_MEMORIA;
     pthread_mutex_lock(&mutex_conexion_cpu);
     send(sockets->sockets_cliente_cpu->socket_Interrupt, &cod_op, sizeof(code_operacion), 0);
-    recv(sockets->sockets_cliente_cpu->socket_Interrupt, &rta_cpu, sizeof(int), 0);
     pthread_mutex_unlock(&mutex_conexion_cpu);
-    if (rta_cpu == -1)
-    {
-        log_info(logger, "Error en el desalojo del hilo ");
-        return;
-    }
+
     hilo_exec = NULL;
     tcb->estado = TCB_BLOCKED;
 
@@ -603,10 +591,7 @@ void DUMP_MEMORY()
     int pid = tcb->pid;
     int tid = tcb->tid;
 
-    t_paquete *paquete_dump = crear_paquete();
-    agregar_a_paquete(paquete_dump, &pid, sizeof(int));
-    agregar_a_paquete(paquete_dump, &tid, sizeof(int));
-    enviar_paquete(paquete_dump, socket_memoria);
+    send_operacion_tid_pid(cod_op,tid,pid,socket_memoria);
 
     int rta_memoria;
 
