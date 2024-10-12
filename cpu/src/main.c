@@ -1,9 +1,10 @@
 #include "main.h"
 
-int main(int argc, char* argv[]) {
+int main(int argc, char** argv) {
 
     log_cpu = log_create("CPU.log", "tp", true, LOG_LEVEL_TRACE);
     config = config_create("CPU.config");
+    leer_config(argv[1]);
 
     sockets_cpu = hilos_cpu(log, config);
 
@@ -17,13 +18,6 @@ int main(int argc, char* argv[]) {
 
 
 }
-
-
-
-
-
-
-
 
 void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
 

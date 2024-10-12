@@ -172,7 +172,6 @@ void funcLOG(char* registro) {
     log_info(log_cpu, "LOG: Registro %s = %d", registro, valorRegistro);
 }
 
-
 void funcREAD_MEM(char* registro_datos, char* registro_direccion) {
     log_info(log_cpu, "Instrucción READ_MEM ejecutada");
     
@@ -271,7 +270,7 @@ void valor_registro_cpu(char* registro, char* valor) {
         contexto->registros->HX = atoi(valor);
 }
 
-char* encontrarValorDeRegistro(char* register_to_find_value) {
+char* encontrarValorDeRegistro(char* register_to_find_value){
     char* retorno = malloc(12); // Asigna suficiente espacio para el string
     if (retorno == NULL) {
         // Manejo de error en caso de que la asignación de memoria falle
@@ -302,7 +301,7 @@ char* encontrarValorDeRegistro(char* register_to_find_value) {
     } else if (strcmp(register_to_find_value, "HX") == 0) {
         sprintf(retorno, "%u", contexto->registros->HX);
         return retorno;
-
+    }
     // Manejo del caso en que no se encuentre el registro
     free(retorno);
     return NULL;

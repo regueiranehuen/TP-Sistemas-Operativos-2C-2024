@@ -13,5 +13,7 @@ void funcJNZ(char* registro, char* num_instruccion);
 void funcLOG(char* registro);
 
 uint32_t obtener_valor_registro(char* parametro);
+void valor_registro_cpu(char* registro, char* valor);
+char* encontrarValorDeRegistro(char* register_to_find_value);
 
 #endif

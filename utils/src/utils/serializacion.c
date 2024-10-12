@@ -340,16 +340,8 @@ void agregar_instruccion_a_paquete(t_paquete *paquete, t_instruccion *instruccio
         agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
         agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
     }
-    if (strcmp(instruccion_nueva->parametros1, "MOV_IN") == 0)
-    {
-        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
-    }
-    if (strcmp(instruccion_nueva->parametros1, "MOV_OUT") == 0)
-    {
-        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
-    }
+
+
     if (strcmp(instruccion_nueva->parametros1, "RESIZE") == 0)
     {
         agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
@@ -358,59 +350,6 @@ void agregar_instruccion_a_paquete(t_paquete *paquete, t_instruccion *instruccio
     {
         agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
         agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
-    }
-    if (strcmp(instruccion_nueva->parametros1, "COPY_STRING") == 0)
-    {
-        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
-    }
-    if (strcmp(instruccion_nueva->parametros1, "IO_GEN_SLEEP") == 0)
-    {
-        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
-    }
-    if (strcmp(instruccion_nueva->parametros1, "IO_STDIN_READ") == 0)
-    {
-        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros4, strlen(instruccion_nueva->parametros4) + 1);
-    }
-    if (strcmp(instruccion_nueva->parametros1, "IO_STDOUT_WRITE") == 0)
-    {
-        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros4, strlen(instruccion_nueva->parametros4) + 1);
-    }
-    if (strcmp(instruccion_nueva->parametros1, "IO_FS_CREATE") == 0)
-    {
-        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
-    }
-    if (strcmp(instruccion_nueva->parametros1, "IO_FS_DELETE") == 0)
-    {
-        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
-    }
-    if (strcmp(instruccion_nueva->parametros1, "IO_FS_TRUNCATE") == 0)
-    {
-        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros4, strlen(instruccion_nueva->parametros4) + 1);
-    }
-    if (strcmp(instruccion_nueva->parametros1, "IO_FS_WRITE") == 0)
-    {
-        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros4, strlen(instruccion_nueva->parametros4) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros5, strlen(instruccion_nueva->parametros5) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros6, strlen(instruccion_nueva->parametros6) + 1);
-    }
-    if (strcmp(instruccion_nueva->parametros1, "IO_FS_READ") == 0)
-    {
-        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros4, strlen(instruccion_nueva->parametros4) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros5, strlen(instruccion_nueva->parametros5) + 1);
-        agregar_a_paquete(paquete, instruccion_nueva->parametros6, strlen(instruccion_nueva->parametros6) + 1);
     }
     if (strcmp(instruccion_nueva->parametros1, "WAIT") == 0)
     {
@@ -514,7 +453,12 @@ t_contexto *recibir_contexto(int socket)
     nuevo_contexto->registros->BX = leer_entero_uint8(buffer, &desp);
     nuevo_contexto->registros->CX = leer_entero_uint8(buffer, &desp);
     nuevo_contexto->registros->DX = leer_entero_uint8(buffer, &desp);
-
+    nuevo_contexto->registros->EX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->FX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->GX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->HX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->base = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->limite = leer_entero_uint8(buffer, &desp);
     free(buffer);
     return nuevo_contexto;
 }
@@ -553,6 +497,12 @@ void recibir_string_mas_contexto(int conexion_kernel_cpu_dispatch, t_contexto **
     (*pcb_wait)->registros->BX = leer_entero_uint8(buffer, &desp);
     (*pcb_wait)->registros->CX = leer_entero_uint8(buffer, &desp);
     (*pcb_wait)->registros->DX = leer_entero_uint8(buffer, &desp);
+    (*pcb_wait)->registros->EX = leer_entero_uint8(buffer, &desp);
+    (*pcb_wait)->registros->FX = leer_entero_uint8(buffer, &desp);
+    (*pcb_wait)->registros->GX = leer_entero_uint8(buffer, &desp);
+    (*pcb_wait)->registros->HX = leer_entero_uint8(buffer, &desp);
+    (*pcb_wait)->registros->base = leer_entero_uint8(buffer, &desp);
+    (*pcb_wait)->registros->limite = leer_entero_uint8(buffer, &desp);
 
     free(buffer);
 }
@@ -569,12 +519,19 @@ void recibir_string_mas_u32_con_contexto(int conexion_kernel_cpu_dispatch, char 
     buffer = recibir_buffer(&size, conexion_kernel_cpu_dispatch);
     *palabra = leer_string(buffer, &desp);
     *numero = leer_entero_uint32(buffer, &desp);
+
     (*contexto)->tid = leer_entero_uint32(buffer, &desp);
     (*contexto)->pc = leer_entero_uint32(buffer, &desp);
     (*contexto)->registros->AX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->CX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->DX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->EX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
     free(buffer);
 }
 
@@ -601,12 +558,20 @@ void recibir_2_string_con_contexto(int conexion_kernel_cpu_dispatch, char **pala
     *contexto = malloc(sizeof(t_contexto));
     t_registros_cpu *registros = malloc(sizeof(t_registros_cpu));
     (*contexto)->registros = registros;
+
     (*contexto)->tid = leer_entero_uint32(buffer, &desp);
     (*contexto)->pc = leer_entero_uint32(buffer, &desp);
     (*contexto)->registros->AX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->CX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->DX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->EX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
+    free(buffer);
 }
 
 t_instruccion *recibir_instruccion(int socket)
@@ -779,6 +744,12 @@ void recibir_2_string_mas_u32_con_contexto(int socket, char **palabra1, char **p
     (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->CX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->DX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->EX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
     free(buffer);
 }
 
@@ -803,6 +774,12 @@ t_string_2enteros *recibir_string_2enteros_con_contexto(int socket, t_contexto *
     (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->CX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->DX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->EX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
     free(buffer);
 
     return devolver;
@@ -829,5 +806,11 @@ void recibir_2_string_mas_3_u32_con_contexto(int socket, char **palabra1, char *
     (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->CX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->DX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->EX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
+    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
     free(buffer);
 }

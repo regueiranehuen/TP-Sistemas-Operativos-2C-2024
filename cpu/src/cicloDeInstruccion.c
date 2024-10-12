@@ -90,7 +90,6 @@ op_code decode(t_instruccion *instruccion){
 
 }
 
-
 void execute(op_code instruccion_nombre, t_instruccion* instruccion){
     switch (instruccion_nombre) {
         case SET:

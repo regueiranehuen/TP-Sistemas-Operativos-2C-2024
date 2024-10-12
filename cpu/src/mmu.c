@@ -41,7 +41,6 @@ void actualizar_contexto_en_memoria(t_contexto *contexto) {
 void notificar_kernel_terminacion(int tid, int razon_salida) {
     t_paquete *paquete = crear_paquete_op(TERMINACION_PROCESO);
     
-
     agregar_entero_a_paquete(paquete, tid);
     agregar_entero_a_paquete(paquete, razon_salida);
     
