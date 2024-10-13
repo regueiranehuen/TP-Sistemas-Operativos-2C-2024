@@ -1,9 +1,10 @@
-#include "commCpu.h"
+#include "includes/commCpu.h"
 
 void recibir_cpu(int SOCKET_CLIENTE_CPU) {
+    int retardo_respuesta = config_get_int_value(config,"RETARDO_RESPUESTA");
     int codigoOperacion = 0;
     while (codigoOperacion != -1) {
-        int codOperacion = recibir_operacion(SOCKET_CLIENTE_CPU);
+        op_code codOperacion = recibir_operacion(SOCKET_CLIENTE_CPU);
         usleep(retardo_respuesta * 1000);  // Aplicar retardo configurado
 
         switch (codOperacion) {
@@ -15,7 +16,7 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
 
                 t_contexto *contexto = obtener_contexto(pid, tid);
                 enviar_contexto(SOCKET_CLIENTE_CPU, contexto, OBTENER_CONTEXTO);
-                log_info(log_memoria, "Enviado contexto para PID: %d, TID: %d", pid, tid);
+                log_info(logger, "Enviado contexto para PID: %d, TID: %d", pid, tid);
                 free(contexto);
                 break;
             }
@@ -24,7 +25,7 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
                 t_contexto *contexto = recibir_contexto(SOCKET_CLIENTE_CPU);  // Recibe nuevo contexto
                 actualizar_contexto(contexto);
                 enviar_codop(SOCKET_CLIENTE_CPU, ACTUALIZACION_OK);
-                log_info(log_memoria, "Contexto actualizado para TID: %d", contexto->tid);
+                log_info(logger, "Contexto actualizado para TID: %d", contexto->tid);
                 free(contexto);
                 break;
             }
@@ -37,7 +38,7 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
 
                 char *instruccion = obtener_instruccion(tid, pc);
                 enviar_instruccion(SOCKET_CLIENTE_CPU, instruccion, OBTENER_INSTRUCCION);
-                log_info(log_memoria, "Instrucción enviada para PID: %d, PC: %d", tid, pc);
+                log_info(logger, "Instrucción enviada para PID: %d, PC: %d", tid, pc);
                 free(instruccion);
                 break;
             }
@@ -51,7 +52,7 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
                 void *datos = malloc(tam_a_leer);
                 memcpy(datos, ESPACIO_USUARIO + direccion_fisica, tam_a_leer);
                 enviar_datos(SOCKET_CLIENTE_CPU, datos, tam_a_leer);
-                log_info(log_memoria, "Memoria leída desde %d, tamaño %d", direccion_fisica, tam_a_leer);
+                log_info(logger, "Memoria leída desde %d, tamaño %d", direccion_fisica, tam_a_leer);
                 free(datos);
                 break;
             }
@@ -64,17 +65,17 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
 
                 memcpy(ESPACIO_USUARIO + direccion_fisica, contenido, tam_a_escribir);
                 enviar_codop(SOCKET_CLIENTE_CPU, WRITE_OK);
-                log_info(log_memoria, "Escritos %d bytes en dirección %d", tam_a_escribir, direccion_fisica);
+                log_info(logger, "Escritos %d bytes en dirección %d", tam_a_escribir, direccion_fisica);
                 free(escritura);
                 break;
             }
 
-            case -1:
+            case 1:
                 codigoOperacion = codOperacion;
                 break;
 
             default:
-                log_warning(log_memoria, "Operación desconocida recibida: %d", codOperacion);
+                log_warning(logger, "Operación desconocida recibida: %d", codOperacion);
                 break;
         }
     }

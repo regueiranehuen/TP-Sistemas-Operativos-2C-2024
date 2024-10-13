@@ -1,4 +1,4 @@
-#include "memSist.h"
+#include "includes/memSist.h"
 
 void cargar_instrucciones_desde_archivo(char* nombre_archivo,  uint32_t pid) {
     FILE* archivo = fopen(nombre_archivo, "r");

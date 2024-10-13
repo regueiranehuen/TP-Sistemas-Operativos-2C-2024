@@ -300,7 +300,17 @@ t_thread_create* parametros_thread_create(t_paquete_syscall*paquete){
 
 }
 
+int recibir_entero_paquete_syscall(t_paquete_syscall* paquete){
 
+void* stream = paquete->buffer->stream;
+
+int valor;
+
+memcpy(&valor,stream,sizeof(int));
+eliminar_paquete_syscall(paquete);
+
+return valor;
+}
 
 char* recibir_string_paquete_syscall(t_paquete_syscall*paquete){
 

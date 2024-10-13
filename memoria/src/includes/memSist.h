@@ -2,6 +2,7 @@
 #define MEMSIST_H
 
 #include "server.h"
+#include "utils/includes/estructuras.h"
 
 //Variables
 int longitud_maxima=200;

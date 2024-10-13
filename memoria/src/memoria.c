@@ -3,7 +3,6 @@
 
 void atender_conexiones(int socket_cliente){
 
-code_operacion cod_op;
 code_operacion respuesta;
 while(estado_cpu != 0){
 t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(socket_cliente);

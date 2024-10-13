@@ -1,7 +1,8 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include "utils/sockets.h"
+#include "utils/includes/sockets.h"
+#include "utils/includes/estructuras.h"
 #include <pthread.h>
 #include <stdint.h>
 

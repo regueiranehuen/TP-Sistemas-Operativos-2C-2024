@@ -2,6 +2,7 @@
 #define CICLODEINSTRUCCION_H
 
 #include "server.h"
+#include "utils/includes/estructuras.h"
 
 extern t_instruccion instruccion;
 extern bool seguir_ejecutando;
