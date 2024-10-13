@@ -21,23 +21,7 @@
 #include<commons/config.h>
 #include <errno.h>
 #include <pthread.h>
-typedef enum
-{
-	MENSAJE,
-	PAQUETE
-}op_code;
-
-typedef struct
-{
-	int size;
-	void* stream;
-} t_buffer;
-
-typedef struct
-{
-	op_code codigo_operacion;
-	t_buffer* buffer;
-} t_paquete;
+#include <time.h>
 
 typedef struct{
 t_log* log;

@@ -1,8 +1,12 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include "memoria.h"
 #include <utils/includes/sockets.h>
 #include <commons/config.h>
+#include <semaphore.h>
+
+extern sem_t sem_conexion_hecha;
 
 typedef struct{
     int socket_servidor;

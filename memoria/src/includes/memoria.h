@@ -1,0 +1,11 @@
+#ifndef MEMORIA_H
+#define MEMORIA_H
+
+#include <utils/includes/sockets.h>
+#include "utils/includes/serializacion.h"
+#include <commons/config.h>
+#include "main.h"
+
+void atender_conexiones(int socket_cliente);
+
+#endif
