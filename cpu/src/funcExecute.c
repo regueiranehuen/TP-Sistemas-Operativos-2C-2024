@@ -182,8 +182,7 @@ void funcREAD_MEM(char* registro_datos, char* registro_direccion) {
     if (direccionFisica >= 0) {
         // Leer el valor desde la memoria en esa dirección física
         int tamanio_bytes = tamanio_registro(registro_datos);
-        uint32_t valorMemoria = leer_valor_de_memoria(direccionFisica, tamanio_bytes);
-        
+        uint32_t valorMemoria = leer_valor_de_memoria(direccionFisica, tamanio_bytes); // char o int?
         // Almacenar el valor leído en el registro de datos
         char buffer[20];
         sprintf(buffer, "%d", valorMemoria);
@@ -208,8 +207,8 @@ void funcWRITE_MEM(char* registro_direccion, char* registro_datos) {
     if (direccionFisica >= 0) {
         // Obtener el valor del registro de datos
         uint32_t tamanio_bytes = tamanio_registro(registro_datos);
-        uint32_t valor = obtener_valor_registro(registro_datos);
-        escribir_valor_en_memoria(direccionFisica, valor, tamanio_bytes);
+        uint32_t valor = obtener_valor_registro(registro_datos); // char o int?!
+        escribir_valor_en_memoria(direccionFisica, valor, tamanio_bytes); // char o int?!
         
         log_info(log_cpu, "TID: %d - Acción: ESCRIBIR - Dirección Física: %d - Valor escrito: %s", contexto->tid, direccionFisica, valor);
     } else {
@@ -259,8 +258,9 @@ char *leer_valor_de_memoria(uint32_t direccionFisica, uint32_t tamanio) {
         break;
     default:
         log_warning(log_cpu, "Llego un codigo de operacion desconocido, %d", cod_op);
-        break;
+        return NULL; //
     }
+    return NULL; //
 }
 
 void escribir_valor_en_memoria(uint32_t direccionFisica, char *valor, uint32_t tamanio) {
@@ -291,7 +291,7 @@ void escribir_valor_en_memoria(uint32_t direccionFisica, char *valor, uint32_t t
             break;
         }
     
-    int codigo_operaciones = recibir_operacion(sockets_cpu->socket_cliente);
+    int codigo_operaciones = recibir_operacion(sockets_cpu->socket_cliente); // se va a usar para algo esta variable?
 
 }
 //--FUNIONES EXTRAS

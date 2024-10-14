@@ -80,5 +80,5 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
         }
     }
 
-    log_warning(log_memoria, "Se desconectó la CPU");
+    log_warning(logger, "Se desconectó la CPU");
 }

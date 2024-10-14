@@ -137,8 +137,6 @@ void IO(int milisegundos);
 
 void DUMP_MEMORY();
 
-void espera_con_quantum(int quantum);
-void ejecucion(t_tcb*hilo);
-void pushear_cola_ready(t_tcb* hilo);
+
 
 #endif

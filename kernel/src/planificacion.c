@@ -297,3 +297,102 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
 
     pthread_detach(hilo_ready_exec);
 }
+
+/*Ejecución
+Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC y se enviará al módulo CPU el TID y su PID 
+asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
+En caso que el algoritmo requiera desalojar al hilo en ejecución, se enviará una interrupción a través de la conexión de interrupt para forzar el desalojo del mismo.
+Al recibir el TID del hilo en ejecución, en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique 
+el algoritmo. Durante este período la CPU se quedará esperando.
+*/
+
+void espera_con_quantum(int quantum) {
+    desalojado = false;
+    fd_set read_fds;
+    struct timeval timeout;
+
+    // Establecer el tiempo de espera
+    timeout.tv_sec = quantum / 1000; // Convertir a segundos
+    timeout.tv_usec = (quantum % 1000) * 1000; // Convertir a microsegundos
+
+    // Inicializar el conjunto de descriptores
+    FD_ZERO(&read_fds);
+    FD_SET(sockets->sockets_cliente_cpu->socket_Dispatch, &read_fds); // Añadir el socket de la CPU
+
+    // Realizar la espera una vez, no en un bucle
+
+    while(desalojado == false){//se vuelve false cuando se acaba el quantum o hay syscall de finalización o bloqueante
+    int resultado = select(sockets->sockets_cliente_cpu->socket_Dispatch + 1, &read_fds, NULL, NULL, &timeout);
+
+    if (resultado == -1) {
+        perror("Error en select");
+    
+    } else if (resultado == 0) { //pasa el tiempo de quantum, desalojo. 
+        code_operacion cod_op = FIN_QUANTUM_RR;
+        pthread_mutex_lock(&mutex_conexion_cpu);
+        send(sockets->sockets_cliente_cpu->socket_Interrupt,&cod_op,sizeof(code_operacion),0);
+        pthread_mutex_unlock(&mutex_conexion_cpu);
+        t_tcb* hilo = hilo_exec;
+        hilo->estado = TCB_READY;
+        pushear_cola_ready(hilo);
+        desalojado = true;
+        sem_post(&sem_desalojado);
+    } else {// se atiende la syscall recibida
+        // Hay datos disponibles en el socket
+        atender_syscall();
+    }
+    }
+}
+
+
+void pushear_cola_ready(t_tcb* hilo){
+    char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
+    
+    if (strcmp(planificacion, "FIFO") == 0){
+        pthread_mutex_lock(&mutex_cola_ready);
+        queue_push(cola_ready_fifo, hilo);
+        pthread_mutex_unlock(&mutex_cola_ready);
+
+    } else if(strcmp(planificacion,"PRIORIDADES")==0)
+    {
+        pthread_mutex_lock(&mutex_cola_ready);
+        list_add(lista_ready_prioridad,hilo);
+        pthread_mutex_unlock(&mutex_cola_ready);
+        sem_post(&sem_lista_prioridades);
+    }
+    if (strcmp(planificacion, "MULTINIVEL") == 0)
+    {
+        pthread_mutex_lock(&mutex_cola_ready);
+        t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, hilo->prioridad);
+        pthread_mutex_unlock(&mutex_cola_ready);
+        queue_push(cola->cola, hilo);
+    }
+    sem_post(&semaforo_cola_ready);
+}
+
+
+void ejecucion(t_tcb *hilo)
+{
+
+code_operacion cod_op = THREAD_EXECUTE_AVISO;
+
+pthread_mutex_lock(&mutex_conexion_cpu);
+send_operacion_tid_pid(cod_op, hilo->tid, hilo->pid, sockets->sockets_cliente_cpu->socket_Dispatch);
+pthread_mutex_unlock(&mutex_conexion_cpu);
+
+    char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
+
+if(strcmp(algoritmo,"MULTINIVEL")==0){
+    char* quantum_char = config_get_string_value(config,"QUANTUM");
+    int quantum = atoi(quantum_char);
+    espera_con_quantum(quantum);
+}
+else{
+    desalojado = false;
+    while(desalojado == false){
+    atender_syscall();
+
+    }
+}
+
+}

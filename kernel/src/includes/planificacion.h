@@ -27,4 +27,9 @@ void* ordenamiento_continuo(void* void_args);
 void planificador_corto_plazo() ;
 void *hilo_planificador_corto_plazo(void *arg);
 void *funcion_manejo_procesos(void *arg);
+
+void espera_con_quantum(int quantum);
+void ejecucion(t_tcb*hilo);
+void pushear_cola_ready(t_tcb* hilo);
+
 #endif
