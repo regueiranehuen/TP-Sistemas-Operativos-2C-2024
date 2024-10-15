@@ -26,6 +26,33 @@
 #include <arpa/inet.h>
 #include "serializacion.h"
 
+
+
+
+
+/*typedef struct{
+    int pid;
+    t_list*contextos_tids;
+    uint32_t base;
+    uint32_t limite;
+}t_contexto_pid;
+
+
+typedef struct{
+    int tid;
+    uint32_t AX;
+    uint32_t BX;
+    uint32_t CX;
+    uint32_t DX;
+	uint32_t EX;
+    uint32_t FX;
+    uint32_t GX;
+    uint32_t HX;
+}t_contexto_tid;*/
+
+
+
+
 typedef struct{
     uint32_t AX;
     uint32_t BX;
@@ -122,7 +149,6 @@ typedef enum
     //INSTRUCCION FINALIZADA
     PEDIR_TAM_MEMORIA,
     TAMANIO_RECIBIDO,
-    ACTUALIZAR_CONTEXTO_MEMORIA,
     TERMINACION_PROCESO,
     OBTENER_CONTEXTO,
     ACTUALIZAR_CONTEXTO,
@@ -211,7 +237,7 @@ void eliminar_paquete(t_paquete* paquete);
 void eliminar_codigo(t_paquete* codop);
 void liberar_conexion(int socket_cliente);
 t_config* iniciar_config(char *ruta);
-char* obtener_instruccion(uint32_t pid, uint32_t pc);
+char* obtener_instruccion(uint32_t tid, uint32_t pc); // Antes decía pid en vez de tid. No está hecha la función
 
 
 

@@ -23,7 +23,7 @@ uint32_t traducir_direccion_logica(uint32_t direccion_logica) {
 }
 
 void actualizar_contexto_en_memoria(t_contexto *contexto) {
-    t_paquete *paquete = crear_paquete_op(ACTUALIZAR_CONTEXTO_MEMORIA);
+    t_paquete *paquete = crear_paquete_op(ACTUALIZAR_CONTEXTO);
     
     agregar_entero_a_paquete(paquete, contexto->tid);
     agregar_entero_a_paquete(paquete, pcb_salida->motivo);

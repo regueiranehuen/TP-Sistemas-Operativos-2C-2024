@@ -14,4 +14,5 @@ void pedir_instruccion_memoria(uint32_t tid, uint32_t pc, t_log *logg);
 op_code decode(t_instruccion *instruccion);
 void execute(op_code instruccion_nombre, t_instruccion* instruccion);
 void checkInterrupt(uint32_t tid);
+void analizar_terminacion(void);
 #endif

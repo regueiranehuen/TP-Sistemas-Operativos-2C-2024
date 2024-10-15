@@ -517,3 +517,14 @@ t_process_create_mem* recepcionar_pid_tamanio(t_paquete_code_operacion* paquete)
     eliminar_paquete_code_op(paquete);
     return info;
 }
+
+void send_code_operacion(code_operacion code, int socket_cliente){
+    send(socket_cliente,&code,sizeof(int),0);
+}
+
+
+code_operacion recibir_code_operacion(int socket_cliente){
+    code_operacion code;
+    recv(socket_cliente,&code,sizeof(int),0);
+    return code;
+}

@@ -110,4 +110,7 @@ void eliminar_paquete_syscall(t_paquete_syscall*paquete);
 void eliminar_paquete_code_op(t_paquete_code_operacion*paquete);
 void send_thread_exit(int socket_cliente);
 
+code_operacion recibir_code_operacion(int socket_cliente);
+void send_code_operacion(code_operacion code, int socket_cliente);
+
 #endif

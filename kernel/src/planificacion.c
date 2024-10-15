@@ -124,7 +124,8 @@ void atender_syscall()//recibir un paquete con un codigo de operacion, entrar al
 
         case ENUM_PROCESS_CREATE:
             t_process_create* paramProcessCreate= parametros_process_create(paquete);
-            PROCESS_CREATE(paramProcessCreate->nombreArchivo,paramProcessCreate->tamProceso,paramProcessCreate->prioridad);            
+            PROCESS_CREATE(paramProcessCreate->nombreArchivo,paramProcessCreate->tamProceso,paramProcessCreate->prioridad);   
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);         
             break;
         case ENUM_PROCESS_EXIT:
             PROCESS_EXIT();
@@ -133,40 +134,44 @@ void atender_syscall()//recibir un paquete con un codigo de operacion, entrar al
         case ENUM_THREAD_CREATE:
             t_thread_create* paramThreadCreate = parametros_thread_create(paquete);
             THREAD_CREATE(paramThreadCreate->nombreArchivo,paramThreadCreate->prioridad); 
-            
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
             break;
         case ENUM_THREAD_JOIN:
             int tid_thread_join = recibir_entero_paquete_syscall(paquete);
             THREAD_JOIN(tid_thread_join);
-            
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
             break;
         case ENUM_THREAD_CANCEL:
             int tid_thread_cancel = recibir_entero_paquete_syscall(paquete);
             THREAD_CANCEL(tid_thread_cancel);
-            
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
             break;
         case ENUM_MUTEX_CREATE:
             char* recurso = recibir_string_paquete_syscall(paquete);
             MUTEX_CREATE(recurso);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
             break;
         case ENUM_MUTEX_LOCK:
             char*recurso_a_bloquear = recibir_string_paquete_syscall(paquete);
-            MUTEX_LOCK(recurso_a_bloquear);            
+            MUTEX_LOCK(recurso_a_bloquear);  
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);             
             break;
         case ENUM_MUTEX_UNLOCK:
             char*recurso_a_desbloquear = recibir_string_paquete_syscall(paquete);
             MUTEX_UNLOCK(recurso_a_desbloquear);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
             break;
         case ENUM_IO:
             int milisegundos = recibir_entero_paquete_syscall(paquete);
             IO(milisegundos);
-            
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
             break;
         case ENUM_DUMP_MEMORY:
             DUMP_MEMORY();
-            
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
             break;
         case ENUM_SEGMENTATION_FAULT:
+            send_code_operacion(TERMINAR,sockets->sockets_cliente_cpu->socket_Interrupt); // ???  
             break;
         default:
             printf("Syscall no válida.\n");

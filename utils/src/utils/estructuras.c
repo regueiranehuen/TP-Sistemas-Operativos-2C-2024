@@ -448,9 +448,7 @@ t_contexto *recibir_contexto(int socket)
 
     buffer = recibir_buffer(&size, socket);
 
-    // El tid lo envía el kernel por el puerto de dispatch
     nuevo_contexto->tid = leer_entero_uint32(buffer,&desp);
-    //nuevo_contexto->tid = leer_entero_uint32(buffer, &desp);
     nuevo_contexto->pc = leer_entero_uint32(buffer, &desp);
     nuevo_contexto->registros->AX = leer_entero_uint8(buffer, &desp);
     nuevo_contexto->registros->BX = leer_entero_uint8(buffer, &desp);

@@ -126,46 +126,57 @@ void execute(op_code instruccion_nombre, t_instruccion* instruccion){
         case DUMP_MEMORY:
             log_info(log_cpu, "INSTRUCCION :%s ", instruccion->parametros1);
             send_dump_memory(sockets_cpu->socket_servidor->socket_Interrupt);
+            analizar_terminacion();
             break;
         case IO:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s ", instruccion->parametros1,instruccion->parametros2);
             send_IO(atoi(instruccion->parametros2),sockets_cpu->socket_servidor->socket_Interrupt);
+            analizar_terminacion();
             break;
         case PROCESS_CREATE:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s - PARAMETRO 3: %s", instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4);
             send_process_create(instruccion->parametros2,atoi(instruccion->parametros3),atoi(instruccion->parametros4),sockets_cpu->socket_servidor->socket_Interrupt);
+            analizar_terminacion();
             break;
         case THREAD_CREATE:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1,instruccion->parametros2,instruccion->parametros3);
             send_thread_create(instruccion->parametros2,atoi(instruccion->parametros3),sockets_cpu->socket_servidor->socket_Interrupt);
+            analizar_terminacion();
             break;
         case THREAD_JOIN:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s ", instruccion->parametros1,instruccion->parametros2);
             send_thread_join(atoi(instruccion->parametros2),sockets_cpu->socket_servidor->socket_Interrupt);
+            analizar_terminacion();
             break;
         case THREAD_CANCEL:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s ", instruccion->parametros1,instruccion->parametros2);
             send_thread_cancel(atoi(instruccion->parametros2),sockets_cpu->socket_servidor->socket_Interrupt);
+            analizar_terminacion();
             break;
         case MUTEX_CREATE:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s ", instruccion->parametros1,instruccion->parametros2);
             send_mutex_create(instruccion->parametros2,sockets_cpu->socket_servidor->socket_Interrupt);
+            analizar_terminacion();
             break;
         case MUTEX_LOCK:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s ", instruccion->parametros1,instruccion->parametros2);
             send_mutex_lock(instruccion->parametros2,sockets_cpu->socket_servidor->socket_Interrupt);
+            analizar_terminacion();
             break;
         case MUTEX_UNLOCK:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s ", instruccion->parametros1,instruccion->parametros2);
             send_mutex_unlock(instruccion->parametros2,sockets_cpu->socket_servidor->socket_Interrupt);
+            analizar_terminacion();
             break;
         case THREAD_EXIT:
             log_info(log_cpu, "INSTRUCCION :%s ", instruccion->parametros1);
             send_thread_exit(sockets_cpu->socket_servidor->socket_Interrupt);
+            analizar_terminacion();
             break;
         case PROCESS_EXIT:
             log_info(log_cpu, "INSTRUCCION :%s ", instruccion->parametros1);
             send_process_exit(sockets_cpu->socket_servidor->socket_Interrupt);
+            analizar_terminacion();
             break;
         default:
             log_info(log_cpu, "Instrucción desconocida\n");
@@ -174,6 +185,13 @@ void execute(op_code instruccion_nombre, t_instruccion* instruccion){
 
     
 }
+
+void analizar_terminacion(void){
+    code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Interrupt);
+    if (code == TERMINAR)
+        seguir_ejecutando=false;
+}
+
 
 void checkInterrupt(uint32_t tid){
     if (hay_interrupcion){
