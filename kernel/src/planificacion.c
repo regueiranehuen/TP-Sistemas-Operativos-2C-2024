@@ -117,7 +117,7 @@ void atender_syscall()//recibir un paquete con un codigo de operacion, entrar al
 {
 
         pthread_mutex_lock(&mutex_conexion_cpu);
-        t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch);
+        t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Interrupt); // CAMBIO ACÁ: ME PARECE QUE LAS SYSCALLS SE RECIBE POR PUERTO INTERRUPT
         pthread_mutex_unlock(&mutex_conexion_cpu);
          switch (paquete->syscall)
         {

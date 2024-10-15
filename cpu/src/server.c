@@ -2,7 +2,7 @@
 
 t_log* log_cpu = NULL;
 t_config* config = NULL;
-t_sockets_cpu* sockets_cpu = NULL;
+t_sockets_cpu* sockets_cpu = NULL; // ¿
 t_contexto* contexto = NULL;
 t_pcb_exit* pcb_salida = NULL;
 
@@ -16,7 +16,7 @@ int socket_servidor_Dispatch = 0, socket_servidor_Interrupt = 0;
 int socket_cliente_Dispatch = 0, socket_cliente_Interrupt = 0;
 int respuesta_Dispatch = 0, respuesta_Interrupt = 0;
 
-t_socket_cpu* sockets = NULL;
+t_socket_cpu* sockets = NULL; // ?
 
 pthread_t hilo_servidor;
 pthread_t hilo_cliente;

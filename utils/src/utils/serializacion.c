@@ -21,7 +21,7 @@ void send_process_create(char* nombreArchivo, int tamProceso, int prioridad, int
     send_paquete_syscall(buffer, socket_cliente, syscall);
 }
 
-void send_thread_create(char*nombreArchivo,int tamProceso,int prioridad,int socket_cliente){
+void send_thread_create(char*nombreArchivo,int prioridad,int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
 
     syscalls syscall = ENUM_THREAD_CREATE;
@@ -168,6 +168,18 @@ syscalls syscall = ENUM_DUMP_MEMORY;
 send_paquete_syscall(buffer,socket_cliente,syscall);
 
 }
+
+void send_thread_exit(int socket_cliente){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
+
+    buffer->size = 0;
+
+syscalls syscall = ENUM_THREAD_EXIT;
+
+send_paquete_syscall(buffer,socket_cliente,syscall);
+
+}
+
 
 void send_paquete_syscall_sin_parametros(int socket_cliente, syscalls syscall, t_paquete_syscall* paquete) {
     paquete->syscall = syscall;

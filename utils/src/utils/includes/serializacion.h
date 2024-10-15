@@ -24,6 +24,7 @@ ENUM_PROCESS_EXIT,
 ENUM_THREAD_CREATE,
 ENUM_THREAD_JOIN,
 ENUM_THREAD_CANCEL,
+ENUM_THREAD_EXIT, // Faltaba este
 ENUM_MUTEX_CREATE,
 ENUM_MUTEX_LOCK,
 ENUM_MUTEX_UNLOCK,
@@ -71,7 +72,7 @@ typedef struct{
 }t_process_create_mem;
 
 void send_process_create(char* nombreArchivo, int tamProceso, int prioridad, int socket_cliente);
-void send_thread_create(char*nombreArchivo,int tamProceso,int prioridad,int socket_cliente);
+void send_thread_create(char*nombreArchivo,int prioridad,int socket_cliente);
 void send_process_exit(int socket_cliente);
 void send_thread_join(int tid, int socket_cliente);
 void send_thread_cancel(int tid, int socket_cliente);
@@ -107,5 +108,6 @@ void send_operacion_pid_tamanio_proceso(code_operacion code, int pid, int tamani
 
 void eliminar_paquete_syscall(t_paquete_syscall*paquete);
 void eliminar_paquete_code_op(t_paquete_code_operacion*paquete);
+void send_thread_exit(int socket_cliente);
 
 #endif
