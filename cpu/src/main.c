@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
 
 void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
 
-    if (sockets == NULL || sockets->socket_cliente == -1 ||
+    if (sockets == NULL || sockets->socket_memoria == -1 ||
         sockets->socket_servidor == NULL || 
         sockets->socket_servidor->socket_Dispatch == -1 || 
         sockets->socket_servidor->socket_Interrupt == -1) {
@@ -29,7 +29,7 @@ void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
         log_info(log, "Error en los sockets de cpu");
         }
         else{
-    close(sockets->socket_cliente);
+    close(sockets->socket_memoria);
     close(sockets->socket_servidor->socket_Dispatch);
     close(sockets->socket_servidor->socket_Interrupt);
     }

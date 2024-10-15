@@ -4,6 +4,8 @@
 #include "sockets.h"
 
 typedef enum{
+    TERMINAR=-1, /////
+
     DUMP_MEMORIA,
     PROCESS_EXIT_AVISO, 
     PROCESS_CREATE_AVISO,

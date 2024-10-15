@@ -173,7 +173,7 @@ t_sockets_cpu* hilos_cpu(t_log* log, t_config* config) {
     pthread_join(hilo_cliente, &socket_cliente_memoria);
 
     sockets_cpu->socket_servidor = (t_socket_cpu*)socket_servidor_kernel;
-    sockets_cpu->socket_cliente = (intptr_t)socket_cliente_memoria;
+    sockets_cpu->socket_memoria = (intptr_t)socket_cliente_memoria;
 
     free(args);
     return sockets_cpu;
@@ -185,9 +185,13 @@ void recibir_kernel_interrupt(int socket_cliente_Interrupt) {
 
     int noFinalizar = 0;
     while (noFinalizar != -1) {
-        int codOperacion = recibir_operacion(socket_cliente_Interrupt);
-        switch (codOperacion) {
+
+        t_paquete_code_operacion* paquete=recibir_paquete_code_operacion(socket_cliente_Interrupt); 
+
+        //int codOperacion = recibir_operacion(socket_cliente_Interrupt); ///////////
+        /*switch (codOperacion) {
             case INTERRUPCION_USUARIO:
+                //recibir_
                 tid_interrupt = recibir_entero_uint32(socket_cliente_Interrupt, log_cpu);
                 hay_interrupcion = 1;
                 es_por_usuario = 1;
@@ -197,6 +201,21 @@ void recibir_kernel_interrupt(int socket_cliente_Interrupt) {
                 break;
             default:
                 break;
+        }*/
+
+        if (es_interrupcion_usuario(paquete->code)){ // No entiendo a qué se refieren con interrupción de usuario
+            tid_interrupt = recepcionar_int_code_op(paquete); // Hay que ver si hay algun problema igualando uint_32 con int
+            hay_interrupcion = 1;
+            es_por_usuario = 1;
         }
+        else if (paquete->code == TERMINAR){
+            noFinalizar=-1;
+        }
+
     }
 }
+
+bool es_interrupcion_usuario(code_operacion code){
+    return (code == DUMP_MEMORIA || code == FIN_QUANTUM_RR || code == THREAD_INTERRUPT);
+}
+

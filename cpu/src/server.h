@@ -13,7 +13,7 @@ typedef struct {
 } t_socket_cpu;
 
 typedef struct {
-    int socket_cliente;      // Conexión al cliente (Memoria)
+    int socket_memoria;      // Conexión al cliente (Memoria). NOMBRE CAMBIADO: DE socket_cliente A socket_memoria
     t_socket_cpu* socket_servidor;  // Conexión al Kernel (Dispatch e Interrupt)
 } t_sockets_cpu;
 
@@ -58,5 +58,6 @@ t_sockets_cpu* hilos_cpu(t_log* log, t_config* config);
 void recibir_kernel_dispatch(int socket_cliente_Dispatch);
 void recibir_kernel_interrupt(int socket_cliente_Interrupt);
 void ejecutar_ciclo_de_instruccion(t_log* log);
+bool es_interrupcion_usuario(code_operacion code);
 
 #endif  // SERVER_H

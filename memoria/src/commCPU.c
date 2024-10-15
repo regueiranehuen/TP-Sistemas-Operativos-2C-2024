@@ -23,7 +23,8 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
 
             case ACTUALIZAR_CONTEXTO: {
                 t_contexto *contexto = recibir_contexto(SOCKET_CLIENTE_CPU);  // Recibe nuevo contexto
-                actualizar_contexto(contexto);
+                actualizar_contexto(contexto); // Falta crear esta funcion? O se usa actualizar_contexto_en_memoria???
+                // actualizar_contexto_en_memoria(contexto);
                 enviar_codop(SOCKET_CLIENTE_CPU, ACTUALIZACION_OK);
                 log_info(logger, "Contexto actualizado para TID: %d", contexto->tid);
                 free(contexto);
@@ -58,7 +59,7 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
             }
 
             case WRITE_MEM: {
-                t_string_2enteros *escritura = recibir_string_2_enteros(SOCKET_CLIENTE_CPU);
+                t_string_2enteros *escritura = recibir_string_2enteros(SOCKET_CLIENTE_CPU); // estaba mal nombrada la función acá
                 uint32_t direccion_fisica = escritura->entero1;
                 uint32_t tam_a_escribir = escritura->entero2;
                 char *contenido = escritura->string;

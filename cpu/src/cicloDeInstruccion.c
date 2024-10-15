@@ -28,10 +28,10 @@ t_instruccion* fetch(uint32_t tid, uint32_t pc){
     pedir_instruccion_memoria(tid, pc, log_cpu);
     log_info(log_cpu, "TID: %i - FETCH - Program Counter: %i", tid, pc);
     t_instruccion* instruccion = malloc(sizeof(t_instruccion));
-    op_code codigo = recibir_operacion(sockets_cpu->socket_cliente); // TODO ver como modelar la operacion
+    op_code codigo = recibir_operacion(sockets_cpu->socket_memoria); // TODO ver como modelar la operacion
     if(codigo == READY){
         log_info(log_cpu, "COPOP: %i", codigo);
-        instruccion = recibir_instruccion(sockets_cpu->socket_cliente); // 
+        instruccion = recibir_instruccion(sockets_cpu->socket_memoria); // 
     }else{
         return NULL;
     }
@@ -45,7 +45,7 @@ void pedir_instruccion_memoria(uint32_t tid, uint32_t pc, t_log *logg){
     agregar_entero_a_paquete(paquete,pc);
     
     //log_info(logg, "serializacion %i %i", tid, pc); ya esta el log
-    enviar_paquete(paquete,sockets_cpu->socket_cliente);
+    enviar_paquete(paquete,sockets_cpu->socket_memoria);
     eliminar_paquete(paquete);
 
 }
@@ -137,20 +137,23 @@ void checkInterrupt(uint32_t tid){
         if(contexto->tid == tid_interrupt){
             seguir_ejecutando = 0;
             if(!es_por_usuario){
-                enviar_contexto(sockets_cpu->socket_servidor->socket_Interrupt, contexto,INTERRUPCION);
+                //enviar_contexto(sockets_cpu->socket_servidor->socket_Interrupt, contexto,INTERRUPCION); // EL CONTEXTO SE LE ENVÍA A MEMORIA NO A KERNEL
+                enviar_contexto(sockets_cpu->socket_memoria,contexto,INTERRUPCION);
             }else{
-                enviar_contexto(sockets_cpu->socket_servidor->socket_Dispatch, contexto,INTERRUPCION_USUARIO);
+                //enviar_contexto(sockets_cpu->socket_servidor->socket_Dispatch, contexto,INTERRUPCION_USUARIO); // EL CONTEXTO SE LE ENVÍA A MEMORIA NO A KERNEL
+                enviar_contexto(sockets_cpu->socket_memoria,contexto,INTERRUPCION_USUARIO);
             }
         }
     }
 }
 
 // Recepción de mensajes de Kernel Dispatch
-void recibir_kernel_dispatch(int socket_cliente_Dispatch) {
+void recibir_kernel_dispatch(int socket_cliente_Dispatch) { 
     int noFinalizar = 0;
     while (noFinalizar != -1) {
-        int codOperacion = recibir_operacion(socket_cliente_Dispatch);
-        switch (codOperacion) {
+        t_paquete_code_operacion*paquete=recibir_paquete_code_operacion(socket_cliente_Dispatch);
+        //int codOperacion = recibir_operacion(socket_cliente_Dispatch);
+        /*switch (codOperacion) {
             case EXEC:
                 log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
                 contexto = recibir_contexto(socket_cliente_Dispatch);
@@ -161,6 +164,24 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch) {
                 break;
             default:
                 break;
+        }*/
+
+        switch (paquete->code){
+            case THREAD_EXECUTE_AVISO:
+                /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
+                t_tid_pid*info = recepcionar_tid_pid_code_op(paquete);
+                log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
+                //contexto = recibir_contexto(socket_cliente_Dispatch); // EL CONTEXTO SE RECIBE DE MEMORIA. NO DEL SOCKET DISPATCH
+                contexto = recibir_contexto_para_thread_execute(sockets_cpu->socket_memoria,info->tid);
+                ciclo_de_instruccion(log_cpu);
+
+                break;
+            case -1:
+                noFinalizar = paquete->code;
+                break;
+            default:
+                break;
         }
+
     }
 }

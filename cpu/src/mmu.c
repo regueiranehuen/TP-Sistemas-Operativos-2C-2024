@@ -31,7 +31,7 @@ void actualizar_contexto_en_memoria(t_contexto *contexto) {
     log_info(log_cpu, "Actualizando contexto en memoria para TID: %d con razón de salida: %d", contexto->tid, pcb_salida->motivo);
     
 
-    enviar_paquete(paquete, sockets_cpu->socket_cliente); //creo q la conexion a memoria es socket cliente, hay q revisar o cambiarle el nombre
+    enviar_paquete(paquete, sockets_cpu->socket_memoria);
     
     eliminar_paquete(paquete);
     

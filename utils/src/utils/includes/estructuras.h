@@ -273,7 +273,7 @@ void recibir_2_string_mas_u32(int socket, char** palabra1,char** palabra2, uint3
 void recibir_2_string_mas_3_u32(int socket, char** palabra1,char** palabra2, uint32_t* valor1, uint32_t* valor2, uint32_t* valor3);
 void recibir_2_string_mas_u32_con_contexto(int socket, char** palabra1,char** palabra2, uint32_t* valor1, t_contexto** contexto);
 void recibir_2_string_mas_3_u32_con_contexto(int socket, char** palabra1,char** palabra2, uint32_t* valor1, uint32_t* valor2, uint32_t* valor3, t_contexto** contexto);
-
+t_contexto *recibir_contexto_para_thread_execute(int socket,uint32_t tid);
 
 
 #endif

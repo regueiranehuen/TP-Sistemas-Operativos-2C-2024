@@ -448,7 +448,39 @@ t_contexto *recibir_contexto(int socket)
 
     buffer = recibir_buffer(&size, socket);
 
-    nuevo_contexto->tid = leer_entero_uint32(buffer, &desp);
+    // El tid lo envía el kernel por el puerto de dispatch
+    nuevo_contexto->tid = leer_entero_uint32(buffer,&desp);
+    //nuevo_contexto->tid = leer_entero_uint32(buffer, &desp);
+    nuevo_contexto->pc = leer_entero_uint32(buffer, &desp);
+    nuevo_contexto->registros->AX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->BX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->CX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->DX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->EX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->FX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->GX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->HX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->base = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->limite = leer_entero_uint8(buffer, &desp);
+    free(buffer);
+    return nuevo_contexto;
+}
+
+t_contexto *recibir_contexto_para_thread_execute(int socket,uint32_t tid)
+{
+
+    t_contexto *nuevo_contexto = malloc(sizeof(t_contexto));
+    // t_registros_cpu* registros = malloc(sizeof(t_registros_cpu));
+    nuevo_contexto->registros = malloc(sizeof(t_registros_cpu));
+    int size = 0;
+    char *buffer;
+    int desp = 0;
+
+    buffer = recibir_buffer(&size, socket);
+
+    // El tid lo envía el kernel por el puerto de dispatch
+    nuevo_contexto->tid = tid;
+    //nuevo_contexto->tid = leer_entero_uint32(buffer, &desp);
     nuevo_contexto->pc = leer_entero_uint32(buffer, &desp);
     nuevo_contexto->registros->AX = leer_entero_uint8(buffer, &desp);
     nuevo_contexto->registros->BX = leer_entero_uint8(buffer, &desp);

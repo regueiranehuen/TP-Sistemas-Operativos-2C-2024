@@ -235,12 +235,12 @@ char *leer_valor_de_memoria(uint32_t direccionFisica, uint32_t tamanio) {
     agregar_entero_a_paquete(paquete, contexto->tid);
     agregar_entero_a_paquete(paquete, tamanio);
 
-    enviar_paquete(paquete, sockets_cpu->socket_cliente);
+    enviar_paquete(paquete, sockets_cpu->socket_memoria);
     eliminar_paquete(paquete);
     log_trace(log_cpu, "MOV IV enviado");
 
     
-    int cod_op = recibir_operacion(sockets_cpu->socket_cliente);
+    int cod_op = recibir_operacion(sockets_cpu->socket_memoria);
     switch (cod_op)
     {
     case 0:
@@ -249,7 +249,7 @@ char *leer_valor_de_memoria(uint32_t direccionFisica, uint32_t tamanio) {
     case READ_MEM:
         log_info(log_cpu, "Codigo de operacion recibido en cpu : %d", cod_op);
         
-        char *valor_recibido = recibir_string(sockets_cpu->socket_cliente, log_cpu);
+        char *valor_recibido = recibir_string(sockets_cpu->socket_memoria, log_cpu);
 
         log_info(log_cpu, "PID: %d - Acción: LEER - Dirección física: %d - Valor: %s",
                     contexto->tid, direccionFisica, valor_recibido);
@@ -270,11 +270,11 @@ void escribir_valor_en_memoria(uint32_t direccionFisica, char *valor, uint32_t t
     agregar_entero_a_paquete(paquete, tamanio);
     agregar_a_paquete(paquete, valor, strlen(valor)+1);
 
-    enviar_paquete(paquete, sockets_cpu->socket_cliente);
+    enviar_paquete(paquete, sockets_cpu->socket_memoria);
     eliminar_paquete(paquete);
     log_trace(log_cpu, "MOV OUT enviado");
 
-    op_code operacion = recibir_operacion(sockets_cpu->socket_cliente);
+    op_code operacion = recibir_operacion(sockets_cpu->socket_memoria);
     
     switch (operacion){
         case 0:
@@ -291,7 +291,7 @@ void escribir_valor_en_memoria(uint32_t direccionFisica, char *valor, uint32_t t
             break;
         }
     
-    int codigo_operaciones = recibir_operacion(sockets_cpu->socket_cliente); // se va a usar para algo esta variable?
+    int codigo_operaciones = recibir_operacion(sockets_cpu->socket_memoria); // se va a usar para algo esta variable?
 
 }
 //--FUNIONES EXTRAS

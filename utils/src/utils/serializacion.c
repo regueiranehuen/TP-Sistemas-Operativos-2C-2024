@@ -422,7 +422,7 @@ void send_paquete_solo_code_operacion(int socket_cliente,code_operacion code,t_p
 void send_paquete_code_operacion(code_operacion code, t_buffer*buffer, int socket_cliente){
     t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
 
-    if (code == DUMP_MEMORIA){ // Hay que ver si hay otros casos en los que solo se manda el codigo sin buffer
+    if (code == DUMP_MEMORIA || code == FIN_QUANTUM_RR || code == THREAD_INTERRUPT){ 
         send_paquete_solo_code_operacion(socket_cliente,code,paquete);
     }
     else{
