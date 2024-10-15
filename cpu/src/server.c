@@ -40,6 +40,21 @@ void leer_config(char* path) {
     log_info(log_cpu, "Configuración del CPU cargada.");
 }
 
+t_config *iniciar_config(char *path) {
+    t_config *nuevo_config = config_create(path);
+    if (nuevo_config == NULL) {
+        printf("No se puede crear la config");
+        exit(1);
+    }
+    return nuevo_config;
+}
+
+void liberar_config(t_config* config) {
+    if (config != NULL) {
+        config_destroy(config);
+    }
+}
+
 // Inicialización del servidor de CPU para el Kernel
 t_socket_cpu* servidor_CPU_Kernel(t_log* log, t_config* config) {
     t_socket_cpu* sockets = malloc(sizeof(t_socket_cpu));
@@ -219,3 +234,147 @@ bool es_interrupcion_usuario(code_operacion code){
     return (code == DUMP_MEMORIA || code == FIN_QUANTUM_RR || code == THREAD_INTERRUPT);
 }
 
+
+t_contexto* crear_contexto(int tid, uint32_t base, uint32_t limite) {
+    t_contexto* nuevo_contexto = malloc(sizeof(t_contexto));
+    if (nuevo_contexto == NULL) {
+        return NULL;
+    }
+    nuevo_contexto->tid = tid;
+    nuevo_contexto->pc = 0;
+    nuevo_contexto->registros = malloc(sizeof(t_registros_cpu));
+    if (nuevo_contexto->registros == NULL) {
+        free(nuevo_contexto);
+        return NULL;
+    }
+    nuevo_contexto->registros->base = base;
+    nuevo_contexto->registros->limite = limite;
+    memset(nuevo_contexto->registros, 0, sizeof(t_registros_cpu));
+    return nuevo_contexto;
+}
+
+int existe_contexto(t_contexto_pid* contexto_pid, int tid) {
+    for (int i = 0; i < list_size(contexto_pid->contextos_tids); i++) {
+        t_contexto_tid* contexto_tid = list_get(contexto_pid->contextos_tids, i);
+        if (contexto_tid->tid == tid) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int agregar_contexto_tid(t_contexto_pid* contexto_pid, int tid) {
+    if (existe_contexto(contexto_pid, tid)) {
+        return -1;
+    }
+    
+    t_contexto_tid* nuevo_contexto_tid = malloc(sizeof(t_contexto_tid));
+    if (nuevo_contexto_tid == NULL) {
+
+        return -1;
+    }
+    nuevo_contexto_tid->tid = tid;
+    nuevo_contexto_tid->contexto_ejecucion = crear_contexto(tid, contexto_pid->base, contexto_pid->limite);
+    
+    if (nuevo_contexto_tid->contexto_ejecucion == NULL) {
+        free(nuevo_contexto_tid);
+        return -1;
+    }
+    
+    list_add(contexto_pid->contextos_tids, nuevo_contexto_tid);
+    return 0;
+}
+
+// Funciones para inicializar estructuras
+t_registros_cpu* inicializar_registros_cpu() {
+    t_registros_cpu* registros = malloc(sizeof(t_registros_cpu));
+    if (registros != NULL) {
+        registros->AX = 0;
+        registros->BX = 0;
+        registros->CX = 0;
+        registros->DX = 0;
+        registros->EX = 0;
+        registros->FX = 0;
+        registros->GX = 0;
+        registros->HX = 0;
+        registros->base = 0;
+        registros->limite = 0;
+    }
+    return registros;
+}
+
+t_contexto* inicializar_contexto(int tid) {
+    t_contexto* contexto = malloc(sizeof(t_contexto));
+    if (contexto != NULL) {
+        contexto->tid = tid;
+        contexto->pc = 0;
+        contexto->registros = inicializar_registros_cpu();
+    }
+    return contexto;
+}
+
+t_contexto_pid* inicializar_contexto_pid(int pid) {
+    t_contexto_pid* contexto_pid = malloc(sizeof(t_contexto_pid));
+    if (contexto_pid != NULL) {
+        contexto_pid->pid = pid;
+        contexto_pid->contextos_tids = list_create();
+        contexto_pid->base = 0;
+        contexto_pid->limite = 0;
+    }
+    return contexto_pid;
+}
+
+t_contexto_tid* inicializar_contexto_tid(int tid) {
+    t_contexto_tid* contexto_tid = malloc(sizeof(t_contexto_tid));
+    if (contexto_tid != NULL) {
+        contexto_tid->tid = tid;
+        contexto_tid->contexto_ejecucion = inicializar_contexto(tid);
+    }
+    return contexto_tid;
+}
+
+t_pcb* inicializar_pcb(t_contexto* contexto) {
+    t_pcb* pcb = malloc(sizeof(t_pcb));
+    if (pcb != NULL) {
+        pcb->contexto = contexto;
+        pcb->quantum_utilizado = 0;
+    }
+    return pcb;
+}
+
+// Funciones para liberar estructuras
+void liberar_registros_cpu(t_registros_cpu* registros) {
+    if (registros != NULL) {
+        free(registros);
+    }
+}
+
+void liberar_contexto(t_contexto* contexto) {
+    if (contexto != NULL) {
+        liberar_registros_cpu(contexto->registros);
+        free(contexto);
+    }
+}
+
+void liberar_contexto_pid(t_contexto_pid* contexto_pid) {
+    if (contexto_pid != NULL) {
+
+        list_destroy_and_destroy_elements(contexto_pid->contextos_tids, (void*)liberar_contexto);
+        free(contexto_pid);
+    }
+}
+
+void liberar_contexto_tid(t_contexto_tid* contexto_tid) {
+    if (contexto_tid != NULL) {
+        liberar_contexto(contexto_tid->contexto_ejecucion);
+        free(contexto_tid);
+    }
+}
+
+void liberar_pcb(t_pcb* pcb) {
+    if (pcb != NULL) {
+        liberar_contexto(pcb->contexto);
+
+        free(pcb);
+    }
+}

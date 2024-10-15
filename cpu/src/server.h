@@ -47,6 +47,9 @@ extern int es_por_usuario;
 
 // **Funciones**
 void leer_config(char* path);
+t_config* iniciar_config(char *path);
+void liberar_config(t_config* config);
+
 t_socket_cpu* servidor_CPU_Kernel(t_log* log, t_config* config);
 int cliente_cpu_memoria(t_log* log, t_config* config);
 
@@ -59,5 +62,23 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch);
 void recibir_kernel_interrupt(int socket_cliente_Interrupt);
 void ejecutar_ciclo_de_instruccion(t_log* log);
 bool es_interrupcion_usuario(code_operacion code);
+
+t_contexto* crear_contexto(int tid, uint32_t base, uint32_t limite);
+int existe_contexto(t_contexto_pid* contexto_pid, int tid);
+int agregar_contexto_tid(t_contexto_pid* contexto_pid, int tid);
+t_registros_cpu* inicializar_registros_cpu();
+t_contexto* inicializar_contexto(int tid);
+t_contexto_pid* inicializar_contexto_pid(int pid);
+t_contexto_tid* inicializar_contexto_tid(int tid);
+t_pcb* inicializar_pcb(t_contexto* contexto);
+void liberar_registros_cpu(t_registros_cpu* registros);
+void liberar_contexto(t_contexto* contexto);
+void liberar_contexto_pid(t_contexto_pid* contexto_pid);
+void liberar_contexto_tid(t_contexto_tid* contexto_tid);
+void liberar_pcb(t_pcb* pcb);
+
+
+
+
 
 #endif  // SERVER_H

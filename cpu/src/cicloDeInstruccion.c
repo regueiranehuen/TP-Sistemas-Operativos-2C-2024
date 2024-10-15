@@ -97,7 +97,7 @@ void execute(op_code instruccion_nombre, t_instruccion* instruccion){
     switch (instruccion_nombre) {
         case SET:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
-            funcSET(instruccion->parametros2, instruccion->parametros3);
+            funcSET(instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));          
             break;
         case SUM:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
@@ -109,7 +109,7 @@ void execute(op_code instruccion_nombre, t_instruccion* instruccion){
             break;
         case JNZ:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
-            funcJNZ(instruccion->parametros2, instruccion->parametros3);
+            funcJNZ(instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
             break;
         case READ_MEM:
             log_info(log_cpu, "INSTRUCCION :%s - PARAMETRO 1: %s - PARAMETRO 2: %s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);

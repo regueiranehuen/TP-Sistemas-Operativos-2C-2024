@@ -26,30 +26,44 @@
 #include <arpa/inet.h>
 #include "serializacion.h"
 
-typedef struct{
+typedef struct {
     uint32_t AX;
     uint32_t BX;
     uint32_t CX;
     uint32_t DX;
-	uint32_t EX;
+    uint32_t EX;
     uint32_t FX;
     uint32_t GX;
     uint32_t HX;
     uint32_t base;
     uint32_t limite;
-}t_registros_cpu;
+} t_registros_cpu;
 
 typedef struct {
-	uint32_t tid;
-	uint32_t pc;
-	t_registros_cpu* registros;
-}t_contexto;
+    int tid;
+    uint32_t pc;
+    t_registros_cpu* registros;
+} t_contexto;
+
+typedef struct {
+    int pid;
+    t_list* contextos_tids;
+    uint32_t base;
+    uint32_t limite;
+} t_contexto_pid;
+
+typedef struct {
+    int tid;
+    t_contexto* contexto_ejecucion;
+} t_contexto_tid;
+
 
 typedef struct {
 	t_contexto* contexto;
 	int quantum_utilizado;
 	t_temporal* quantum;
 }t_pcb;
+
 
 typedef enum {
     SUCCESS,
@@ -210,7 +224,6 @@ void enviar_paquete(t_paquete* paquete, int socket_cliente);
 void eliminar_paquete(t_paquete* paquete);
 void eliminar_codigo(t_paquete* codop);
 void liberar_conexion(int socket_cliente);
-t_config* iniciar_config(char *ruta);
 char* obtener_instruccion(uint32_t pid, uint32_t pc);
 
 
