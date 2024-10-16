@@ -228,7 +228,7 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch) {
                 pid_exec=info->pid;
                 //MUTEX_UNLOCK
                
-                ciclo_de_instruccion(log_cpu); // OJO CON ESTA FUNCION
+                ciclo_de_instruccion(log_cpu); // OJO CON ESTA FUNCION. ACÁ DEBERÍA MANDARSE LA VARIABLE CONTEXTO DE ARRIBA Y NO LA GLOBAL
 
                 break;
             

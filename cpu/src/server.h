@@ -20,7 +20,7 @@ typedef struct {
 extern t_log* log_cpu;
 extern t_config* config;
 extern t_sockets_cpu* sockets_cpu;
-extern t_contexto* contexto;
+extern t_contexto* contexto; ////////////DESHACERSE DE ESTO
 extern t_pcb_exit* pcb_salida;
 
 extern char* ip_memoria;

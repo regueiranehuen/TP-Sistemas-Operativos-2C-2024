@@ -201,6 +201,6 @@ void recibir_kernel_interrupt(int socket_cliente_Interrupt) {
 }
 
 bool es_interrupcion_usuario(code_operacion code){
-    return (code == DUMP_MEMORIA || code == FIN_QUANTUM_RR || code == THREAD_INTERRUPT);
+    return (code == FIN_QUANTUM_RR); // ???
 }
 

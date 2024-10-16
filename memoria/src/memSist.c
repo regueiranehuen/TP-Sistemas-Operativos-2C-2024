@@ -55,7 +55,7 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo,  uint32_t pid) {
     fclose(archivo);
 }
 
-void copiarBytes(uint32_t tamanio, t_contexto *contexto) {
+void copiarBytes(uint32_t tamanio, t_contexto *contexto) { // No se usa más el t_contexto
 
     uint32_t valorBase = contexto->registros->base;
     uint32_t valorLimite= contexto->registros->limite;

@@ -117,7 +117,7 @@ void atender_syscall()//recibir un paquete con un codigo de operacion, entrar al
 {
 
         pthread_mutex_lock(&mutex_conexion_cpu);
-        t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Interrupt); // CAMBIO ACÁ: ME PARECE QUE LAS SYSCALLS SE RECIBE POR PUERTO INTERRUPT
+        t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch); // CAMBIO ACÁ: ME PARECE QUE LAS SYSCALLS SE RECIBE POR PUERTO INTERRUPT
         pthread_mutex_unlock(&mutex_conexion_cpu);
          switch (paquete->syscall)
         {
@@ -125,50 +125,50 @@ void atender_syscall()//recibir un paquete con un codigo de operacion, entrar al
         case ENUM_PROCESS_CREATE:
             t_process_create* paramProcessCreate= parametros_process_create(paquete);
             PROCESS_CREATE(paramProcessCreate->nombreArchivo,paramProcessCreate->tamProceso,paramProcessCreate->prioridad);   
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);         
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);         
             break;
         case ENUM_PROCESS_EXIT:
             PROCESS_EXIT();
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt); 
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch); 
             break;
         case ENUM_THREAD_CREATE:
             t_thread_create* paramThreadCreate = parametros_thread_create(paquete);
             THREAD_CREATE(paramThreadCreate->nombreArchivo,paramThreadCreate->prioridad); 
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
             break;
         case ENUM_THREAD_JOIN:
             int tid_thread_join = recibir_entero_paquete_syscall(paquete);
             THREAD_JOIN(tid_thread_join);
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
             break;
         case ENUM_THREAD_CANCEL:
             int tid_thread_cancel = recibir_entero_paquete_syscall(paquete);
             THREAD_CANCEL(tid_thread_cancel);
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
             break;
         case ENUM_MUTEX_CREATE:
             char* recurso = recibir_string_paquete_syscall(paquete);
             MUTEX_CREATE(recurso);
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
             break;
         case ENUM_MUTEX_LOCK:
             char*recurso_a_bloquear = recibir_string_paquete_syscall(paquete);
             MUTEX_LOCK(recurso_a_bloquear);  
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);             
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);             
             break;
         case ENUM_MUTEX_UNLOCK:
             char*recurso_a_desbloquear = recibir_string_paquete_syscall(paquete);
             MUTEX_UNLOCK(recurso_a_desbloquear);
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
             break;
         case ENUM_IO:
             int milisegundos = recibir_entero_paquete_syscall(paquete);
             IO(milisegundos);
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
             break;
         case ENUM_DUMP_MEMORY:
             DUMP_MEMORY();
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);   
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
             break;
         case ENUM_SEGMENTATION_FAULT:
             send_code_operacion(TERMINAR,sockets->sockets_cliente_cpu->socket_Interrupt); // ???  
@@ -335,7 +335,7 @@ void espera_con_quantum(int quantum) {
     } else if (resultado == 0) { //pasa el tiempo de quantum, desalojo. 
         code_operacion cod_op = FIN_QUANTUM_RR;
         pthread_mutex_lock(&mutex_conexion_cpu);
-        send_paquete_code_operacion(cod_op,NULL,sockets->sockets_cliente_cpu->socket_Interrupt);
+        send_operacion_entero(cod_op,hilo_exec->tid,sockets->sockets_cliente_cpu->socket_Interrupt);
         pthread_mutex_unlock(&mutex_conexion_cpu);
         t_tcb* hilo = hilo_exec;
         hilo->estado = TCB_READY;
