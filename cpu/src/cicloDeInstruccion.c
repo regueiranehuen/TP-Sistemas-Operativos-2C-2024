@@ -6,13 +6,14 @@
 t_instruccion instruccion;
 bool seguir_ejecutando;
 
-void ciclo_de_instruccion(t_log* loggs) {
+
+void ciclo_de_instruccion(t_log* loggs) { // 
 
     seguir_ejecutando=1;
 
     while(seguir_ejecutando) {
 
-        t_instruccion* instruccion = fetch(contexto->tid,contexto->pc);
+        t_instruccion* instruccion = fetch(contexto->tid,contexto->pc); // La variable contexto global hay que eliminarla
         op_code nombre_instruccion = decode(instruccion);
         execute(nombre_instruccion, instruccion);
         //dentro del pcb esta el pc con demas registris
@@ -199,11 +200,11 @@ void checkInterrupt(uint32_t tid){
         if(contexto->tid == tid_interrupt){
             seguir_ejecutando = 0;
             if(!es_por_usuario){
-                //enviar_contexto(sockets_cpu->socket_servidor->socket_Interrupt, contexto,INTERRUPCION); // EL CONTEXTO SE LE ENVÍA A MEMORIA NO A KERNEL
-                enviar_contexto(sockets_cpu->socket_memoria,contexto,INTERRUPCION);
+                obtener_contexto_tid(pid_exec,tid_exec);
+                enviar_contexto_tid(sockets_cpu->socket_memoria,contexto,INTERRUPCION);
             }else{
-                //enviar_contexto(sockets_cpu->socket_servidor->socket_Dispatch, contexto,INTERRUPCION_USUARIO); // EL CONTEXTO SE LE ENVÍA A MEMORIA NO A KERNEL
-                enviar_contexto(sockets_cpu->socket_memoria,contexto,INTERRUPCION_USUARIO);
+                obtener_contexto_tid(pid_exec,tid_exec);
+                enviar_contexto_tid(sockets_cpu->socket_memoria,contexto,INTERRUPCION_USUARIO);
             }
         }
     }
@@ -214,30 +215,23 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch) {
     int noFinalizar = 0;
     while (noFinalizar != -1) {
         t_paquete_code_operacion*paquete=recibir_paquete_code_operacion(socket_cliente_Dispatch);
-        //int codOperacion = recibir_operacion(socket_cliente_Dispatch);
-        /*switch (codOperacion) {
-            case EXEC:
-                log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
-                contexto = recibir_contexto(socket_cliente_Dispatch);
-                ciclo_de_instruccion(log_cpu);
-                break;
-            case -1:
-                noFinalizar = codOperacion;
-                break;
-            default:
-                break;
-        }*/
-
         switch (paquete->code){
             case THREAD_EXECUTE_AVISO:
                 /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
                 t_tid_pid*info = recepcionar_tid_pid_code_op(paquete);
+                t_contexto_tid*contexto=obtener_contexto_tid(info->pid,info->tid);
+            
                 log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
-                //contexto = recibir_contexto(socket_cliente_Dispatch); // EL CONTEXTO SE RECIBE DE MEMORIA. NO DEL SOCKET DISPATCH
-                contexto = recibir_contexto_para_thread_execute(sockets_cpu->socket_memoria,info->tid);
-                ciclo_de_instruccion(log_cpu);
+
+                //MUTEX_LOCK
+                tid_exec=info->tid;
+                pid_exec=info->pid;
+                //MUTEX_UNLOCK
+               
+                ciclo_de_instruccion(log_cpu); // OJO CON ESTA FUNCION
 
                 break;
+            
             case -1:
                 noFinalizar = paquete->code;
                 break;

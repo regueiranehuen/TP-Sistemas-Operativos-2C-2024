@@ -185,6 +185,59 @@ void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto, int codop){
     eliminar_paquete(paquete);
 }
 
+void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto, int codop){
+    t_paquete*paquete=crear_paquete_op(codop);
+    
+    agregar_contexto_tid_a_paquete(paquete,contexto);
+    enviar_paquete(paquete,socket_cliente);
+    eliminar_paquete(paquete);
+}
+
+bool existe_contexto_pid(int pid){
+    for (int i = 0; i< list_size(lista_contextos_pids); i++){
+        t_contexto_pid*cont_actual=list_get(lista_contextos_pids,i);
+        if (cont_actual->pid==pid)
+            return true;
+    }
+    return false;
+}
+
+
+t_contexto_tid* inicializar_contexto_tid(t_contexto_pid* cont,int tid){
+    t_contexto_tid* contexto=malloc(sizeof(contexto));
+    contexto->registros= malloc(sizeof(t_registros_cpu));
+    contexto->tid = tid;
+    contexto->registros->AX = 0;
+    contexto->registros->BX = 0;
+    contexto->registros->CX = 0;
+    contexto->registros->DX = 0;
+    contexto->registros->EX = 0;
+    contexto->registros->FX = 0;
+    contexto->registros->GX = 0;
+    contexto->registros->HX = 0;
+    contexto->registros->PC = 0;
+
+    list_add(cont->contextos_tids,contexto);
+    return contexto;
+}
+
+t_contexto_pid*inicializar_contexto_pid(int pid){
+    t_contexto_pid*nuevo_contexto=malloc(sizeof(t_contexto_pid));
+    nuevo_contexto->pid=pid;
+    nuevo_contexto->contextos_tids=list_create();
+// Paso como segundo parámetro el 0 ya que el proceso está siendo inicializado, y al iniciarse si o si tiene que tener un hilo
+    t_contexto_tid* contexto_tid_0=inicializar_contexto_tid(nuevo_contexto,0); 
+    if (contexto_tid_0!=NULL){
+        list_add(lista_contextos_pids,nuevo_contexto);
+        return nuevo_contexto;
+    }
+    else{
+        printf("NO SE PUDO INICIALIZAR EL CONTEXTO DEL PID %d\n",pid);
+    }
+    return NULL;
+    
+}
+
 
 void enviar_instruccion(int conexion, t_instruccion *instruccion_nueva, int codop)
 {
@@ -476,8 +529,8 @@ t_contexto_tid* recibir_contexto(int socket){
     nuevo_contexto->registros->FX = leer_entero_uint8(buffer, &desp);
     nuevo_contexto->registros->GX = leer_entero_uint8(buffer, &desp);
     nuevo_contexto->registros->HX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->base = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->limite = leer_entero_uint8(buffer, &desp);
+    //nuevo_contexto->registros->base = leer_entero_uint8(buffer, &desp);
+    //nuevo_contexto->registros->limite = leer_entero_uint8(buffer, &desp);
     free(buffer);
     return nuevo_contexto;
 }
@@ -521,8 +574,8 @@ void recibir_string_mas_contexto(int conexion_kernel_cpu_dispatch, t_contexto **
     (*pcb_wait)->registros->FX = leer_entero_uint8(buffer, &desp);
     (*pcb_wait)->registros->GX = leer_entero_uint8(buffer, &desp);
     (*pcb_wait)->registros->HX = leer_entero_uint8(buffer, &desp);
-    (*pcb_wait)->registros->base = leer_entero_uint8(buffer, &desp);
-    (*pcb_wait)->registros->limite = leer_entero_uint8(buffer, &desp);
+    //(*pcb_wait)->registros->base = leer_entero_uint8(buffer, &desp);
+    //(*pcb_wait)->registros->limite = leer_entero_uint8(buffer, &desp);
 
     free(buffer);
 }
@@ -549,8 +602,8 @@ void recibir_string_mas_u32_con_contexto(int conexion_kernel_cpu_dispatch, char 
     (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
+    //(*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
+    //(*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
     free(buffer);
 }
 
@@ -588,8 +641,8 @@ void recibir_2_string_con_contexto(int conexion_kernel_cpu_dispatch, char **pala
     (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
+    //(*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
+    //(*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
     free(buffer);
 }
 
@@ -767,8 +820,8 @@ void recibir_2_string_mas_u32_con_contexto(int socket, char **palabra1, char **p
     (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
+    //(*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
+    //(*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
     free(buffer);
 }
 
@@ -797,8 +850,8 @@ t_string_2enteros *recibir_string_2enteros_con_contexto(int socket, t_contexto *
     (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
+    //(*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
+    //(*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
     free(buffer);
 
     return devolver;
@@ -829,31 +882,15 @@ void recibir_2_string_mas_3_u32_con_contexto(int socket, char **palabra1, char *
     (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
     (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
+    //(*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
+    //(*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
     free(buffer);
 }
 
 
-void inicializar_contexto_tid(int tid, t_contexto_tid *contexto){
-    contexto=malloc(sizeof(contexto));
-    contexto->registros= malloc(sizeof(t_registros_cpu));
-    contexto->tid = tid;
-    contexto->registros->AX = 0;
-    contexto->registros->BX = 0;
-    contexto->registros->CX = 0;
-    contexto->registros->DX = 0;
-    contexto->registros->EX = 0;
-    contexto->registros->FX = 0;
-    contexto->registros->GX = 0;
-    contexto->registros->HX = 0;
-    contexto->registros->PC = 0;
-
-    list_add(lista_contextos_pids,contexto);
-}
 
 
-t_contexto_pid* obtener_contexto(int pid, int tid){
+t_contexto_pid* obtener_contexto_pid(int pid, int tid){
     for (int i = 0; i < list_size(lista_contextos_pids); i++){
         t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
         t_list*contextos_tids=cont_actual->contextos_tids;
@@ -863,6 +900,36 @@ t_contexto_pid* obtener_contexto(int pid, int tid){
     }
     return NULL;
 }
+
+t_contexto_tid*obtener_contexto_tid(int pid, int tid){
+    for (int i = 0; i < list_size(lista_contextos_pids); i++){
+        t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
+        t_list*contextos_tids=cont_actual->contextos_tids;
+        if (pid == cont_actual->pid && esta_tid_en_lista(tid,contextos_tids))
+            return obtener_tid_en_lista(tid,contextos_tids);
+
+    }
+    return NULL;
+}
+
+void remover_contexto_pid_lista(t_contexto_pid* contexto){
+    for (int i = 0; i < list_size(lista_contextos_pids); i++){
+        t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
+        if (contexto->pid == cont_actual->pid)
+            list_remove(lista_contextos_pids,i);
+
+    }
+}
+
+void remover_contexto_tid_lista(t_contexto_tid*contexto,t_list*lista){
+    for (int i = 0; i < list_size(lista); i++){
+        t_contexto_tid*cont_actual=(t_contexto_tid*)list_get(lista,i);
+        if (contexto->tid == cont_actual->tid)
+            list_remove(lista,i);
+
+    }
+}
+
 
 bool esta_tid_en_lista(int tid,t_list*contextos_tids){
     for (int i = 0; i < list_size(contextos_tids); i++){
@@ -874,9 +941,23 @@ bool esta_tid_en_lista(int tid,t_list*contextos_tids){
     return false;
 }
 
+t_contexto_tid* obtener_tid_en_lista(int tid,t_list*contextos_tids){
+    for (int i = 0; i < list_size(contextos_tids); i++){
+        t_contexto_tid*cont_actual=(t_contexto_tid*)list_get(contextos_tids,i);
+        if (cont_actual->tid==tid)
+            return cont_actual;
 
-void liberar_contexto_tid(t_contexto_tid *contexto_tid){
+    }
+    return NULL;
+}
+
+
+
+
+
+void liberar_contexto_tid(t_contexto_pid *contexto_pid,t_contexto_tid*contexto_tid){
     if(contexto_tid){
+        remover_contexto_tid_lista(contexto_tid,contexto_pid->contextos_tids);
         free(contexto_tid->registros);
         free(contexto_tid);
     }
@@ -884,6 +965,7 @@ void liberar_contexto_tid(t_contexto_tid *contexto_tid){
 
 void liberar_contexto_pid(t_contexto_pid *contexto_pid){
     if(contexto_pid){
+        
         list_destroy_and_destroy_elements(contexto_pid->contextos_tids,(void*)liberar_contexto_tid);
         free(contexto_pid);
     }

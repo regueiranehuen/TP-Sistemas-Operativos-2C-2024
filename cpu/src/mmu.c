@@ -1,7 +1,7 @@
 #include "mmu.h"
 #include "server.h"
 
-uint32_t traducir_direccion_logica(uint32_t direccion_logica) {
+uint32_t traducir_direccion_logica(uint32_t direccion_logica) { // Otra vez. El contexto no debe ser global
     uint32_t base = contexto->registros->base;
     uint32_t limite = contexto->registros->limite;  
 

@@ -188,21 +188,6 @@ void recibir_kernel_interrupt(int socket_cliente_Interrupt) {
 
         t_paquete_code_operacion* paquete=recibir_paquete_code_operacion(socket_cliente_Interrupt); 
 
-        //int codOperacion = recibir_operacion(socket_cliente_Interrupt); ///////////
-        /*switch (codOperacion) {
-            case INTERRUPCION_USUARIO:
-                //recibir_
-                tid_interrupt = recibir_entero_uint32(socket_cliente_Interrupt, log_cpu);
-                hay_interrupcion = 1;
-                es_por_usuario = 1;
-                break;
-            case -1:
-                noFinalizar = codOperacion;
-                break;
-            default:
-                break;
-        }*/
-
         if (es_interrupcion_usuario(paquete->code)){ // No entiendo a qué se refieren con interrupción de usuario
             tid_interrupt = recepcionar_int_code_op(paquete); // Hay que ver si hay algun problema igualando uint_32 con int
             hay_interrupcion = 1;

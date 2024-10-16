@@ -129,7 +129,7 @@ void atender_syscall()//recibir un paquete con un codigo de operacion, entrar al
             break;
         case ENUM_PROCESS_EXIT:
             PROCESS_EXIT();
-            
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt); 
             break;
         case ENUM_THREAD_CREATE:
             t_thread_create* paramThreadCreate = parametros_thread_create(paquete);

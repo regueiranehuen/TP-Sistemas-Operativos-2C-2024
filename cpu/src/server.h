@@ -44,6 +44,9 @@ extern uint32_t tid_interrupt;
 extern int hay_interrupcion;
 extern int es_por_usuario;
 
+extern int tid_exec;
+extern int pid_exec;
+
 
 // **Funciones**
 void leer_config(char* path);

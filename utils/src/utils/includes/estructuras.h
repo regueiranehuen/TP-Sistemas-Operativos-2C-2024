@@ -32,7 +32,7 @@ extern t_list*lista_contextos_pids;
 typedef struct{
     int pid;
     t_list*contextos_tids;
-    uint32_t base; // la base y el limite son unicos por cada pid
+    uint32_t base; // la base y el limite son unicos por cada proceso
     uint32_t limite; 
 }t_contexto_pid;
 
@@ -48,15 +48,14 @@ typedef struct{
     uint32_t GX;
     uint32_t HX;
     uint32_t PC;
-    uint32_t base; // la base y el limite son unicos por cada pid
-    uint32_t limite;
-}t_registros_cpu;
+    //uint32_t base; // la base y el limite son unicos por cada proceso
+    //uint32_t limite;
+}t_registros_cpu; 
 
 typedef struct{
     int tid;
     t_registros_cpu*registros;
 }t_contexto_tid;
-
 
 
 typedef struct {
@@ -233,7 +232,7 @@ void liberar_conexion(int socket_cliente);
 t_config* iniciar_config(char *ruta); //
 char* obtener_instruccion(uint32_t tid, uint32_t pc); // Antes decía pid en vez de tid. No está hecha la función
 
-t_contexto_pid* obtener_contexto(int pid, int tid);
+
 
 // Serializacion
 
@@ -294,12 +293,24 @@ void recibir_2_string_mas_3_u32(int socket, char** palabra1,char** palabra2, uin
 void recibir_2_string_mas_u32_con_contexto(int socket, char** palabra1,char** palabra2, uint32_t* valor1, t_contexto** contexto);
 void recibir_2_string_mas_3_u32_con_contexto(int socket, char** palabra1,char** palabra2, uint32_t* valor1, uint32_t* valor2, uint32_t* valor3, t_contexto** contexto);
 //t_contexto *recibir_contexto_para_thread_execute(int socket,uint32_t tid);
+
+//  NUEVAS FUNCIONES POST CHECKPOINT 2
+
+t_contexto_pid* obtener_contexto_pid(int pid, int tid);
+t_contexto_tid* obtener_contexto_tid(int pid, int tid);
 bool esta_tid_en_lista(int tid,t_list*contextos_tids);
 void agregar_contexto_pid_a_paquete(t_paquete*paquete,t_contexto_pid*contexto);
 void agregar_contexto_tid_a_paquete(t_paquete*paquete,t_contexto_tid*contexto);
-
-void liberar_contexto_tid(t_contexto_tid *contexto_tid);
+void liberar_contexto_tid(t_contexto_pid *contexto_pid,t_contexto_tid*contexto_tid);
 void liberar_contexto_pid(t_contexto_pid *contexto_pid);
 void liberar_lisa_contextos();
+void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto, int codop);
+void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto, int codop);
+void remover_contexto_pid_lista(t_contexto_pid* contexto);
+void remover_contexto_tid_lista(t_contexto_tid*contexto,t_list*lista);
+t_contexto_tid* inicializar_contexto_tid(t_contexto_pid* cont,int tid);
+t_contexto_pid*inicializar_contexto_pid(int pid);
+t_contexto_tid* obtener_tid_en_lista(int tid,t_list*contextos_tids);
+bool existe_contexto_pid(int pid);
 
 #endif
