@@ -194,6 +194,7 @@ void recibir_kernel_interrupt(int socket_cliente_Interrupt) {
             es_por_usuario = 1;
         }
         else if (paquete->code == TERMINAR){
+            seguir_ejecutando=false;
             noFinalizar=-1;
         }
 
@@ -201,6 +202,6 @@ void recibir_kernel_interrupt(int socket_cliente_Interrupt) {
 }
 
 bool es_interrupcion_usuario(code_operacion code){
-    return (code == FIN_QUANTUM_RR); // ???
+    return (code == FIN_QUANTUM_RR || code == THREAD_INTERRUPT || code == DUMP_MEMORIA); // ???
 }
 

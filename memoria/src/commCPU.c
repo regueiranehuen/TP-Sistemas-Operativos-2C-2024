@@ -14,11 +14,11 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
                 uint32_t tid = solicitud->entero2;
                 free(solicitud);
 
-                t_contexto_pid*contexto=obtener_contexto_pid(pid,tid);
+                t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
                 enviar_contexto_pid(SOCKET_CLIENTE_CPU,contexto,OBTENER_CONTEXTO);
                 log_info(logger, "Enviado contexto para PID: %d, TID: %d", pid, tid);
-
-                liberar_contexto_pid(contexto);
+                
+                //liberar_contexto_pid(contexto);
                 break;
             }
 

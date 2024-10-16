@@ -5,6 +5,7 @@ uint32_t traducir_direccion_logica(uint32_t direccion_logica) { // Otra vez. El 
     uint32_t base = contexto->registros->base;
     uint32_t limite = contexto->registros->limite;  
 
+
     log_info(log_cpu, "Base de la partición: %d", base);
     log_info(log_cpu, "Límite de la partición: %d", limite);
 

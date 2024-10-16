@@ -117,7 +117,7 @@ void atender_syscall()//recibir un paquete con un codigo de operacion, entrar al
 {
 
         pthread_mutex_lock(&mutex_conexion_cpu);
-        t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch); // CAMBIO ACÁ: ME PARECE QUE LAS SYSCALLS SE RECIBE POR PUERTO INTERRUPT
+        t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch); 
         pthread_mutex_unlock(&mutex_conexion_cpu);
          switch (paquete->syscall)
         {
@@ -170,11 +170,11 @@ void atender_syscall()//recibir un paquete con un codigo de operacion, entrar al
             DUMP_MEMORY();
             send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
             break;
-        case ENUM_SEGMENTATION_FAULT:
-            send_code_operacion(TERMINAR,sockets->sockets_cliente_cpu->socket_Interrupt); // ???  
+        case ENUM_SEGMENTATION_FAULT: 
             break;
         default:
             printf("Syscall no válida.\n");
+            //send_code_operacion(TERMINAR,sockets->sockets_cliente_cpu->socket_Interrupt);
             break;
         }
     }
