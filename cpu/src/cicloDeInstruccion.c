@@ -214,26 +214,13 @@ void checkInterrupt(uint32_t tid){
 void recibir_kernel_dispatch(int socket_cliente_Dispatch) { 
     int noFinalizar = 0;
     while (noFinalizar != -1) {
-        t_paquete_code_operacion*paquete=recibir_paquete_code_operacion(socket_cliente_Dispatch);
-        switch (paquete->code){
-            case THREAD_EXECUTE_AVISO:
-                /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
-                t_tid_pid*info = recepcionar_tid_pid_code_op(paquete);
-                t_contexto_tid*contexto=obtener_contexto_tid(info->pid,info->tid);
-            
-                log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
-
-                //MUTEX_LOCK
-                tid_exec=info->tid;
-                pid_exec=info->pid;
-                //MUTEX_UNLOCK
-               
-                ciclo_de_instruccion(log_cpu); // OJO CON ESTA FUNCION. ACÁ DEBERÍA MANDARSE LA VARIABLE CONTEXTO DE ARRIBA Y NO LA GLOBAL
-
+        code_operacion code = recibir_code_operacion(socket_cliente_Dispatch);
+        switch (code){
+            case OK:
+                noFinalizar=0;
                 break;
-            
-            case -1:
-                noFinalizar = paquete->code;
+            case TERMINAR:
+                noFinalizar = -1;
                 break;
             default:
                 break;
