@@ -2,7 +2,7 @@
 
 t_log* log_cpu = NULL;
 t_config* config = NULL;
-t_sockets_cpu* sockets_cpu = NULL; // ¿
+t_sockets_cpu* sockets_cpu = NULL;
 t_contexto* contexto = NULL;
 t_pcb_exit* pcb_salida = NULL;
 
@@ -16,7 +16,7 @@ int socket_servidor_Dispatch = 0, socket_servidor_Interrupt = 0;
 int socket_cliente_Dispatch = 0, socket_cliente_Interrupt = 0;
 int respuesta_Dispatch = 0, respuesta_Interrupt = 0;
 
-t_socket_cpu* sockets = NULL; // ?
+t_socket_cpu* sockets = NULL;
 
 pthread_t hilo_servidor;
 pthread_t hilo_cliente;
@@ -249,7 +249,7 @@ t_contexto* crear_contexto(int tid, uint32_t base, uint32_t limite) {
     }
     nuevo_contexto->registros->base = base;
     nuevo_contexto->registros->limite = limite;
-    memset(nuevo_contexto->registros, 0, sizeof(t_registros_cpu));
+    memset(nuevo_contexto->registros, 0, sizeof(t_registros_cpu) - sizeof(uint32_t) * 2);
     return nuevo_contexto;
 }
 
@@ -270,7 +270,7 @@ int agregar_contexto_tid(t_contexto_pid* contexto_pid, int tid) {
     
     t_contexto_tid* nuevo_contexto_tid = malloc(sizeof(t_contexto_tid));
     if (nuevo_contexto_tid == NULL) {
-
+        log_info(log_cpu, "Error al agregar el contexto");
         return -1;
     }
     nuevo_contexto_tid->tid = tid;
@@ -278,6 +278,7 @@ int agregar_contexto_tid(t_contexto_pid* contexto_pid, int tid) {
     
     if (nuevo_contexto_tid->contexto_ejecucion == NULL) {
         free(nuevo_contexto_tid);
+        log_info(log_cpu, "Error al agregar el contexto");
         return -1;
     }
     

@@ -8,5 +8,7 @@
 
 
 void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config);
+void inicializar_estructuras();
+void terminar_programa();
 
 #endif
