@@ -7,38 +7,62 @@ t_instruccion instruccion;
 bool seguir_ejecutando;
 
 
-void ciclo_de_instruccion(t_log* loggs) { // 
 
-    seguir_ejecutando=1;
-
-    while(seguir_ejecutando) {
-
-        t_instruccion* instruccion = fetch(contexto->tid,contexto->pc); // La variable contexto global hay que eliminarla
-        op_code nombre_instruccion = decode(instruccion);
-        execute(nombre_instruccion, instruccion);
-        //dentro del pcb esta el pc con demas registris
-        //pcb->pc++;
-        if(seguir_ejecutando) { 
-        checkInterrupt(contexto->tid);
+void ciclo_de_instruccion(int tid, int pid){
+    seguir_ejecutando=true;
+    t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
+    while (seguir_ejecutando){
+        t_instruccion*instruccion=fetch(contexto);
+        if (instruccion == NULL) {
+            seguir_ejecutando = false;
+            continue; // Si hay un error, salir del ciclo
         }
-}
+        op_code nombre_instruccion = decode(instruccion);
+        execute(nombre_instruccion,instruccion);
+
+        if (seguir_ejecutando){
+            checkInterrupt(tid);
+        }
+    }
 }
 
-t_instruccion* fetch(uint32_t tid, uint32_t pc){
 
-    pedir_instruccion_memoria(tid, pc, log_cpu);
-    log_info(log_cpu, "TID: %i - FETCH - Program Counter: %i", tid, pc);
-    t_instruccion* instruccion = malloc(sizeof(t_instruccion));
-    op_code codigo = recibir_operacion(sockets_cpu->socket_memoria); // TODO ver como modelar la operacion
-    if(codigo == READY){
-        log_info(log_cpu, "COPOP: %i", codigo);
-        instruccion = recibir_instruccion(sockets_cpu->socket_memoria); // 
-    }else{
+
+
+void checkInterrupt(uint32_t tid){ // REHACER CHECK INTERRUPT
+    if (hay_interrupcion){
+        hay_interrupcion = 0;
+        if(contexto->tid == tid_interrupt){
+            seguir_ejecutando = 0;
+            if(!es_por_usuario){
+                obtener_contexto_tid(pid_exec,tid_exec);
+                enviar_contexto_tid(sockets_cpu->socket_memoria,contexto,INTERRUPCION);
+            }else{
+                obtener_contexto_tid(pid_exec,tid_exec);
+                enviar_contexto_tid(sockets_cpu->socket_memoria,contexto,INTERRUPCION_USUARIO);
+            }
+        }
+    }
+}
+
+
+
+t_instruccion* fetch(t_contexto_tid*contexto){
+    pedir_instruccion_memoria(contexto->tid,contexto->registros->PC,log_cpu);
+    log_info(log_cpu, "TID: %i - FETCH - Program Counter: %i", contexto->tid, contexto->registros->PC);
+
+    t_instruccion*instruccion=recibir_instruccion(sockets_cpu->socket_memoria);
+
+    if (instruccion == NULL) {
+        log_error(log_cpu, "Error al recibir la instrucción");
+        seguir_ejecutando = false;
         return NULL;
     }
-  return instruccion;
     
+    return instruccion;
+
 }
+
 
 void pedir_instruccion_memoria(uint32_t tid, uint32_t pc, t_log *logg){
     t_paquete* paquete = crear_paquete_op(PEDIR_INSTRUCCION_MEMORIA);
@@ -194,21 +218,6 @@ void analizar_terminacion(void){
 }
 
 
-void checkInterrupt(uint32_t tid){
-    if (hay_interrupcion){
-        hay_interrupcion = 0;
-        if(contexto->tid == tid_interrupt){
-            seguir_ejecutando = 0;
-            if(!es_por_usuario){
-                obtener_contexto_tid(pid_exec,tid_exec);
-                enviar_contexto_tid(sockets_cpu->socket_memoria,contexto,INTERRUPCION);
-            }else{
-                obtener_contexto_tid(pid_exec,tid_exec);
-                enviar_contexto_tid(sockets_cpu->socket_memoria,contexto,INTERRUPCION_USUARIO);
-            }
-        }
-    }
-}
 
 // Recepción de mensajes de Kernel Dispatch
 void recibir_kernel_dispatch(int socket_cliente_Dispatch) { 
@@ -225,7 +234,7 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch) {
 
                 if (contexto == NULL){
                     t_contexto_pid* contexto_pid = obtener_contexto_pid(info->pid,info->tid);
-                    contexto= inicializar_contexto_tid(contexto_pid,info->tid)
+                    contexto= inicializar_contexto_tid(contexto_pid,info->tid);
                 }
             
                 log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
@@ -234,7 +243,7 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch) {
                 pid_exec=info->pid;
                 //MUTEX_UNLOCK
                
-                ciclo_de_instruccion(log_cpu); // OJO CON ESTA FUNCION. ACÁ DEBERÍA MANDARSE LA VARIABLE CONTEXTO DE ARRIBA Y NO LA GLOBAL
+                ciclo_de_instruccion(info->tid,info->pid); // OJO CON ESTA FUNCION. ACÁ DEBERÍA MANDARSE LA VARIABLE CONTEXTO DE ARRIBA Y NO LA GLOBAL
             case OK:
                 noFinalizar=0; 
                 break;

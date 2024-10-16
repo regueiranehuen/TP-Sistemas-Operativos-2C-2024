@@ -24,7 +24,7 @@ void* socket_servidor_kernel = NULL;
 void* socket_cliente_memoria = NULL;
 
 uint32_t tid_interrupt = 0;
-int hay_interrupcion = 0;
+bool hay_interrupcion=false;
 int es_por_usuario = 0;
 
 // Lectura de configuración
@@ -190,7 +190,7 @@ void recibir_kernel_interrupt(int socket_cliente_Interrupt) {
 
         if (es_interrupcion_usuario(paquete->code)){ // No entiendo a qué se refieren con interrupción de usuario
             tid_interrupt = recepcionar_int_code_op(paquete); // Hay que ver si hay algun problema igualando uint_32 con int
-            hay_interrupcion = 1;
+            hay_interrupcion = true;
             es_por_usuario = 1;
         }
         else if (paquete->code == TERMINAR){

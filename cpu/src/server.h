@@ -41,7 +41,7 @@ extern void* socket_servidor_kernel;
 extern void* socket_cliente_memoria;
 
 extern uint32_t tid_interrupt;
-extern int hay_interrupcion;
+extern bool hay_interrupcion;
 extern int es_por_usuario;
 
 extern int tid_exec;
