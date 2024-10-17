@@ -1,6 +1,5 @@
 #include "includes/estructuras.h"
-
-t_list*contextos_pids;
+#include "../../memoria/src/includes/server.h"
 
 
 int recibir_operacion(int socket_cliente){
@@ -890,24 +889,30 @@ void recibir_2_string_mas_3_u32_con_contexto(int socket, char **palabra1, char *
 
 
 
-t_contexto_pid* obtener_contexto_pid(int pid, int tid){
+t_contexto_pid* obtener_contexto_pid(int pid){
+    //wait
     for (int i = 0; i < list_size(lista_contextos_pids); i++){
         t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
-        t_list*contextos_tids=cont_actual->contextos_tids;
-        if (pid == cont_actual->pid && esta_tid_en_lista(tid,contextos_tids))
+        if (pid == cont_actual->pid){
+            //signal
             return cont_actual;
-
+        }
+            
     }
+
     return NULL;
 }
 
 t_contexto_tid*obtener_contexto_tid(int pid, int tid){
+    //wait
     for (int i = 0; i < list_size(lista_contextos_pids); i++){
         t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
         t_list*contextos_tids=cont_actual->contextos_tids;
-        if (pid == cont_actual->pid && esta_tid_en_lista(tid,contextos_tids))
+        if (pid == cont_actual->pid && esta_tid_en_lista(tid,contextos_tids)){
+            //signal
             return obtener_tid_en_lista(tid,contextos_tids);
-
+        }
+        
     }
     return NULL;
 }
@@ -973,4 +978,28 @@ void liberar_contexto_pid(t_contexto_pid *contexto_pid){
 
 void liberar_lisa_contextos(){
     list_destroy_and_destroy_elements(lista_contextos_pids,(void*)liberar_contexto_pid);
+}
+
+
+void enviar_contexto_a_memoria(int socket_memoria, t_contexto_pid* contexto) {
+    t_paquete* paquete = crear_paquete_op(OBTENER_CONTEXTO); 
+
+    agregar_contexto_pid_a_paquete(paquete,contexto);
+
+    enviar_paquete(paquete, socket_memoria);
+
+    eliminar_paquete(paquete);
+
+    uint32_t resultado;
+    if (recv(socket_memoria, &resultado, sizeof(uint32_t), 0) <= 0) {
+        perror("Error recibiendo la confirmación de memoria");
+        return;
+    }
+
+    // Verificar el resultado y loggear en base a la respuesta
+    if (resultado == OK) {
+        printf("Contexto TID %d almacenado correctamente en la memoria.\n", contexto->tid);
+    } else {
+        printf("Error al almacenar el contexto TID %d en la memoria.\n", contexto->tid);
+    }
 }

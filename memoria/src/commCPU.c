@@ -18,14 +18,16 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
                 enviar_contexto_pid(SOCKET_CLIENTE_CPU,contexto,OBTENER_CONTEXTO);
                 log_info(logger, "Enviado contexto para PID: %d, TID: %d", pid, tid);
                 
+                
+
                 //liberar_contexto_pid(contexto);
                 break;
             }
 
             case ACTUALIZAR_CONTEXTO: { // AUXILIO
                 t_contexto *contexto = recibir_contexto(SOCKET_CLIENTE_CPU);  // Recibe nuevo contexto
-                actualizar_contexto(contexto); // Falta crear esta funcion? O se usa actualizar_contexto_en_memoria???
-                //actualizar_contexto_en_memoria(contexto);
+                actualizar_contexto(contexto); // Falta crear esta funcion? O se usa enviar_contexto_a_memoria???
+                //enviar_contexto_a_memoria(contexto);
                 enviar_codop(SOCKET_CLIENTE_CPU, ACTUALIZACION_OK);
                 log_info(logger, "Contexto actualizado para TID: %d", contexto->tid);
                 free(contexto);

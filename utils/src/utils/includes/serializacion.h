@@ -15,6 +15,7 @@ typedef enum{
     THREAD_CANCEL_AVISO,
     THREAD_INTERRUPT,
     FIN_QUANTUM_RR,
+    ENUM_SEGMENTATION_FAULT,
     OK
 }code_operacion;
 
@@ -29,8 +30,7 @@ ENUM_MUTEX_CREATE,
 ENUM_MUTEX_LOCK,
 ENUM_MUTEX_UNLOCK,
 ENUM_IO,
-ENUM_DUMP_MEMORY,
-ENUM_SEGMENTATION_FAULT
+ENUM_DUMP_MEMORY
 }syscalls;
 
 typedef struct {
@@ -112,5 +112,6 @@ void send_thread_exit(int socket_cliente);
 
 code_operacion recibir_code_operacion(int socket_cliente);
 void send_code_operacion(code_operacion code, int socket_cliente);
+void send_operacion_tid(code_operacion code, int tid, int socket_cliente);
 
 #endif

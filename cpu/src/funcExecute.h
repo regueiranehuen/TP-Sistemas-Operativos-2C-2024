@@ -2,6 +2,7 @@
 #define FUNCEXECUTE_H
 
 #include "server.h"
+#include "mmu.h"
 
 
 void funcSET(char *registro, char* valor);
@@ -17,7 +18,6 @@ void valor_registro_cpu(char* registro, char* valor);
 char* encontrarValorDeRegistro(char* registro);
 
 uint32_t tamanio_registro(char *registro);
-uint32_t traducir_direccion_logica(uint32_t dirLogica);
 char *leer_valor_de_memoria(uint32_t direccionFisica, uint32_t tamanio);
 void escribir_valor_en_memoria(uint32_t direccionFisica, char *valor, uint32_t tamanio);
 

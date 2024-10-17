@@ -1,6 +1,6 @@
 #include "funcExecute.h"
 
-void funcSET(char *registro, char* valor) {
+void funcSET(t_contexto_tid*contexto,char *registro, char* valor) {
     // Asignar el valor al registro correspondiente
     uint32_t val = atoi(valor);
     if (strcmp(registro, "AX") == 0) {
@@ -29,7 +29,7 @@ void funcSET(char *registro, char* valor) {
     log_info(log_cpu, "SET: Registro %s = %d", registro, val);
 }
 
-void funcSUM(char* registroOrig, char* registroDest) {
+void funcSUM(t_contexto_tid*contexto,char* registroOrig, char* registroDest) {
     
      if (strcmp(registroOrig, "AX") == 0) {
 
@@ -84,7 +84,7 @@ void funcSUM(char* registroOrig, char* registroDest) {
     }
 }
 
-void funcSUB(char* registroDest, char* registroOrig) {
+void funcSUB(t_contexto_tid*contexto,char* registroDest, char* registroOrig) {
 
     if (strcmp(registroDest, "AX") == 0) {
 
@@ -139,7 +139,7 @@ void funcSUB(char* registroDest, char* registroOrig) {
     }
 }
 
-void funcJNZ(char* registro, char* num_instruccion) {
+void funcJNZ(t_contexto_tid*contexto,char* registro, char* num_instruccion) {
     uint32_t reg_value;
     if (strcmp(registro, "AX") == 0) {
         reg_value = contexto->registros->AX;
@@ -163,7 +163,7 @@ void funcJNZ(char* registro, char* num_instruccion) {
     }
 
     if (reg_value != 0) {
-        contexto->pc = atoi(num_instruccion);
+        contexto->registros->PC = atoi(num_instruccion);
     }
 }
 
@@ -172,11 +172,11 @@ void funcLOG(char* registro) {
     log_info(log_cpu, "LOG: Registro %s = %d", registro, valorRegistro);
 }
 
-void funcREAD_MEM(char* registro_datos, char* registro_direccion) {
+void funcREAD_MEM(t_contexto_tid*contexto,char* registro_datos, char* registro_direccion) {
     log_info(log_cpu, "Instrucción READ_MEM ejecutada");
     
     uint32_t direccionLogica = obtener_valor_registro(registro_direccion);
-    uint32_t direccionFisica = traducir_direccion_logica(direccionLogica);
+    uint32_t direccionFisica = traducir_direccion_logica(contexto,direccionLogica);
     
     // Verificar si la dirección es válida
     if (direccionFisica >= 0) {

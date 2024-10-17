@@ -398,7 +398,7 @@ void THREAD_CANCEL(int tid)
             sacar_tcb_de_lista(lista_ready_prioridad,tcb);
             pthread_mutex_unlock(&mutex_cola_ready);
         }
-        else if(strcmp(algoritmo,"MULTINIVEL")){
+        else if(strcmp(algoritmo,"CMN")){
             pthread_mutex_lock(&mutex_cola_ready);
             t_cola_prioridad* cola = cola_prioridad(colas_ready_prioridad,tcb->prioridad);
             sacar_tcb_de_cola(cola->cola,tcb);
@@ -609,5 +609,9 @@ void DUMP_MEMORY()
     }
 }
 
+
+/*
+Ver que hacer cuando CPU le manda tid despues de la EJECUCION
+*/
 
 

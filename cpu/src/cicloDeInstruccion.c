@@ -14,45 +14,122 @@ int tid_exec;
 int pid_exec;
 
 
-void ciclo_de_instruccion(int tid, int pid){
+void ciclo_de_instruccion(t_contexto_pid* contextoPid, t_contexto_tid*contextoTid){
     seguir_ejecutando=true;
-    t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
+    //t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
     while (seguir_ejecutando){
-        t_instruccion*instruccion=fetch(contexto);
+        t_instruccion*instruccion=fetch(contextoTid);
         if (instruccion == NULL) {
             seguir_ejecutando = false;
             continue; // Si hay un error, salir del ciclo
         }
         op_code nombre_instruccion = decode(instruccion);
-        execute(nombre_instruccion,instruccion);
+        execute(contextoPid,contextoTid, nombre_instruccion, instruccion);
 
         if (seguir_ejecutando){
-            checkInterrupt(tid,pid);
+            
+            checkInterrupt(contextoPid,contextoTid); // TODO REVISAR 
         }
     }
 }
 
+/*
+En este momento, se deberá chequear si el Kernel nos envió una interrupción al TID que se está ejecutando, 
+en caso afirmativo, se actualiza el Contexto de Ejecución en la Memoria y se devuelve el TID al Kernel con motivo de la interrupción. 
+Caso contrario, se descarta la interrupción.
+*/
 
+void checkInterrupt(t_contexto_pid* contextoPid,t_contexto_tid* contextoTid->tid){ // Falta devolver al kernel el tid con motivo de interrupcion
 
-
-void checkInterrupt(int tid,int pid){ // Falta devolver al kernel el tid con motivo de interrupcion
+    //wait
     if (hay_interrupcion){
         hay_interrupcion = false;
-        if(tid == tid_interrupt){
-            seguir_ejecutando = false;
-            if(!es_por_usuario){
-                obtener_contexto_tid(pid,tid);
-                //enviar_contexto_tid(sockets_cpu->socket_memoria,contexto,INTERRUPCION);
+    //signal
 
+        // wait
+        if(tid == tid_interrupt){
+        // signal
+
+            //wait
+            seguir_ejecutando = false;
+            //signal
+
+            //wait
+            t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
+            //signal
+            if(contexto == NULL){
+                printf("Error: no se pudo obtener el contexto del TID %d\n",tid);
+
+                // signal para liberar el semaforo
+                return;
+            }
+
+            actualizar_contexto_en_memoria(contexto);
+
+            notificar_kernel_terminacion(tid,ENUM_SEGMENTATION_FAULT); //TODO VER DE DONDE SACAR EL TIPO DE INTERRUPCION
+
+            // if(es_por_usuario){
+                
+            //     //enviar_contexto_tid(sockets_cpu->socket_memoria,contexto,INTERRUPCION);
+
+            //     enviar_contexto_a_memoria(contexto);
+                
+            //     notificar_kernel_terminacion(tid,ENUM_SEGMENTATION_FAULT); // 
                 
 
-            }else{
-                obtener_contexto_tid(pid_exec,tid_exec);
-                //enviar_contexto_tid(sockets_cpu->socket_memoria,contexto,INTERRUPCION_USUARIO);
-            }
+            // }
         }
     }
 }
+
+void actualizar_contexto_en_memoria(t_contexto_pid*contexto_pid){
+    if (contexto == NULL)
+    {
+        printf("Error: El contexto proporcionado es nulo.\n");
+        return;
+    }
+
+    t_contexto_tid* contexto_actual_tid = obtener_contexto_tid(contexto->pid,contexto->contextos_tids);
+
+    if(contexto_actual != NULL){
+        contexto_actual->registros->PC = contexto->contextos_tids->registros->PC;
+
+    }else{
+        // muerte No SE
+    }
+    
+}
+
+void actualizar_contexto_en_memoria(t_contexto_tid* contexto){
+    
+
+    contexto=obtener_contexto_tid(contexto->tid)
+
+
+    int size = 0;
+    t_paquete*paquete = recibir
+    int desp = 0;
+    buffer = recibir_buffer(&size, socket_cpu);
+    
+    // El tid lo envía el kernel por el puerto de dispatch
+    nuevo_contexto->tid = leer_entero_uint32(buffer,&desp);
+    //nuevo_contexto->tid = leer_entero_uint32(buffer, &desp);
+    nuevo_contexto->pc = leer_entero_uint32(buffer, &desp);
+    nuevo_contexto->registros->AX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->BX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->CX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->DX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->EX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->FX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->GX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->HX = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->base = leer_entero_uint8(buffer, &desp);
+    nuevo_contexto->registros->limite = leer_entero_uint8(buffer, &desp);
+    free(buffer);
+    return nuevo_contexto;
+    
+}
+
 
 
 
@@ -127,100 +204,99 @@ op_code decode(t_instruccion *instruccion){
 
 }
 
-void execute(op_code instruccion_nombre, t_instruccion* instruccion) {
+void execute(t_contexto_pid*contextoPid,t_contexto_tid* contextoTid ,op_code instruccion_nombre, t_instruccion* instruccion) {
     log_info(log_cpu, "Ejecutando instrucción: %s", instruccion->parametros1);
     
     switch (instruccion_nombre) {
         case SET:
             log_info(log_cpu, "SET - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
             funcSET(instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
-            contexto->pc++;
+            modificar_registros(contextoTid);
             break;
         case SUM:
             log_info(log_cpu, "SUM - Registro: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
             funcSUM(instruccion->parametros2, instruccion->parametros3);
-            contexto->pc++;
+            modificar_registros(contextoTid);
             break;
         case SUB:
             log_info(log_cpu, "SUB - Registro: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
             funcSUB(instruccion->parametros2, instruccion->parametros3);
-            contexto->pc++;
+            modificar_registros(contextoTid);
             break;
         case JNZ:
             log_info(log_cpu, "JNZ - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
             funcJNZ(instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
-            contexto->pc++;
+            modificar_registros(contextoTid);
             break;
         case READ_MEM:
             log_info(log_cpu, "READ_MEM - Dirección: %s", instruccion->parametros2);
             funcREAD_MEM(instruccion->parametros2, instruccion->parametros3);
-            contexto->pc++;
+            modificar_registros(contextoTid);
             break;
         case WRITE_MEM:
             log_info(log_cpu, "WRITE_MEM - Dirección: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
             funcWRITE_MEM(instruccion->parametros2, instruccion->parametros3);
-            contexto->pc++;
+            modificar_registros(contextoTid);
             break;
         case LOG:
             log_info(log_cpu, "LOG - Mensaje: %s", instruccion->parametros2);
             funcLOG(instruccion->parametros2);
-            contexto->pc++;
+            modificar_registros(contextoTid);
             break;
         case DUMP_MEMORY:
             log_info(log_cpu, "DUMP_MEMORY");
             send_dump_memory(sockets_cpu->socket_servidor->socket_Interrupt);
-            enviar_contexto_a_memoria(sockets_cpu->socket_memoria, contexto);
+            esperar_ok_kernel(contextoTid);
             break;
         case IO:
             log_info(log_cpu, "IO - Tiempo: %d", atoi(instruccion->parametros2));
             send_IO(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_Interrupt);
-            enviar_contexto_a_memoria(sockets_cpu->socket_memoria, contexto);
+            esperar_ok_kernel(contextoTid);
             break;
         case PROCESS_CREATE:
             log_info(log_cpu, "PROCESS_CREATE - PID: %s, Tamaño: %d, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4));
             send_process_create(instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4), sockets_cpu->socket_servidor->socket_Interrupt);
-            enviar_contexto_a_memoria(sockets_cpu->socket_memoria, contexto);
+            esperar_ok_kernel(contextoTid);
             break;
         case THREAD_CREATE:
             log_info(log_cpu, "THREAD_CREATE - TID: %s, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3));
             send_thread_create(instruccion->parametros2, atoi(instruccion->parametros3), sockets_cpu->socket_servidor->socket_Interrupt);
-            enviar_contexto_a_memoria(sockets_cpu->socket_memoria, contexto);
+            esperar_ok_kernel(contextoTid);
             break;
         case THREAD_JOIN:
             log_info(log_cpu, "THREAD_JOIN - TID: %d", atoi(instruccion->parametros2));
             send_thread_join(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_Interrupt);
-            enviar_contexto_a_memoria(sockets_cpu->socket_memoria, contexto);
+            esperar_ok_kernel(contextoTid);
             break;
         case THREAD_CANCEL:
             log_info(log_cpu, "THREAD_CANCEL - TID: %d", atoi(instruccion->parametros2));
             send_thread_cancel(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_Interrupt);
-            enviar_contexto_a_memoria(sockets_cpu->socket_memoria, contexto);
+            esperar_ok_kernel(contextoTid);
             break;
         case MUTEX_CREATE:
             log_info(log_cpu, "MUTEX_CREATE - Nombre: %s", instruccion->parametros2);
             send_mutex_create(instruccion->parametros2, sockets_cpu->socket_servidor->socket_Interrupt);
-            enviar_contexto_a_memoria(sockets_cpu->socket_memoria, contexto);
+            esperar_ok_kernel(contextoTid);
             break;
         case MUTEX_LOCK:
             log_info(log_cpu, "MUTEX_LOCK - Nombre: %s", instruccion->parametros2);
             send_mutex_lock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_Interrupt);
-            enviar_contexto_a_memoria(sockets_cpu->socket_memoria, contexto);
+            esperar_ok_kernel(contextoTid);
             break;
         case MUTEX_UNLOCK:
             log_info(log_cpu, "MUTEX_UNLOCK - Nombre: %s", instruccion->parametros2);
             send_mutex_unlock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_Interrupt);
-            enviar_contexto_a_memoria(sockets_cpu->socket_memoria, contexto);
+            esperar_ok_kernel(contextoTid);
             break;
         case THREAD_EXIT:
             log_info(log_cpu, "THREAD_EXIT");
             send_thread_exit(sockets_cpu->socket_servidor->socket_Interrupt);
-            enviar_contexto_a_memoria(sockets_cpu->socket_memoria, contexto);
+            esperar_ok_kernel(contextoTid);
             break;
         case PROCESS_EXIT:
             log_info(log_cpu, "PROCESS_EXIT");
             send_process_exit(sockets_cpu->socket_servidor->socket_Interrupt);
-            enviar_contexto_a_memoria(sockets_cpu->socket_memoria, contexto);
-            seguir_ejecutando = 0;
+            esperar_ok_kernel(contextoTid);
             break;
         default:
             log_error(log_cpu, "Instrucción no válida");
@@ -228,44 +304,20 @@ void execute(op_code instruccion_nombre, t_instruccion* instruccion) {
     }
 }
 
-void analizar_terminacion(void){
-    code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Interrupt);
-    if (code == TERMINAR)
-        seguir_ejecutando=false;
+void modificar_registros(t_contexto_tid* contexto){
+    contexto->registros->PC++;
+    enviar_contexto_a_memoria(contexto);
+
+    
+
 }
 
 
-
-// Recepción de mensajes de Kernel Dispatch
-void recibir_kernel_dispatch(int socket_cliente_Dispatch) { // Juntar recv de dipatch y de interrupt
-    int noFinalizar = 0;
-    while (noFinalizar != -1) {
-        t_paquete_code_operacion*paquete=recibir_paquete_code_operacion(socket_cliente_Dispatch);
-        switch (paquete->code){
-            case THREAD_EXECUTE_AVISO:
-                /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
-                t_tid_pid*info = recepcionar_tid_pid_code_op(paquete);
-
-                t_contexto_tid*contexto=obtener_contexto_tid(info->pid,info->tid);
-
-                if (contexto == NULL){
-                    t_contexto_pid* contexto_pid = obtener_contexto_pid(info->pid,info->tid);
-                    contexto= inicializar_contexto_tid(contexto_pid,info->tid);
-                    list_add(contexto_pid->contextos_tids,contexto);
-                }
-            
-                log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
-                //MUTEX_LOCK
-                tid_exec=info->tid;
-                pid_exec=info->pid;
-                //MUTEX_UNLOCK
-               
-                ciclo_de_instruccion(info->tid,info->pid); // OJO CON ESTA FUNCION. ACÁ DEBERÍA MANDARSE LA VARIABLE CONTEXTO DE ARRIBA Y NO LA GLOBAL
-            case OK:
-                noFinalizar=0; 
-                break;
-            default:
-                break;
-        }
+void esperar_ok_kernel(t_contexto_tid*contexto){
+    code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
+    if (code == OK){
+        contexto->registros->PC++;
+        enviar_contexto_a_memoria(contexto);
     }
+        
 }

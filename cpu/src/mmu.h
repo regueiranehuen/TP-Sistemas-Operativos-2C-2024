@@ -3,8 +3,8 @@
 
 #include "server.h"
 
-uint32_t traducir_direccion_logica(uint32_t direccion_logica);
-void actualizar_contexto_en_memoria(t_contexto *contexto);
-void notificar_kernel_terminacion(int tid, int razon_salida);
+uint32_t traducir_direccion_logica(t_contexto_pid *contexto,uint32_t direccion_logica);
+void enviar_contexto_a_memoria(t_contexto_tid* contexto);
+void notificar_kernel_terminacion(int tid, code_operacion code);
 
 #endif

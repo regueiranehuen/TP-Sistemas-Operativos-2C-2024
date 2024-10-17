@@ -399,6 +399,21 @@ void send_operacion_pid(code_operacion code, int pid, int socket_cliente){
     
 }
 
+void send_operacion_tid(code_operacion code, int tid, int socket_cliente){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
+
+    buffer->size = sizeof(int);
+
+    buffer->stream = malloc(buffer->size);
+
+    memcpy(buffer->stream, &tid,sizeof(int));
+
+    send_paquete_code_operacion(code,buffer,socket_cliente);
+    
+}
+
+
+
 void send_operacion_pid_tamanio_proceso(code_operacion code, int pid, int tamanio_proceso, int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
 

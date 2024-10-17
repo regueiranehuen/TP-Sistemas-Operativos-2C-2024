@@ -274,7 +274,7 @@ void *hilo_planificador_corto_plazo(void *arg)
         ejecucion(hilo_a_ejecutar);
         }
 
-        if (strings_iguales(algoritmo, "MULTINIVEL"))
+        if (strings_iguales(algoritmo, "CMN"))
         {
             colas_multinivel();
         }
@@ -376,6 +376,13 @@ void pushear_cola_ready(t_tcb* hilo){
 }
 
 
+// Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC y se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
+// En caso que el algoritmo requiera desalojar al hilo en ejecución, se enviará una interrupción a través de la conexión de interrupt para forzar el desalojo del mismo.
+// Al recibir el TID del hilo en ejecución, en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
+
+
+
+
 void ejecucion(t_tcb *hilo)
 {
 
@@ -387,7 +394,7 @@ pthread_mutex_unlock(&mutex_conexion_cpu);
 
     char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
 
-if(strcmp(algoritmo,"MULTINIVEL")==0){
+if(strcmp(algoritmo,"CMN")==0){
     char* quantum_char = config_get_string_value(config,"QUANTUM");
     int quantum = atoi(quantum_char);
     espera_con_quantum(quantum);
@@ -401,3 +408,4 @@ else{
 }
 
 }
+

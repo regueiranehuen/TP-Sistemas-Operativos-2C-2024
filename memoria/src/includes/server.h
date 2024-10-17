@@ -7,6 +7,7 @@
 #include <semaphore.h>
 
 extern sem_t sem_conexion_hecha;
+extern t_list*lista_contextos_pids;
 
 typedef struct{
     int socket_servidor;

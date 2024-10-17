@@ -27,7 +27,6 @@
 #include "serializacion.h"
 
 
-extern t_list*lista_contextos_pids;
 
 typedef struct{
     int pid;
@@ -48,21 +47,12 @@ typedef struct{
     uint32_t GX;
     uint32_t HX;
     uint32_t PC;
-    //uint32_t base; // la base y el limite son unicos por cada proceso
-    //uint32_t limite;
 }t_registros_cpu; 
 
 typedef struct{
     int tid;
     t_registros_cpu*registros;
 }t_contexto_tid;
-
-
-typedef struct {
-	uint32_t tid;
-	uint32_t pc;
-	t_registros_cpu* registros;
-}t_contexto; ///////// LA IDEA ES ELIMINAR ESTA ESTRUCTURA Y USAR CONTEXTO PID Y CONTEXTO TID
 
 typedef struct {
     t_contexto_tid* contexto;
@@ -84,7 +74,7 @@ typedef struct {
     motivo_exit motivo;
 }t_pcb_exit;
 
-typedef enum
+typedef enum // SOLO USARLO CON MEMORIA
 {
     Algo, //hay un case -1 que lo cambie a 1
     //ESTADOS
@@ -149,7 +139,7 @@ typedef enum
     ESPACIO_USUARIO,
     WRITE_OK,
     ACTUALIZACION_OK,
-}op_code;
+}op_code; // USARLO SOLAMENTE CON MEMORIA
 
 
 typedef struct{
@@ -296,7 +286,7 @@ void recibir_2_string_mas_3_u32_con_contexto(int socket, char** palabra1,char** 
 
 //  NUEVAS FUNCIONES POST CHECKPOINT 2
 
-t_contexto_pid* obtener_contexto_pid(int pid, int tid);
+t_contexto_pid* obtener_contexto_pid(int pid)
 t_contexto_tid* obtener_contexto_tid(int pid, int tid);
 bool esta_tid_en_lista(int tid,t_list*contextos_tids);
 void agregar_contexto_pid_a_paquete(t_paquete*paquete,t_contexto_pid*contexto);
@@ -312,5 +302,7 @@ t_contexto_tid* inicializar_contexto_tid(t_contexto_pid* cont,int tid);
 t_contexto_pid*inicializar_contexto_pid(int pid);
 t_contexto_tid* obtener_tid_en_lista(int tid,t_list*contextos_tids);
 bool existe_contexto_pid(int pid);
+
+void enviar_contexto_a_memoria(int socket_memoria, t_contexto_tid* contexto) ;
 
 #endif

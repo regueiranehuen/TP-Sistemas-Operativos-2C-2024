@@ -20,7 +20,6 @@ typedef struct {
 extern t_log* log_cpu;
 extern t_config* config;
 extern t_sockets_cpu* sockets_cpu;
-extern t_contexto* contexto; ////////////DESHACERSE DE ESTO
 extern t_pcb_exit* pcb_salida;
 
 extern char* ip_memoria;
@@ -42,6 +41,7 @@ extern void* socket_cliente_memoria;
 
 extern uint32_t tid_interrupt;
 extern bool hay_interrupcion;
+extern bool seguir_ejecutando;
 extern int es_por_usuario;
 
 extern int tid_exec;

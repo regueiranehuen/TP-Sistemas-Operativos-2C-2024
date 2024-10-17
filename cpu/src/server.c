@@ -1,9 +1,9 @@
 #include "server.h"
+#include "cicloDeInstruccion.h"
 
 t_log* log_cpu = NULL;
 t_config* config = NULL;
 t_sockets_cpu* sockets_cpu = NULL; // ¿
-t_contexto* contexto = NULL;
 t_pcb_exit* pcb_salida = NULL;
 
 char* ip_memoria = NULL;
@@ -23,7 +23,7 @@ pthread_t hilo_cliente;
 void* socket_servidor_kernel = NULL;
 void* socket_cliente_memoria = NULL;
 
-uint32_t tid_interrupt = 0;
+uint32_t tid_interrupt;
 bool hay_interrupcion=false;
 int es_por_usuario = 0;
 
@@ -189,13 +189,26 @@ void recibir_kernel_interrupt(int socket_cliente_Interrupt) {
         t_paquete_code_operacion* paquete=recibir_paquete_code_operacion(socket_cliente_Interrupt); 
 
         if (es_interrupcion_usuario(paquete->code)){ // No entiendo a qué se refieren con interrupción de usuario
+            // wait
             tid_interrupt = recepcionar_int_code_op(paquete); // Hay que ver si hay algun problema igualando uint_32 con int
+            //signal
+
+            //wait
             hay_interrupcion = true;
+            //signal
+
+            //wait
             es_por_usuario = 1;
+            //signal
         }
         else if (paquete->code == TERMINAR){
+            //wait
             seguir_ejecutando=false;
+            //signal
+
+            //wait
             noFinalizar=-1;
+            //signal
         }
 
     }
@@ -205,3 +218,35 @@ bool es_interrupcion_usuario(code_operacion code){
     return (code == FIN_QUANTUM_RR || code == THREAD_INTERRUPT || code == DUMP_MEMORIA); // ???
 }
 
+
+// Recepción de mensajes de Kernel Dispatch
+void recibir_kernel_dispatch(int socket_cliente_Dispatch) { // Juntar recv de dipatch y de interrupt
+    int noFinalizar = 0;
+    while (noFinalizar != -1) {
+        t_paquete_code_operacion*paquete=recibir_paquete_code_operacion(socket_cliente_Dispatch);
+        switch (paquete->code){
+            case THREAD_EXECUTE_AVISO:
+                /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
+                t_tid_pid*info = recepcionar_tid_pid_code_op(paquete);
+
+                t_contexto_tid*contextoTid=obtener_contexto_tid(info->pid,info->tid);
+                t_contexto_pid*contextoPid=obtener_contexto_pid(info->pid);
+                if (contextoTid == NULL){
+                    contextoTid= inicializar_contexto_tid(contextoPid,info->tid);
+                    list_add(contextoPid->contextos_tids,contextoTid);
+                }
+            
+                log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
+                //MUTEX_LOCK
+                tid_exec=info->tid;
+                pid_exec=info->pid;
+                //MUTEX_UNLOCK
+                ciclo_de_instruccion(contextoPid,contextoTid); 
+            case OK:
+                noFinalizar=0; 
+                break;
+            default:
+                break;
+        }
+    }
+}
