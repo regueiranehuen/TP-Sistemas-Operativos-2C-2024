@@ -140,8 +140,7 @@ typedef enum // SOLO USARLO CON MEMORIA
     CONTEXTO_TID_INEXISTENTE,
     OBTENER_CONTEXTO_TID,
     OBTENER_CONTEXTO_PID,
-    ACTUALIZAR_CONTEXTO_PC,
-    ACTUALIZAR_CONTEXTO_REGISTROS,
+    ACTUALIZAR_CONTEXTO_TID,
 
     OBTENCION_CONTEXTO_TID_OK,
     OBTENCION_CONTEXTO_PID_OK,
@@ -326,8 +325,8 @@ void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto);
 op_code recibir_op_code(int socket_cliente);
 t_paquete* recibir_paquete_op_code(int socket_cliente);
 int leer_entero(char *buffer, int *desplazamiento);
-t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete,int socket_cliente);
-t_contexto_pid* recepcionar_contexto_pid(t_paquete*paquete,int socket_cliente);
+t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete);
+t_contexto_pid* recepcionar_contexto_pid(t_paquete*paquete);
 void enviar_tid_pid_op_code(int conexion,t_tid_pid* info, op_code codop);
 void solicitar_contexto_tid(int pid, int tid,int conexion);
 void solicitar_contexto_pid(int pid,int conexion);
@@ -339,5 +338,7 @@ void enviar_registros_a_actualizar(int socket_cliente,t_registros_cpu*registros,
 void enviar_program_counter_a_actualizar(int socket_cliente,int pc,int pid, int tid);
 uint32_t recepcionar_uint32_paquete(t_paquete*paquete);
 t_tid_pid_pc*recepcionar_tid_pid_pc(t_paquete*paquete);
+t_registros_cpu*recepcionar_registros(t_paquete*paquete);
+void actualizar_contexto(int pid, int tid, t_registros_cpu* reg);
 
 #endif

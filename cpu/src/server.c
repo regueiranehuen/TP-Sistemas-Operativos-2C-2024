@@ -268,30 +268,15 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch)
             }
             else if(paquete_solicitud_contexto_pid->codigo_operacion == OBTENCION_CONTEXTO_PID_OK){
 
-                contextoPid = recepcionar_contexto_pid(paquete_solicitud_contexto_pid,sockets_cpu->socket_memoria);
-                log_info(log_cpu,"PID: %d - Solicito Contexto Ejecución",info->pid);
+                contextoPid = recepcionar_contexto_pid(paquete_solicitud_contexto_pid);
                 solicitar_contexto_tid(info->pid,info->tid,sockets_cpu->socket_memoria);
+                log_info(log_cpu,"TID: %d - Solicito Contexto Ejecución",info->tid);
 
                 t_paquete *paquete_solicitud_contexto_tid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
-                //// QUE LA MEMORIA SE ENCARGUE DE CREAR EL CONTEXTO DEL TID SI NO EXISTE
+                
 
-                /*if (paquete_solicitud_contexto_tid->codigo_operacion == CONTEXTO_TID_INEXISTENTE){  
-                    eliminar_paquete(paquete_solicitud_contexto_tid);
-                    pedir_creacion_contexto_tid(info->pid,info->tid,sockets_cpu->socket_memoria);
-
-                    t_paquete * paquete_nuevo_contexto_tid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
-
-                    if (paquete_nuevo_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK){
-                        contextoTid = recepcionar_contexto_tid(paquete_nuevo_contexto_tid,sockets_cpu->socket_memoria);
-                    }
-                    else if (paquete_nuevo_contexto_tid->codigo_operacion == -1){
-                        log_error(log_cpu, "Error obteniendo contexto del tid %d", info->tid);
-                        continue;
-                    }
-                }*/
-
-                if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK){
-                    contextoTid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid,sockets_cpu->socket_memoria);
+                if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK){ // La memoria se encarga de crear el contexto del tid si es que no existe
+                    contextoTid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid);
                     log_info(log_cpu,"TID: %d - Solicito Contexto Ejecución",info->tid);
                 }
                 else if (paquete_solicitud_contexto_tid->codigo_operacion == -1){

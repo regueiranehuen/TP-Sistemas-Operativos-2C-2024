@@ -243,18 +243,9 @@ void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto){
     eliminar_paquete(paquete);
 }
 
-void enviar_program_counter_a_actualizar(int socket_cliente,int pc,int pid, int tid){
-    t_paquete*paquete = crear_paquete_op(ACTUALIZAR_CONTEXTO_PC);
-
-    agregar_entero_int_a_paquete(paquete,pid);
-    agregar_entero_int_a_paquete(paquete,tid);
-    agregar_entero_int_a_paquete(paquete,pc);
-    enviar_paquete(paquete,socket_cliente);
-    eliminar_paquete(paquete);
-}
 
 void enviar_registros_a_actualizar(int socket_cliente,t_registros_cpu*registros,int pid, int tid){
-    t_paquete*paquete = crear_paquete_op(ACTUALIZAR_CONTEXTO_REGISTROS);
+    t_paquete*paquete = crear_paquete_op(ACTUALIZAR_CONTEXTO_TID);
 
     agregar_entero_int_a_paquete(paquete,pid);
     agregar_entero_int_a_paquete(paquete,tid);
@@ -833,7 +824,7 @@ t_tid_pid_pc*recepcionar_tid_pid_pc(t_paquete*paquete){
 
 
 
-t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete,int socket_cliente){ // me di cuenta que el socket no tiene sentido pasarlo
+t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete){ 
 
     int desp = 0;
     t_contexto_tid*nuevo_contexto=malloc(sizeof(t_contexto_tid));
@@ -857,7 +848,27 @@ t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete,int socket_cliente){ 
     return nuevo_contexto;
 }
 
-t_contexto_pid* recepcionar_contexto_pid(t_paquete*paquete,int socket_cliente){
+t_registros_cpu*recepcionar_registros(t_paquete*paquete){
+    int desp = 0;
+    t_registros_cpu*reg=malloc(sizeof(t_registros_cpu));
+    
+
+    
+    reg->PC = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->AX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->BX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->CX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->DX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->EX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->FX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->GX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->HX = leer_entero_uint32(paquete->buffer->stream, &desp);
+
+    eliminar_paquete(paquete);
+    return reg;
+}
+
+t_contexto_pid* recepcionar_contexto_pid(t_paquete*paquete){
 
     int desp = 0;
     t_contexto_pid*nuevo_contexto=malloc(sizeof(t_contexto_pid));

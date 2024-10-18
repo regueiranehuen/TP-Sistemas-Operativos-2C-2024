@@ -173,37 +173,37 @@ void execute(t_contexto_pid*contextoPid,t_contexto_tid* contextoTid ,op_code ins
         case SET:
             log_info(log_cpu, "SET - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
             funcSET(contextoTid,instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
-            modificar_registros(contextoTid);
+
             break;
         case SUM:
             log_info(log_cpu, "SUM - Registro: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
             funcSUM(contextoTid,instruccion->parametros2, instruccion->parametros3);
-            modificar_registros(contextoTid);
+
             break;
         case SUB:
             log_info(log_cpu, "SUB - Registro: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
             funcSUB(contextoTid,instruccion->parametros2, instruccion->parametros3);
-            modificar_registros(contextoTid);
+
             break;
         case JNZ:
             log_info(log_cpu, "JNZ - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
             funcJNZ(contextoTid,instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
-            modificar_registros(contextoTid);
+
             break;
         case READ_MEM:
             log_info(log_cpu, "READ_MEM - Dirección: %s", instruccion->parametros2);
             funcREAD_MEM(contextoPid,contextoTid,instruccion->parametros2, instruccion->parametros3);
-            modificar_registros(contextoTid);
+
             break;
         case WRITE_MEM:
             log_info(log_cpu, "WRITE_MEM - Dirección: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
             funcWRITE_MEM(contextoPid,contextoTid,instruccion->parametros2, instruccion->parametros3);
-            modificar_registros(contextoTid);
+
             break;
         case LOG:
             log_info(log_cpu, "LOG - Mensaje: %s", instruccion->parametros2);
             funcLOG(contextoTid,instruccion->parametros2);
-            modificar_registros(contextoTid);
+
             break;
         case DUMP_MEMORY:
             log_info(log_cpu, "DUMP_MEMORY");
@@ -266,17 +266,12 @@ void execute(t_contexto_pid*contextoPid,t_contexto_tid* contextoTid ,op_code ins
     }
 }
 
-void modificar_registros(t_contexto_tid* contexto){
-    contexto->registros->PC++;
-    enviar_registros_a_actualizar(sockets_cpu->socket_memoria,contexto->registros,contexto->pid,contexto->tid); 
-}
 
 
 void esperar_ok_kernel(t_contexto_tid*contexto){
     code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
     if (code == OK){
         contexto->registros->PC++;
-        enviar_program_counter_a_actualizar(sockets_cpu->socket_memoria,contexto->registros->PC,contexto->pid,contexto->tid);
     }
         
 }

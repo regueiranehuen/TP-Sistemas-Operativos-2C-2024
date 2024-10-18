@@ -14,6 +14,8 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
                 int pid = info->pid;
                 int tid = info->tid;
 
+                log_info(logger, "## Contexto solicitado - (PID:TID) - (%d:%d)",pid,tid);
+
                 t_contexto_tid*contexto_tid=obtener_contexto_tid(pid,tid);
 
                 // Si el contexto no existe, lo creamos y lo metemos en la lista de contextos de tid del contexto del pid
@@ -45,18 +47,16 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
                 break;
             }
 
-            case ACTUALIZAR_CONTEXTO_PC: { 
-                t_tid_pid_pc* info = recepcionar_tid_pid_pc(paquete_operacion);
-                actualizar_contexto_program_counter(info->pid,info->tid,info->pc); 
+
+            case ACTUALIZAR_CONTEXTO_TID:{
+                t_tid_pid *info = recepcionar_tid_pid_op_code(paquete_operacion);  // Recibe PID y TID
+                int pid = info->pid;
+                int tid = info->tid;
+                t_registros_cpu* registros_a_actualizar = recepcionar_registros(paquete_operacion);
+                actualizar_contexto(pid,tid,registros_a_actualizar);
                 enviar_codop(SOCKET_CLIENTE_CPU, ACTUALIZACION_OK);
                 free(info);
-                log_info(logger, "Contexto actualizado para TID: %d", info->tid);
-                
-                break;
-            }
-
-            case ACTUALIZAR_CONTEXTO_REGISTROS:{
-
+                log_info(logger, "## Contexto actualizado - (PID:TID) - (%d:%d)", pid,tid);
                 break;
             }
 
@@ -67,7 +67,7 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
                 free(solicitud);
 
                 char *instruccion = obtener_instruccion(tid, pc);
-                enviar_instruccion(SOCKET_CLIENTE_CPU, instruccion, OBTENER_INSTRUCCION);
+                enviar_instruccion(SOCKET_CLIENTE_CPU, instruccion, OBTENER_INSTRUCCION); // REVISAR
                 log_info(logger, "Instrucción enviada para PID: %d, PC: %d", tid, pc);
                 free(instruccion);
                 break;
@@ -80,8 +80,8 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
                 free(solicitud);
 
                 void *datos = malloc(tam_a_leer);
-                memcpy(datos, ESPACIO_USUARIO + direccion_fisica, tam_a_leer);
-                enviar_datos(SOCKET_CLIENTE_CPU, datos, tam_a_leer);
+                memcpy(datos, ESPACIO_USUARIO + direccion_fisica, tam_a_leer); // REVISAR
+                enviar_datos(SOCKET_CLIENTE_CPU, datos, tam_a_leer); // REVISAR
                 log_info(logger, "Memoria leída desde %d, tamaño %d", direccion_fisica, tam_a_leer);
                 free(datos);
                 break;
@@ -113,6 +113,16 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
     log_warning(logger, "Se desconectó la CPU");
 }
 
+void actualizar_contexto(int pid, int tid, t_registros_cpu* reg){
+    t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
+    contexto->registros->PC=reg->PC;
+    contexto->registros->AX=reg->AX;
+    contexto->registros->BX=reg->BX;
+    contexto->registros->CX=reg->CX;
+    contexto->registros->DX=reg->DX;
+    contexto->registros->EX=reg->EX;
+    contexto->registros->HX=reg->HX;
+}
 
 void actualizar_contexto_program_counter(int pid, int tid, uint32_t pc){
     t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
@@ -140,9 +150,12 @@ bool existe_contexto_pid(int pid){
     return false;
 }
 
-t_contexto_pid*inicializar_contexto_pid(int pid){
+t_contexto_pid*inicializar_contexto_pid(int pid,uint32_t base, uint32_t limite){
     t_contexto_pid*nuevo_contexto=malloc(sizeof(t_contexto_pid));
     nuevo_contexto->pid=pid;
+    nuevo_contexto->base=base;
+    nuevo_contexto->limite=limite;
+
     nuevo_contexto->contextos_tids=list_create();
 // Paso como segundo parámetro el 0 ya que el proceso está siendo inicializado, y al iniciarse si o si tiene que tener un hilo
     t_contexto_tid* contexto_tid_0=inicializar_contexto_tid(nuevo_contexto,0); 
