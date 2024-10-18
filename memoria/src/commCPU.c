@@ -15,7 +15,7 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
                 free(solicitud);
 
                 t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
-                enviar_contexto_tid(SOCKET_CLIENTE_CPU,contexto,OBTENCION_OK);
+                enviar_contexto_tid(SOCKET_CLIENTE_CPU,contexto);
                 log_info(logger, "Enviado contexto para PID: %d, TID: %d", pid, tid);
                 
                 

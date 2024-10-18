@@ -136,12 +136,14 @@ typedef enum // SOLO USARLO CON MEMORIA
     CREAR_CONTEXTO_TID,
     ENVIAR_CONTEXTO_PID, //
     ENVIAR_CONTEXTO_TID, //
-    CONTEXTO_INEXISTENTE, //
+    CONTEXTO_PID_INEXISTENTE, //
+    CONTEXTO_TID_INEXISTENTE,
     OBTENER_CONTEXTO_TID,
     OBTENER_CONTEXTO_PID,
     ACTUALIZAR_CONTEXTO,
 
-    OBTENCION_OK,
+    OBTENCION_CONTEXTO_TID_OK,
+    OBTENCION_CONTEXTO_PID_OK,
     ACTUALIZACION_OK,
 
     //INSTRUCCION FINALIZADA
@@ -311,13 +313,17 @@ t_contexto_tid* obtener_tid_en_lista(int tid,t_list*contextos_tids);
 bool existe_contexto_pid(int pid);
 
 void agregar_entero_uint32_a_paquete(t_paquete *paquete, uint8_t numero);
-void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto, int codop);
-void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto, int codop);
+void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto);
+void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto);
 
 op_code recibir_op_code(int socket_cliente);
 t_paquete* recibir_paquete_op_code(int socket_cliente);
 int leer_entero(char *buffer, int *desplazamiento);
-t_contexto_tid* recibir_contexto_tid(t_paquete*paquete,int socket_cliente);
-t_contexto_pid* recibir_contexto_pid(t_paquete*paquete,int socket_cliente);
+t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete,int socket_cliente);
+t_contexto_pid* recepcionar_contexto_pid(t_paquete*paquete,int socket_cliente);
+void enviar_tid_pid_op_code(int conexion,t_tid_pid* info, op_code codop);
+void solicitar_contexto_tid(int pid, int tid,int conexion);
+void solicitar_contexto_pid(int pid,int conexion);
+void pedir_creacion_contexto_tid(int pid, int tid,int conexion);
 
 #endif

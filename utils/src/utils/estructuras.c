@@ -227,16 +227,16 @@ void enviar_string(int conexion, char *palabra, int codop)
     eliminar_paquete(paquete);
 }
 
-void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto, int codop){
-    t_paquete*paquete=crear_paquete_op(codop);
+void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto){
+    t_paquete*paquete=crear_paquete();
     
     agregar_contexto_pid_a_paquete(paquete,contexto);
     enviar_paquete(paquete,socket_cliente);
     eliminar_paquete(paquete);
 }
 
-void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto, int codop){
-    t_paquete*paquete=crear_paquete_op(codop);
+void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto){
+    t_paquete*paquete=crear_paquete();
     
     agregar_contexto_tid_a_paquete(paquete,contexto);
     enviar_paquete(paquete,socket_cliente);
@@ -286,6 +286,14 @@ void enviar_2_enteros(int conexion, t_2_enteros *enteros, int codop)
     eliminar_paquete(paquete);
 }
 
+void enviar_tid_pid_op_code(int conexion,t_tid_pid* info, op_code codop){
+    t_paquete *paquete = crear_paquete_op(codop);
+    agregar_entero_int_a_paquete(paquete,info->pid);
+    agregar_entero_int_a_paquete(paquete,info->tid);
+    enviar_paquete(paquete, conexion);
+    eliminar_paquete(paquete);
+}
+
 void enviar_3_enteros(int conexion, t_3_enteros *enteros, int codop)
 {
     t_paquete *paquete = crear_paquete_op(codop);
@@ -303,6 +311,21 @@ void enviar_codop(int conexion, op_code cod_op)
 
     eliminar_paquete(codigo);
 }
+
+void solicitar_contexto_tid(int pid, int tid,int conexion){
+    t_paquete *codigo = crear_paquete_op(OBTENER_CONTEXTO_TID);
+    agregar_entero_int_a_paquete(codigo,pid);
+    agregar_entero_int_a_paquete(codigo,tid);
+    enviar_paquete(codigo, conexion);
+    eliminar_paquete(codigo);
+}
+void solicitar_contexto_pid(int pid,int conexion){
+    t_paquete *codigo = crear_paquete_op(OBTENER_CONTEXTO_PID);
+    agregar_entero_int_a_paquete(codigo,pid);
+    enviar_paquete(codigo, conexion);
+    eliminar_paquete(codigo);
+}
+
 
 void enviar_paquete_string(int conexion, char *string, op_code codOP, int tamanio)
 {
@@ -745,7 +768,7 @@ t_string_mas_entero *recibir_string_mas_entero(int socket, t_log *loggs)
 
 
 
-t_contexto_tid* recibir_contexto_tid(t_paquete*paquete,int socket_cliente){
+t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete,int socket_cliente){
 
     int desp = 0;
     t_contexto_tid*nuevo_contexto=malloc(sizeof(t_contexto_tid));
@@ -769,7 +792,7 @@ t_contexto_tid* recibir_contexto_tid(t_paquete*paquete,int socket_cliente){
     return nuevo_contexto;
 }
 
-t_contexto_pid* recibir_contexto_pid(t_paquete*paquete,int socket_cliente){
+t_contexto_pid* recepcionar_contexto_pid(t_paquete*paquete,int socket_cliente){
 
     int desp = 0;
     t_contexto_pid*nuevo_contexto=malloc(sizeof(t_contexto_pid));
@@ -798,7 +821,13 @@ t_contexto_pid* recibir_contexto_pid(t_paquete*paquete,int socket_cliente){
     return nuevo_contexto;
 }
 
-
+void pedir_creacion_contexto_tid(int pid, int tid,int conexion){
+    t_paquete *paquete = crear_paquete_op(CREAR_CONTEXTO_TID);
+    agregar_entero_int_a_paquete(paquete,pid);
+    agregar_entero_int_a_paquete(paquete,tid);
+    enviar_paquete(paquete, conexion);
+    eliminar_paquete(paquete);
+}
 
 
 

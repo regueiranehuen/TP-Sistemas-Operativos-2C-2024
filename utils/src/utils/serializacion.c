@@ -181,6 +181,9 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 }
 
 
+
+
+
 void send_paquete_syscall_sin_parametros(int socket_cliente, syscalls syscall, t_paquete_syscall* paquete) {
     paquete->syscall = syscall;
     void *a_enviar = malloc(sizeof(paquete->syscall)); // Solo enviamos la syscall
@@ -354,6 +357,8 @@ void eliminar_paquete_code_op(t_paquete_code_operacion*paquete){
     free(paquete->buffer);
     free(paquete);
 }
+
+
 
 void send_operacion_tid_pid(code_operacion code, int tid, int pid, int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));

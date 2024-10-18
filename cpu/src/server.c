@@ -256,44 +256,59 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch)
             /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
             t_tid_pid *info = recepcionar_tid_pid_code_op(paquete);
 
-            t_paquete*paq=recibir_paquete_op_code(sockets_cpu->socket_memoria);
-            t_contexto_pid *contextoPid=recibir_contexto_pid(paq,sockets_cpu->socket_memoria);
+            solicitar_contexto_pid(info->pid,sockets_cpu->socket_memoria);
+            
+            t_contexto_pid* contextoPid;
+            t_contexto_tid* contextoTid;
 
-            t_contexto_tid *contextoTid;
-
-            enviar_codop(sockets_cpu->socket_memoria, OBTENER_CONTEXTO_TID);
-            // contextoPid=recibir_contexto_pid(paquete,sockets_cpu->socket_memoria);
-            t_paquete *paquete_mem = recibir_paquete_op_code(sockets_cpu->socket_memoria);
-
-            if (paquete_mem->codigo_operacion != -1)
-            {
-                if (paquete_mem->codigo_operacion == CONTEXTO_INEXISTENTE)
-                {
-                    enviar_codop(sockets_cpu->socket_memoria, CREAR_CONTEXTO_TID);
-                    t_paquete*paquete_nuevo=recibir_paquete_op_code(sockets_cpu->socket_memoria);
-
-                    contextoTid = recibir_contexto_tid(paquete_nuevo, sockets_cpu->socket_memoria);
-
-
-                }
-                else{
-                    contextoTid = recibir_contexto_tid(paquete_mem, sockets_cpu->socket_memoria);
-                }
-                
-                log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
-                // MUTEX_LOCK
-                tid_exec = info->tid;
-                pid_exec = info->pid;
-                // MUTEX_UNLOCK
-                ciclo_de_instruccion(contextoPid, contextoTid);
+            t_paquete* paquete_solicitud_contexto_pid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
+            if (paquete_solicitud_contexto_pid->codigo_operacion == CONTEXTO_PID_INEXISTENTE){
+                log_error(log_cpu, "El contexto del pid %d no existe", info->pid);
+                continue;
             }
-            else
-            {
-                log_error(log_cpu, "Error obteniendo contexto del tid %d", info->tid);
-            }
-        
-        
+            else if(paquete_solicitud_contexto_pid->codigo_operacion == OBTENCION_CONTEXTO_PID_OK){
 
+                contextoPid = recepcionar_contexto_pid(paquete_solicitud_contexto_pid,sockets_cpu->socket_memoria);
+                log_info(log_cpu,"PID: %d - Solicito Contexto Ejecución",info->pid);
+                solicitar_contexto_tid(info->pid,info->tid,sockets_cpu->socket_memoria);
+
+                t_paquete *paquete_solicitud_contexto_tid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
+
+                if (paquete_solicitud_contexto_tid->codigo_operacion == CONTEXTO_TID_INEXISTENTE){
+                    eliminar_paquete(paquete_solicitud_contexto_tid);
+                    pedir_creacion_contexto_tid(info->pid,info->tid,sockets_cpu->socket_memoria);
+
+                    t_paquete * paquete_nuevo_contexto_tid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
+
+                    if (paquete_nuevo_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK){
+                        contextoTid = recepcionar_contexto_tid(paquete_nuevo_contexto_tid,sockets_cpu->socket_memoria);
+                    }
+                    else if (paquete_nuevo_contexto_tid->codigo_operacion == -1){
+                        log_error(log_cpu, "Error obteniendo contexto del tid %d", info->tid);
+                        continue;
+                    }
+                }
+                else if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK){
+                    contextoTid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid,sockets_cpu->socket_memoria);
+                    log_info(log_cpu,"TID: %d - Solicito Contexto Ejecución",info->tid);
+                }
+                else if (paquete_solicitud_contexto_tid->codigo_operacion == -1){
+                    log_error(log_cpu, "Error obteniendo contexto del tid %d", info->tid);
+                    continue;
+                }
+
+            }
+            else if (paquete_solicitud_contexto_pid->codigo_operacion == -1){
+                log_error(log_cpu, "Error obteniendo contexto del tid %d", info->pid);
+                continue;
+            }
+
+            log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
+            // MUTEX_LOCK
+            tid_exec = info->tid;
+            pid_exec = info->pid;
+            // MUTEX_UNLOCK
+            ciclo_de_instruccion(contextoPid, contextoTid);
         break;
 
     case OK:
