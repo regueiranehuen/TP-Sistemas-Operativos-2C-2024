@@ -325,5 +325,8 @@ void enviar_tid_pid_op_code(int conexion,t_tid_pid* info, op_code codop);
 void solicitar_contexto_tid(int pid, int tid,int conexion);
 void solicitar_contexto_pid(int pid,int conexion);
 void pedir_creacion_contexto_tid(int pid, int tid,int conexion);
+t_tid_pid* recepcionar_tid_pid_op_code(t_paquete* paquete);
+void enviar_paquete_op_code(int socket, op_code code);
+int recepcionar_entero_paquete(t_paquete*paquete);
 
 #endif

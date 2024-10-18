@@ -228,7 +228,7 @@ void enviar_string(int conexion, char *palabra, int codop)
 }
 
 void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto){
-    t_paquete*paquete=crear_paquete();
+    t_paquete*paquete=crear_paquete_op(OBTENCION_CONTEXTO_PID_OK);
     
     agregar_contexto_pid_a_paquete(paquete,contexto);
     enviar_paquete(paquete,socket_cliente);
@@ -236,10 +236,18 @@ void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto){
 }
 
 void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto){
-    t_paquete*paquete=crear_paquete();
+    t_paquete*paquete=crear_paquete_op(OBTENCION_CONTEXTO_TID_OK);
     
     agregar_contexto_tid_a_paquete(paquete,contexto);
     enviar_paquete(paquete,socket_cliente);
+    eliminar_paquete(paquete);
+}
+
+void enviar_paquete_op_code(int socket, op_code code){
+    t_paquete*paquete=crear_paquete_op(code);
+
+    enviar_paquete(paquete,socket);
+
     eliminar_paquete(paquete);
 }
 
@@ -511,6 +519,12 @@ int leer_entero(char *buffer, int *desplazamiento)
     return entero;
 }
 
+int recepcionar_entero_paquete(t_paquete*paquete){
+    int entero;
+    memcpy(&entero, paquete->buffer->stream, sizeof(int));
+    return entero;
+}
+
 uint8_t leer_entero_uint8(char *buffer, int *desplazamiento)
 {
     uint8_t entero;
@@ -645,6 +659,7 @@ t_instruccion *recibir_instruccion(int socket)
     return instruccion_nueva;
 }
 
+
 t_2_enteros *recibir_2_enteros(int socket)
 {
 
@@ -762,7 +777,19 @@ t_string_mas_entero *recibir_string_mas_entero(int socket, t_log *loggs)
 
 
 
+t_tid_pid* recepcionar_tid_pid_op_code(t_paquete* paquete){
+    t_tid_pid* info = malloc(sizeof(t_tid_pid));
 
+    void* stream = paquete->buffer->stream;
+
+    memcpy(&(info->tid),stream,sizeof(int));
+    stream += sizeof(int);
+    memcpy(&(info->pid), stream,sizeof(int)); // Primer parámetro para la syscall: nombre del archivo
+
+    eliminar_paquete(paquete);
+
+    return info;
+}
 
 
 

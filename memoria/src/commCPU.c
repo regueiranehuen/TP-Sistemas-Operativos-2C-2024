@@ -4,23 +4,44 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
     int retardo_respuesta = config_get_int_value(config,"RETARDO_RESPUESTA");
     int codigoOperacion = 0;
     while (codigoOperacion != -1) {
-        op_code codOperacion = recibir_operacion(SOCKET_CLIENTE_CPU);
+        
+        t_paquete*paquete_operacion = recibir_paquete_op_code(SOCKET_CLIENTE_CPU);
         usleep(retardo_respuesta * 1000);  // Aplicar retardo configurado
 
-        switch (codOperacion) {
+        switch (paquete_operacion->codigo_operacion) {
             case OBTENER_CONTEXTO_TID: {
-                t_2_enteros *solicitud = recibir_2_enteros(SOCKET_CLIENTE_CPU);  // Recibe PID y TID
-                uint32_t pid = solicitud->entero1;
-                uint32_t tid = solicitud->entero2;
-                free(solicitud);
+                t_tid_pid *info = recepcionar_tid_pid_op_code(SOCKET_CLIENTE_CPU);  // Recibe PID y TID
+                int pid = info->pid;
+                int tid = info->tid;
 
-                t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
-                enviar_contexto_tid(SOCKET_CLIENTE_CPU,contexto);
+                t_contexto_tid*contexto_tid=obtener_contexto_tid(pid,tid);
+
+                // Si el contexto no existe, lo creamos y lo metemos en la lista de contextos de tid del contexto del pid
+                if (contexto_tid==NULL){
+                    t_contexto_pid*contexto_pid = obtener_contexto_pid(pid);
+
+
+                    inicializar_contexto_tid(contexto_pid,tid);
+                }
+
+                enviar_contexto_tid(SOCKET_CLIENTE_CPU,contexto_tid);
                 log_info(logger, "Enviado contexto para PID: %d, TID: %d", pid, tid);
                 
-                
 
-                //liberar_contexto_pid(contexto);
+                break;
+            }
+
+            case OBTENER_CONTEXTO_PID:{ 
+                int pid_obtencion = recepcionar_entero_paquete(paquete_operacion);
+                t_contexto_pid*contextoPid = obtener_contexto_pid(pid_obtencion);
+
+                if (contextoPid == NULL){
+                    log_error(logger, "No se encontro el contexto del pid %d", pid_obtencion);
+                    enviar_paquete_op_code(SOCKET_CLIENTE_CPU,CONTEXTO_PID_INEXISTENTE);
+                    break;
+                }
+
+                enviar_contexto_pid(SOCKET_CLIENTE_CPU,contextoPid);
                 break;
             }
 

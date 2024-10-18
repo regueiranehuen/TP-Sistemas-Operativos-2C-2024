@@ -273,8 +273,9 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch)
                 solicitar_contexto_tid(info->pid,info->tid,sockets_cpu->socket_memoria);
 
                 t_paquete *paquete_solicitud_contexto_tid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
+                //// QUE LA MEMORIA SE ENCARGUE DE CREAR EL CONTEXTO DEL TID SI NO EXISTE
 
-                if (paquete_solicitud_contexto_tid->codigo_operacion == CONTEXTO_TID_INEXISTENTE){
+                /*if (paquete_solicitud_contexto_tid->codigo_operacion == CONTEXTO_TID_INEXISTENTE){  
                     eliminar_paquete(paquete_solicitud_contexto_tid);
                     pedir_creacion_contexto_tid(info->pid,info->tid,sockets_cpu->socket_memoria);
 
@@ -287,8 +288,9 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch)
                         log_error(log_cpu, "Error obteniendo contexto del tid %d", info->tid);
                         continue;
                     }
-                }
-                else if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK){
+                }*/
+
+                if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK){
                     contextoTid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid,sockets_cpu->socket_memoria);
                     log_info(log_cpu,"TID: %d - Solicito Contexto Ejecución",info->tid);
                 }
