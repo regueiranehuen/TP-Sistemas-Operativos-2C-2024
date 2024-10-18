@@ -7,12 +7,6 @@ t_instruccion instruccion;
 bool seguir_ejecutando;
 
 
-t_contexto_pid*contexto_pid_exec;
-t_contexto_tid*contexto_tid_exec;
-
-int tid_exec;
-int pid_exec;
-
 
 void ciclo_de_instruccion(t_contexto_pid* contextoPid, t_contexto_tid*contextoTid){
     seguir_ejecutando=true;
@@ -25,10 +19,9 @@ void ciclo_de_instruccion(t_contexto_pid* contextoPid, t_contexto_tid*contextoTi
         }
         op_code nombre_instruccion = decode(instruccion);
         execute(contextoPid,contextoTid, nombre_instruccion, instruccion);
-
         if (seguir_ejecutando){
             
-            checkInterrupt(contextoPid,contextoTid); // TODO REVISAR 
+            //checkInterrupt(contextoPid,contextoTid); // TODO REVISAR 
         }
     }
 }
@@ -39,7 +32,7 @@ en caso afirmativo, se actualiza el Contexto de Ejecución en la Memoria y se de
 Caso contrario, se descarta la interrupción.
 */
 
-void checkInterrupt(t_contexto_pid* contextoPid,t_contexto_tid* contextoTid->tid){ // Falta devolver al kernel el tid con motivo de interrupcion
+/*void checkInterrupt(t_contexto_pid* contextoPid,t_contexto_tid* contextoTid->tid){ // Falta devolver al kernel el tid con motivo de interrupcion
 
     //wait
     if (hay_interrupcion){
@@ -99,38 +92,7 @@ void actualizar_contexto_en_memoria(t_contexto_pid*contexto_pid){
     }
     
 }
-
-void actualizar_contexto_en_memoria(t_contexto_tid* contexto){
-    
-
-    contexto=obtener_contexto_tid(contexto->tid)
-
-
-    int size = 0;
-    t_paquete*paquete = recibir
-    int desp = 0;
-    buffer = recibir_buffer(&size, socket_cpu);
-    
-    // El tid lo envía el kernel por el puerto de dispatch
-    nuevo_contexto->tid = leer_entero_uint32(buffer,&desp);
-    //nuevo_contexto->tid = leer_entero_uint32(buffer, &desp);
-    nuevo_contexto->pc = leer_entero_uint32(buffer, &desp);
-    nuevo_contexto->registros->AX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->BX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->CX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->DX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->EX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->FX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->GX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->HX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->base = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->limite = leer_entero_uint8(buffer, &desp);
-    free(buffer);
-    return nuevo_contexto;
-    
-}
-
-
+*/
 
 
 t_instruccion* fetch(t_contexto_tid*contexto){
@@ -210,37 +172,37 @@ void execute(t_contexto_pid*contextoPid,t_contexto_tid* contextoTid ,op_code ins
     switch (instruccion_nombre) {
         case SET:
             log_info(log_cpu, "SET - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
-            funcSET(instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
+            funcSET(contextoTid,instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
             modificar_registros(contextoTid);
             break;
         case SUM:
             log_info(log_cpu, "SUM - Registro: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
-            funcSUM(instruccion->parametros2, instruccion->parametros3);
+            funcSUM(contextoTid,instruccion->parametros2, instruccion->parametros3);
             modificar_registros(contextoTid);
             break;
         case SUB:
             log_info(log_cpu, "SUB - Registro: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
-            funcSUB(instruccion->parametros2, instruccion->parametros3);
+            funcSUB(contextoTid,instruccion->parametros2, instruccion->parametros3);
             modificar_registros(contextoTid);
             break;
         case JNZ:
             log_info(log_cpu, "JNZ - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
-            funcJNZ(instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
+            funcJNZ(contextoTid,instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
             modificar_registros(contextoTid);
             break;
         case READ_MEM:
             log_info(log_cpu, "READ_MEM - Dirección: %s", instruccion->parametros2);
-            funcREAD_MEM(instruccion->parametros2, instruccion->parametros3);
+            funcREAD_MEM(contextoPid,contextoTid,instruccion->parametros2, instruccion->parametros3);
             modificar_registros(contextoTid);
             break;
         case WRITE_MEM:
             log_info(log_cpu, "WRITE_MEM - Dirección: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
-            funcWRITE_MEM(instruccion->parametros2, instruccion->parametros3);
+            funcWRITE_MEM(contextoPid,contextoTid,instruccion->parametros2, instruccion->parametros3);
             modificar_registros(contextoTid);
             break;
         case LOG:
             log_info(log_cpu, "LOG - Mensaje: %s", instruccion->parametros2);
-            funcLOG(instruccion->parametros2);
+            funcLOG(contextoTid,instruccion->parametros2);
             modificar_registros(contextoTid);
             break;
         case DUMP_MEMORY:
@@ -306,10 +268,7 @@ void execute(t_contexto_pid*contextoPid,t_contexto_tid* contextoTid ,op_code ins
 
 void modificar_registros(t_contexto_tid* contexto){
     contexto->registros->PC++;
-    enviar_contexto_a_memoria(contexto);
-
-    
-
+    enviar_contexto_tid_a_memoria(sockets_cpu->socket_memoria,contexto);
 }
 
 
@@ -317,7 +276,9 @@ void esperar_ok_kernel(t_contexto_tid*contexto){
     code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
     if (code == OK){
         contexto->registros->PC++;
-        enviar_contexto_a_memoria(contexto);
+        enviar_contexto_tid_a_memoria(sockets_cpu->socket_memoria,contexto);
     }
         
 }
+
+

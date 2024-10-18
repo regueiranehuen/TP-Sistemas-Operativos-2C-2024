@@ -15,8 +15,10 @@ void ciclo_de_instruccion(t_contexto_pid* contextoPid, t_contexto_tid* contextoT
 t_instruccion* fetch(t_contexto_tid*contexto);
 void pedir_instruccion_memoria(uint32_t tid, uint32_t pc, t_log *logg);
 op_code decode(t_instruccion *instruccion);
-void execute(t_contexto_tid*contexto,op_code instruccion_nombre, t_instruccion* instruccion);
+void execute(t_contexto_pid*contextoPid,t_contexto_tid* contextoTid ,op_code instruccion_nombre, t_instruccion* instruccion) ;
 void checkInterrupt(int tid,int pid);
-void esperar_ok_kernel(void);
+void esperar_ok_kernel(t_contexto_tid*contexto);
+void modificar_registros(t_contexto_tid* contexto);
 
 #endif
+

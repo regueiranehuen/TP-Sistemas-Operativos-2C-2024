@@ -27,6 +27,9 @@ uint32_t tid_interrupt;
 bool hay_interrupcion=false;
 int es_por_usuario = 0;
 
+int tid_exec;
+int pid_exec;
+
 // Lectura de configuración
 void leer_config(char* path) {
     config = iniciar_config(path);
