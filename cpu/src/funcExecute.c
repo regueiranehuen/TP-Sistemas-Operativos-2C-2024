@@ -66,7 +66,7 @@ uint32_t leer_valor_de_memoria(uint32_t direccionFisica) {
 
     int cod_op = recibir_operacion(sockets_cpu->socket_memoria);
     if (cod_op == READ_MEM) {
-        uint32_t valor = recibir_entero_uint32(sockets_cpu->socket_memoria,log_cpu);
+        uint32_t valor = recibir_entero_uint32(sockets_cpu->socket_memoria);
         return valor;
     } else {
         log_error(log_cpu, "Error al leer memoria");

@@ -53,6 +53,8 @@ typedef struct{
     t_registros_cpu*registros;
 }t_contexto_tid;
 
+
+
 typedef struct {
     t_contexto_tid* contexto;
 	//t_contexto* contexto;
@@ -128,20 +130,28 @@ typedef enum // SOLO USARLO CON MEMORIA
     FINALIZAR_PROCESO,
     ACCESO_TABLA_PAGINAS,
     ACCESO_ESPACIO_USUARIO,
-    //INSTRUCCION FINALIZADA
+    
 
+    // CONTEXTOS
+    CREAR_CONTEXTO_TID,
     ENVIAR_CONTEXTO_PID, //
     ENVIAR_CONTEXTO_TID, //
+    CONTEXTO_INEXISTENTE, //
+    OBTENER_CONTEXTO_TID,
+    OBTENER_CONTEXTO_PID,
+    ACTUALIZAR_CONTEXTO,
 
+    OBTENCION_OK,
+    ACTUALIZACION_OK,
+
+    //INSTRUCCION FINALIZADA
     PEDIR_TAM_MEMORIA,
     TAMANIO_RECIBIDO,
     TERMINACION_PROCESO,
-    OBTENER_CONTEXTO,
-    ACTUALIZAR_CONTEXTO,
     OBTENER_INSTRUCCION,
     ESPACIO_USUARIO,
     WRITE_OK,
-    ACTUALIZACION_OK,
+
 }op_code; // USARLO SOLAMENTE CON MEMORIA
 
 
@@ -263,11 +273,12 @@ uint32_t leer_entero_uint32(char *buffer, int * desplazamiento);
 char* leer_string(char *buffer, int * desplazamiento);
 //t_registros_cpu * leer_registros(char* buffer, int* desp);
 
-uint32_t recibir_entero_uint32(int socket, t_log* loggs);
+uint32_t recibir_entero_uint32(int socket);
 char* recibir_string(int socket, t_log* loggs);
 //t_contexto* recibir_contexto(int socket);
 t_instruccion* recibir_instruccion(int socket);
 t_list* recibir_doble_entero(int socket);
+int recibir_entero(int socket);
 
 
 t_2_enteros * recibir_2_enteros(int socket);
@@ -284,8 +295,7 @@ void recibir_2_string_mas_3_u32(int socket, char** palabra1,char** palabra2, uin
 
 //  NUEVAS FUNCIONES POST CHECKPOINT 2
 
-t_contexto_pid* obtener_contexto_pid(int pid);
-t_contexto_tid* obtener_contexto_tid(int pid, int tid);
+
 bool esta_tid_en_lista(int tid,t_list*contextos_tids);
 void agregar_contexto_pid_a_paquete(t_paquete*paquete,t_contexto_pid*contexto);
 void agregar_contexto_tid_a_paquete(t_paquete*paquete,t_contexto_tid*contexto);
@@ -300,8 +310,14 @@ t_contexto_pid*inicializar_contexto_pid(int pid);
 t_contexto_tid* obtener_tid_en_lista(int tid,t_list*contextos_tids);
 bool existe_contexto_pid(int pid);
 
-void enviar_contexto_pid_a_memoria(int socket_memoria, t_contexto_pid* contexto);
 void agregar_entero_uint32_a_paquete(t_paquete *paquete, uint8_t numero);
-void enviar_contexto_tid_a_memoria(int socket_memoria, t_contexto_tid* contexto);
+void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto, int codop);
+void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto, int codop);
+
+op_code recibir_op_code(int socket_cliente);
+t_paquete* recibir_paquete_op_code(int socket_cliente);
+int leer_entero(char *buffer, int *desplazamiento);
+t_contexto_tid* recibir_contexto_tid(t_paquete*paquete,int socket_cliente);
+t_contexto_pid* recibir_contexto_pid(t_paquete*paquete,int socket_cliente);
 
 #endif

@@ -8,14 +8,14 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
         usleep(retardo_respuesta * 1000);  // Aplicar retardo configurado
 
         switch (codOperacion) {
-            case OBTENER_CONTEXTO: {
+            case OBTENER_CONTEXTO_TID: {
                 t_2_enteros *solicitud = recibir_2_enteros(SOCKET_CLIENTE_CPU);  // Recibe PID y TID
                 uint32_t pid = solicitud->entero1;
                 uint32_t tid = solicitud->entero2;
                 free(solicitud);
 
                 t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
-                enviar_contexto_pid(SOCKET_CLIENTE_CPU,contexto,OBTENER_CONTEXTO);
+                enviar_contexto_tid(SOCKET_CLIENTE_CPU,contexto,OBTENCION_OK);
                 log_info(logger, "Enviado contexto para PID: %d, TID: %d", pid, tid);
                 
                 
@@ -86,3 +86,121 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
 
     log_warning(logger, "Se desconectó la CPU");
 }
+
+
+bool existe_contexto_pid(int pid){
+    for (int i = 0; i< list_size(lista_contextos_pids); i++){
+        t_contexto_pid*cont_actual=list_get(lista_contextos_pids,i);
+        if (cont_actual->pid==pid)
+            return true;
+    }
+    return false;
+}
+
+t_contexto_pid*inicializar_contexto_pid(int pid){
+    t_contexto_pid*nuevo_contexto=malloc(sizeof(t_contexto_pid));
+    nuevo_contexto->pid=pid;
+    nuevo_contexto->contextos_tids=list_create();
+// Paso como segundo parámetro el 0 ya que el proceso está siendo inicializado, y al iniciarse si o si tiene que tener un hilo
+    t_contexto_tid* contexto_tid_0=inicializar_contexto_tid(nuevo_contexto,0); 
+    if (contexto_tid_0!=NULL){
+        list_add(lista_contextos_pids,nuevo_contexto);
+        return nuevo_contexto;
+    }
+    else{
+        printf("NO SE PUDO INICIALIZAR EL CONTEXTO DEL PID %d\n",pid);
+    }
+    return NULL;
+    
+}
+
+t_contexto_tid*obtener_contexto_tid(int pid, int tid){
+    //wait
+    for (int i = 0; i < list_size(lista_contextos_pids); i++){
+        t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
+        t_list*contextos_tids=cont_actual->contextos_tids;
+        if (pid == cont_actual->pid && esta_tid_en_lista(tid,contextos_tids)){
+            //signal
+            return obtener_tid_en_lista(tid,contextos_tids);
+        }
+        
+    }
+    return NULL;
+}
+
+void remover_contexto_pid_lista(t_contexto_pid* contexto){
+    for (int i = 0; i < list_size(lista_contextos_pids); i++){
+        t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
+        if (contexto->pid == cont_actual->pid)
+            list_remove(lista_contextos_pids,i);
+
+    }
+}
+
+t_contexto_pid* obtener_contexto_pid(int pid){
+    //wait
+    for (int i = 0; i < list_size(lista_contextos_pids); i++){
+        t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
+        if (pid == cont_actual->pid){
+            //signal
+            return cont_actual;
+        }
+            
+    }
+
+    return NULL;
+}
+
+
+void remover_contexto_tid_lista(t_contexto_tid*contexto,t_list*lista){
+    for (int i = 0; i < list_size(lista); i++){
+        t_contexto_tid*cont_actual=(t_contexto_tid*)list_get(lista,i);
+        if (contexto->tid == cont_actual->tid)
+            list_remove(lista,i);
+
+    }
+}
+
+
+bool esta_tid_en_lista(int tid,t_list*contextos_tids){
+    for (int i = 0; i < list_size(contextos_tids); i++){
+        t_contexto_tid*cont_actual=(t_contexto_tid*)list_get(contextos_tids,i);
+        if (cont_actual->tid==tid)
+            return true;
+
+    }
+    return false;
+}
+
+t_contexto_tid* obtener_tid_en_lista(int tid,t_list*contextos_tids){
+    for (int i = 0; i < list_size(contextos_tids); i++){
+        t_contexto_tid*cont_actual=(t_contexto_tid*)list_get(contextos_tids,i);
+        if (cont_actual->tid==tid)
+            return cont_actual;
+
+    }
+    return NULL;
+}
+
+
+void liberar_contexto_tid(t_contexto_pid *contexto_pid,t_contexto_tid*contexto_tid){
+    if(contexto_tid){
+        remover_contexto_tid_lista(contexto_tid,contexto_pid->contextos_tids);
+        free(contexto_tid->registros);
+        free(contexto_tid);
+    }
+}
+
+void liberar_contexto_pid(t_contexto_pid *contexto_pid){
+    if(contexto_pid){
+        
+        list_destroy_and_destroy_elements(contexto_pid->contextos_tids,(void*)liberar_contexto_tid);
+        free(contexto_pid);
+    }
+}
+
+void liberar_lisa_contextos(){
+    list_destroy_and_destroy_elements(lista_contextos_pids,(void*)liberar_contexto_pid);
+}
+
+

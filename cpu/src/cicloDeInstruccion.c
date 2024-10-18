@@ -268,7 +268,7 @@ void execute(t_contexto_pid*contextoPid,t_contexto_tid* contextoTid ,op_code ins
 
 void modificar_registros(t_contexto_tid* contexto){
     contexto->registros->PC++;
-    enviar_contexto_tid_a_memoria(sockets_cpu->socket_memoria,contexto);
+    enviar_contexto_tid(sockets_cpu->socket_memoria,contexto,77); // NO SE QUE CODIGO MANDAR
 }
 
 
@@ -276,7 +276,7 @@ void esperar_ok_kernel(t_contexto_tid*contexto){
     code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
     if (code == OK){
         contexto->registros->PC++;
-        enviar_contexto_tid_a_memoria(sockets_cpu->socket_memoria,contexto);
+        enviar_contexto_tid(sockets_cpu->socket_memoria,contexto,77); // NO SE QUE CODIGO MANDAR
     }
         
 }
