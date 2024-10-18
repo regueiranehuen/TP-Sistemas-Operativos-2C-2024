@@ -140,7 +140,8 @@ typedef enum // SOLO USARLO CON MEMORIA
     CONTEXTO_TID_INEXISTENTE,
     OBTENER_CONTEXTO_TID,
     OBTENER_CONTEXTO_PID,
-    ACTUALIZAR_CONTEXTO,
+    ACTUALIZAR_CONTEXTO_PC,
+    ACTUALIZAR_CONTEXTO_REGISTROS,
 
     OBTENCION_CONTEXTO_TID_OK,
     OBTENCION_CONTEXTO_PID_OK,
@@ -182,6 +183,12 @@ typedef struct {
     uint32_t entero2;
     uint32_t entero3;
 }t_3_enteros;
+
+typedef struct{
+    int pid;
+    int tid;
+    uint32_t pc;
+}t_tid_pid_pc;
 
 typedef struct {
     uint32_t entero1;
@@ -328,5 +335,9 @@ void pedir_creacion_contexto_tid(int pid, int tid,int conexion);
 t_tid_pid* recepcionar_tid_pid_op_code(t_paquete* paquete);
 void enviar_paquete_op_code(int socket, op_code code);
 int recepcionar_entero_paquete(t_paquete*paquete);
+void enviar_registros_a_actualizar(int socket_cliente,t_registros_cpu*registros,int pid, int tid);
+void enviar_program_counter_a_actualizar(int socket_cliente,int pc,int pid, int tid);
+uint32_t recepcionar_uint32_paquete(t_paquete*paquete);
+t_tid_pid_pc*recepcionar_tid_pid_pc(t_paquete*paquete);
 
 #endif

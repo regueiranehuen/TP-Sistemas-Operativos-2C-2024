@@ -243,6 +243,27 @@ void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto){
     eliminar_paquete(paquete);
 }
 
+void enviar_program_counter_a_actualizar(int socket_cliente,int pc,int pid, int tid){
+    t_paquete*paquete = crear_paquete_op(ACTUALIZAR_CONTEXTO_PC);
+
+    agregar_entero_int_a_paquete(paquete,pid);
+    agregar_entero_int_a_paquete(paquete,tid);
+    agregar_entero_int_a_paquete(paquete,pc);
+    enviar_paquete(paquete,socket_cliente);
+    eliminar_paquete(paquete);
+}
+
+void enviar_registros_a_actualizar(int socket_cliente,t_registros_cpu*registros,int pid, int tid){
+    t_paquete*paquete = crear_paquete_op(ACTUALIZAR_CONTEXTO_REGISTROS);
+
+    agregar_entero_int_a_paquete(paquete,pid);
+    agregar_entero_int_a_paquete(paquete,tid);
+    agregar_registros_a_paquete(paquete,registros);
+    enviar_paquete(paquete,socket_cliente);
+    eliminar_paquete(paquete);
+}
+
+
 void enviar_paquete_op_code(int socket, op_code code){
     t_paquete*paquete=crear_paquete_op(code);
 
@@ -525,6 +546,12 @@ int recepcionar_entero_paquete(t_paquete*paquete){
     return entero;
 }
 
+uint32_t recepcionar_uint32_paquete(t_paquete*paquete){
+    uint32_t entero;
+    memcpy(&entero, paquete->buffer->stream, sizeof(uint32_t));
+    return entero;
+}
+
 uint8_t leer_entero_uint8(char *buffer, int *desplazamiento)
 {
     uint8_t entero;
@@ -792,10 +819,21 @@ t_tid_pid* recepcionar_tid_pid_op_code(t_paquete* paquete){
 }
 
 
+t_tid_pid_pc*recepcionar_tid_pid_pc(t_paquete*paquete){
+    int desp = 0;
+    t_tid_pid_pc*info=malloc(sizeof(t_tid_pid_pc));
+    info->pid=leer_entero(paquete->buffer->stream,&desp);
+    info->tid=leer_entero(paquete->buffer->stream,&desp);
+    info->pc=leer_entero_uint32(paquete->buffer->stream,&desp);
+    
+    eliminar_paquete(paquete);
+
+    return info;
+}
 
 
 
-t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete,int socket_cliente){
+t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete,int socket_cliente){ // me di cuenta que el socket no tiene sentido pasarlo
 
     int desp = 0;
     t_contexto_tid*nuevo_contexto=malloc(sizeof(t_contexto_tid));

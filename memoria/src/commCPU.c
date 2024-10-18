@@ -10,7 +10,7 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
 
         switch (paquete_operacion->codigo_operacion) {
             case OBTENER_CONTEXTO_TID: {
-                t_tid_pid *info = recepcionar_tid_pid_op_code(SOCKET_CLIENTE_CPU);  // Recibe PID y TID
+                t_tid_pid *info = recepcionar_tid_pid_op_code(paquete_operacion);  // Recibe PID y TID
                 int pid = info->pid;
                 int tid = info->tid;
 
@@ -45,13 +45,18 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
                 break;
             }
 
-            case ACTUALIZAR_CONTEXTO: { // AUXILIO
-                t_contexto *contexto = recibir_contexto(SOCKET_CLIENTE_CPU);  // Recibe nuevo contexto
-                actualizar_contexto(contexto); // Falta crear esta funcion? O se usa enviar_contexto_a_memoria???
-                //enviar_contexto_a_memoria(contexto);
+            case ACTUALIZAR_CONTEXTO_PC: { 
+                t_tid_pid_pc* info = recepcionar_tid_pid_pc(paquete_operacion);
+                actualizar_contexto_program_counter(info->pid,info->tid,info->pc); 
                 enviar_codop(SOCKET_CLIENTE_CPU, ACTUALIZACION_OK);
-                log_info(logger, "Contexto actualizado para TID: %d", contexto->tid);
-                free(contexto);
+                free(info);
+                log_info(logger, "Contexto actualizado para TID: %d", info->tid);
+                
+                break;
+            }
+
+            case ACTUALIZAR_CONTEXTO_REGISTROS:{
+
                 break;
             }
 
@@ -96,17 +101,34 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
             }
 
             case 1:
-                codigoOperacion = codOperacion;
+                codigoOperacion = paquete_operacion->codigo_operacion;
                 break;
 
             default:
-                log_warning(logger, "Operación desconocida recibida: %d", codOperacion);
+                log_warning(logger, "Operación desconocida recibida: %d", paquete_operacion->codigo_operacion);
                 break;
         }
     }
 
     log_warning(logger, "Se desconectó la CPU");
 }
+
+
+void actualizar_contexto_program_counter(int pid, int tid, uint32_t pc){
+    t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
+    contexto->registros->PC=pc;
+}
+void actualizar_contexto_reg(int pid, int tid, t_registros_cpu* reg){
+    t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
+    contexto->registros->PC=reg->PC;
+    contexto->registros->AX=reg->AX;
+    contexto->registros->BX=reg->BX;
+    contexto->registros->CX=reg->CX;
+    contexto->registros->DX=reg->DX;
+    contexto->registros->EX=reg->EX;
+    contexto->registros->HX=reg->HX;
+}
+
 
 
 bool existe_contexto_pid(int pid){
@@ -135,13 +157,11 @@ t_contexto_pid*inicializar_contexto_pid(int pid){
     
 }
 
-t_contexto_tid*obtener_contexto_tid(int pid, int tid){
-    //wait
+t_contexto_tid*obtener_contexto_tid(int pid, int tid){ // hay que usar mutex
     for (int i = 0; i < list_size(lista_contextos_pids); i++){
         t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
         t_list*contextos_tids=cont_actual->contextos_tids;
         if (pid == cont_actual->pid && esta_tid_en_lista(tid,contextos_tids)){
-            //signal
             return obtener_tid_en_lista(tid,contextos_tids);
         }
         
