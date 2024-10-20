@@ -313,8 +313,6 @@ void liberar_lisa_contextos();
 
 void remover_contexto_pid_lista(t_contexto_pid* contexto);
 void remover_contexto_tid_lista(t_contexto_tid*contexto,t_list*lista);
-t_contexto_tid* inicializar_contexto_tid(t_contexto_pid* cont,int tid);
-t_contexto_pid*inicializar_contexto_pid(int pid);
 t_contexto_tid* obtener_tid_en_lista(int tid,t_list*contextos_tids);
 bool existe_contexto_pid(int pid);
 

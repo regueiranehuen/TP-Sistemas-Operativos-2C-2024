@@ -5,6 +5,7 @@ static int client_count = 0; //numero incremental del numero del cliente
 sem_t sem_conexion_hecha;
 
 t_list*lista_contextos_pids;
+pthread_mutex_t mutex_lista_contextos_pids;
 
 
 void* hilo_por_cliente (void* void_args){

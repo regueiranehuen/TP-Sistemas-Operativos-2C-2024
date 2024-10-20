@@ -170,8 +170,8 @@ void atender_syscall()//recibir un paquete con un codigo de operacion, entrar al
             DUMP_MEMORY();
             send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
             break;
-        case ENUM_SEGMENTATION_FAULT: 
-            break;
+        // case ENUM_SEGMENTATION_FAULT: 
+        //     break;
         default:
             printf("Syscall no válida.\n");
             //send_code_operacion(TERMINAR,sockets->sockets_cliente_cpu->socket_Interrupt);

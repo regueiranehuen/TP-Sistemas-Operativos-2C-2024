@@ -30,6 +30,8 @@ int es_por_usuario = 0;
 int tid_exec;
 int pid_exec;
 
+pthread_mutex_t mutex_tid_pid_exec;
+
 // Lectura de configuración
 void leer_config(char *path)
 {
@@ -156,6 +158,9 @@ void *funcion_hilo_cliente_memoria(void *void_args)
 // Creación de hilos CPU
 t_sockets_cpu *hilos_cpu(t_log *log, t_config *config)
 {
+
+    pthread_mutex_init(&mutex_tid_pid_exec,NULL);
+
     args_hilo *args = malloc(sizeof(args_hilo));
     if (!args)
     {
@@ -291,10 +296,12 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch)
             }
 
             log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
-            // MUTEX_LOCK
+
+            pthread_mutex_lock(&mutex_tid_pid_exec); // Tal vez sea necesario usarlo despues, pero por ahora estas variables globales solo se modifican acá
             tid_exec = info->tid;
             pid_exec = info->pid;
-            // MUTEX_UNLOCK
+            pthread_mutex_unlock(&mutex_tid_pid_exec);
+
             ciclo_de_instruccion(contextoPid, contextoTid);
         break;
 

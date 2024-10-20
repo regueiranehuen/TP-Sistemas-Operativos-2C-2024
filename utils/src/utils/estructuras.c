@@ -266,25 +266,6 @@ void enviar_paquete_op_code(int socket, op_code code){
 
 
 
-t_contexto_tid* inicializar_contexto_tid(t_contexto_pid* cont,int tid){
-    t_contexto_tid* contexto=malloc(sizeof(contexto));
-    contexto->registros= malloc(sizeof(t_registros_cpu));
-    contexto->pid=cont->pid;
-    contexto->tid = tid;
-    contexto->registros->AX = 0;
-    contexto->registros->BX = 0;
-    contexto->registros->CX = 0;
-    contexto->registros->DX = 0;
-    contexto->registros->EX = 0;
-    contexto->registros->FX = 0;
-    contexto->registros->GX = 0;
-    contexto->registros->HX = 0;
-    contexto->registros->PC = 0;
-
-    list_add(cont->contextos_tids,contexto);
-    return contexto;
-}
-
 
 
 

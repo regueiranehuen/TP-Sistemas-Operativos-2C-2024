@@ -47,6 +47,7 @@ extern int es_por_usuario;
 extern int tid_exec;
 extern int pid_exec;
 
+extern pthread_mutex_t mutex_tid_pid_exec;
 
 // **Funciones**
 void leer_config(char* path);

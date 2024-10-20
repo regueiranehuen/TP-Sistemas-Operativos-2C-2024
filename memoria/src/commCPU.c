@@ -16,14 +16,16 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
 
                 log_info(logger, "## Contexto solicitado - (PID:TID) - (%d:%d)",pid,tid);
 
+                pthread_mutex_lock(&mutex_lista_contextos_pids);
                 t_contexto_tid*contexto_tid=obtener_contexto_tid(pid,tid);
+                pthread_mutex_unlock(&mutex_lista_contextos_pids);
 
                 // Si el contexto no existe, lo creamos y lo metemos en la lista de contextos de tid del contexto del pid
                 if (contexto_tid==NULL){
+                    pthread_mutex_lock(&mutex_lista_contextos_pids);
                     t_contexto_pid*contexto_pid = obtener_contexto_pid(pid);
-
-
                     inicializar_contexto_tid(contexto_pid,tid);
+                    pthread_mutex_unlock(&mutex_lista_contextos_pids);
                 }
 
                 enviar_contexto_tid(SOCKET_CLIENTE_CPU,contexto_tid);
@@ -35,7 +37,10 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
 
             case OBTENER_CONTEXTO_PID:{ 
                 int pid_obtencion = recepcionar_entero_paquete(paquete_operacion);
+
+                pthread_mutex_lock(&mutex_lista_contextos_pids);
                 t_contexto_pid*contextoPid = obtener_contexto_pid(pid_obtencion);
+                pthread_mutex_unlock(&mutex_lista_contextos_pids);
 
                 if (contextoPid == NULL){
                     log_error(logger, "No se encontro el contexto del pid %d", pid_obtencion);
@@ -114,29 +119,19 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
 }
 
 void actualizar_contexto(int pid, int tid, t_registros_cpu* reg){
-    t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
-    contexto->registros->PC=reg->PC;
-    contexto->registros->AX=reg->AX;
-    contexto->registros->BX=reg->BX;
-    contexto->registros->CX=reg->CX;
-    contexto->registros->DX=reg->DX;
-    contexto->registros->EX=reg->EX;
-    contexto->registros->HX=reg->HX;
-}
-
-void actualizar_contexto_program_counter(int pid, int tid, uint32_t pc){
-    t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
-    contexto->registros->PC=pc;
-}
-void actualizar_contexto_reg(int pid, int tid, t_registros_cpu* reg){
-    t_contexto_tid*contexto=obtener_contexto_tid(pid,tid);
-    contexto->registros->PC=reg->PC;
-    contexto->registros->AX=reg->AX;
-    contexto->registros->BX=reg->BX;
-    contexto->registros->CX=reg->CX;
-    contexto->registros->DX=reg->DX;
-    contexto->registros->EX=reg->EX;
-    contexto->registros->HX=reg->HX;
+    pthread_mutex_lock(&mutex_lista_contextos_pids);
+    t_contexto_tid *contexto = obtener_contexto_tid(pid, tid);
+    if (contexto != NULL)
+    {
+        contexto->registros->PC = reg->PC;
+        contexto->registros->AX = reg->AX;
+        contexto->registros->BX = reg->BX;
+        contexto->registros->CX = reg->CX;
+        contexto->registros->DX = reg->DX;
+        contexto->registros->EX = reg->EX;
+        contexto->registros->HX = reg->HX;
+    }
+    pthread_mutex_unlock(&mutex_lista_contextos_pids);
 }
 
 
@@ -150,7 +145,28 @@ bool existe_contexto_pid(int pid){
     return false;
 }
 
-t_contexto_pid*inicializar_contexto_pid(int pid,uint32_t base, uint32_t limite){
+// Se utiliza al inicializar el contexto del tid 0 tras crear un nuevo proceso y cuando viene un hilo con tid N a ejecutar
+t_contexto_tid* inicializar_contexto_tid(t_contexto_pid* cont,int tid){
+    t_contexto_tid* contexto=malloc(sizeof(contexto));
+    contexto->registros= malloc(sizeof(t_registros_cpu));
+    contexto->pid=cont->pid;
+    contexto->tid = tid;
+    contexto->registros->AX = 0;
+    contexto->registros->BX = 0;
+    contexto->registros->CX = 0;
+    contexto->registros->DX = 0;
+    contexto->registros->EX = 0;
+    contexto->registros->FX = 0;
+    contexto->registros->GX = 0;
+    contexto->registros->HX = 0;
+    contexto->registros->PC = 0;
+
+    list_add(cont->contextos_tids,contexto);
+    return contexto;
+}
+
+// Se debe usar despues de un PROCESS_CREATE y para el proceso inicial de la CPU
+t_contexto_pid*inicializar_contexto_pid(int pid,uint32_t base, uint32_t limite){ 
     t_contexto_pid*nuevo_contexto=malloc(sizeof(t_contexto_pid));
     nuevo_contexto->pid=pid;
     nuevo_contexto->base=base;
@@ -160,7 +176,11 @@ t_contexto_pid*inicializar_contexto_pid(int pid,uint32_t base, uint32_t limite){
 // Paso como segundo parámetro el 0 ya que el proceso está siendo inicializado, y al iniciarse si o si tiene que tener un hilo
     t_contexto_tid* contexto_tid_0=inicializar_contexto_tid(nuevo_contexto,0); 
     if (contexto_tid_0!=NULL){
+
+        pthread_mutex_lock(&mutex_lista_contextos_pids);
         list_add(lista_contextos_pids,nuevo_contexto);
+        pthread_mutex_unlock(&mutex_lista_contextos_pids);
+
         return nuevo_contexto;
     }
     else{
@@ -170,7 +190,7 @@ t_contexto_pid*inicializar_contexto_pid(int pid,uint32_t base, uint32_t limite){
     
 }
 
-t_contexto_tid*obtener_contexto_tid(int pid, int tid){ // hay que usar mutex
+t_contexto_tid*obtener_contexto_tid(int pid, int tid){ // hay que usar mutex cada vez que se usa esta funcion
     for (int i = 0; i < list_size(lista_contextos_pids); i++){
         t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
         t_list*contextos_tids=cont_actual->contextos_tids;
@@ -185,18 +205,19 @@ t_contexto_tid*obtener_contexto_tid(int pid, int tid){ // hay que usar mutex
 void remover_contexto_pid_lista(t_contexto_pid* contexto){
     for (int i = 0; i < list_size(lista_contextos_pids); i++){
         t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
-        if (contexto->pid == cont_actual->pid)
+        if (contexto->pid == cont_actual->pid){
             list_remove(lista_contextos_pids,i);
+            break;
+        }
+            
 
     }
 }
 
-t_contexto_pid* obtener_contexto_pid(int pid){
-    //wait
+t_contexto_pid* obtener_contexto_pid(int pid){ // al usarla hay q meterle mutex x la lista de contextos
     for (int i = 0; i < list_size(lista_contextos_pids); i++){
         t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
         if (pid == cont_actual->pid){
-            //signal
             return cont_actual;
         }
             
