@@ -623,38 +623,32 @@ void recibir_3_string(int conexion_kernel_cpu_dispatch, char **palabra1, char **
 
 
 
-t_instruccion *recibir_instruccion(int socket)
-{
-
+t_instruccion* recepcionar_instruccion(t_paquete*paquete){
     t_instruccion *instruccion_nueva = malloc(sizeof(t_instruccion));
-    int size = 0;
-    char *buffer;
     int desp = 0;
 
-    buffer = recibir_buffer(&size, socket);
-
-    instruccion_nueva->parametros1 = leer_string(buffer, &desp);
+    instruccion_nueva->parametros1 = leer_string(paquete->buffer->stream, &desp);
 
     if (strcmp(instruccion_nueva->parametros1, "SET") == 0)
     {
-        instruccion_nueva->parametros2 = leer_string(buffer, &desp);
-        instruccion_nueva->parametros3 = leer_string(buffer, &desp);
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+        instruccion_nueva->parametros3 = leer_string(paquete->buffer->stream, &desp);
     }
     if (strcmp(instruccion_nueva->parametros1, "SUM") == 0)
     {
-        instruccion_nueva->parametros2 = leer_string(buffer, &desp);
-        instruccion_nueva->parametros3 = leer_string(buffer, &desp);
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+        instruccion_nueva->parametros3 = leer_string(paquete->buffer->stream, &desp);
     }
     if (strcmp(instruccion_nueva->parametros1, "SUB") == 0)
     {
-        instruccion_nueva->parametros2 = leer_string(buffer, &desp);
-        instruccion_nueva->parametros3 = leer_string(buffer, &desp);
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+        instruccion_nueva->parametros3 = leer_string(paquete->buffer->stream, &desp);
     }
     if (strcmp(instruccion_nueva->parametros1, "EXIT") == 0)
     {
     }
 
-    free(buffer);
+    eliminar_paquete(paquete);
     return instruccion_nueva;
 }
 

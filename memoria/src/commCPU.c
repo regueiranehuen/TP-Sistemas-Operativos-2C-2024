@@ -66,14 +66,17 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
             }
 
             case OBTENER_INSTRUCCION: {
-                t_2_enteros *solicitud = recibir_2_enteros(SOCKET_CLIENTE_CPU);  // PID y PC
-                uint32_t tid = solicitud->entero1;
-                uint32_t pc = solicitud->entero2;
-                free(solicitud);
+                int tid = recepcionar_entero_paquete(paquete_operacion); 
+                int pid = recepcionar_entero_paquete(paquete_operacion);
+                uint32_t pc = recepcionar_uint32_paquete(paquete_operacion);
 
-                char *instruccion = obtener_instruccion(tid, pc);
-                enviar_instruccion(SOCKET_CLIENTE_CPU, instruccion, OBTENER_INSTRUCCION); // REVISAR
-                log_info(logger, "Instrucción enviada para PID: %d, PC: %d", tid, pc);
+                t_instruccion *instruccion = obtener_instruccion(tid, pid,pc);
+                if (instruccion != NULL)
+                    enviar_instruccion(SOCKET_CLIENTE_CPU, instruccion, INSTRUCCION_OBTENIDA); // REVISAR
+                else{
+                    enviar_instruccion(SOCKET_CLIENTE_CPU,instruccion,-1);
+                    log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s> <%s> <%s> <%s>",pid,tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4,instruccion->parametros5,instruccion->parametros6);
+                }
                 free(instruccion);
                 break;
             }
@@ -97,7 +100,7 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
                 uint32_t direccion_fisica = escritura->entero1;
                 uint32_t tam_a_escribir = escritura->entero2;
                 char *contenido = escritura->string;
-
+                
                 memcpy(ESPACIO_USUARIO + direccion_fisica, contenido, tam_a_escribir);
                 enviar_codop(SOCKET_CLIENTE_CPU, WRITE_OK);
                 log_info(logger, "Escritos %d bytes en dirección %d", tam_a_escribir, direccion_fisica);

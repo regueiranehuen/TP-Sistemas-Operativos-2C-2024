@@ -1,7 +1,7 @@
 #include "includes/memSist.h"
 #include "includes/server.h"
 
-void cargar_instrucciones_desde_archivo(char* nombre_archivo,  uint32_t pid) {
+void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
     FILE* archivo = fopen(nombre_archivo, "r");
     
     if (archivo == NULL) {
@@ -12,35 +12,41 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo,  uint32_t pid) {
     char linea[longitud_maxima];
 
     while (fgets(linea, longitud_maxima, archivo) != NULL && indice_instruccion < instrucciones_maximas) {
-        t_instruccion* instruccion = malloc(sizeof(t_instruccion));
+        t_instruccion_tid_pid* instruccion_tid_pid = malloc(sizeof(t_instruccion_tid_pid));
+        instruccion_tid_pid->pid=pid;
+        instruccion_tid_pid->tid=tid;
+        instruccion_tid_pid->pc = 0;
+        //instruccion_tid_pid->pc;
+        instruccion_tid_pid->instrucciones = malloc(sizeof(t_instruccion));
+        //t_instruccion* instruccion = malloc(sizeof(t_instruccion));
         char* token = strtok(linea, " \t\n");
         int param_count = 0;
 
         while (token != NULL && param_count < parametros_maximos) {
             switch (param_count) {
                 case 0:
-                    instruccion->parametros1 = "";
-                    instruccion->parametros1 = strdup(token);
+                    instruccion_tid_pid->instrucciones->parametros1 = "";
+                    instruccion_tid_pid->instrucciones->parametros1 = strdup(token);
                     break;
                 case 1:
-                    instruccion->parametros2 = "";
-                    instruccion->parametros2 = strdup(token);
+                    instruccion_tid_pid->instrucciones->parametros2 = "";
+                    instruccion_tid_pid->instrucciones->parametros2 = strdup(token);
                     break;
                 case 2:
-                    instruccion->parametros3 = "";
-                    instruccion->parametros3 = strdup(token);
+                    instruccion_tid_pid->instrucciones->parametros3 = "";
+                    instruccion_tid_pid->instrucciones->parametros3 = strdup(token);
                     break;
                 case 3:
-                    instruccion->parametros4 = "";
-                    instruccion->parametros4 = strdup(token);
+                    instruccion_tid_pid->instrucciones->parametros4 = "";
+                    instruccion_tid_pid->instrucciones->parametros4 = strdup(token);
                     break;
                 case 4:
-                    instruccion->parametros5 = "";
-                    instruccion->parametros5 = strdup(token);
+                    instruccion_tid_pid->instrucciones->parametros5 = "";
+                    instruccion_tid_pid->instrucciones->parametros5 = strdup(token);
                     break;
                 case 5:
-                    instruccion->parametros6 = "";
-                    instruccion->parametros6 = strdup(token);
+                    instruccion_tid_pid->instrucciones->parametros6 = "";
+                    instruccion_tid_pid->instrucciones->parametros6 = strdup(token);
                     break;
                 default:
                     break;
@@ -48,13 +54,26 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo,  uint32_t pid) {
             token = strtok(NULL, " \t\n");
             param_count++;
         }
-
-        list_add(listas_instrucciones[pid-1],instruccion);
+        
+        //list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
+        list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
         indice_instruccion++;
+        instruccion_tid_pid->pc++;
         
     }
     fclose(archivo);
 }
+
+t_instruccion* obtener_instruccion(int tid, int pid,uint32_t pc){
+    for (int i = 0; i < list_size(lista_instrucciones_tid_pid); i++){
+        t_instruccion_tid_pid*actual = (t_instruccion_tid_pid*)list_get(lista_instrucciones_tid_pid,i);
+        if (actual->pid == pid && actual->tid == tid && actual->pc == pc){
+            return actual->instrucciones;
+        }
+    }
+    return NULL;
+}
+
 
 void copiarBytes(uint32_t tamanio, t_contexto_pid *contexto) {
 

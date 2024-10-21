@@ -151,6 +151,7 @@ typedef enum // SOLO USARLO CON MEMORIA
     TAMANIO_RECIBIDO,
     TERMINACION_PROCESO,
     OBTENER_INSTRUCCION,
+    INSTRUCCION_OBTENIDA,
     ESPACIO_USUARIO,
     WRITE_OK,
 
@@ -165,6 +166,14 @@ typedef struct{
     char* parametros5;
     char* parametros6;
 }t_instruccion;
+
+// Guardamos las instrucciones por pid, tid y program counter
+typedef struct{
+    int pid;
+    int tid;
+    uint32_t pc;
+    t_instruccion*instrucciones;
+}t_instruccion_tid_pid;
 
 
 typedef struct {
@@ -240,8 +249,7 @@ void enviar_paquete(t_paquete* paquete, int socket_cliente);
 void eliminar_paquete(t_paquete* paquete);
 void eliminar_codigo(t_paquete* codop);
 void liberar_conexion(int socket_cliente);
-t_config* iniciar_config(char *ruta); //
-char* obtener_instruccion(uint32_t tid, uint32_t pc); // Antes decía pid en vez de tid. No está hecha la función
+t_config* iniciar_config(char *ruta); 
 
 
 
@@ -284,7 +292,7 @@ char* leer_string(char *buffer, int * desplazamiento);
 uint32_t recibir_entero_uint32(int socket);
 char* recibir_string(int socket, t_log* loggs);
 //t_contexto* recibir_contexto(int socket);
-t_instruccion* recibir_instruccion(int socket);
+t_instruccion* recepcionar_instruccion(t_paquete*paquete);
 t_list* recibir_doble_entero(int socket);
 int recibir_entero(int socket);
 
@@ -338,5 +346,6 @@ uint32_t recepcionar_uint32_paquete(t_paquete*paquete);
 t_tid_pid_pc*recepcionar_tid_pid_pc(t_paquete*paquete);
 t_registros_cpu*recepcionar_registros(t_paquete*paquete);
 void actualizar_contexto(int pid, int tid, t_registros_cpu* reg);
+t_instruccion* obtener_instruccion(int tid, int pid,uint32_t pc);
 
 #endif

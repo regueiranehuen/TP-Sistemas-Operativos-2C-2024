@@ -96,28 +96,29 @@ void actualizar_contexto_en_memoria(t_contexto_pid*contexto_pid){
 
 
 t_instruccion* fetch(t_contexto_tid*contexto){
-    pedir_instruccion_memoria(contexto->tid,contexto->registros->PC,log_cpu);
-    log_info(log_cpu, "TID: %i - FETCH - Program Counter: %i", contexto->tid, contexto->registros->PC);
+    pedir_instruccion_memoria(contexto->tid,contexto->pid,contexto->registros->PC);
 
-    t_instruccion*instruccion=recibir_instruccion(sockets_cpu->socket_memoria);
-
-    if (instruccion == NULL) {
+    t_paquete*paquete=recibir_paquete_op_code(sockets_cpu->socket_memoria);
+    t_instruccion*instruccion=NULL;
+    if (paquete->codigo_operacion == -1){
         log_error(log_cpu, "Error al recibir la instrucción");
         seguir_ejecutando = false;
         return NULL;
     }
-    
+    else if (paquete->codigo_operacion == INSTRUCCION_OBTENIDA){
+        instruccion=recepcionar_instruccion(paquete);
+    }
+    log_info(log_cpu, "TID: %i - FETCH - Program Counter: %i", contexto->tid, contexto->registros->PC);
     return instruccion;
-
 }
 
 
-void pedir_instruccion_memoria(uint32_t tid, uint32_t pc, t_log *logg){
-    t_paquete* paquete = crear_paquete_op(PEDIR_INSTRUCCION_MEMORIA);
-    agregar_entero_a_paquete(paquete,tid);
-    agregar_entero_a_paquete(paquete,pc);
+void pedir_instruccion_memoria(int tid, int pid, uint32_t pc){
+    t_paquete* paquete = crear_paquete_op(OBTENER_INSTRUCCION);
+    agregar_entero_int_a_paquete(paquete,tid);
+    agregar_entero_int_a_paquete(paquete,pid);
+    agregar_entero_uint32_a_paquete(paquete,pc);
     
-    //log_info(logg, "serializacion %i %i", tid, pc); ya esta el log
     enviar_paquete(paquete,sockets_cpu->socket_memoria);
     eliminar_paquete(paquete);
 
