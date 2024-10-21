@@ -454,26 +454,22 @@ void send_paquete_solo_code_operacion(int socket_cliente,code_operacion code,t_p
 void send_paquete_code_operacion(code_operacion code, t_buffer*buffer, int socket_cliente){
     t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
 
-    if (code == DUMP_MEMORIA || code == FIN_QUANTUM_RR || code == THREAD_INTERRUPT){ 
-        send_paquete_solo_code_operacion(socket_cliente,code,paquete);
-    }
-    else{
-        paquete->code = code;
-        paquete->buffer = buffer;
+    paquete->code = code;
+    paquete->buffer = buffer;
 
-        void *a_enviar = malloc(buffer->size + sizeof(code) + sizeof(int));
-        int offset = 0;
+    void *a_enviar = malloc(buffer->size + sizeof(code) + sizeof(int));
+    int offset = 0;
 
-        memcpy(a_enviar + offset, &(paquete->code), sizeof(code));
-        offset += sizeof(code);
-        memcpy(a_enviar + offset, paquete->buffer->stream, paquete->buffer->size);
+    memcpy(a_enviar + offset, &(paquete->code), sizeof(code));
+    offset += sizeof(code);
+    memcpy(a_enviar + offset, paquete->buffer->stream, paquete->buffer->size);
 
-        send(socket_cliente, a_enviar, buffer->size + sizeof(code) + sizeof(int), 0);
+    send(socket_cliente, a_enviar, buffer->size + sizeof(code) + sizeof(int), 0);
 
-        free(a_enviar);
-        eliminar_paquete_code_op(paquete);
-    }    
-}
+    free(a_enviar);
+    eliminar_paquete_code_op(paquete);
+}    
+
 
 
 

@@ -335,7 +335,7 @@ void THREAD_JOIN(int tid)
 
     code_operacion cod_op = THREAD_INTERRUPT;
     pthread_mutex_lock(&mutex_conexion_cpu);
-    send_paquete_code_operacion(cod_op,NULL,sockets->sockets_cliente_cpu->socket_Interrupt); // 
+    send_operacion_tid_pid(cod_op,tcb_aux->tid,tcb_aux->pid,sockets->sockets_cliente_cpu->socket_Interrupt); 
     pthread_mutex_unlock(&mutex_conexion_cpu);
    
     hilo_exec = NULL;
@@ -574,7 +574,7 @@ void DUMP_MEMORY()
 
     code_operacion cod_op = DUMP_MEMORIA;
     pthread_mutex_lock(&mutex_conexion_cpu);
-    send_paquete_code_operacion(cod_op,NULL,sockets->sockets_cliente_cpu->socket_Interrupt);
+    send_operacion_tid_pid(cod_op,tcb->tid,tcb->pid,sockets->sockets_cliente_cpu->socket_Interrupt);
     pthread_mutex_unlock(&mutex_conexion_cpu);
 
     hilo_exec = NULL;

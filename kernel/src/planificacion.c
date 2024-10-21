@@ -335,7 +335,7 @@ void espera_con_quantum(int quantum) {
     } else if (resultado == 0) { //pasa el tiempo de quantum, desalojo. 
         code_operacion cod_op = FIN_QUANTUM_RR;
         pthread_mutex_lock(&mutex_conexion_cpu);
-        send_operacion_entero(cod_op,hilo_exec->tid,sockets->sockets_cliente_cpu->socket_Interrupt);
+        send_operacion_tid_pid(cod_op,hilo_exec->tid,hilo_exec->pid,sockets->sockets_cliente_cpu->socket_Interrupt);
         pthread_mutex_unlock(&mutex_conexion_cpu);
         t_tcb* hilo = hilo_exec;
         hilo->estado = TCB_READY;
