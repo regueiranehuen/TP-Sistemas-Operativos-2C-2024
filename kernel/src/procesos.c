@@ -94,6 +94,7 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
     send_inicializacion_proceso(pcb->pid,archivo_pseudocodigo,tamanio_proceso,socket_memoria);
+    close(socket_memoria);
     
     pcb->estado = PCB_NEW;
 
