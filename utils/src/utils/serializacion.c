@@ -272,7 +272,7 @@ int recibir_entero_buffer(t_paquete_syscall*paquete){
 
 
 t_process_create* parametros_process_create(t_paquete_syscall *paquete){
-    t_process_create *info = malloc(sizeof(t_process_create));
+    t_process_create *info = malloc(paquete->buffer->size);
 
     void * stream = paquete->buffer->stream;
 
@@ -295,7 +295,7 @@ t_process_create* parametros_process_create(t_paquete_syscall *paquete){
 }
 
 t_thread_create* parametros_thread_create(t_paquete_syscall*paquete){
-    t_thread_create*info = malloc(sizeof(t_thread_create));
+    t_thread_create*info = malloc(paquete->buffer->size);
 
     void * stream = paquete->buffer->stream;
 
@@ -439,10 +439,10 @@ void send_operacion_pid_tamanio_proceso(code_operacion code, int pid, int tamani
 
 void send_paquete_solo_code_operacion(int socket_cliente,code_operacion code,t_paquete_code_operacion*paquete){
     paquete->code=code;
-    void *a_enviar = malloc(sizeof(paquete->code)); // Solo enviamos la syscall
-    memcpy(a_enviar, &(paquete->code), sizeof(paquete->code));
+    void *a_enviar = malloc(sizeof(int)); // Solo enviamos la syscall
+    memcpy(a_enviar, &(paquete->code), sizeof(int));
 
-    send(socket_cliente, a_enviar, sizeof(paquete->code), 0);
+    send(socket_cliente, a_enviar, sizeof(int), 0);
 
     // Liberar la memoria que ya no usamos
     free(a_enviar);
@@ -457,14 +457,14 @@ void send_paquete_code_operacion(code_operacion code, t_buffer*buffer, int socke
     paquete->code = code;
     paquete->buffer = buffer;
 
-    void *a_enviar = malloc(buffer->size + sizeof(code) + sizeof(int));
+    void *a_enviar = malloc(buffer->size + sizeof(int) + sizeof(int));
     int offset = 0;
 
-    memcpy(a_enviar + offset, &(paquete->code), sizeof(code));
-    offset += sizeof(code);
+    memcpy(a_enviar + offset, &(paquete->code), sizeof(int));
+    offset += sizeof(int);
     memcpy(a_enviar + offset, paquete->buffer->stream, paquete->buffer->size);
 
-    send(socket_cliente, a_enviar, buffer->size + sizeof(code) + sizeof(int), 0);
+    send(socket_cliente, a_enviar, buffer->size + sizeof(int) + sizeof(int), 0);
 
     free(a_enviar);
     eliminar_paquete_code_op(paquete);
@@ -479,7 +479,7 @@ t_paquete_code_operacion* recibir_paquete_code_operacion(int socket_cliente){
     paquete->buffer=malloc(sizeof(paquete->buffer));
 
     // Primero recibimos el codigo de operacion
-    int bytes = recv(socket_cliente, &(paquete->code), sizeof(paquete->code), 0);
+    int bytes = recv(socket_cliente, &(paquete->code), sizeof(int), 0);
 
     if (bytes == 0){
         return NULL;
@@ -543,4 +543,51 @@ code_operacion recibir_code_operacion(int socket_cliente){
     code_operacion code;
     recv(socket_cliente,&code,sizeof(int),0);
     return code;
+}
+
+
+
+void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_proceso, int socket_cliente){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
+
+    int offset = 0;
+    int length_arch_pseudocodigo=strlen(arch_pseudocodigo)+1;
+
+    buffer->size = 3*sizeof(int)+length_arch_pseudocodigo;
+    
+    buffer->stream = malloc(buffer->size);
+
+    
+
+    memcpy(buffer->stream, &pid,sizeof(int));
+    offset += sizeof(int);
+    memcpy(buffer->stream,&tamanio_proceso,sizeof(int));
+    offset += sizeof(int);
+    memcpy(buffer->stream,&length_arch_pseudocodigo,sizeof(int));
+    offset+=sizeof(int);
+    memcpy(buffer->stream,&arch_pseudocodigo,length_arch_pseudocodigo);
+    
+    send_paquete_code_operacion(INICIALIZAR_PROCESO,buffer,socket_cliente);
+    
+}
+
+
+t_args_inicializar_proceso* recepcionar_inicializacion_proceso(t_paquete_code_operacion*paquete){
+    t_args_inicializar_proceso* info = malloc(paquete->buffer->size); // APLICAR SIEMPRE ASI
+
+    void* stream = paquete->buffer->stream;
+
+    int length_arch_pseudocodigo;
+
+    memcpy(&(info->pid),stream,sizeof(int));
+    stream += sizeof(int);
+    memcpy(&(info->tam_proceso), stream,sizeof(int));
+    stream+=sizeof(int);
+    memcpy(&length_arch_pseudocodigo, stream,sizeof(int));
+    stream+=sizeof(int);
+    memcpy(&(info->arch_pseudocodigo),stream,length_arch_pseudocodigo);
+
+    eliminar_paquete_code_op(paquete);
+
+    return info;
 }

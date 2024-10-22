@@ -18,8 +18,6 @@ typedef struct{
     t_log* log;
 }hilo_clientes;
 
-
-
 typedef struct{
 
 int socket_servidor;

@@ -5,7 +5,7 @@
 
 typedef enum{
     TERMINAR=-1, /////
-
+    INICIALIZAR_PROCESO,
     DUMP_MEMORIA,
     PROCESS_EXIT_AVISO, 
     PROCESS_CREATE_AVISO,
@@ -71,6 +71,14 @@ typedef struct{
     int pid;
 }t_process_create_mem;
 
+
+typedef struct{
+    int pid;
+    int tam_proceso;
+    char*arch_pseudocodigo;
+}t_args_inicializar_proceso;
+
+
 void send_process_create(char* nombreArchivo, int tamProceso, int prioridad, int socket_cliente);
 void send_thread_create(char*nombreArchivo,int prioridad,int socket_cliente);
 void send_process_exit(int socket_cliente);
@@ -113,5 +121,7 @@ void send_thread_exit(int socket_cliente);
 code_operacion recibir_code_operacion(int socket_cliente);
 void send_code_operacion(code_operacion code, int socket_cliente);
 void send_operacion_tid(code_operacion code, int tid, int socket_cliente);
+
+void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_proceso, int socket_cliente);
 
 #endif

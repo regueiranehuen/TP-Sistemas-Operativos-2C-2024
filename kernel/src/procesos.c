@@ -91,6 +91,10 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
     pcb->tamanio_proceso = tamanio_proceso;
     tcb->prioridad = 0;
     pcb->tcb_main = tcb;
+
+    int socket_memoria = cliente_Memoria_Kernel(logger, config);
+    send_proceso_inicial(socket_memoria,archivo_pseudocodigo,tamanio_proceso);
+    
     pcb->estado = PCB_NEW;
 
     pthread_mutex_lock(&mutex_cola_new_procesos);

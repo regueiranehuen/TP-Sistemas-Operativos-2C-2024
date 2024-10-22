@@ -273,6 +273,29 @@ void enviar_instruccion(int conexion, t_instruccion *instruccion_nueva, int codo
 {
     t_paquete *paquete = crear_paquete_op(codop);
 
+    int length_inst=0;
+
+    if (strlen(instruccion_nueva->parametros1)>0){
+        length_inst+=strlen(instruccion_nueva->parametros1)+1;
+    }
+    if (strlen(instruccion_nueva->parametros2)>0){
+        length_inst+=strlen(instruccion_nueva->parametros2)+1;
+    }
+    if (strlen(instruccion_nueva->parametros3)>0){
+        length_inst+=strlen(instruccion_nueva->parametros3)+1;
+    }
+    if (strlen(instruccion_nueva->parametros4)>0){
+        length_inst+=strlen(instruccion_nueva->parametros4)+1;
+    }
+    if (strlen(instruccion_nueva->parametros5)>0){
+        length_inst+=strlen(instruccion_nueva->parametros5)+1;
+    }
+    if (strlen(instruccion_nueva->parametros6)>0){
+        length_inst+=strlen(instruccion_nueva->parametros6)+1;
+    }
+
+
+    paquete->buffer->size=length_inst;
     agregar_instruccion_a_paquete(paquete, instruccion_nueva);
     enviar_paquete(paquete, conexion);
     eliminar_paquete(paquete);
@@ -624,7 +647,7 @@ void recibir_3_string(int conexion_kernel_cpu_dispatch, char **palabra1, char **
 
 
 t_instruccion* recepcionar_instruccion(t_paquete*paquete){
-    t_instruccion *instruccion_nueva = malloc(sizeof(t_instruccion));
+    t_instruccion *instruccion_nueva = malloc(paquete->buffer->size);
     int desp = 0;
 
     instruccion_nueva->parametros1 = leer_string(paquete->buffer->stream, &desp);
