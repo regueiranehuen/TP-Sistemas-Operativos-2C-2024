@@ -1,6 +1,10 @@
 #include "includes/estructuras.h"
+#include "../../memoria/src/includes/server.h"
 
-t_list*contextos_pids;
+
+t_config*iniciar_config(char*path){
+    return config_create(path);
+}
 
 
 int recibir_operacion(int socket_cliente){
@@ -15,6 +19,21 @@ int recibir_operacion(int socket_cliente){
         return -1;
     }
 }
+
+op_code recibir_op_code(int socket_cliente){
+    op_code cod_op;
+    if (recv(socket_cliente, &cod_op, sizeof(int), MSG_WAITALL) > 0)
+    {
+        return cod_op;
+    }
+    else
+    {
+        close(socket_cliente);
+        return -1;
+    }
+}
+
+
 
 void *recibir_buffer(int *size, int socket_cliente)
 {
@@ -56,6 +75,29 @@ t_list *recibir_paquete(int socket_cliente)
     free(buffer);
     return valores;
 }
+
+t_paquete* recibir_paquete_op_code(int socket_cliente){
+    t_paquete*paquete=malloc(sizeof(t_paquete));
+
+    paquete->buffer=malloc(sizeof(paquete->buffer));
+
+    // Primero recibimos el codigo de operacion
+    int bytes = recv(socket_cliente, &(paquete->codigo_operacion), sizeof(paquete->codigo_operacion), 0);
+
+    if (bytes == 0){
+        return NULL;
+    }
+    else{
+        // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
+        
+        recv(socket_cliente, &(paquete->buffer->size), sizeof(uint32_t), 0);
+        paquete->buffer->stream = malloc(paquete->buffer->size);
+        recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
+        return paquete;
+    }
+}
+
+
 
 void *serializar_paquete(t_paquete *paquete, int bytes)
 {
@@ -151,6 +193,14 @@ void agregar_entero_uint8_a_paquete(t_paquete *paquete, uint8_t numero)
     paquete->buffer->size += sizeof(uint8_t);
 }
 
+void agregar_entero_uint32_a_paquete(t_paquete *paquete, uint8_t numero)
+{
+
+    paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + sizeof(uint32_t));
+    memcpy(paquete->buffer->stream + paquete->buffer->size, &numero, sizeof(uint32_t));
+    paquete->buffer->size += sizeof(uint32_t);
+}
+
 void agregar_string_a_paquete(t_paquete *paquete, char *palabra)
 {
 
@@ -177,19 +227,75 @@ void enviar_string(int conexion, char *palabra, int codop)
     eliminar_paquete(paquete);
 }
 
-void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto, int codop){
-    t_paquete*paquete=crear_paquete_op(codop);
+void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto){
+    t_paquete*paquete=crear_paquete_op(OBTENCION_CONTEXTO_PID_OK);
     
     agregar_contexto_pid_a_paquete(paquete,contexto);
     enviar_paquete(paquete,socket_cliente);
     eliminar_paquete(paquete);
 }
 
+void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto){
+    t_paquete*paquete=crear_paquete_op(OBTENCION_CONTEXTO_TID_OK);
+    
+    agregar_contexto_tid_a_paquete(paquete,contexto);
+    enviar_paquete(paquete,socket_cliente);
+    eliminar_paquete(paquete);
+}
+
+
+void enviar_registros_a_actualizar(int socket_cliente,t_registros_cpu*registros,int pid, int tid){
+    t_paquete*paquete = crear_paquete_op(ACTUALIZAR_CONTEXTO_TID);
+
+    agregar_entero_int_a_paquete(paquete,pid);
+    agregar_entero_int_a_paquete(paquete,tid);
+    agregar_registros_a_paquete(paquete,registros);
+    enviar_paquete(paquete,socket_cliente);
+    eliminar_paquete(paquete);
+}
+
+
+void enviar_paquete_op_code(int socket, op_code code){
+    t_paquete*paquete=crear_paquete_op(code);
+
+    enviar_paquete(paquete,socket);
+
+    eliminar_paquete(paquete);
+}
+
+
+
+
+
+
 
 void enviar_instruccion(int conexion, t_instruccion *instruccion_nueva, int codop)
 {
     t_paquete *paquete = crear_paquete_op(codop);
 
+    int length_inst=0;
+
+    if (strlen(instruccion_nueva->parametros1)>0){
+        length_inst+=strlen(instruccion_nueva->parametros1)+1;
+    }
+    if (strlen(instruccion_nueva->parametros2)>0){
+        length_inst+=strlen(instruccion_nueva->parametros2)+1;
+    }
+    if (strlen(instruccion_nueva->parametros3)>0){
+        length_inst+=strlen(instruccion_nueva->parametros3)+1;
+    }
+    if (strlen(instruccion_nueva->parametros4)>0){
+        length_inst+=strlen(instruccion_nueva->parametros4)+1;
+    }
+    if (strlen(instruccion_nueva->parametros5)>0){
+        length_inst+=strlen(instruccion_nueva->parametros5)+1;
+    }
+    if (strlen(instruccion_nueva->parametros6)>0){
+        length_inst+=strlen(instruccion_nueva->parametros6)+1;
+    }
+
+
+    paquete->buffer->size=length_inst;
     agregar_instruccion_a_paquete(paquete, instruccion_nueva);
     enviar_paquete(paquete, conexion);
     eliminar_paquete(paquete);
@@ -200,6 +306,14 @@ void enviar_2_enteros(int conexion, t_2_enteros *enteros, int codop)
     t_paquete *paquete = crear_paquete_op(codop);
 
     agregar_2_enteros_a_paquete(paquete, enteros);
+    enviar_paquete(paquete, conexion);
+    eliminar_paquete(paquete);
+}
+
+void enviar_tid_pid_op_code(int conexion,t_tid_pid* info, op_code codop){
+    t_paquete *paquete = crear_paquete_op(codop);
+    agregar_entero_int_a_paquete(paquete,info->pid);
+    agregar_entero_int_a_paquete(paquete,info->tid);
     enviar_paquete(paquete, conexion);
     eliminar_paquete(paquete);
 }
@@ -221,6 +335,21 @@ void enviar_codop(int conexion, op_code cod_op)
 
     eliminar_paquete(codigo);
 }
+
+void solicitar_contexto_tid(int pid, int tid,int conexion){
+    t_paquete *codigo = crear_paquete_op(OBTENER_CONTEXTO_TID);
+    agregar_entero_int_a_paquete(codigo,pid);
+    agregar_entero_int_a_paquete(codigo,tid);
+    enviar_paquete(codigo, conexion);
+    eliminar_paquete(codigo);
+}
+void solicitar_contexto_pid(int pid,int conexion){
+    t_paquete *codigo = crear_paquete_op(OBTENER_CONTEXTO_PID);
+    agregar_entero_int_a_paquete(codigo,pid);
+    enviar_paquete(codigo, conexion);
+    eliminar_paquete(codigo);
+}
+
 
 void enviar_paquete_string(int conexion, char *string, op_code codOP, int tamanio)
 {
@@ -276,15 +405,15 @@ t_paquete *crear_paquete_op(op_code codop)
 void agregar_registros_a_paquete(t_paquete *paquete, t_registros_cpu *registros)
 {
 
-    agregar_entero_uint8_a_paquete(paquete, registros->AX);
-    agregar_entero_uint8_a_paquete(paquete, registros->BX);
-    agregar_entero_uint8_a_paquete(paquete, registros->CX);
-    agregar_entero_uint8_a_paquete(paquete, registros->DX);
-    agregar_entero_uint8_a_paquete(paquete, registros->EX);
-    agregar_entero_uint8_a_paquete(paquete, registros->FX);
-    agregar_entero_uint8_a_paquete(paquete, registros->GX);
-    agregar_entero_uint8_a_paquete(paquete, registros->HX);
-    agregar_entero_uint8_a_paquete(paquete, registros->PC);
+    agregar_entero_uint32_a_paquete(paquete, registros->AX);
+    agregar_entero_uint32_a_paquete(paquete, registros->BX);
+    agregar_entero_uint32_a_paquete(paquete, registros->CX);
+    agregar_entero_uint32_a_paquete(paquete, registros->DX);
+    agregar_entero_uint32_a_paquete(paquete, registros->EX);
+    agregar_entero_uint32_a_paquete(paquete, registros->FX);
+    agregar_entero_uint32_a_paquete(paquete, registros->GX);
+    agregar_entero_uint32_a_paquete(paquete, registros->HX);
+    agregar_entero_uint32_a_paquete(paquete, registros->PC);
 
 }
 
@@ -308,6 +437,8 @@ void agregar_contexto_pid_a_paquete(t_paquete*paquete,t_contexto_pid*contexto){
 }
 
 void agregar_contexto_tid_a_paquete(t_paquete*paquete,t_contexto_tid*contexto){
+    agregar_entero_a_paquete(paquete,contexto->pid);
+
     agregar_entero_a_paquete(paquete,contexto->tid);
     agregar_registros_a_paquete(paquete,contexto->registros);
 }
@@ -386,6 +517,16 @@ void agregar_instruccion_a_paquete(t_paquete *paquete, t_instruccion *instruccio
 
 // Una vez serializado -> recibimos y leemos estas variables
 
+
+
+uint32_t leer_entero_uint32(char *buffer, int *desplazamiento)
+{
+    uint32_t entero;
+    memcpy(&entero, buffer + (*desplazamiento), sizeof(uint32_t));
+    (*desplazamiento) += sizeof(uint32_t);
+    return entero;
+}
+
 int leer_entero(char *buffer, int *desplazamiento)
 {
     int entero;
@@ -394,11 +535,15 @@ int leer_entero(char *buffer, int *desplazamiento)
     return entero;
 }
 
-uint32_t leer_entero_uint32(char *buffer, int *desplazamiento)
-{
+int recepcionar_entero_paquete(t_paquete*paquete){
+    int entero;
+    memcpy(&entero, paquete->buffer->stream, sizeof(int));
+    return entero;
+}
+
+uint32_t recepcionar_uint32_paquete(t_paquete*paquete){
     uint32_t entero;
-    memcpy(&entero, buffer + (*desplazamiento), sizeof(uint32_t));
-    (*desplazamiento) += sizeof(uint32_t);
+    memcpy(&entero, paquete->buffer->stream, sizeof(uint32_t));
     return entero;
 }
 
@@ -425,8 +570,19 @@ char *leer_string(char *buffer, int *desplazamiento)
     return palabra;
 }
 
+int recibir_entero(int socket){
+    int size = 0;
+    char *buffer;
+    int desp = 0;
 
-uint32_t recibir_entero_uint32(int socket, t_log *loggs)
+    buffer = recibir_buffer(&size, socket);
+    int entero_nuevo= leer_entero(buffer, &desp);
+    // log_trace(loggs, "Me llego en numero %i", entero_nuevo32);
+    free(buffer);
+    return entero_nuevo;
+}
+
+uint32_t recibir_entero_uint32(int socket)
 {
 
     int size = 0;
@@ -456,31 +612,6 @@ char *recibir_string(int socket, t_log *loggs)
 }
 
 
-t_contexto_tid* recibir_contexto(int socket){
-    t_contexto_tid*nuevo_contexto=malloc(sizeof(t_contexto_tid));
-    nuevo_contexto->registros=malloc(sizeof(t_registros_cpu));
-    int size = 0;
-    char *buffer;
-    int desp = 0;
-
-    buffer = recibir_buffer(&size, socket);
-    
-
-    nuevo_contexto->tid = leer_entero_uint32(buffer,&desp);
-    nuevo_contexto->registros->PC = leer_entero_uint32(buffer, &desp);
-    nuevo_contexto->registros->AX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->BX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->CX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->DX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->EX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->FX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->GX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->HX = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->base = leer_entero_uint8(buffer, &desp);
-    nuevo_contexto->registros->limite = leer_entero_uint8(buffer, &desp);
-    free(buffer);
-    return nuevo_contexto;
-}
 
 
 t_list *recibir_doble_entero(int socket)
@@ -499,60 +630,8 @@ t_list *recibir_doble_entero(int socket)
     return devolver;
 }
 
-void recibir_string_mas_contexto(int conexion_kernel_cpu_dispatch, t_contexto **pcb_wait, char **recurso_wait)
-{
-    *pcb_wait = malloc(sizeof(t_contexto));
-    t_registros_cpu *registros = malloc(sizeof(t_registros_cpu));
-    (*pcb_wait)->registros = registros;
-    int size = 0;
-    char *buffer;
-    int desp = 0;
 
-    buffer = recibir_buffer(&size, conexion_kernel_cpu_dispatch);
-    *recurso_wait = leer_string(buffer, &desp);
 
-    (*pcb_wait)->tid = leer_entero_uint32(buffer, &desp);
-    (*pcb_wait)->pc = leer_entero_uint32(buffer, &desp);
-    (*pcb_wait)->registros->AX = leer_entero_uint8(buffer, &desp);
-    (*pcb_wait)->registros->BX = leer_entero_uint8(buffer, &desp);
-    (*pcb_wait)->registros->CX = leer_entero_uint8(buffer, &desp);
-    (*pcb_wait)->registros->DX = leer_entero_uint8(buffer, &desp);
-    (*pcb_wait)->registros->EX = leer_entero_uint8(buffer, &desp);
-    (*pcb_wait)->registros->FX = leer_entero_uint8(buffer, &desp);
-    (*pcb_wait)->registros->GX = leer_entero_uint8(buffer, &desp);
-    (*pcb_wait)->registros->HX = leer_entero_uint8(buffer, &desp);
-    (*pcb_wait)->registros->base = leer_entero_uint8(buffer, &desp);
-    (*pcb_wait)->registros->limite = leer_entero_uint8(buffer, &desp);
-
-    free(buffer);
-}
-
-void recibir_string_mas_u32_con_contexto(int conexion_kernel_cpu_dispatch, char **palabra, uint32_t *numero, t_contexto **contexto)
-{
-    int size = 0;
-    char *buffer;
-    int desp = 0;
-    *numero = *(uint32_t *)malloc(sizeof(uint32_t));  // Línea 515    *contexto = malloc(sizeof(t_contexto));
-    t_registros_cpu *registros = malloc(sizeof(t_registros_cpu));
-    (*contexto)->registros = registros;
-    buffer = recibir_buffer(&size, conexion_kernel_cpu_dispatch);
-    *palabra = leer_string(buffer, &desp);
-    *numero = leer_entero_uint32(buffer, &desp);
-
-    (*contexto)->tid = leer_entero_uint32(buffer, &desp);
-    (*contexto)->pc = leer_entero_uint32(buffer, &desp);
-    (*contexto)->registros->AX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->CX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->DX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->EX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
-    free(buffer);
-}
 
 void recibir_3_string(int conexion_kernel_cpu_dispatch, char **palabra1, char **palabra2, char **palabra3)
 {
@@ -565,68 +644,37 @@ void recibir_3_string(int conexion_kernel_cpu_dispatch, char **palabra1, char **
     *palabra3 = leer_string(buffer, &desp);
 }
 
-void recibir_2_string_con_contexto(int conexion_kernel_cpu_dispatch, char **palabra1, char **palabra2, t_contexto **contexto)
-{
-    int size = 0;
-    char *buffer;
-    int desp = 0;
-    buffer = recibir_buffer(&size, conexion_kernel_cpu_dispatch);
-    *palabra1 = leer_string(buffer, &desp);
-    *palabra2 = leer_string(buffer, &desp);
 
-    *contexto = malloc(sizeof(t_contexto));
-    t_registros_cpu *registros = malloc(sizeof(t_registros_cpu));
-    (*contexto)->registros = registros;
 
-    (*contexto)->tid = leer_entero_uint32(buffer, &desp);
-    (*contexto)->pc = leer_entero_uint32(buffer, &desp);
-    (*contexto)->registros->AX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->CX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->DX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->EX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
-    free(buffer);
-}
-
-t_instruccion *recibir_instruccion(int socket)
-{
-
-    t_instruccion *instruccion_nueva = malloc(sizeof(t_instruccion));
-    int size = 0;
-    char *buffer;
+t_instruccion* recepcionar_instruccion(t_paquete*paquete){
+    t_instruccion *instruccion_nueva = malloc(paquete->buffer->size);
     int desp = 0;
 
-    buffer = recibir_buffer(&size, socket);
-
-    instruccion_nueva->parametros1 = leer_string(buffer, &desp);
+    instruccion_nueva->parametros1 = leer_string(paquete->buffer->stream, &desp);
 
     if (strcmp(instruccion_nueva->parametros1, "SET") == 0)
     {
-        instruccion_nueva->parametros2 = leer_string(buffer, &desp);
-        instruccion_nueva->parametros3 = leer_string(buffer, &desp);
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+        instruccion_nueva->parametros3 = leer_string(paquete->buffer->stream, &desp);
     }
     if (strcmp(instruccion_nueva->parametros1, "SUM") == 0)
     {
-        instruccion_nueva->parametros2 = leer_string(buffer, &desp);
-        instruccion_nueva->parametros3 = leer_string(buffer, &desp);
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+        instruccion_nueva->parametros3 = leer_string(paquete->buffer->stream, &desp);
     }
     if (strcmp(instruccion_nueva->parametros1, "SUB") == 0)
     {
-        instruccion_nueva->parametros2 = leer_string(buffer, &desp);
-        instruccion_nueva->parametros3 = leer_string(buffer, &desp);
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+        instruccion_nueva->parametros3 = leer_string(paquete->buffer->stream, &desp);
     }
     if (strcmp(instruccion_nueva->parametros1, "EXIT") == 0)
     {
     }
 
-    free(buffer);
+    eliminar_paquete(paquete);
     return instruccion_nueva;
 }
+
 
 t_2_enteros *recibir_2_enteros(int socket)
 {
@@ -742,153 +790,123 @@ t_string_mas_entero *recibir_string_mas_entero(int socket, t_log *loggs)
     return nuevos_entero_string;
 }
 
-void recibir_2_string_mas_u32_con_contexto(int socket, char **palabra1, char **palabra2, uint32_t *valor1, t_contexto **contexto)
-{
 
-    int size = 0;
-    char *buffer;
+
+
+t_tid_pid* recepcionar_tid_pid_op_code(t_paquete* paquete){
+    t_tid_pid* info = malloc(sizeof(t_tid_pid));
+
+    void* stream = paquete->buffer->stream;
+
+    memcpy(&(info->tid),stream,sizeof(int));
+    stream += sizeof(int);
+    memcpy(&(info->pid), stream,sizeof(int)); // Primer parámetro para la syscall: nombre del archivo
+
+    eliminar_paquete(paquete);
+
+    return info;
+}
+
+
+t_tid_pid_pc*recepcionar_tid_pid_pc(t_paquete*paquete){
     int desp = 0;
+    t_tid_pid_pc*info=malloc(sizeof(t_tid_pid_pc));
+    info->pid=leer_entero(paquete->buffer->stream,&desp);
+    info->tid=leer_entero(paquete->buffer->stream,&desp);
+    info->pc=leer_entero_uint32(paquete->buffer->stream,&desp);
+    
+    eliminar_paquete(paquete);
 
-    buffer = recibir_buffer(&size, socket);
-    *palabra1 = leer_string(buffer, &desp);
-    *palabra2 = leer_string(buffer, &desp);
-    *valor1 = leer_entero_uint32(buffer, &desp);
-    *contexto = malloc(sizeof(t_contexto));
-    t_registros_cpu *registros = malloc(sizeof(t_registros_cpu));
-    (*contexto)->registros = registros;
-
-    (*contexto)->tid = leer_entero_uint32(buffer, &desp);
-    (*contexto)->pc = leer_entero_uint32(buffer, &desp);
-    (*contexto)->registros->AX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->CX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->DX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->EX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
-    free(buffer);
+    return info;
 }
 
-t_string_2enteros *recibir_string_2enteros_con_contexto(int socket, t_contexto **contexto)
-{
-    int size = 0;
-    char *buffer;
+
+
+t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete){ 
+
     int desp = 0;
-    t_string_2enteros *devolver = malloc(sizeof(t_string_2enteros));
+    t_contexto_tid*nuevo_contexto=malloc(sizeof(t_contexto_tid));
+    nuevo_contexto->registros=malloc(sizeof(t_registros_cpu));
+    
 
-    buffer = recibir_buffer(&size, socket);
-    devolver->entero1 = leer_entero_uint32(buffer, &desp);
-    devolver->entero2 = leer_entero_uint32(buffer, &desp);
-    devolver->string = leer_string(buffer, &desp);
-    *contexto = malloc(sizeof(t_contexto));
-    t_registros_cpu *registros = malloc(sizeof(t_registros_cpu));
-    (*contexto)->registros = registros;
-
-    (*contexto)->tid = leer_entero_uint32(buffer, &desp);
-    (*contexto)->pc = leer_entero_uint32(buffer, &desp);
-    (*contexto)->registros->AX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->CX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->DX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->EX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
-    free(buffer);
-
-    return devolver;
+    nuevo_contexto->tid = leer_entero(paquete->buffer->stream,&desp);
+    nuevo_contexto->pid=leer_entero(paquete->buffer->stream,&desp);
+    nuevo_contexto->registros->PC = leer_entero_uint32(paquete->buffer->stream, &desp);
+    nuevo_contexto->registros->AX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    nuevo_contexto->registros->BX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    nuevo_contexto->registros->CX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    nuevo_contexto->registros->DX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    nuevo_contexto->registros->EX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    nuevo_contexto->registros->FX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    nuevo_contexto->registros->GX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    nuevo_contexto->registros->HX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    //nuevo_contexto->registros->base = leer_entero_uint8(buffer, &desp);
+    //nuevo_contexto->registros->limite = leer_entero_uint8(buffer, &desp);
+    eliminar_paquete(paquete);
+    return nuevo_contexto;
 }
 
-void recibir_2_string_mas_3_u32_con_contexto(int socket, char **palabra1, char **palabra2, uint32_t *valor1, uint32_t *valor2, uint32_t *valor3, t_contexto **contexto)
-{
-    int size = 0;
-    char *buffer;
+t_registros_cpu*recepcionar_registros(t_paquete*paquete){
     int desp = 0;
-    buffer = recibir_buffer(&size, socket);
-    *palabra1 = leer_string(buffer, &desp);
-    *palabra2 = leer_string(buffer, &desp);
-    *valor1 = leer_entero_uint32(buffer, &desp);
-    *valor2 = leer_entero_uint32(buffer, &desp);
-    *valor3 = leer_entero_uint32(buffer, &desp);
-    *contexto = malloc(sizeof(t_contexto));
-    t_registros_cpu *registros = malloc(sizeof(t_registros_cpu));
-    (*contexto)->registros = registros;
+    t_registros_cpu*reg=malloc(sizeof(t_registros_cpu));
+    
 
-    (*contexto)->tid = leer_entero_uint32(buffer, &desp);
-    (*contexto)->pc = leer_entero_uint32(buffer, &desp);
-    (*contexto)->registros->AX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->BX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->CX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->DX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->EX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->FX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->GX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->HX = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->base = leer_entero_uint8(buffer, &desp);
-    (*contexto)->registros->limite = leer_entero_uint8(buffer, &desp);
-    free(buffer);
+    
+    reg->PC = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->AX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->BX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->CX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->DX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->EX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->FX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->GX = leer_entero_uint32(paquete->buffer->stream, &desp);
+    reg->HX = leer_entero_uint32(paquete->buffer->stream, &desp);
+
+    eliminar_paquete(paquete);
+    return reg;
 }
 
+t_contexto_pid* recepcionar_contexto_pid(t_paquete*paquete){
 
-void inicializar_contexto_tid(int tid, t_contexto_tid *contexto){
-    contexto=malloc(sizeof(contexto));
-    contexto->registros= malloc(sizeof(t_registros_cpu));
-    contexto->tid = tid;
-    contexto->registros->AX = 0;
-    contexto->registros->BX = 0;
-    contexto->registros->CX = 0;
-    contexto->registros->DX = 0;
-    contexto->registros->EX = 0;
-    contexto->registros->FX = 0;
-    contexto->registros->GX = 0;
-    contexto->registros->HX = 0;
-    contexto->registros->PC = 0;
+    int desp = 0;
+    t_contexto_pid*nuevo_contexto=malloc(sizeof(t_contexto_pid));
+    //nuevo_contexto->contextos_tids=malloc(sizeof(t_contexto_tid));
+    //nuevo_contexto->registros=malloc(sizeof(t_registros_cpu));
+    nuevo_contexto->pid=leer_entero_uint32(paquete->buffer->stream,&desp);
+    nuevo_contexto->base=leer_entero_uint32(paquete->buffer->stream, &desp);
+    nuevo_contexto->limite=leer_entero_uint32(paquete->buffer->stream, &desp);
+    
 
-    list_add(lista_contextos_pids,contexto);
-}
+    int tamanio;
 
-
-t_contexto_pid* obtener_contexto(int pid, int tid){
-    for (int i = 0; i < list_size(lista_contextos_pids); i++){
-        t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
-        t_list*contextos_tids=cont_actual->contextos_tids;
-        if (pid == cont_actual->pid && esta_tid_en_lista(tid,contextos_tids))
-            return cont_actual;
-
+    while (desp < paquete->buffer->size)
+    {
+        memcpy(&tamanio, paquete->buffer + desp, sizeof(int));
+        desp += sizeof(int);
+        uint32_t* valor = malloc(tamanio);
+        memcpy(valor, paquete->buffer + desp, tamanio);
+        desp += tamanio;
+        list_add(nuevo_contexto->contextos_tids, valor);
     }
-    return NULL;
+
+    //nuevo_contexto->registros->base = leer_entero_uint8(buffer, &desp);
+    //nuevo_contexto->registros->limite = leer_entero_uint8(buffer, &desp);
+    eliminar_paquete(paquete);
+    return nuevo_contexto;
 }
 
-bool esta_tid_en_lista(int tid,t_list*contextos_tids){
-    for (int i = 0; i < list_size(contextos_tids); i++){
-        t_contexto_tid*cont_actual=(t_contexto_tid*)list_get(contextos_tids,i);
-        if (cont_actual->tid==tid)
-            return true;
-
-    }
-    return false;
+void pedir_creacion_contexto_tid(int pid, int tid,int conexion){
+    t_paquete *paquete = crear_paquete_op(CREAR_CONTEXTO_TID);
+    agregar_entero_int_a_paquete(paquete,pid);
+    agregar_entero_int_a_paquete(paquete,tid);
+    enviar_paquete(paquete, conexion);
+    eliminar_paquete(paquete);
 }
 
 
-void liberar_contexto_tid(t_contexto_tid *contexto_tid){
-    if(contexto_tid){
-        free(contexto_tid->registros);
-        free(contexto_tid);
-    }
-}
 
-void liberar_contexto_pid(t_contexto_pid *contexto_pid){
-    if(contexto_pid){
-        list_destroy_and_destroy_elements(contexto_pid->contextos_tids,(void*)liberar_contexto_tid);
-        free(contexto_pid);
-    }
-}
 
-void liberar_lisa_contextos(){
-    list_destroy_and_destroy_elements(lista_contextos_pids,(void*)liberar_contexto_pid);
-}
+
+
+
+

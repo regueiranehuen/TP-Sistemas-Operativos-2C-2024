@@ -27,16 +27,13 @@
 #include "serializacion.h"
 
 
-extern t_list*lista_contextos_pids;
 
 typedef struct{
     int pid;
     t_list*contextos_tids;
-    uint32_t base; // la base y el limite son unicos por cada pid
+    uint32_t base; 
     uint32_t limite; 
 }t_contexto_pid;
-
-
 
 typedef struct{
     uint32_t AX;
@@ -48,22 +45,15 @@ typedef struct{
     uint32_t GX;
     uint32_t HX;
     uint32_t PC;
-    uint32_t base; // la base y el limite son unicos por cada pid
-    uint32_t limite;
-}t_registros_cpu;
+}t_registros_cpu; 
 
 typedef struct{
+    int pid;
     int tid;
     t_registros_cpu*registros;
 }t_contexto_tid;
 
 
-
-typedef struct {
-	uint32_t tid;
-	uint32_t pc;
-	t_registros_cpu* registros;
-}t_contexto; ///////// LA IDEA ES ELIMINAR ESTA ESTRUCTURA Y USAR CONTEXTO PID Y CONTEXTO TID
 
 typedef struct {
     t_contexto_tid* contexto;
@@ -85,7 +75,7 @@ typedef struct {
     motivo_exit motivo;
 }t_pcb_exit;
 
-typedef enum
+typedef enum // SOLO USARLO CON MEMORIA
 {
     Algo, //hay un case -1 que lo cambie a 1
     //ESTADOS
@@ -140,17 +130,32 @@ typedef enum
     FINALIZAR_PROCESO,
     ACCESO_TABLA_PAGINAS,
     ACCESO_ESPACIO_USUARIO,
+    
+
+    // CONTEXTOS
+    CREAR_CONTEXTO_TID,
+    ENVIAR_CONTEXTO_PID, //
+    ENVIAR_CONTEXTO_TID, //
+    CONTEXTO_PID_INEXISTENTE, //
+    CONTEXTO_TID_INEXISTENTE,
+    OBTENER_CONTEXTO_TID,
+    OBTENER_CONTEXTO_PID,
+    ACTUALIZAR_CONTEXTO_TID,
+
+    OBTENCION_CONTEXTO_TID_OK,
+    OBTENCION_CONTEXTO_PID_OK,
+    ACTUALIZACION_OK,
+
     //INSTRUCCION FINALIZADA
     PEDIR_TAM_MEMORIA,
     TAMANIO_RECIBIDO,
     TERMINACION_PROCESO,
-    OBTENER_CONTEXTO,
-    ACTUALIZAR_CONTEXTO,
     OBTENER_INSTRUCCION,
+    INSTRUCCION_OBTENIDA,
     ESPACIO_USUARIO,
     WRITE_OK,
-    ACTUALIZACION_OK,
-}op_code;
+
+}op_code; // USARLO SOLAMENTE CON MEMORIA
 
 
 typedef struct{
@@ -161,6 +166,14 @@ typedef struct{
     char* parametros5;
     char* parametros6;
 }t_instruccion;
+
+// Guardamos las instrucciones por pid, tid y program counter
+typedef struct{
+    int pid;
+    int tid;
+    uint32_t pc;
+    t_instruccion*instrucciones;
+}t_instruccion_tid_pid;
 
 
 typedef struct {
@@ -178,6 +191,12 @@ typedef struct {
     uint32_t entero2;
     uint32_t entero3;
 }t_3_enteros;
+
+typedef struct{
+    int pid;
+    int tid;
+    uint32_t pc;
+}t_tid_pid_pc;
 
 typedef struct {
     uint32_t entero1;
@@ -230,10 +249,9 @@ void enviar_paquete(t_paquete* paquete, int socket_cliente);
 void eliminar_paquete(t_paquete* paquete);
 void eliminar_codigo(t_paquete* codop);
 void liberar_conexion(int socket_cliente);
-t_config* iniciar_config(char *ruta); //
-char* obtener_instruccion(uint32_t tid, uint32_t pc); // Antes decía pid en vez de tid. No está hecha la función
+t_config* iniciar_config(char *ruta); 
 
-t_contexto_pid* obtener_contexto(int pid, int tid);
+
 
 // Serializacion
 
@@ -241,7 +259,7 @@ void agregar_entero_a_paquete(t_paquete *paquete, uint32_t numero);
 void agregar_entero_uint8_a_paquete(t_paquete *paquete, uint8_t numero);
 void agregar_entero_int_a_paquete(t_paquete *paquete, int numero);
 void agregar_string_a_paquete(t_paquete *paquete, char* palabra);
-void agregar_contexto_a_paquete(t_paquete *paquete, t_contexto * pcb);
+
 void agregar_registros_a_paquete(t_paquete * paquete, t_registros_cpu * registros);
 void agregar_instruccion_a_paquete(t_paquete *paquete, t_instruccion * instruccion_nueva);
 void agregar_2_enteros_1_string_a_paquete(t_paquete *paquete, t_string_2enteros * enteros_string);
@@ -250,7 +268,7 @@ void agregar_3_enteros_a_paquete(t_paquete *paquete, t_3_enteros * enteros);
 void agregar_3_enteros_1_string_a_paquete(t_paquete *paquete, t_string_3enteros * enteros_string);
 void enviar_entero (int conexion, uint32_t numero, int codop);
 void enviar_string (int conexion, char* palabra, int codop);
-void enviar_contexto (int conexion, t_contexto* pcb, int codop);
+
 void enviar_instruccion (int conexion, t_instruccion* nueva_instruccion, int codop);
 void enviar_2_enteros(int conexion, t_2_enteros* enteros, int codop);
 void enviar_3_enteros(int conexion, t_3_enteros* enteros, int codop);
@@ -271,17 +289,14 @@ uint32_t leer_entero_uint32(char *buffer, int * desplazamiento);
 char* leer_string(char *buffer, int * desplazamiento);
 //t_registros_cpu * leer_registros(char* buffer, int* desp);
 
-uint32_t recibir_entero_uint32(int socket, t_log* loggs);
+uint32_t recibir_entero_uint32(int socket);
 char* recibir_string(int socket, t_log* loggs);
 //t_contexto* recibir_contexto(int socket);
-t_instruccion* recibir_instruccion(int socket);
+t_instruccion* recepcionar_instruccion(t_paquete*paquete);
 t_list* recibir_doble_entero(int socket);
+int recibir_entero(int socket);
 
-void recibir_string_mas_contexto(int conexion_kernel_cpu_dispatch,t_contexto** pcb_wait,char** recurso_wait);
-void recibir_string_mas_u32_con_contexto(int conexion_kernel_cpu_dispatch,char** palabra,uint32_t* numero,t_contexto** contexto);
-void recibir_3_string(int conexion_kernel_cpu_dispatch, char** palabra1,char** palabra2, char** palabra3);
-void recibir_2_string_con_contexto(int conexion_kernel_cpu_dispatch, char** palabra1,char** palabra2, t_contexto** contexto);
-t_string_2enteros* recibir_string_2enteros_con_contexto(int socket, t_contexto** contexto);
+
 t_2_enteros * recibir_2_enteros(int socket);
 t_3_enteros* recibir_3_enteros(int socket);
 t_4_enteros* recibir_4_enteros(int socket);
@@ -291,15 +306,46 @@ t_string_2enteros* recibir_string_2enteros(int socket);
 t_string_mas_entero* recibir_string_mas_entero(int socket, t_log *loggs);
 void recibir_2_string_mas_u32(int socket, char** palabra1,char** palabra2, uint32_t* valor1);
 void recibir_2_string_mas_3_u32(int socket, char** palabra1,char** palabra2, uint32_t* valor1, uint32_t* valor2, uint32_t* valor3);
-void recibir_2_string_mas_u32_con_contexto(int socket, char** palabra1,char** palabra2, uint32_t* valor1, t_contexto** contexto);
-void recibir_2_string_mas_3_u32_con_contexto(int socket, char** palabra1,char** palabra2, uint32_t* valor1, uint32_t* valor2, uint32_t* valor3, t_contexto** contexto);
+
 //t_contexto *recibir_contexto_para_thread_execute(int socket,uint32_t tid);
+
+//  NUEVAS FUNCIONES POST CHECKPOINT 2
+
+
 bool esta_tid_en_lista(int tid,t_list*contextos_tids);
 void agregar_contexto_pid_a_paquete(t_paquete*paquete,t_contexto_pid*contexto);
 void agregar_contexto_tid_a_paquete(t_paquete*paquete,t_contexto_tid*contexto);
-
-void liberar_contexto_tid(t_contexto_tid *contexto_tid);
+void liberar_contexto_tid(t_contexto_pid *contexto_pid,t_contexto_tid*contexto_tid);
 void liberar_contexto_pid(t_contexto_pid *contexto_pid);
 void liberar_lisa_contextos();
+
+void remover_contexto_pid_lista(t_contexto_pid* contexto);
+void remover_contexto_tid_lista(t_contexto_tid*contexto,t_list*lista);
+t_contexto_tid* obtener_tid_en_lista(int tid,t_list*contextos_tids);
+bool existe_contexto_pid(int pid);
+
+void agregar_entero_uint32_a_paquete(t_paquete *paquete, uint8_t numero);
+void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto);
+void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto);
+
+op_code recibir_op_code(int socket_cliente);
+t_paquete* recibir_paquete_op_code(int socket_cliente);
+int leer_entero(char *buffer, int *desplazamiento);
+t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete);
+t_contexto_pid* recepcionar_contexto_pid(t_paquete*paquete);
+void enviar_tid_pid_op_code(int conexion,t_tid_pid* info, op_code codop);
+void solicitar_contexto_tid(int pid, int tid,int conexion);
+void solicitar_contexto_pid(int pid,int conexion);
+void pedir_creacion_contexto_tid(int pid, int tid,int conexion);
+t_tid_pid* recepcionar_tid_pid_op_code(t_paquete* paquete);
+void enviar_paquete_op_code(int socket, op_code code);
+int recepcionar_entero_paquete(t_paquete*paquete);
+void enviar_registros_a_actualizar(int socket_cliente,t_registros_cpu*registros,int pid, int tid);
+void enviar_program_counter_a_actualizar(int socket_cliente,int pc,int pid, int tid);
+uint32_t recepcionar_uint32_paquete(t_paquete*paquete);
+t_tid_pid_pc*recepcionar_tid_pid_pc(t_paquete*paquete);
+t_registros_cpu*recepcionar_registros(t_paquete*paquete);
+void actualizar_contexto(int pid, int tid, t_registros_cpu* reg);
+t_instruccion* obtener_instruccion(int tid, int pid,uint32_t pc);
 
 #endif

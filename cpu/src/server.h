@@ -20,7 +20,6 @@ typedef struct {
 extern t_log* log_cpu;
 extern t_config* config;
 extern t_sockets_cpu* sockets_cpu;
-extern t_contexto* contexto;
 extern t_pcb_exit* pcb_salida;
 
 extern char* ip_memoria;
@@ -41,9 +40,14 @@ extern void* socket_servidor_kernel;
 extern void* socket_cliente_memoria;
 
 extern uint32_t tid_interrupt;
-extern int hay_interrupcion;
+extern bool hay_interrupcion;
+extern bool seguir_ejecutando;
 extern int es_por_usuario;
 
+extern int tid_exec;
+extern int pid_exec;
+
+extern pthread_mutex_t mutex_tid_pid_exec;
 
 // **Funciones**
 void leer_config(char* path);

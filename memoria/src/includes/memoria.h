@@ -5,6 +5,7 @@
 #include "utils/includes/serializacion.h"
 #include <commons/config.h>
 #include "main.h"
+#include "commCpu.h"
 
 void atender_conexiones(int socket_cliente);
 

@@ -1,6 +1,5 @@
 #include "includes/memoria.h"
 
-
 void atender_conexiones(int socket_cliente){
 
 code_operacion respuesta;
@@ -11,6 +10,16 @@ break;
 }
 switch (paquete->code)
 {// hay que enviar el pid/tid correspondiente que vamos a crear o eliminar. Por ejemplo: Para thread_exit o thread_cancel hay que mandarle a memoria el tid que vamos a eliminar
+
+case INICIALIZAR_PROCESO:
+t_args_inicializar_proceso* info_0 = recepcionar_inicializacion_proceso(paquete);
+respuesta=OK;
+send(socket_cliente,&respuesta,sizeof(int),0);
+inicializar_contexto_pid(info_0->pid,0,info_0->tam_proceso);
+
+
+break; 
+
 case DUMP_MEMORIA:
 t_tid_pid* info_1 = recepcionar_tid_pid_code_op(paquete);
 respuesta = OK;

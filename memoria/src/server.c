@@ -4,6 +4,13 @@ static pthread_mutex_t cliente_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int client_count = 0; //numero incremental del numero del cliente
 sem_t sem_conexion_hecha;
 
+t_list*lista_contextos_pids;
+t_list*lista_instrucciones_tid_pid;
+
+pthread_mutex_t mutex_lista_contextos_pids;
+
+
+
 void* hilo_por_cliente (void* void_args){
 
 hilo_clientes *args = (hilo_clientes*)void_args;
@@ -162,6 +169,9 @@ sockets_memoria* hilos_memoria(t_log* log, t_config* config){
 
 pthread_t hilo_servidor;
 pthread_t hilo_cliente;
+
+lista_contextos_pids=list_create();
+lista_instrucciones_tid_pid=list_create();
 
 args_hilo* args = malloc(sizeof(args_hilo)); 
 

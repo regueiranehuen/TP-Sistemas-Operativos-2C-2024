@@ -91,6 +91,10 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
     pcb->tamanio_proceso = tamanio_proceso;
     tcb->prioridad = 0;
     pcb->tcb_main = tcb;
+
+    int socket_memoria = cliente_Memoria_Kernel(logger, config);
+    send_inicializacion_proceso(pcb->pid,archivo_pseudocodigo,tamanio_proceso,socket_memoria);
+    
     pcb->estado = PCB_NEW;
 
     pthread_mutex_lock(&mutex_cola_new_procesos);
@@ -335,7 +339,7 @@ void THREAD_JOIN(int tid)
 
     code_operacion cod_op = THREAD_INTERRUPT;
     pthread_mutex_lock(&mutex_conexion_cpu);
-    send_paquete_code_operacion(cod_op,NULL,sockets->sockets_cliente_cpu->socket_Interrupt); // 
+    send_operacion_tid_pid(cod_op,tcb_aux->tid,tcb_aux->pid,sockets->sockets_cliente_cpu->socket_Interrupt); 
     pthread_mutex_unlock(&mutex_conexion_cpu);
    
     hilo_exec = NULL;
@@ -398,7 +402,7 @@ void THREAD_CANCEL(int tid)
             sacar_tcb_de_lista(lista_ready_prioridad,tcb);
             pthread_mutex_unlock(&mutex_cola_ready);
         }
-        else if(strcmp(algoritmo,"MULTINIVEL")){
+        else if(strcmp(algoritmo,"CMN")){
             pthread_mutex_lock(&mutex_cola_ready);
             t_cola_prioridad* cola = cola_prioridad(colas_ready_prioridad,tcb->prioridad);
             sacar_tcb_de_cola(cola->cola,tcb);
@@ -574,7 +578,7 @@ void DUMP_MEMORY()
 
     code_operacion cod_op = DUMP_MEMORIA;
     pthread_mutex_lock(&mutex_conexion_cpu);
-    send_paquete_code_operacion(cod_op,NULL,sockets->sockets_cliente_cpu->socket_Interrupt);
+    send_operacion_tid_pid(cod_op,tcb->tid,tcb->pid,sockets->sockets_cliente_cpu->socket_Interrupt);
     pthread_mutex_unlock(&mutex_conexion_cpu);
 
     hilo_exec = NULL;
@@ -609,5 +613,9 @@ void DUMP_MEMORY()
     }
 }
 
+
+/*
+Ver que hacer cuando CPU le manda tid despues de la EJECUCION
+*/
 
 
