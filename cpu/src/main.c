@@ -7,15 +7,13 @@ int main(int argc, char** argv) {
     leer_config(argv[1]);
     
     sockets_cpu = hilos_cpu(log_cpu, config);
-
+    recibir_kernel_dispatch(sockets_cpu->socket_servidor->socket_Dispatch);
+    recibir_kernel_interrupt(sockets_cpu->socket_servidor->socket_Interrupt);
     liberarMemoria(sockets_cpu,log_cpu,config);
 
     return 0;
 
     //aca deberia empezar a ejecutar cada parte del ciclo de instrucciones, funcExecute, y mmu
-
-
-
 
 }
 

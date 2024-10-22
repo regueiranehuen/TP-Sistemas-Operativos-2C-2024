@@ -3,8 +3,7 @@
 
 t_log *log_cpu = NULL;
 t_config *config = NULL;
-t_sockets_cpu *sockets_cpu = NULL; // ¿
-t_pcb_exit *pcb_salida = NULL;
+t_sockets_cpu *sockets_cpu = NULL;
 
 char *ip_memoria = NULL;
 int puerto_memoria = 0;
@@ -16,7 +15,7 @@ int socket_servidor_Dispatch = 0, socket_servidor_Interrupt = 0;
 int socket_cliente_Dispatch = 0, socket_cliente_Interrupt = 0;
 int respuesta_Dispatch = 0, respuesta_Interrupt = 0;
 
-t_socket_cpu *sockets = NULL; // ?
+t_socket_cpu *sockets = NULL;
 
 pthread_t hilo_servidor;
 pthread_t hilo_cliente;
@@ -206,46 +205,38 @@ t_sockets_cpu *hilos_cpu(t_log *log, t_config *config)
 }
 
 // Recepción de mensajes de Kernel Interrupt
-void recibir_kernel_interrupt(int socket_cliente_Interrupt)
-{
+void recibir_kernel_interrupt(int socket_cliente_Interrupt){
     enviar_string(socket_cliente_Interrupt, "Mensaje desde CPU Interrupt", MENSAJE);
 
     int noFinalizar = 0;
-    while (noFinalizar != -1)
-    {
-
-        t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente_Interrupt);
-
-        if (es_interrupcion_usuario(paquete->code))
-        { // No entiendo a qué se refieren con interrupción de usuario
-            // wait
+    while (noFinalizar != -1){
+        /*
+        t_paquete_syscall *paquete = recibir_paquete_code_operacion(socket_cliente_Interrupt);
+        if (es_interrupcion(paquete->syscall)){ 
+            sem_wait(&sem_tid_interrupt);
             tid_interrupt = recepcionar_int_code_op(paquete); // Hay que ver si hay algun problema igualando uint_32 con int
-            // signal
+            sem_post(&sem_tid_interrupt);
 
-            // wait
+            sem_wait(&sem_hay_interrupcion);
             hay_interrupcion = true;
-            // signal
-
-            // wait
-            es_por_usuario = 1;
-            // signal
+            sem_post(&sem_hay_interrupcion);
         }
-        else if (paquete->code == TERMINAR)
-        {
-            // wait
+        else if (paquete->syscall == FIN){
+            sem_wait(&sem_seguir_ejecutando);
             seguir_ejecutando = false;
-            // signal
+            sem_post(&sem_seguir_ejecutando);
 
-            // wait
+            sem_wait(&sem_noFinalizar);
             noFinalizar = -1;
-            // signal
+            sem_post(&sem_noFinalizar);
         }
+        */
     }
 }
 
-bool es_interrupcion_usuario(code_operacion code)
-{
-    return (code == FIN_QUANTUM_RR || code == THREAD_INTERRUPT || code == DUMP_MEMORIA); // ???
+bool es_interrupcion(syscalls code){
+    return (code ==     ENUM_PROCESS_CREATE || code == ENUM_PROCESS_EXIT || code == ENUM_THREAD_CREATE || code == ENUM_THREAD_JOIN || code == ENUM_THREAD_CANCEL || code == ENUM_THREAD_EXIT 
+    || code == ENUM_MUTEX_CREATE || code == ENUM_MUTEX_LOCK || code == ENUM_MUTEX_UNLOCK || code == ENUM_IO || code == ENUM_DUMP_MEMORY || code == FIN );
 }
 
 // Recepción de mensajes de Kernel Dispatch
@@ -313,3 +304,18 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch)
     }
 }
 }
+/*
+void inicializar_semaforos() {
+    sem_init(&sem_hay_interrupcion,0,0);
+    sem_init(&sem_noFinalizar,0,0);
+    sem_init(&sem_seguir_ejecutando, 0, 0);
+    sem_init(&sem_tid_interrupt, 0, 0);
+}
+
+void destruir_semaforos() {
+    sem_destroy(&sem_hay_interrupcion);
+    sem_destroy(&sem_noFinalizar);
+    sem_destroy(&sem_seguir_ejecutando);
+    sem_destroy(&sem_tid_interrupt);
+}
+*/

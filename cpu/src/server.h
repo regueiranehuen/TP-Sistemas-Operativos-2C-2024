@@ -20,7 +20,6 @@ typedef struct {
 extern t_log* log_cpu;
 extern t_config* config;
 extern t_sockets_cpu* sockets_cpu;
-extern t_pcb_exit* pcb_salida;
 
 extern char* ip_memoria;
 extern int puerto_memoria;
@@ -42,12 +41,12 @@ extern void* socket_cliente_memoria;
 extern uint32_t tid_interrupt;
 extern bool hay_interrupcion;
 extern bool seguir_ejecutando;
-extern int es_por_usuario;
 
 extern int tid_exec;
 extern int pid_exec;
 
 extern pthread_mutex_t mutex_tid_pid_exec;
+
 
 // **Funciones**
 void leer_config(char* path);
@@ -62,6 +61,9 @@ t_sockets_cpu* hilos_cpu(t_log* log, t_config* config);
 void recibir_kernel_dispatch(int socket_cliente_Dispatch);
 void recibir_kernel_interrupt(int socket_cliente_Interrupt);
 void ejecutar_ciclo_de_instruccion(t_log* log);
-bool es_interrupcion_usuario(code_operacion code);
+bool es_interrupcion(syscalls code);
+void inicializar_semaforos();
+void destruir_semaforos();
+
 
 #endif  // SERVER_H
