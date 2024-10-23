@@ -64,6 +64,7 @@ char* pseudocodigo;
 int pseudocodigo_length;
 t_queue* cola_hilos_bloqueados;
 pthread_mutex_t mutex_cola_hilos_bloqueados;
+bool desalojo;
 }t_tcb;
 
 extern t_tcb* hilo_exec;

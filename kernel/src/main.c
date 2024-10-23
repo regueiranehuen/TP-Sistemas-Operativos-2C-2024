@@ -34,7 +34,7 @@ void liberar_espacio(t_log *log, t_config *config, sockets_kernel *sockets)
     close(sockets->sockets_cliente_cpu->socket_Dispatch);
     close(sockets->sockets_cliente_cpu->socket_Interrupt);
     destruir_estados();
-    destruir_mutex();
     destruir_semaforos();
+    destruir_mutex();
     free(sockets);
 }

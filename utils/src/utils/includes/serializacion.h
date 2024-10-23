@@ -16,7 +16,8 @@ typedef enum{
     THREAD_INTERRUPT,
     FIN_QUANTUM_RR,
     ENUM_SEGMENTATION_FAULT,
-    OK
+    OK,
+    DESALOJAR
 }code_operacion;
 
 typedef enum{

@@ -16,7 +16,7 @@ void* funcion_new_ready_hilos(void* void_args);
 void hilo_atender_syscalls();
 void planificador_largo_plazo();
 void* hilo_planificador_largo_plazo(void* void_args);
-void atender_syscall();
+void* atender_syscall(void* args);
 
 t_tcb *prioridades();
 void round_robin(t_queue*cola);
@@ -29,7 +29,7 @@ void *hilo_planificador_corto_plazo(void *arg);
 void *funcion_manejo_procesos(void *arg);
 
 void espera_con_quantum(int quantum);
-void ejecucion(t_tcb*hilo);
+void ejecucion();
 void pushear_cola_ready(t_tcb* hilo);
 
 #endif
