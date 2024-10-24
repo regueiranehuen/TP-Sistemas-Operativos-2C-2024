@@ -224,17 +224,72 @@ void buscar_y_eliminar_tcb(t_list* lista_tcbs, t_tcb* tcb) {
     }    
 }
 
-t_tcb* buscar_tcb_por_tid(t_list* lista_tcbs, int tid_buscado) {
+//Busca un tcb en los estados ready y block
+t_tcb* buscar_tcb(int tid_buscado, t_tcb* hilo_exec) {
+    char* algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
+
+    pthread_mutex_lock(&mutex_cola_ready);
+    // Si es FIFO
+    if (strings_iguales(algoritmo, "FIFO")) {
+        for (int i = 0; i < queue_size(cola_ready_fifo); i++) {
+            t_tcb* hilo = (t_tcb*) list_get(cola_ready_fifo->elements, i);  // Acceso a elementos de la cola FIFO
+            if (hilo->tid == tid_buscado && hilo->pid == hilo_exec->pid) {
+                return hilo;
+            }
+        }
+    }
+    // Si es PRIORIDADES
+    if (strings_iguales(algoritmo, "PRIORIDADES")) {
+        for (int i = 0; i < list_size(lista_ready_prioridad); i++) {
+            t_tcb* hilo = (t_tcb*) list_get(lista_ready_prioridad, i);
+            if (hilo->tid == tid_buscado && hilo->pid == hilo_exec->pid) {
+                return hilo;
+            }
+        }
+    }
+
+    // Si es MULTINIVEL
+    if (strings_iguales(algoritmo, "CMN")) {
+        
+
+        // Iterar en las colas_ready_procesos
+        for (int i = 0; i < list_size(colas_ready_prioridad); i++) {
+            t_cola_prioridad* cola_prioridad = (t_cola_prioridad*) list_get(colas_ready_prioridad, i);
+
+            // Iterar en la cola de esa prioridad
+            for (int j = 0; j < queue_size(cola_prioridad->cola); j++) {
+                t_tcb* hilo = (t_tcb*) list_get(cola_prioridad->cola->elements, j);
+                if (hilo->tid == tid_buscado && hilo->pid == hilo_exec->pid) {
+                    return hilo;
+                }
+            }
+        }
+
+    }
+    // Buscar en la lista de bloqueados
+  
+    for (int i = 0; i < list_size(lista_bloqueados); i++) {
+        t_tcb* hilo_bloqueado = (t_tcb*) list_get(lista_bloqueados, i);
+        if (hilo_bloqueado->tid == tid_buscado && hilo_bloqueado->pid == hilo_exec->pid) {
+            return hilo_bloqueado;
+        }
+    }
+ 
+    pthread_mutex_unlock(&mutex_cola_ready);
+    // Si no se encontrÃ³ en ninguna parte
+    return NULL;
+}
+
+t_tcb* buscar_tcb_por_tid(t_list* lista_tcbs, int tid_buscado, t_tcb* hilo_exec) {
     for (int i = 0; i < list_size(lista_tcbs); i++) {
         t_tcb* tcb_actual = list_get(lista_tcbs, i);  // Obtener el TCB en la posición 'i'
-        if (tcb_actual->tid == tid_buscado) {
+        if (tcb_actual->tid == tid_buscado && tcb_actual->pid == hilo_exec->pid) {
             return tcb_actual;  // Devolver el TCB encontrado
         }
     }
     // Si no se encuentra, retornar NULL
     return NULL;
 }
-
 
 t_pcb* buscar_pcb_por_pid(t_list* lista_pcbs, int pid_buscado) {
     for (int i = 0; i < list_size(lista_pcbs); i++) {

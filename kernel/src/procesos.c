@@ -364,23 +364,23 @@ esta syscall no hace nada y el hilo que la invocó continuará su ejecución.*/
 void THREAD_JOIN(int tid)
 {
 
-    if (buscar_tcb_por_tid(lista_tcbs,tid) == NULL || buscar_tcb_por_tid(lista_bloqueados, tid) != NULL)
+    if (buscar_tcb_por_tid(lista_tcbs,tid,hilo_exec) == NULL || buscar_tcb(tid, hilo_exec) == NULL)
     {
         send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
         return;
     }
-    t_tcb *tcb_aux = hilo_exec;
+    t_tcb* tcb_aux = hilo_exec;
 
     hilo_exec = NULL;
     tcb_aux->estado = TCB_BLOCKED;
     list_add(lista_bloqueados, tcb_aux);
     log_info(logger,"## (<%d>:<%d>) - Bloqueado por: <PTHREAD_JOIN>",tcb_aux->pid,tcb_aux->tid);
-    t_tcb *tcb_bloqueante = buscar_tcb_por_tid(lista_tcbs, tid);
+    t_tcb* tcb_bloqueante = buscar_tcb_por_tid(lista_tcbs, tid,tcb_aux);
     queue_push(tcb_bloqueante->cola_hilos_bloqueados, tcb_aux);
     desalojado = true;
     send_code_operacion(DESALOJAR,sockets->sockets_cliente_cpu->socket_Interrupt); 
     sem_post(&sem_desalojado);
-  
+
 }
 
 /*
@@ -395,7 +395,7 @@ void THREAD_CANCEL(int tid)
     int respuesta;
     code_operacion cod_op = THREAD_ELIMINATE_AVISO;
 
-    t_tcb *tcb = buscar_tcb_por_tid(lista_tcbs,tid); // Debido a que solamente hilos vinculados por un mismo proceso se pueden cancelar entre si, el tid a cancelar debe ser del proceso del hilo que llamo a la funcion
+    t_tcb *tcb = buscar_tcb_por_tid(lista_tcbs,tid,hilo_exec); // Debido a que solamente hilos vinculados por un mismo proceso se pueden cancelar entre si, el tid a cancelar debe ser del proceso del hilo que llamo a la funcion
 
     if (tcb == NULL)
     {
@@ -403,7 +403,7 @@ void THREAD_CANCEL(int tid)
         return;
     }
 
-    if (buscar_tcb_por_tid(lista_tcbs,tid) == NULL || buscar_tcb_por_tid(lista_bloqueados, tid) != NULL)
+    if (buscar_tcb_por_tid(lista_tcbs,tid,hilo_exec) == NULL || buscar_tcb(tid, hilo_exec) == NULL)
     {
         send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
         return;
@@ -435,7 +435,7 @@ void THREAD_CANCEL(int tid)
             sacar_tcb_de_lista(lista_ready_prioridad,tcb);
             pthread_mutex_unlock(&mutex_cola_ready);
         }
-        else if(strcmp(algoritmo,"CMN")){
+        else if(strcmp(algoritmo,"MULTINIVEL")){
             pthread_mutex_lock(&mutex_cola_ready);
             t_cola_prioridad* cola = cola_prioridad(colas_ready_prioridad,tcb->prioridad);
             sacar_tcb_de_cola(cola->cola,tcb);
@@ -452,7 +452,7 @@ void THREAD_CANCEL(int tid)
     sem_post(&semaforo_cola_exit_hilos);
     }
     send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
-} 
+}
 
 
 /* THREAD_EXIT, esta syscall finaliza al hilo que lo invocó, 
