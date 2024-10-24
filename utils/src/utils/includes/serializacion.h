@@ -15,6 +15,7 @@ typedef enum{
     THREAD_CANCEL_AVISO,
     THREAD_INTERRUPT,
     FIN_QUANTUM_RR,
+    DESALOJAR,
     ENUM_SEGMENTATION_FAULT,
     OK
 }code_operacion;
@@ -56,14 +57,12 @@ typedef struct{
 }t_tid_pid;
 
 typedef struct{
-    int length_nombreArchivo;//
 	char*nombreArchivo;
 	int tamProceso;
 	int prioridad;
 }t_process_create;
 
 typedef struct{
-    int length_nombreArchivo;
 	char*nombreArchivo;
 	int prioridad;
 }t_thread_create;
@@ -77,9 +76,11 @@ typedef struct{
 typedef struct{
     int pid;
     int tam_proceso;
-    int length_nombreArchivo;
     char*arch_pseudocodigo;
 }t_args_inicializar_proceso;
+
+
+
 
 
 void send_process_create(char* nombreArchivo, int tamProceso, int prioridad, int socket_cliente);

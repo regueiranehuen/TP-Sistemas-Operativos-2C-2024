@@ -86,17 +86,16 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 void send_mutex_create(char* recurso, int socket_cliente){
     t_buffer* buffer = malloc(sizeof(t_buffer));
 
-int length_recurso = strlen(recurso)+1;
-buffer->size = sizeof(int) + length_recurso;
+buffer->size = sizeof(int);
 
 buffer->offset = 0;
 buffer->stream = malloc(buffer->size);
 
+int lenght_recurso = strlen(recurso);
 
-
-memcpy(buffer->stream + buffer->offset, &length_recurso, sizeof(int));
+memcpy(buffer->stream + buffer->offset, &lenght_recurso, sizeof(int));
 buffer->offset += sizeof(int);
-memcpy(buffer->stream + buffer->offset, recurso, length_recurso);
+memcpy(buffer->stream + buffer->offset, recurso, lenght_recurso);
 
 syscalls syscall = ENUM_MUTEX_CREATE;
 
@@ -106,13 +105,12 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 void send_mutex_lock(char* recurso, int socket_cliente){
  t_buffer* buffer = malloc(sizeof(t_buffer));
 
-int lenght_recurso = strlen(recurso)+1;
-buffer->size = sizeof(int)+lenght_recurso;
+buffer->size = sizeof(int);
 
 buffer->offset = 0;
 buffer->stream = malloc(buffer->size);
 
-
+int lenght_recurso = strlen(recurso);
 
 memcpy(buffer->stream + buffer->offset, &lenght_recurso, sizeof(int));
 buffer->offset += sizeof(int);
@@ -126,13 +124,13 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 
 void send_mutex_unlock(char* recurso, int socket_cliente){
  t_buffer* buffer = malloc(sizeof(t_buffer));
-int lenght_recurso = strlen(recurso)+1;
-buffer->size = sizeof(int)+lenght_recurso;
+
+buffer->size = sizeof(int);
 
 buffer->offset = 0;
 buffer->stream = malloc(buffer->size);
 
-
+int lenght_recurso = strlen(recurso);
 
 memcpy(buffer->stream + buffer->offset, &lenght_recurso, sizeof(int));
 buffer->offset += sizeof(int);
@@ -278,12 +276,13 @@ t_process_create* parametros_process_create(t_paquete_syscall *paquete){
 
     void * stream = paquete->buffer->stream;
 
+    int sizeNombreArchivo;
     // Deserializamos los campos que tenemos en el buffer
-    memcpy(&(info->length_nombreArchivo), stream, sizeof(int)); // Recibimos el size del nombre del archivo de pseudocodigo
+    memcpy(&sizeNombreArchivo, stream, sizeof(int)); // Recibimos el size del nombre del archivo de pseudocodigo
     stream += sizeof(int);
 
-    memcpy(&(info->nombreArchivo), stream, info->length_nombreArchivo); // Primer parámetro para la syscall: nombre del archivo
-    stream += info->length_nombreArchivo;
+    memcpy(&(info->nombreArchivo), stream, sizeNombreArchivo); // Primer parámetro para la syscall: nombre del archivo
+    stream += sizeNombreArchivo;
     memcpy(&(info->tamProceso), stream, sizeof(int));
     stream += sizeof(int);
     memcpy(&(info->prioridad), stream, sizeof(int));
@@ -300,11 +299,13 @@ t_thread_create* parametros_thread_create(t_paquete_syscall*paquete){
 
     void * stream = paquete->buffer->stream;
 
+    int sizeNombreArchivo;
     // Deserializamos los campos que tenemos en el buffer
-    memcpy(&info->length_nombreArchivo, stream, sizeof(int)); // Recibimos el size del nombre del archivo de pseudocodigo
+    memcpy(&sizeNombreArchivo, stream, sizeof(int)); // Recibimos el size del nombre del archivo de pseudocodigo
     stream += sizeof(int);
-    memcpy(&(info->nombreArchivo), stream, info->length_nombreArchivo); // Primer parámetro para la syscall: nombre del archivo
-    stream += info->length_nombreArchivo;
+
+    memcpy(&(info->nombreArchivo), stream, sizeNombreArchivo); // Primer parámetro para la syscall: nombre del archivo
+    stream += sizeNombreArchivo;
     memcpy(&(info->prioridad), stream, sizeof(int));
     stream += sizeof(int);
 
@@ -572,18 +573,19 @@ void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_pro
 
 
 t_args_inicializar_proceso* recepcionar_inicializacion_proceso(t_paquete_code_operacion*paquete){
-    t_args_inicializar_proceso* info = malloc(paquete->buffer->size);
+    t_args_inicializar_proceso* info = malloc(paquete->buffer->size); // APLICAR SIEMPRE ASI
 
     void* stream = paquete->buffer->stream;
 
+    int length_arch_pseudocodigo;
 
     memcpy(&(info->pid),stream,sizeof(int));
     stream += sizeof(int);
     memcpy(&(info->tam_proceso), stream,sizeof(int));
     stream+=sizeof(int);
-    memcpy(&(info->length_nombreArchivo), stream,sizeof(int));
+    memcpy(&length_arch_pseudocodigo, stream,sizeof(int));
     stream+=sizeof(int);
-    memcpy(&(info->arch_pseudocodigo),stream,info->length_nombreArchivo);
+    memcpy(&(info->arch_pseudocodigo),stream,length_arch_pseudocodigo);
 
     eliminar_paquete_code_op(paquete);
 

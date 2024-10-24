@@ -3,8 +3,7 @@
 
 t_log *log_cpu = NULL;
 t_config *config = NULL;
-t_sockets_cpu *sockets_cpu = NULL; // ¿
-t_pcb_exit *pcb_salida = NULL;
+t_sockets_cpu *sockets_cpu = NULL;
 
 char *ip_memoria = NULL;
 int puerto_memoria = 0;
@@ -16,7 +15,7 @@ int socket_servidor_Dispatch = 0, socket_servidor_Interrupt = 0;
 int socket_cliente_Dispatch = 0, socket_cliente_Interrupt = 0;
 int respuesta_Dispatch = 0, respuesta_Interrupt = 0;
 
-t_socket_cpu *sockets = NULL; // ?
+t_socket_cpu *sockets = NULL;
 
 pthread_t hilo_servidor;
 pthread_t hilo_cliente;
@@ -31,6 +30,13 @@ int tid_exec;
 int pid_exec;
 
 pthread_mutex_t mutex_tid_pid_exec;
+pthread_mutex_t mutex_interrupt;
+
+sem_t sem_syscall_interrumpida_o_finalizada;
+
+code_operacion devolucion_kernel;
+
+
 
 // Lectura de configuración
 void leer_config(char *path)
@@ -160,6 +166,8 @@ t_sockets_cpu *hilos_cpu(t_log *log, t_config *config)
 {
 
     pthread_mutex_init(&mutex_tid_pid_exec,NULL);
+    pthread_mutex_init(&mutex_interrupt,NULL);
+    sem_init(&sem_syscall_interrumpida_o_finalizada,0,0);
 
     args_hilo *args = malloc(sizeof(args_hilo));
     if (!args)
@@ -206,49 +214,39 @@ t_sockets_cpu *hilos_cpu(t_log *log, t_config *config)
 }
 
 // Recepción de mensajes de Kernel Interrupt
-void recibir_kernel_interrupt(int socket_cliente_Interrupt)
-{
-    enviar_string(socket_cliente_Interrupt, "Mensaje desde CPU Interrupt", MENSAJE);
+void recibir_kernel_interrupt(int socket_cliente_Interrupt){
 
     int noFinalizar = 0;
-    while (noFinalizar != -1)
-    {
+    while (noFinalizar != -1){
 
-        t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente_Interrupt);
-
-        if (es_interrupcion_usuario(paquete->code))
-        { // No entiendo a qué se refieren con interrupción de usuario
-            // wait
-            tid_interrupt = recepcionar_int_code_op(paquete); // Hay que ver si hay algun problema igualando uint_32 con int
-            // signal
-
-            // wait
-            hay_interrupcion = true;
-            // signal
-
-            // wait
-            es_por_usuario = 1;
-            // signal
-
-
-        }
-        else if (paquete->code == TERMINAR)
+        t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(socket_cliente_Interrupt);
+        switch (paquete->code)
         {
-            // wait
-            seguir_ejecutando = false;
-            // signal
+        case FIN_QUANTUM_RR:
+            log_info(log_cpu,"## Llega interrupción al puerto Interrupt");
+            pthread_mutex_lock(&mutex_interrupt);
+            hay_interrupcion = true;
+            devolucion_kernel=FIN_QUANTUM_RR;
+            pthread_mutex_unlock(&mutex_interrupt);
 
-            // wait
-            noFinalizar = -1;
-            // signal
+            sem_post(&sem_syscall_interrumpida_o_finalizada);
+            break;
+        case DESALOJAR:
+            log_info(log_cpu,"## Llega interrupción al puerto Interrupt");
+            pthread_mutex_lock(&mutex_interrupt);
+            hay_interrupcion = true;
+            devolucion_kernel=DESALOJAR;
+            pthread_mutex_unlock(&mutex_interrupt);
+
+            sem_post(&sem_syscall_interrumpida_o_finalizada);
+            break;
+        default:
+            break;
         }
     }
 }
 
-bool es_interrupcion_usuario(code_operacion code)
-{
-    return (code == FIN_QUANTUM_RR || code == THREAD_INTERRUPT || code == DUMP_MEMORIA); // ???
-}
+
 
 // Recepción de mensajes de Kernel Dispatch
 void recibir_kernel_dispatch(int socket_cliente_Dispatch)
@@ -308,7 +306,7 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch)
         break;
 
     case OK:
-        noFinalizar = 0;
+        sem_post(&sem_syscall_interrumpida_o_finalizada);
         break;
     default:
         break;

@@ -15,6 +15,7 @@ extern t_list* lista_ready_prioridad;
 extern t_list* colas_ready_prioridad;
 extern t_list* lista_bloqueados;
 extern t_queue* cola_exit;
+extern t_queue* cola_IO;
 
 extern t_list* lista_tcbs;
 extern t_list* lista_pcbs;
@@ -38,6 +39,8 @@ extern sem_t sem_desalojado;
 
 extern sem_t semaforo_cola_ready;
 
+extern sem_t sem_cola_IO;
+
 extern sem_t semaforo_cola_exit_hilos;
 extern sem_t sem_lista_prioridades;
 
@@ -55,6 +58,7 @@ typedef enum {
     TCB_EXIT
 } estado_hilo;
 
+
 typedef struct{
 int tid;
 int prioridad;
@@ -64,7 +68,13 @@ char* pseudocodigo;
 int pseudocodigo_length;
 t_queue* cola_hilos_bloqueados;
 pthread_mutex_t mutex_cola_hilos_bloqueados;
+bool desalojo;
 }t_tcb;
+
+typedef struct{
+    t_tcb* hilo;
+    int milisegundos;
+} t_nodo_cola_IO;
 
 extern t_tcb* hilo_exec;
 
@@ -136,6 +146,9 @@ void MUTEX_UNLOCK(char* recurso);
 void IO(int milisegundos);
 
 void DUMP_MEMORY();
+
+void dispositivo_IO();
+void* hilo_dispositivo_IO();
 
 
 

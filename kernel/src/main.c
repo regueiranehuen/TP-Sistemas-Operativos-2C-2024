@@ -5,8 +5,6 @@
 int main(int argc, char *argv[])
 {
 
-//     Al iniciar el módulo Kernel, se creará un proceso inicial para que esté lo planifique y para poder inicializarlo, se requerirá entonces que este módulo reciba dos argumentos adicionales del main: el nombre del archivo de pseudocódigo que deberá ejecutar y el tamaño del proceso para ser inicializado en Memoria, el TID 0 creado por este proceso tendrá la prioridad máxima 0 (cero).
-
     t_log *log;
     t_config *config;
     sockets_kernel *sockets;
@@ -36,7 +34,7 @@ void liberar_espacio(t_log *log, t_config *config, sockets_kernel *sockets)
     close(sockets->sockets_cliente_cpu->socket_Dispatch);
     close(sockets->sockets_cliente_cpu->socket_Interrupt);
     destruir_estados();
-    destruir_mutex();
     destruir_semaforos();
+    destruir_mutex();
     free(sockets);
 }

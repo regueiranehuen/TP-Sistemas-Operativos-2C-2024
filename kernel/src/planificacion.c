@@ -1,5 +1,7 @@
 #include "includes/planificacion.h"
 
+
+
 t_tcb *fifo_tcb()
 {
 
@@ -113,62 +115,75 @@ void *hilo_planificador_largo_plazo(void *void_args)
 }
 
 
-void atender_syscall()//recibir un paquete con un codigo de operacion, entrar al switch con dicho codigo de operacion y luego serializar el paquete 
+void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion, entrar al switch con dicho codigo de operacion y luego serializar el paquete 
 {
+    
+        while(estado_kernel!=0){
 
         pthread_mutex_lock(&mutex_conexion_cpu);
         t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch); 
         pthread_mutex_unlock(&mutex_conexion_cpu);
+
          switch (paquete->syscall)
         {
 
         case ENUM_PROCESS_CREATE:
+            log_info(logger, "## (%d:%d) - Solicitó syscall: <PROCESS_CREATE>", hilo_exec->pid, hilo_exec->tid);
             t_process_create* paramProcessCreate= parametros_process_create(paquete);
-            PROCESS_CREATE(paramProcessCreate->nombreArchivo,paramProcessCreate->tamProceso,paramProcessCreate->prioridad);   
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);         
+            PROCESS_CREATE(paramProcessCreate->nombreArchivo,paramProcessCreate->tamProceso,paramProcessCreate->prioridad);  
+            
             break;
         case ENUM_PROCESS_EXIT:
+            log_info(logger, "## (%d:%d) - Solicitó syscall: <PROCESS_EXIT>", hilo_exec->pid, hilo_exec->tid);
             PROCESS_EXIT();
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch); 
+
             break;
         case ENUM_THREAD_CREATE:
+            log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_CREATE>", hilo_exec->pid, hilo_exec->tid);
             t_thread_create* paramThreadCreate = parametros_thread_create(paquete);
             THREAD_CREATE(paramThreadCreate->nombreArchivo,paramThreadCreate->prioridad); 
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
+ 
             break;
         case ENUM_THREAD_JOIN:
+            log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_JOIN>", hilo_exec->pid, hilo_exec->tid);
             int tid_thread_join = recibir_entero_paquete_syscall(paquete);
             THREAD_JOIN(tid_thread_join);
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
+  
             break;
         case ENUM_THREAD_CANCEL:
+            log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_CANCEL>", hilo_exec->pid, hilo_exec->tid);
             int tid_thread_cancel = recibir_entero_paquete_syscall(paquete);
             THREAD_CANCEL(tid_thread_cancel);
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
+              
             break;
         case ENUM_MUTEX_CREATE:
+            log_info(logger, "## (%d:%d) - Solicitó syscall: <MUTEX_CREATE>", hilo_exec->pid, hilo_exec->tid);
             char* recurso = recibir_string_paquete_syscall(paquete);
             MUTEX_CREATE(recurso);
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
+              
             break;
         case ENUM_MUTEX_LOCK:
+            log_info(logger, "## (%d:%d) - Solicitó syscall: <MUTEX_LOCK>", hilo_exec->pid, hilo_exec->tid);
             char*recurso_a_bloquear = recibir_string_paquete_syscall(paquete);
             MUTEX_LOCK(recurso_a_bloquear);  
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);             
+                         
             break;
         case ENUM_MUTEX_UNLOCK:
+            log_info(logger, "## (%d:%d) - Solicitó syscall: <MUTEX_UNLOCK>", hilo_exec->pid, hilo_exec->tid);
             char*recurso_a_desbloquear = recibir_string_paquete_syscall(paquete);
             MUTEX_UNLOCK(recurso_a_desbloquear);
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
+              
             break;
         case ENUM_IO:
+            log_info(logger, "## (%d:%d) - Solicitó syscall: <IO>", hilo_exec->pid, hilo_exec->tid);
             int milisegundos = recibir_entero_paquete_syscall(paquete);
             IO(milisegundos);
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
+              
             break;
         case ENUM_DUMP_MEMORY:
+            log_info(logger, "## (%d:%d) - Solicitó syscall: <DUMP_MEMORY>", hilo_exec->pid, hilo_exec->tid);
             DUMP_MEMORY();
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);   
+             
             break;
         // case ENUM_SEGMENTATION_FAULT: 
         //     break;
@@ -177,6 +192,8 @@ void atender_syscall()//recibir un paquete con un codigo de operacion, entrar al
             //send_code_operacion(TERMINAR,sockets->sockets_cliente_cpu->socket_Interrupt);
             break;
         }
+        }
+        return NULL;
     }
 
 
@@ -201,7 +218,7 @@ void round_robin(t_queue *cola_ready_prioridad)
         pthread_mutex_unlock(&mutex_cola_ready);
         tcb->estado = TCB_EXECUTE;
         hilo_exec = tcb;
-        ejecucion(tcb);
+        ejecucion();
     }
 }
 /*
@@ -264,17 +281,18 @@ void *hilo_planificador_corto_plazo(void *arg)
         hilo_a_ejecutar = fifo_tcb();
         hilo_a_ejecutar->estado = TCB_EXECUTE;
         hilo_exec = hilo_a_ejecutar;
-        ejecucion(hilo_a_ejecutar);
+        ejecucion();
         
         } else if (strings_iguales(algoritmo, "PRIORIDADES"))
         {
         hilo_a_ejecutar = prioridades();
         hilo_a_ejecutar->estado = TCB_EXECUTE;
         hilo_exec = hilo_a_ejecutar;
-        ejecucion(hilo_a_ejecutar);
+        ejecucion();
+        
         }
 
-        if (strings_iguales(algoritmo, "CMN"))
+        else if (strings_iguales(algoritmo, "MULTINIVEL"))
         {
             colas_multinivel();
         }
@@ -291,6 +309,7 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
         hilo_ordena_lista_prioridades();
     }
     pthread_t hilo_ready_exec;
+    pthread_t hilo_atender_syscall;
 
     int resultado = pthread_create(&hilo_ready_exec, NULL, hilo_planificador_corto_plazo, algoritmo);
 
@@ -300,6 +319,14 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
         return;
     }
 
+    resultado = pthread_create(&hilo_atender_syscall, NULL, atender_syscall, NULL);
+
+    if (resultado != 0)
+    {
+        log_error(logger, "Error al crear el hilo para atender syscalls");
+        return;
+    }
+    pthread_detach(hilo_atender_syscall);
     pthread_detach(hilo_ready_exec);
 }
 
@@ -312,7 +339,6 @@ el algoritmo. Durante este período la CPU se quedará esperando.
 */
 
 void espera_con_quantum(int quantum) {
-    desalojado = false;
     fd_set read_fds;
     struct timeval timeout;
 
@@ -326,6 +352,8 @@ void espera_con_quantum(int quantum) {
 
     // Realizar la espera una vez, no en un bucle
 
+    
+
     while(desalojado == false){//se vuelve false cuando se acaba el quantum o hay syscall de finalización o bloqueante
     int resultado = select(sockets->sockets_cliente_cpu->socket_Dispatch + 1, &read_fds, NULL, NULL, &timeout);
 
@@ -334,17 +362,15 @@ void espera_con_quantum(int quantum) {
     
     } else if (resultado == 0) { //pasa el tiempo de quantum, desalojo. 
         code_operacion cod_op = FIN_QUANTUM_RR;
+        log_info(logger,"## (<%d>:<%d>) - Desalojado por fin de Quantum",hilo_exec->pid,hilo_exec->tid);
         pthread_mutex_lock(&mutex_conexion_cpu);
-        send_operacion_tid_pid(cod_op,hilo_exec->tid,hilo_exec->pid,sockets->sockets_cliente_cpu->socket_Interrupt);
+        send_code_operacion(cod_op,sockets->sockets_cliente_cpu->socket_Interrupt);
         pthread_mutex_unlock(&mutex_conexion_cpu);
         t_tcb* hilo = hilo_exec;
         hilo->estado = TCB_READY;
         pushear_cola_ready(hilo);
         desalojado = true;
         sem_post(&sem_desalojado);
-    } else {// se atiende la syscall recibida
-        // Hay datos disponibles en el socket
-        atender_syscall();
     }
     }
 }
@@ -383,28 +409,21 @@ void pushear_cola_ready(t_tcb* hilo){
 
 
 
-void ejecucion(t_tcb *hilo)
+void ejecucion()
 {
 
 code_operacion cod_op = THREAD_EXECUTE_AVISO;
 
 pthread_mutex_lock(&mutex_conexion_cpu);
-send_operacion_tid_pid(cod_op, hilo->tid, hilo->pid, sockets->sockets_cliente_cpu->socket_Dispatch);
+send_operacion_tid_pid(cod_op, hilo_exec->tid, hilo_exec->pid, sockets->sockets_cliente_cpu->socket_Dispatch);
 pthread_mutex_unlock(&mutex_conexion_cpu);
 
     char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
 
-if(strcmp(algoritmo,"CMN")==0){
+if(strcmp(algoritmo,"MULTINIVEL")==0){
     char* quantum_char = config_get_string_value(config,"QUANTUM");
     int quantum = atoi(quantum_char);
     espera_con_quantum(quantum);
-}
-else{
-    desalojado = false;
-    while(desalojado == false){
-    atender_syscall();
-
-    }
 }
 
 }

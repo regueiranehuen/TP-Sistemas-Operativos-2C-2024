@@ -29,8 +29,6 @@ void funcLOG(t_contexto_tid*contexto,char* registro) {
     log_info(log_cpu, "LOG: Registro %s = %d", registro, valor);
 }
 
-
-
 void funcREAD_MEM(t_contexto_pid*contextoPid,t_contexto_tid*contextoTid,char* registro_datos, char* registro_direccion) {
     uint32_t direccionLogica = obtener_valor_registro(contextoTid,registro_direccion);
     uint32_t direccionFisica = traducir_direccion_logica(contextoTid,contextoPid,direccionLogica);

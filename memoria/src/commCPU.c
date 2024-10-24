@@ -72,40 +72,21 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
 
                 t_instruccion *instruccion = obtener_instruccion(tid, pid,pc);
                 if (instruccion != NULL)
-                    enviar_instruccion(SOCKET_CLIENTE_CPU, instruccion, INSTRUCCION_OBTENIDA);
+                    enviar_instruccion(SOCKET_CLIENTE_CPU, instruccion, INSTRUCCION_OBTENIDA); // REVISAR
                 else{
                     enviar_instruccion(SOCKET_CLIENTE_CPU,instruccion,-1);
-                    log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s> <%s> <%s> <%s>",pid,tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4,instruccion->parametros5,instruccion->parametros6);
+                    log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s> <%s> <%s> ",pid,tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4,instruccion->parametros5,instruccion->parametros6);
                 }
                 free(instruccion);
                 break;
             }
 
             case READ_MEM: {
-                t_2_enteros *solicitud = recibir_2_enteros(SOCKET_CLIENTE_CPU);  // Dirección física y tamaño
-                uint32_t direccion_fisica = solicitud->entero1;
-                uint32_t tam_a_leer = solicitud->entero2;
-                free(solicitud);
-
-                void *datos = malloc(tam_a_leer);
-                memcpy(datos, ESPACIO_USUARIO + direccion_fisica, tam_a_leer); // REVISAR
-                enviar_datos(SOCKET_CLIENTE_CPU, datos, tam_a_leer); // REVISAR
-                log_info(logger, "Memoria leída desde %d, tamaño %d", direccion_fisica, tam_a_leer);
-                free(datos);
-                break;
+                
             }
 
             case WRITE_MEM: {
-                t_string_2enteros *escritura = recibir_string_2enteros(SOCKET_CLIENTE_CPU);
-                uint32_t direccion_fisica = escritura->entero1;
-                uint32_t tam_a_escribir = escritura->entero2;
-                char *contenido = escritura->string;
                 
-                memcpy(ESPACIO_USUARIO + direccion_fisica, contenido, tam_a_escribir);
-                enviar_codop(SOCKET_CLIENTE_CPU, WRITE_OK);
-                log_info(logger, "Escritos %d bytes en dirección %d", tam_a_escribir, direccion_fisica);
-                free(escritura);
-                break;
             }
 
             case 1:
