@@ -10,6 +10,8 @@ sem_t semaforo_cola_ready;
 
 sem_t sem_desalojado;
 
+sem_t sem_cola_IO;
+
 sem_t semaforo_cola_exit_hilos;
 sem_t sem_lista_prioridades;
 
@@ -17,6 +19,8 @@ sem_t sem_fin_kernel;
 
 t_queue *cola_new_procesos;
 t_queue *cola_exit_procesos;
+
+t_queue* cola_IO;
 
 t_queue *cola_ready_fifo;
 t_list *lista_ready_prioridad;
@@ -93,6 +97,8 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
     pcb->tcb_main = tcb;
     pcb->estado = PCB_NEW;
 
+    log_info(logger,"## (<%d>:0) Se crea el proceso - Estado: NEW",pcb->pid);
+
     pthread_mutex_lock(&mutex_cola_new_procesos);
     queue_push(cola_new_procesos, pcb);
     pthread_mutex_unlock(&mutex_cola_new_procesos);
@@ -101,6 +107,7 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
 
     planificador_largo_plazo();
     planificador_corto_plazo();
+    dispositivo_IO();
 
 //no se en que momento termina de ejecutar kernel
 }
@@ -203,7 +210,7 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
 
-    send_operacion_pid_tamanio_proceso(cod_op,pcb->pid,pcb->tamanio_proceso, socket_memoria);
+    send_inicializacion_proceso(pcb->pid,pcb->tcb_main->pseudocodigo,pcb->tamanio_proceso,socket_memoria);
 
     recv(socket_memoria, &respuesta, sizeof(int), 0);
     close(socket_memoria);
@@ -217,8 +224,26 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
         pcb = queue_pop(cola_new_procesos);
         pthread_mutex_unlock(&mutex_cola_new_procesos);
         pcb->estado = PCB_READY;
+        
+        int socket_memoria = cliente_Memoria_Kernel(logger, config);
+        int resultado;
+        cod_op = THREAD_CREATE_AVISO;
+        send_operacion_entero(cod_op,pcb->tcb_main->tid , socket_memoria);
+        recv(socket_memoria, &resultado, sizeof(int), 0);
+        close(socket_memoria);
+
+        if (resultado == -1)
+        {
+        log_info(logger,"Error en la creacion del hilo");
+        return;
+        }
+        else
+    {
         pcb->tcb_main->estado = TCB_READY;
+        list_add(lista_tcbs,pcb->tcb_main);
+        log_info(logger,"## (<%d>:<%d>) Se crea el Hilo - Estado: READY",pcb->pid,pcb->tcb_main->tid);
         pushear_cola_ready(pcb->tcb_main);
+    }
     }
 }
 
@@ -580,15 +605,10 @@ void IO(int milisegundos)
     // Agregar el hilo a la lista de hilos bloqueados
     list_add(lista_bloqueados, tcb);
     log_info(logger,"## (<%d>:<%d>) - Bloqueado por: <IO>",tcb->pid,tcb->tid);
-    // Simular la espera por E/S
-    usleep(milisegundos * 1000);
-    log_info(logger,"## (<%d>:<%d>) finalizó IO y pasa a READY",tcb->pid,tcb->tid);
-    // Sacar el hilo de la lista de bloqueados
-    sacar_tcb_de_lista(lista_bloqueados, tcb);
+   
+    queue_push(cola_IO,tcb);
 
-    // Mover el hilo a la cola de READY
-    tcb->estado = TCB_READY;
-    pushear_cola_ready(tcb);
+    sem_post(&sem_cola_IO);
 }
 
 /* En este apartado solamente se tendrá la instrucción DUMP_MEMORY. Esta syscall le solicita a la memoria,
@@ -596,6 +616,44 @@ junto al PID y TID que lo solicitó, que haga un Dump del proceso.
 Esta syscall bloqueará al hilo que la invocó hasta que el módulo memoria confirme la finalización de la operación,
 en caso de error, el proceso se enviará a EXIT. Caso contrario, el hilo se desbloquea normalmente pasando a READY.
 */
+
+void dispositivo_IO(){
+
+pthread_t hilo_IO;
+
+int resultado = pthread_create(&hilo_IO, NULL, hilo_dispositivo_IO, NULL);
+
+    if (resultado != 0)
+    {
+        log_error(logger, "Error al crear el hilo del dispositivo IO");
+        return;
+    }
+
+    pthread_detach(hilo_IO);
+
+}
+
+void* hilo_dispositivo_IO(void* args){
+
+while(estado_kernel != 0){
+
+sem_wait(&sem_cola_IO); //espera que haya elementos en la cola
+
+t_nodo_cola_IO* info = queue_pop(cola_IO);
+
+usleep(info->milisegundos*1000); //operacion IO
+
+log_info(logger,"## (<%d>:<%d>) finalizó IO y pasa a READY",info->hilo->pid,info->hilo->tid);
+
+sacar_tcb_de_lista(lista_bloqueados,info->hilo);
+
+info->hilo->estado = TCB_READY;
+
+pushear_cola_ready(info->hilo);
+
+}
+return NULL;
+}
 
 void DUMP_MEMORY()
 {

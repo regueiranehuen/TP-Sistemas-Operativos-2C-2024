@@ -7,6 +7,7 @@ void inicializar_estados() {
     cola_new_procesos = queue_create();
     cola_ready_fifo = queue_create();
     cola_exit = queue_create();
+    cola_IO = queue_create();
 
     // Inicialización de listas
     lista_ready_prioridad = list_create();
@@ -22,6 +23,7 @@ void destruir_estados() {
     queue_destroy(cola_new_procesos);
     queue_destroy(cola_ready_fifo);
     queue_destroy(cola_exit);
+    queue_destroy(cola_IO);
 
     // Destrucción de listas
     list_destroy(lista_ready_prioridad);
@@ -33,6 +35,7 @@ void destruir_estados() {
 }
 
 void inicializar_semaforos() {
+    sem_init(&sem_cola_IO,0,0);
     sem_init(&semaforo_cola_ready,0,0);
     sem_init(&sem_fin_kernel,0,0);
     sem_init(&semaforo_new_ready_procesos, 0, 0);   // Inicializa en 0
@@ -44,6 +47,7 @@ void inicializar_semaforos() {
 }
 
 void destruir_semaforos() {
+    sem_destroy(&sem_cola_IO);
     sem_destroy(&semaforo_cola_ready);
     sem_destroy(&sem_fin_kernel);
     sem_destroy(&semaforo_new_ready_procesos);

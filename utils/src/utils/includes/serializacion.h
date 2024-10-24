@@ -114,5 +114,6 @@ void send_thread_exit(int socket_cliente);
 code_operacion recibir_code_operacion(int socket_cliente);
 void send_code_operacion(code_operacion code, int socket_cliente);
 void send_operacion_tid(code_operacion code, int tid, int socket_cliente);
+void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_proceso, int socket_cliente);
 
 #endif

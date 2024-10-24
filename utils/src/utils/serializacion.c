@@ -544,3 +544,27 @@ code_operacion recibir_code_operacion(int socket_cliente){
     recv(socket_cliente,&code,sizeof(int),0);
     return code;
 }
+
+void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_proceso, int socket_cliente){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
+
+    int offset = 0;
+    int length_arch_pseudocodigo=strlen(arch_pseudocodigo)+1;
+
+    buffer->size = 3*sizeof(int)+length_arch_pseudocodigo;
+    
+    buffer->stream = malloc(buffer->size);
+
+    
+
+    memcpy(buffer->stream, &pid,sizeof(int));
+    offset += sizeof(int);
+    memcpy(buffer->stream,&tamanio_proceso,sizeof(int));
+    offset += sizeof(int);
+    memcpy(buffer->stream,&length_arch_pseudocodigo,sizeof(int));
+    offset+=sizeof(int);
+    memcpy(buffer->stream,&arch_pseudocodigo,length_arch_pseudocodigo);
+    
+    send_paquete_code_operacion(PROCESS_CREATE_AVISO,buffer,socket_cliente);
+    
+}
