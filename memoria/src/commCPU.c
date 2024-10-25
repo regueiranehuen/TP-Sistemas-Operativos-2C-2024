@@ -1,6 +1,8 @@
 #include "includes/commCpu.h"
 
-void recibir_cpu(int SOCKET_CLIENTE_CPU) {
+void* recibir_cpu(void*args) {
+    int SOCKET_CLIENTE_CPU=*(int*)args;
+
     int retardo_respuesta = config_get_int_value(config,"RETARDO_RESPUESTA");
     int codigoOperacion = 0;
     while (codigoOperacion != -1) {
@@ -100,6 +102,7 @@ void recibir_cpu(int SOCKET_CLIENTE_CPU) {
     }
 
     log_warning(logger, "Se desconectó la CPU");
+    return NULL;
 }
 
 void actualizar_contexto(int pid, int tid, t_registros_cpu* reg){
