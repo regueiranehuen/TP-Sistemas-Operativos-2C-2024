@@ -6,10 +6,17 @@ int main(int argc, char** argv) {
     config = config_create("CPU.config");
     leer_config(argv[1]);
     
+    inicializar_estructuras();
+    inicializar_mutex();
+    inicializar_semaforos();
+
+
     sockets_cpu = hilos_cpu(log_cpu, config);
-    recibir_kernel_dispatch(sockets_cpu->socket_servidor->socket_Dispatch);
-    recibir_kernel_interrupt(sockets_cpu->socket_servidor->socket_Interrupt);
-    liberarMemoria(sockets_cpu,log_cpu,config);
+
+    iniciar_cpu(sockets_cpu->socket_servidor->socket_Dispatch,sockets_cpu->socket_servidor->socket_Interrupt);
+
+    // Acá hay que esperar a que termine la cpu de ejecutar
+    terminar_programa();
 
     return 0;
 
@@ -17,26 +24,28 @@ int main(int argc, char** argv) {
 
 }
 
-void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
+void iniciar_cpu(int socket_dispatch,int socket_interrupt){
+    pthread_t hilo_atiende_dispatch;
+    pthread_t hilo_atiende_interrupt;
 
-    if (sockets == NULL || sockets->socket_memoria == -1 ||
-        sockets->socket_servidor == NULL || 
-        sockets->socket_servidor->socket_Dispatch == -1 || 
-        sockets->socket_servidor->socket_Interrupt == -1) {
+    int resultado;
+    resultado=pthread_create(&hilo_atiende_dispatch,NULL,recibir_kernel_dispatch,&socket_dispatch);
 
-        log_info(log, "Error en los sockets de cpu");
-        }
-        else{
-    close(sockets->socket_memoria);
-    close(sockets->socket_servidor->socket_Dispatch);
-    close(sockets->socket_servidor->socket_Interrupt);
+    if (resultado != 0)
+    {
+        log_error(log_cpu, "Error al crear el hilo que atiende dispatch en cpu");
     }
-    if (sockets != NULL) {
-            if (sockets->socket_servidor != NULL) {
-                free(sockets->socket_servidor);
-            }
-            free(sockets);
-        }
-    config_destroy(config);
-    log_destroy(log);
+
+    resultado=pthread_create(&hilo_atiende_interrupt,NULL,recibir_kernel_interrupt,&socket_interrupt);
+
+    if (resultado != 0)
+    {
+        log_error(log_cpu, "Error al crear el hilo que atiende interrupt en cpu");
+
+    }
+
+    pthread_detach(hilo_atiende_dispatch);
+    pthread_detach(hilo_atiende_interrupt);
+
+    
 }

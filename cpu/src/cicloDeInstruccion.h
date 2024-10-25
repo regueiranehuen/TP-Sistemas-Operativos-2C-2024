@@ -3,6 +3,7 @@
 
 #include "server.h"
 #include "utils/includes/estructuras.h"
+#include "utils/includes/semaforosCompartidos.h"
 
 extern t_instruccion instruccion;
 extern bool seguir_ejecutando;

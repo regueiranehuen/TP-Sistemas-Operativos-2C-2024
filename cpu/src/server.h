@@ -61,12 +61,14 @@ void* funcion_hilo_cliente_memoria(void* void_args);
 
 t_sockets_cpu* hilos_cpu(t_log* log, t_config* config);
 
-void recibir_kernel_dispatch(int socket_cliente_Dispatch);
-void recibir_kernel_interrupt(int socket_cliente_Interrupt);
+
+
 void ejecutar_ciclo_de_instruccion(t_log* log);
 bool es_interrupcion(syscalls code);
 void inicializar_semaforos();
 void destruir_semaforos();
+void* recibir_kernel_dispatch(void*args);
+void* recibir_kernel_interrupt(void*args);
 
 
 #endif  // SERVER_H

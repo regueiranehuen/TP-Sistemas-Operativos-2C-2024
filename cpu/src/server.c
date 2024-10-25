@@ -165,9 +165,6 @@ void *funcion_hilo_cliente_memoria(void *void_args)
 t_sockets_cpu *hilos_cpu(t_log *log, t_config *config)
 {
 
-    pthread_mutex_init(&mutex_tid_pid_exec,NULL);
-    pthread_mutex_init(&mutex_interrupt,NULL);
-    sem_init(&sem_syscall_interrumpida_o_finalizada,0,0);
 
     args_hilo *args = malloc(sizeof(args_hilo));
     if (!args)
@@ -214,12 +211,14 @@ t_sockets_cpu *hilos_cpu(t_log *log, t_config *config)
 }
 
 // Recepción de mensajes de Kernel Interrupt
-void recibir_kernel_interrupt(int socket_cliente_Interrupt){
-
+void* recibir_kernel_interrupt(void*args){
+    int socket_cliente_Interrupt = *(int*)args;
     int noFinalizar = 0;
     while (noFinalizar != -1){
-
+        
+        pthread_mutex_lock(&mutex_conexion_kernel_interrupt);
         t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(socket_cliente_Interrupt);
+        pthread_mutex_unlock(&mutex_conexion_kernel_interrupt);
         switch (paquete->code)
         {
         case FIN_QUANTUM_RR:
@@ -244,17 +243,21 @@ void recibir_kernel_interrupt(int socket_cliente_Interrupt){
             break;
         }
     }
+    return NULL;
 }
 
 
 
 // Recepción de mensajes de Kernel Dispatch
-void recibir_kernel_dispatch(int socket_cliente_Dispatch)
-{ // Juntar recv de dipatch y de interrupt
+void* recibir_kernel_dispatch(void*args)
+{ 
+    int socket_cliente_Dispatch=*(int*)args;
     int noFinalizar = 0;
     while (noFinalizar != -1)
     {
+        pthread_mutex_lock(&mutex_conexion_kernel_dispatch);
         t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente_Dispatch);
+        pthread_mutex_unlock(&mutex_conexion_kernel_dispatch);
         switch (paquete->code)
         {
         case THREAD_EXECUTE_AVISO:
@@ -311,5 +314,6 @@ void recibir_kernel_dispatch(int socket_cliente_Dispatch)
     default:
         break;
     }
-}
+    }
+    return NULL;
 }

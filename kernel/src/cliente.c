@@ -111,7 +111,6 @@ void* funcion_hilo_cliente_cpu(void* void_args){
 
   args_hilo* args = ((args_hilo*)void_args);
 
-
     t_socket_cpu* sockets = cliente_CPU_Kernel(args->log, args->config);
     if (sockets->socket_Dispatch == -1 || sockets->socket_Interrupt == -1) {
         log_error(args->log, "No se pudo establecer la conexion con CPU");

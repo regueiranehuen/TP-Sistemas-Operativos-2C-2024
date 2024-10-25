@@ -5,6 +5,7 @@
 #include "funcionesAuxiliares.h"
 #include "procesos.h"
 #include <semaphore.h>
+#include "utils/includes/semaforosCompartidos.h"
 #include "main.h"
 
 

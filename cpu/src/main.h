@@ -5,8 +5,9 @@
 #include "funcExecute.h"
 #include "mmu.h"
 #include "server.h"
+#include "auxiliares.h"
 
+void iniciar_cpu(int socket_dispatch,int socket_interrupt);
 
-void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config);
 
 #endif

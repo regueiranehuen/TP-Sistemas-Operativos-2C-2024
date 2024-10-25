@@ -3,6 +3,8 @@
 
 #include "sockets.h"
 
+
+
 typedef enum{
     TERMINAR=-1, /////
     INICIALIZAR_PROCESO,

@@ -5,6 +5,8 @@
 #include "../../utils/src/utils/includes/serializacion.h"
 #include "commons/string.h"
 
+
+
 extern pthread_mutex_t mutex_lista_blocked;
 
 void inicializar_estados();
@@ -27,5 +29,6 @@ t_cola_prioridad* obtener_cola_con_mayor_prioridad(t_list* colas_hilos_prioridad
 t_tcb* sacar_tcb_de_cola(t_queue* cola, t_tcb* tcb_a_sacar);//saca un tcb de una cola
 t_tcb* sacar_tcb_de_lista(t_list* lista, t_tcb* tcb_a_sacar);//saca un tcb de una lista
 t_tcb* buscar_tcb(int tid_buscado, t_tcb* hilo_exec);
+void inicializar_mutex_compartido_entre_procesos(pthread_mutex_t* mutex);
 
 #endif

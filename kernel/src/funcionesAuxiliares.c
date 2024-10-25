@@ -63,7 +63,6 @@ void inicializar_mutex() {
     pthread_mutex_init(&mutex_cola_new_procesos, NULL);
     pthread_mutex_init(&mutex_cola_exit_procesos, NULL);
     pthread_mutex_init(&mutex_cola_exit_hilos, NULL);
-    pthread_mutex_init(&mutex_conexion_cpu, NULL);
     pthread_mutex_init(&mutex_cola_ready, NULL);
 }
 
@@ -72,7 +71,6 @@ void destruir_mutex() {
     pthread_mutex_destroy(&mutex_cola_new_procesos);
     pthread_mutex_destroy(&mutex_cola_exit_procesos);
     pthread_mutex_destroy(&mutex_cola_exit_hilos);
-    pthread_mutex_destroy(&mutex_conexion_cpu);
     pthread_mutex_destroy(&mutex_cola_ready);
 }
 
