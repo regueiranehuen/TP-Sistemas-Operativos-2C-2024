@@ -33,6 +33,7 @@ pthread_mutex_t mutex_tid_pid_exec;
 pthread_mutex_t mutex_interrupt;
 
 sem_t sem_syscall_interrumpida_o_finalizada;
+sem_t sem_finalizacion_cpu;
 
 code_operacion devolucion_kernel;
 

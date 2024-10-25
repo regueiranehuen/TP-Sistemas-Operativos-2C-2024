@@ -48,6 +48,7 @@ extern int pid_exec;
 extern pthread_mutex_t mutex_tid_pid_exec;
 extern pthread_mutex_t mutex_interrupt;
 extern sem_t sem_syscall_interrumpida_o_finalizada;
+extern sem_t sem_finalizacion_cpu;
 
 extern code_operacion devolucion_kernel;
 

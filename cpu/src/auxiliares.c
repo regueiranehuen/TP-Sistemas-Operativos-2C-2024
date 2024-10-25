@@ -2,6 +2,7 @@
 
 void inicializar_semaforos(){
     sem_init(&sem_syscall_interrumpida_o_finalizada,0,0);
+    sem_init(&sem_finalizacion_cpu,0,0);
 }
 
 void inicializar_estructuras() {
@@ -41,6 +42,7 @@ void destruir_mutex(){
 
 void destruir_semaforos(){
     sem_destroy(&sem_syscall_interrumpida_o_finalizada);
+    sem_destroy(&sem_finalizacion_cpu);
 }
 
 void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){

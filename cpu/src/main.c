@@ -15,7 +15,7 @@ int main(int argc, char** argv) {
 
     iniciar_cpu(sockets_cpu->socket_servidor->socket_Dispatch,sockets_cpu->socket_servidor->socket_Interrupt);
 
-    // Acá hay que esperar a que termine la cpu de ejecutar
+    sem_wait(&sem_finalizacion_cpu);
     terminar_programa();
 
     return 0;
