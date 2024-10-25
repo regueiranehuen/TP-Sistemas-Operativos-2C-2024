@@ -120,9 +120,7 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
     
         while(estado_kernel!=0){
 
-        pthread_mutex_lock(&mutex_conexion_kernel_dispatch);
         t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch); 
-        pthread_mutex_unlock(&mutex_conexion_kernel_dispatch);
 
          switch (paquete->syscall)
         {
@@ -363,9 +361,9 @@ void espera_con_quantum(int quantum) {
     } else if (resultado == 0) { //pasa el tiempo de quantum, desalojo. 
         code_operacion cod_op = FIN_QUANTUM_RR;
         log_info(logger,"## (<%d>:<%d>) - Desalojado por fin de Quantum",hilo_exec->pid,hilo_exec->tid);
-        pthread_mutex_lock(&mutex_conexion_kernel_interrupt);
+        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
         send_code_operacion(cod_op,sockets->sockets_cliente_cpu->socket_Interrupt);
-        pthread_mutex_unlock(&mutex_conexion_kernel_interrupt);
+        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         t_tcb* hilo = hilo_exec;
         hilo->estado = TCB_READY;
         pushear_cola_ready(hilo);
@@ -414,9 +412,9 @@ void ejecucion()
 
 code_operacion cod_op = THREAD_EXECUTE_AVISO;
 
-pthread_mutex_lock(&mutex_conexion_kernel_dispatch);
+pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
 send_operacion_tid_pid(cod_op, hilo_exec->tid, hilo_exec->pid, sockets->sockets_cliente_cpu->socket_Dispatch);
-pthread_mutex_unlock(&mutex_conexion_kernel_dispatch);
+pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
 
     char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
 

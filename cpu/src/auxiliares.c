@@ -18,24 +18,13 @@ void inicializar_estructuras() {
 
 
 void inicializar_mutex(){
-    inicializar_mutex_compartido_entre_procesos(&mutex_conexion_kernel_dispatch);
-    inicializar_mutex_compartido_entre_procesos(&mutex_conexion_kernel_interrupt);
     pthread_mutex_init(&mutex_tid_pid_exec,NULL);
     pthread_mutex_init(&mutex_interrupt,NULL);
 }
 
 
-void inicializar_mutex_compartido_entre_procesos(pthread_mutex_t* mutex){
-    // Inicializar el mutex con atributos compartidos entre procesos
-    pthread_mutexattr_t attr_conexion_kernel_cpu;
-    pthread_mutexattr_setpshared(&attr_conexion_kernel_cpu, PTHREAD_PROCESS_SHARED);
-    pthread_mutex_init(mutex, &attr_conexion_kernel_cpu);
-    pthread_mutexattr_destroy(&attr_conexion_kernel_cpu); // Destruir los atributos después de inicializar el mutex
-}
 
 void destruir_mutex(){
-    pthread_mutex_destroy(&mutex_conexion_kernel_dispatch);
-    pthread_mutex_destroy(&mutex_conexion_kernel_interrupt);
     pthread_mutex_destroy(&mutex_tid_pid_exec);
     pthread_mutex_destroy(&mutex_interrupt);
 }

@@ -1,4 +1,0 @@
-#include "utils/includes/semaforosCompartidos.h"
-
-pthread_mutex_t mutex_conexion_kernel_dispatch;
-pthread_mutex_t mutex_conexion_kernel_interrupt;

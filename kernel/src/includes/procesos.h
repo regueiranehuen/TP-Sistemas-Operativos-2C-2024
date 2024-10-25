@@ -30,6 +30,8 @@ extern pthread_mutex_t mutex_cola_new_procesos;
 extern pthread_mutex_t mutex_cola_exit_procesos;
 extern pthread_mutex_t mutex_cola_exit_hilos;
 extern pthread_mutex_t mutex_cola_ready;
+extern pthread_mutex_t mutex_conexion_kernel_a_dispatch;
+extern pthread_mutex_t mutex_conexion_kernel_a_interrupt;
 
 extern sem_t semaforo_new_ready_procesos;
 extern sem_t semaforo_cola_new_procesos;

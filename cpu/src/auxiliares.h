@@ -1,7 +1,6 @@
 #ifndef AUXILIARES_H
 #define AUXILIARES_H
 
-#include "utils/includes/semaforosCompartidos.h"
 #include "server.h"
 
 void inicializar_estructuras();

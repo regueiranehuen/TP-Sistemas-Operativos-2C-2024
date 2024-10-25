@@ -32,6 +32,7 @@ int pid_exec;
 pthread_mutex_t mutex_tid_pid_exec;
 pthread_mutex_t mutex_interrupt;
 
+
 sem_t sem_syscall_interrumpida_o_finalizada;
 sem_t sem_finalizacion_cpu;
 
@@ -217,9 +218,8 @@ void* recibir_kernel_interrupt(void*args){
     int noFinalizar = 0;
     while (noFinalizar != -1){
         
-        pthread_mutex_lock(&mutex_conexion_kernel_interrupt);
         t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(socket_cliente_Interrupt);
-        pthread_mutex_unlock(&mutex_conexion_kernel_interrupt);
+
         switch (paquete->code)
         {
         case FIN_QUANTUM_RR:
@@ -256,9 +256,8 @@ void* recibir_kernel_dispatch(void*args)
     int noFinalizar = 0;
     while (noFinalizar != -1)
     {
-        pthread_mutex_lock(&mutex_conexion_kernel_dispatch);
         t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente_Dispatch);
-        pthread_mutex_unlock(&mutex_conexion_kernel_dispatch);
+
         switch (paquete->code)
         {
         case THREAD_EXECUTE_AVISO:
