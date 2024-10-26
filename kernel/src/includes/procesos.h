@@ -9,6 +9,7 @@
 #include <semaphore.h>
 
 extern t_queue* cola_new_procesos;
+extern t_queue* cola_exit_procesos;
 
 extern t_queue* cola_ready_fifo;
 extern t_list* lista_ready_prioridad;

@@ -119,9 +119,9 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
 {
     
         while(estado_kernel!=0){
-
+        pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
         t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch); 
-
+        pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
          switch (paquete->syscall)
         {
 
@@ -129,64 +129,105 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
             log_info(logger, "## (%d:%d) - Solicitó syscall: <PROCESS_CREATE>", hilo_exec->pid, hilo_exec->tid);
             t_process_create* paramProcessCreate= parametros_process_create(paquete);
             PROCESS_CREATE(paramProcessCreate->nombreArchivo,paramProcessCreate->tamProceso,paramProcessCreate->prioridad);  
-            
+            pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
             break;
         case ENUM_PROCESS_EXIT:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <PROCESS_EXIT>", hilo_exec->pid, hilo_exec->tid);
             PROCESS_EXIT();
-
+            pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
             break;
         case ENUM_THREAD_CREATE:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_CREATE>", hilo_exec->pid, hilo_exec->tid);
             t_thread_create* paramThreadCreate = parametros_thread_create(paquete);
             THREAD_CREATE(paramThreadCreate->nombreArchivo,paramThreadCreate->prioridad); 
- 
+            pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
             break;
         case ENUM_THREAD_JOIN:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_JOIN>", hilo_exec->pid, hilo_exec->tid);
             int tid_thread_join = recibir_entero_paquete_syscall(paquete);
             THREAD_JOIN(tid_thread_join);
-  
+            pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
             break;
         case ENUM_THREAD_CANCEL:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_CANCEL>", hilo_exec->pid, hilo_exec->tid);
             int tid_thread_cancel = recibir_entero_paquete_syscall(paquete);
             THREAD_CANCEL(tid_thread_cancel);
-              
+            pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);              
+            break;
+        case ENUM_THREAD_EXIT:
+            log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_EXIT>", hilo_exec->pid, hilo_exec->tid);
+            THREAD_EXIT();
+            pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
             break;
         case ENUM_MUTEX_CREATE:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <MUTEX_CREATE>", hilo_exec->pid, hilo_exec->tid);
             char* recurso = recibir_string_paquete_syscall(paquete);
             MUTEX_CREATE(recurso);
-              
+            pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
             break;
         case ENUM_MUTEX_LOCK:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <MUTEX_LOCK>", hilo_exec->pid, hilo_exec->tid);
             char*recurso_a_bloquear = recibir_string_paquete_syscall(paquete);
             MUTEX_LOCK(recurso_a_bloquear);  
-                         
+            pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);           
             break;
         case ENUM_MUTEX_UNLOCK:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <MUTEX_UNLOCK>", hilo_exec->pid, hilo_exec->tid);
             char*recurso_a_desbloquear = recibir_string_paquete_syscall(paquete);
             MUTEX_UNLOCK(recurso_a_desbloquear);
-              
+            pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
             break;
         case ENUM_IO:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <IO>", hilo_exec->pid, hilo_exec->tid);
             int milisegundos = recibir_entero_paquete_syscall(paquete);
             IO(milisegundos);
-              
+            pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);  
             break;
         case ENUM_DUMP_MEMORY:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <DUMP_MEMORY>", hilo_exec->pid, hilo_exec->tid);
             DUMP_MEMORY();
-             
+            pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
             break;
-        // case ENUM_SEGMENTATION_FAULT: 
-        //     break;
+        case ENUM_SEGMENTATION_FAULT: 
+            t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
+            pcb->estado = PCB_EXIT;
+            pthread_mutex_lock(&mutex_cola_exit_procesos);
+            queue_push(cola_exit_procesos, pcb);
+            pthread_mutex_unlock(&mutex_cola_exit_procesos);
+            pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
+            break;
+        case ENUM_FIN_QUANTUM_RR:
+        sem_post(&sem_desalojado);
+            break;
+        case ENUM_DESALOJAR:
+        sem_post(&sem_desalojado);
+            break;
         default:
-            printf("Syscall no válida.\n");
+            log_info(logger,"Syscall no válida.\n");
             //send_code_operacion(TERMINAR,sockets->sockets_cliente_cpu->socket_Interrupt);
             break;
         }
@@ -368,7 +409,6 @@ void espera_con_quantum(int quantum) {
         hilo->estado = TCB_READY;
         pushear_cola_ready(hilo);
         desalojado = true;
-        sem_post(&sem_desalojado);
     }
     }
 }
