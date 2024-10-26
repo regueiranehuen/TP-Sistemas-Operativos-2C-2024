@@ -164,7 +164,7 @@ void hilo_exit()
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     t_tcb *hilo = queue_pop(cola_exit);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
-    send_operacion_entero(cod_op,hilo->tid,socket_memoria);
+    send_operacion_tid_pid(cod_op,hilo->tid,hilo->pid,socket_memoria);
     close(socket_memoria);
     
     int tam_cola = queue_size(hilo->cola_hilos_bloqueados);

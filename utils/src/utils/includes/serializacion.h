@@ -93,7 +93,6 @@ typedef struct{
 }t_args_thread_create_aviso;
 
 
-
 void send_process_create(char* nombreArchivo, int tamProceso, int prioridad, int socket_cliente);
 void send_thread_create(char*nombreArchivo,int prioridad,int socket_cliente);
 void send_process_exit(int socket_cliente);

@@ -11,8 +11,6 @@ t_list*lista_instrucciones_tid_pid;
 
 pthread_mutex_t mutex_lista_contextos_pids;
 
-
-
 void* hilo_por_cliente (void* void_args){
 
 hilo_clientes *args = (hilo_clientes*)void_args;

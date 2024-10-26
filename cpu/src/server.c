@@ -26,13 +26,16 @@ uint32_t tid_interrupt;
 bool hay_interrupcion = false;
 int es_por_usuario = 0;
 
-int tid_exec;
-int pid_exec;
 
-pthread_mutex_t mutex_tid_pid_exec;
+
+pthread_mutex_t mutex_contextos_exec;
 pthread_mutex_t mutex_interrupt;
 
 
+t_contexto_tid*contexto_tid_actual;
+t_contexto_pid*contexto_pid_actual;
+
+sem_t sem_ciclo_instruccion;
 sem_t sem_syscall_finalizada;
 sem_t sem_finalizacion_cpu;
 
@@ -300,12 +303,13 @@ void* recibir_kernel_dispatch(void*args)
 
             log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
 
-            pthread_mutex_lock(&mutex_tid_pid_exec); // Tal vez sea necesario usarlo despues, pero por ahora estas variables globales solo se modifican acá
-            tid_exec = info->tid;
-            pid_exec = info->pid;
-            pthread_mutex_unlock(&mutex_tid_pid_exec);
-
-            ciclo_de_instruccion(contextoPid, contextoTid);
+            pthread_mutex_lock(&mutex_contextos_exec); // Tal vez sea necesario usarlo despues, pero por ahora estas variables globales solo se modifican acá
+            contexto_pid_actual=contextoPid;
+            contexto_tid_actual=contextoTid;
+            pthread_mutex_unlock(&mutex_contextos_exec);
+            
+            sem_post(&sem_ciclo_instruccion);
+            
         break;
 
     case OK:

@@ -1,6 +1,7 @@
 #include "includes/memSist.h"
 #include "includes/server.h"
 
+pthread_mutex_t mutex_lista_instruccion;
 
 int longitud_maxima=200;
 int parametros_maximos=6;
@@ -64,23 +65,65 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
         //list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
 
 
-
-        list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
+        pthread_mutex_lock(&mutex_lista_instruccion);
+;        list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
         indice_instruccion++;
-        instruccion_tid_pid->pc+=1;
+
+        pthread_mutex_unlock(&mutex_lista_instruccion);        instruccion_tid_pid->pc+=1;
         
     }
     fclose(archivo);
 }
 
 
+
+void finalizar_hilo(int tid, int pid) {
+    for (int i = 0; i < list_size(lista_instrucciones_tid_pid); i++) {
+        pthread_mutex_lock(&mutex_lista_instruccion);
+        t_instruccion_tid_pid* actual = list_get(lista_instrucciones_tid_pid, i);
+        pthread_mutex_unlock(&mutex_lista_instruccion);
+        if (actual->pid == pid && actual->tid == tid) {
+            pthread_mutex_lock(&mutex_lista_instruccion);
+            list_remove(lista_instrucciones_tid_pid, i);
+            liberar_instruccion(actual);
+            pthread_mutex_unlock(&mutex_lista_instruccion);
+            
+            
+            i--; // Decrementa i para no saltar el siguiente elemento
+        }
+    }
+    
+    t_contexto_pid* contexto_pid = obtener_contexto_pid(pid);
+    t_contexto_tid* contexto_tid = obtener_contexto_tid(pid,tid);
+    eliminar_elemento_por_tid(contexto_tid->tid, contexto_pid->contextos_tids);
+}
+
+void eliminar_elemento_por_tid(int tid, t_list* contextos_tids) {
+
+    for (int i = 0; i < list_size(contextos_tids); i++) {
+        t_contexto_tid* actual = list_get(contextos_tids, i);
+        if (actual->tid == tid) {
+            // Eliminar el elemento de la lista y liberar su memoria
+            list_remove(contextos_tids, i); // Libera la memoria del elemento eliminado
+            free(actual->registros);
+            free(actual);
+            break; // Salir del bucle después de eliminar el primer elemento encontrado
+        }
+    }
+}
+
+
+
 t_instruccion* obtener_instruccion(int tid, int pid,uint32_t pc){
+    pthread_mutex_lock(&mutex_lista_instruccion);
     for (int i = 0; i < list_size(lista_instrucciones_tid_pid); i++){
         t_instruccion_tid_pid*actual = (t_instruccion_tid_pid*)list_get(lista_instrucciones_tid_pid,i);
         if (actual->pid == pid && actual->tid == tid && actual->pc == pc){
+            pthread_mutex_unlock(&mutex_lista_instruccion);
             return actual->instrucciones;
         }
     }
+    pthread_mutex_unlock(&mutex_lista_instruccion);
     return NULL;
 }
 

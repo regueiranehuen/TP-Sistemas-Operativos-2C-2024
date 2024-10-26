@@ -25,6 +25,7 @@ int main(int argc, char** argv) {
 void iniciar_cpu(int socket_dispatch,int socket_interrupt){
     pthread_t hilo_atiende_dispatch;
     pthread_t hilo_atiende_interrupt;
+    pthread_t hilo_ciclo_instruccion;
 
     int resultado;
     resultado=pthread_create(&hilo_atiende_dispatch,NULL,recibir_kernel_dispatch,&socket_dispatch);
@@ -42,8 +43,10 @@ void iniciar_cpu(int socket_dispatch,int socket_interrupt){
 
     }
 
+    resultado=pthread_create(&hilo_ciclo_instruccion,NULL,ciclo_de_instruccion,NULL);
+
     pthread_detach(hilo_atiende_dispatch);
     pthread_detach(hilo_atiende_interrupt);
-
+    pthread_detach(hilo_ciclo_instruccion);
     
 }

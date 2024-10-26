@@ -42,12 +42,13 @@ extern uint32_t tid_interrupt;
 extern bool hay_interrupcion;
 extern bool seguir_ejecutando;
 
-extern int tid_exec;
-extern int pid_exec;
+extern t_contexto_tid*contexto_tid_actual;
+extern t_contexto_pid*contexto_pid_actual;
 
-extern pthread_mutex_t mutex_tid_pid_exec;
+extern pthread_mutex_t mutex_contextos_exec;
 extern pthread_mutex_t mutex_interrupt;
 
+extern sem_t sem_ciclo_instruccion;
 extern sem_t sem_syscall_finalizada;
 extern sem_t sem_finalizacion_cpu;
 

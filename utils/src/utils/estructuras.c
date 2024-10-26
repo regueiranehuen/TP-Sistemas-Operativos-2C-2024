@@ -338,8 +338,8 @@ void enviar_codop(int conexion, op_code cod_op)
 
 void solicitar_contexto_tid(int pid, int tid,int conexion){
     t_paquete *codigo = crear_paquete_op(OBTENER_CONTEXTO_TID);
-    agregar_entero_int_a_paquete(codigo,pid);
     agregar_entero_int_a_paquete(codigo,tid);
+    agregar_entero_int_a_paquete(codigo,pid);
     enviar_paquete(codigo, conexion);
     eliminar_paquete(codigo);
 }
@@ -657,6 +657,16 @@ t_instruccion* recepcionar_instruccion(t_paquete*paquete){
         instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
         instruccion_nueva->parametros3 = leer_string(paquete->buffer->stream, &desp);
     }
+    if (strcmp(instruccion_nueva->parametros1, "READ_MEM") == 0)
+    {
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+        instruccion_nueva->parametros3 = leer_string(paquete->buffer->stream, &desp);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "WRITE_MEM") == 0)
+    {
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+        instruccion_nueva->parametros3 = leer_string(paquete->buffer->stream, &desp);
+    }
     if (strcmp(instruccion_nueva->parametros1, "SUM") == 0)
     {
         instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
@@ -667,9 +677,53 @@ t_instruccion* recepcionar_instruccion(t_paquete*paquete){
         instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
         instruccion_nueva->parametros3 = leer_string(paquete->buffer->stream, &desp);
     }
-    if (strcmp(instruccion_nueva->parametros1, "EXIT") == 0)
+    if (strcmp(instruccion_nueva->parametros1, "JNZ") == 0)
     {
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+        instruccion_nueva->parametros3 = leer_string(paquete->buffer->stream, &desp);
     }
+    if (strcmp(instruccion_nueva->parametros1, "LOG") == 0)
+    {
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "IO") == 0)
+    {
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "PROCESS_CREATE") == 0)
+    {
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+        instruccion_nueva->parametros3 = leer_string(paquete->buffer->stream, &desp);
+        instruccion_nueva->parametros4 = leer_string(paquete->buffer->stream, &desp);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "THREAD_CREATE") == 0)
+    {
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+        instruccion_nueva->parametros3 = leer_string(paquete->buffer->stream, &desp);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "THREAD_JOIN") == 0)
+    {
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "THREAD_CANCEL") == 0)
+    {
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "MUTEX_CREATE") == 0)
+    {
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "MUTEX_LOCK") == 0)
+    {
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "MUTEX_UNLOCK") == 0)
+    {
+        instruccion_nueva->parametros2 = leer_string(paquete->buffer->stream, &desp);
+    }
+    
+    // DUMP_MEMORY, THREAD_EXIT Y PROCESS_EXIT NO LLEVAN PARÁMETROS
+
 
     eliminar_paquete(paquete);
     return instruccion_nueva;

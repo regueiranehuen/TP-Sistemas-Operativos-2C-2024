@@ -3,6 +3,7 @@
 void inicializar_semaforos(){
     sem_init(&sem_syscall_finalizada,0,0);
     sem_init(&sem_finalizacion_cpu,0,0);
+    sem_init(&sem_ciclo_instruccion,0,0);
 }
 
 void inicializar_estructuras() {
@@ -18,20 +19,21 @@ void inicializar_estructuras() {
 
 
 void inicializar_mutex(){
-    pthread_mutex_init(&mutex_tid_pid_exec,NULL);
+    pthread_mutex_init(&mutex_contextos_exec,NULL);
     pthread_mutex_init(&mutex_interrupt,NULL);
 }
 
 
 
 void destruir_mutex(){
-    pthread_mutex_destroy(&mutex_tid_pid_exec);
+    pthread_mutex_destroy(&mutex_contextos_exec);
     pthread_mutex_destroy(&mutex_interrupt);
 }
 
 void destruir_semaforos(){
     sem_destroy(&sem_syscall_finalizada);
     sem_destroy(&sem_finalizacion_cpu);
+    sem_destroy(&sem_ciclo_instruccion);
 }
 
 void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){

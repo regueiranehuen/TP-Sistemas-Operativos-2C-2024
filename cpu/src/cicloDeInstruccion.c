@@ -6,20 +6,29 @@
 t_instruccion instruccion;
 bool seguir_ejecutando;
 
-void ciclo_de_instruccion(t_contexto_pid *contextoPid, t_contexto_tid *contextoTid){
+void* ciclo_de_instruccion(void*args){
+
+    sem_wait(&sem_ciclo_instruccion);
+
+    pthread_mutex_lock(&mutex_contextos_exec);
+    t_contexto_tid*contexto_tid=contexto_tid_actual;
+    t_contexto_pid*contexto_pid=contexto_pid_actual;
+    pthread_mutex_lock(&mutex_contextos_exec);
+    
     seguir_ejecutando = true;
     while (seguir_ejecutando){
-        t_instruccion *instruccion = fetch(contextoTid);
+        t_instruccion *instruccion = fetch(contexto_tid);
         if (instruccion == NULL){
             seguir_ejecutando = false;
             continue;
         }
         op_code nombre_instruccion = decode(instruccion);
-        execute(contextoPid, contextoTid, nombre_instruccion, instruccion);
+        execute(contexto_pid, contexto_tid, nombre_instruccion, instruccion);
         if(seguir_ejecutando){
-            checkInterrupt(contextoTid);
+            checkInterrupt(contexto_tid);
         }
     }
+    return NULL;
 }
 
 /*
@@ -36,7 +45,11 @@ void checkInterrupt(t_contexto_tid* contextoTid) {
         hay_interrupcion = false;
         seguir_ejecutando = false;
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria,contextoTid->registros,contextoTid->pid,contextoTid->tid);
-        
+        code_operacion respuesta = recibir_code_operacion(sockets_cpu->socket_memoria);
+        if(respuesta != OK){
+            log_info(log_cpu,"Memoria no pudo actualizar los registros, muy poco sigma");
+            return;
+        }
         if (devolucion_kernel == FIN_QUANTUM_RR){
             send_fin_quantum_rr(sockets_cpu->socket_servidor->socket_Dispatch);
         }

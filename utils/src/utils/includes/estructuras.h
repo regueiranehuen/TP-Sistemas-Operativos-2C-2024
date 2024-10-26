@@ -230,6 +230,11 @@ typedef struct {
     uint32_t entero1;
 }t_string_mas_entero;
 
+typedef struct{
+    t_contexto_pid*contexto_pid;
+    t_contexto_tid*contexto_tid;
+}t_contextos;
+
 
 typedef struct
 {
@@ -324,7 +329,6 @@ void liberar_lisa_contextos();
 void remover_contexto_pid_lista(t_contexto_pid* contexto);
 void remover_contexto_tid_lista(t_contexto_tid*contexto,t_list*lista);
 t_contexto_tid* obtener_tid_en_lista(int tid,t_list*contextos_tids);
-bool existe_contexto_pid(int pid);
 
 void agregar_entero_uint32_a_paquete(t_paquete *paquete, uint8_t numero);
 void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto);
