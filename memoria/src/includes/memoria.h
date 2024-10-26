@@ -6,6 +6,7 @@
 #include <commons/config.h>
 #include "main.h"
 #include "commCpu.h"
+#include "memSist.h"
 
 void atender_conexiones(int socket_cliente);
 uint32_t obtener_base();

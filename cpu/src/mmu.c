@@ -12,7 +12,7 @@ uint32_t traducir_direccion_logica(t_contexto_tid*contexto_tid,t_contexto_pid *c
     if (direccion_logica >= limite || direccion_logica < 0) {
         log_error(log_cpu, "Segmentation Fault: Dirección lógica fuera del límite (%d)", direccion_logica);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria,contexto_tid->registros,contexto_pid->pid,contexto_tid->tid);
-        notificar_kernel_terminacion(contexto_tid->tid, SEGMENTATION_FAULT);
+        send_segmentation_fault(sockets_cpu->socket_servidor->socket_Dispatch);
         return -1;  // Retorna error
     }
 
@@ -23,11 +23,3 @@ uint32_t traducir_direccion_logica(t_contexto_tid*contexto_tid,t_contexto_pid *c
 }
 
 
-void notificar_kernel_terminacion(int tid, code_operacion code) { 
-    
-    log_info(log_cpu, "Notificando al Kernel la terminación del TID: %d con razón de salida: %d", tid, code);
-    
-    send_operacion_tid(code, tid,sockets_cpu->socket_servidor->socket_Interrupt);
-
-    log_info(log_cpu, "Notificación de terminación enviada al Kernel para TID: %d", tid);
-}

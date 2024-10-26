@@ -17,17 +17,14 @@ void* recibir_cpu(void*args) {
                 int tid = info->tid;
 
                 log_info(logger, "## Contexto solicitado - (PID:TID) - (%d:%d)",pid,tid);
-
                 pthread_mutex_lock(&mutex_lista_contextos_pids);
                 t_contexto_tid*contexto_tid=obtener_contexto_tid(pid,tid);
                 pthread_mutex_unlock(&mutex_lista_contextos_pids);
-
-                // Si el contexto no existe, lo creamos y lo metemos en la lista de contextos de tid del contexto del pid
-                if (contexto_tid==NULL){
-                    pthread_mutex_lock(&mutex_lista_contextos_pids);
-                    t_contexto_pid*contexto_pid = obtener_contexto_pid(pid);
-                    inicializar_contexto_tid(contexto_pid,tid);
-                    pthread_mutex_unlock(&mutex_lista_contextos_pids);
+                
+                if (contexto_tid == NULL){
+                    log_error(logger, "No se encontro el contexto del tid %d asociado al pid %d", tid,pid);
+                    enviar_paquete_op_code(SOCKET_CLIENTE_CPU,CONTEXTO_TID_INEXISTENTE);
+                    break;
                 }
 
                 enviar_contexto_tid(SOCKET_CLIENTE_CPU,contexto_tid);
@@ -73,12 +70,10 @@ void* recibir_cpu(void*args) {
                 uint32_t pc = recepcionar_uint32_paquete(paquete_operacion);
 
                 t_instruccion *instruccion = obtener_instruccion(tid, pid,pc);
-                if (instruccion != NULL)
-                    enviar_instruccion(SOCKET_CLIENTE_CPU, instruccion, INSTRUCCION_OBTENIDA); // REVISAR
-                else{
-                    enviar_instruccion(SOCKET_CLIENTE_CPU,instruccion,-1);
-                    log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s> <%s> <%s> ",pid,tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4,instruccion->parametros5,instruccion->parametros6);
-                }
+                
+                enviar_instruccion(SOCKET_CLIENTE_CPU, instruccion, INSTRUCCION_OBTENIDA); 
+                log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s> <%s> <%s> ",pid,tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4,instruccion->parametros5,instruccion->parametros6);
+                
                 free(instruccion);
                 break;
             }
@@ -100,7 +95,7 @@ void* recibir_cpu(void*args) {
                 break;
         }
     }
-
+    sem_post(&sem_fin_memoria);
     log_warning(logger, "Se desconectó la CPU");
     return NULL;
 }
@@ -134,7 +129,7 @@ bool existe_contexto_pid(int pid){
 
 // Se utiliza al inicializar el contexto del tid 0 tras crear un nuevo proceso y cuando viene un hilo con tid N a ejecutar
 t_contexto_tid* inicializar_contexto_tid(t_contexto_pid* cont,int tid){
-    t_contexto_tid* contexto=malloc(sizeof(contexto));
+    t_contexto_tid* contexto=malloc(sizeof(t_contexto_tid));
     contexto->registros= malloc(sizeof(t_registros_cpu));
     contexto->pid=cont->pid;
     contexto->tid = tid;

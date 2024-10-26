@@ -2,7 +2,7 @@
 #define CLIENTE_H
 
 #include "utils/includes/sockets.h"
-
+#include "utils/includes/serializacion.h"
 
 typedef struct{
 int socket_Dispatch;

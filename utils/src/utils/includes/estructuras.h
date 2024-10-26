@@ -230,6 +230,7 @@ typedef struct {
     uint32_t entero1;
 }t_string_mas_entero;
 
+
 typedef struct
 {
     op_code codigo_operacion;

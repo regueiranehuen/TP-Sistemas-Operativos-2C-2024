@@ -119,9 +119,9 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
 {
     
         while(estado_kernel!=0){
-        pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+
         t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch); 
-        pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
+
          switch (paquete->syscall)
         {
 

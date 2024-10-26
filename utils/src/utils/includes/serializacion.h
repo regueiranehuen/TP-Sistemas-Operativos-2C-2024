@@ -19,7 +19,9 @@ typedef enum{
     FIN_QUANTUM_RR,
     DESALOJAR,
     SEGMENTATION_FAULT,
-    OK
+    OK,
+    KERNEL,
+    CPU
 }code_operacion;
 
 typedef enum{
@@ -84,7 +86,11 @@ typedef struct{
     char*arch_pseudocodigo;
 }t_args_inicializar_proceso;
 
-
+typedef struct{
+    int pid;
+    int tid;
+    char*arch_pseudo;
+}t_args_thread_create_aviso;
 
 
 
@@ -133,5 +139,11 @@ void send_operacion_tid(code_operacion code, int tid, int socket_cliente);
 
 void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_proceso, int socket_cliente);
 t_args_inicializar_proceso* recepcionar_inicializacion_proceso(t_paquete_code_operacion*paquete);
+
+void send_fin_quantum_rr(int socket_cliente);
+void send_desalojo(int socket_cliente);
+void send_segmentation_fault(int socket_cliente);
+void send_inicializacion_hilo(int tid, int pid, char*arch_pseudocodigo,int socket_cliente);
+t_args_thread_create_aviso* recepcionar_inicializacion_hilo(t_paquete_code_operacion*paquete);
 
 #endif

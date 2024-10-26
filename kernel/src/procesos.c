@@ -207,8 +207,6 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
     t_pcb *pcb = queue_peek(cola_new_procesos);
     pthread_mutex_unlock(&mutex_cola_new_procesos);
 
-    code_operacion cod_op = PROCESS_CREATE_AVISO;
-
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
 
     send_inicializacion_proceso(pcb->pid,pcb->tcb_main->pseudocodigo,pcb->tamanio_proceso,socket_memoria);
@@ -228,8 +226,7 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
         
         int socket_memoria = cliente_Memoria_Kernel(logger, config);
         int resultado;
-        cod_op = THREAD_CREATE_AVISO;
-        send_operacion_entero(cod_op,pcb->tcb_main->tid , socket_memoria);
+        send_inicializacion_hilo(pcb->tcb_main->tid,pcb->pid,pcb->tcb_main->pseudocodigo,socket_memoria);
         recv(socket_memoria, &resultado, sizeof(int), 0);
         close(socket_memoria);
 
@@ -328,13 +325,12 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
 {
 
     int resultado = 0;
-    code_operacion cod_op = THREAD_CREATE_AVISO;
 
     t_pcb* pcb = buscar_pcb_por_pid(lista_pcbs,hilo_exec->pid);
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
 
-    send_operacion_entero(cod_op,pcb->contador_tid , socket_memoria);
+    send_inicializacion_hilo(hilo_exec->tid, hilo_exec->pid, pseudocodigo,socket_memoria);
     recv(socket_memoria, &resultado, sizeof(int), 0);
     close(socket_memoria);
 

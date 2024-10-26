@@ -3,6 +3,7 @@
 
 #include "server.h"
 
+void inicializar_estructuras();
 void inicializar_semaforos();
 void inicializar_mutex();
 void destruir_mutex();

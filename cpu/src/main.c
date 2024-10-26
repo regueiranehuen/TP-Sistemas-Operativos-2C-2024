@@ -3,8 +3,6 @@
 int main(int argc, char** argv) {
 
     log_cpu = log_create("CPU.log", "tp", true, LOG_LEVEL_TRACE);
-    config = config_create("CPU.config");
-    leer_config(argv[1]);
     
     inicializar_estructuras();
     inicializar_mutex();

@@ -30,17 +30,21 @@ Caso contrario, se descarta la interrupción.
 
 void checkInterrupt(t_contexto_tid* contextoTid) {
 
-    
     pthread_mutex_lock(&mutex_interrupt);
     
     if (hay_interrupcion) {
         hay_interrupcion = false;
         seguir_ejecutando = false;
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria,contextoTid->registros,contextoTid->pid,contextoTid->tid);
-
-        send_operacion_tid(devolucion_kernel,contextoTid->tid,sockets_cpu->socket_servidor->socket_Dispatch);
         
+        if (devolucion_kernel == FIN_QUANTUM_RR){
+            send_fin_quantum_rr(sockets_cpu->socket_servidor->socket_Dispatch);
+        }
+        else if (devolucion_kernel == DESALOJAR){
+            send_desalojo(sockets_cpu->socket_servidor->socket_Dispatch);
+        }
     }
+
     pthread_mutex_unlock(&mutex_interrupt);
 }
 
@@ -205,7 +209,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         
         contextoTid->registros->PC++;
         
-        sem_wait(&sem_syscall_interrumpida_o_finalizada);
+        sem_wait(&sem_syscall_finalizada);
         break;
     case IO:
         log_info(log_cpu, "IO - Tiempo: %d", atoi(instruccion->parametros2));
@@ -214,7 +218,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         send_IO(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_Dispatch);
         
         contextoTid->registros->PC++;
-        sem_wait(&sem_syscall_interrumpida_o_finalizada);
+        sem_wait(&sem_syscall_finalizada);
         break;
     case PROCESS_CREATE:
         log_info(log_cpu, "PROCESS_CREATE - PID: %s, Tamaño: %d, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4));
@@ -223,7 +227,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         send_process_create(instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4), sockets_cpu->socket_servidor->socket_Dispatch);
         
         contextoTid->registros->PC++;
-        sem_wait(&sem_syscall_interrumpida_o_finalizada);
+        sem_wait(&sem_syscall_finalizada);
         break;
     case THREAD_CREATE:
         log_info(log_cpu, "THREAD_CREATE - TID: %s, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3));
@@ -232,7 +236,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         send_thread_create(instruccion->parametros2, atoi(instruccion->parametros3), sockets_cpu->socket_servidor->socket_Dispatch);
         
         contextoTid->registros->PC++;
-        sem_wait(&sem_syscall_interrumpida_o_finalizada);
+        sem_wait(&sem_syscall_finalizada);
         break;
     case THREAD_JOIN:
         log_info(log_cpu, "THREAD_JOIN - TID: %d", atoi(instruccion->parametros2));
@@ -241,7 +245,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         send_thread_join(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_Dispatch);
         
         contextoTid->registros->PC++;
-        sem_wait(&sem_syscall_interrumpida_o_finalizada);
+        sem_wait(&sem_syscall_finalizada);
         break;
     case THREAD_CANCEL:
         log_info(log_cpu, "THREAD_CANCEL - TID: %d", atoi(instruccion->parametros2));
@@ -250,7 +254,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         send_thread_cancel(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_Dispatch);
         
         contextoTid->registros->PC++;
-        sem_wait(&sem_syscall_interrumpida_o_finalizada);
+        sem_wait(&sem_syscall_finalizada);
         break;
     case MUTEX_CREATE:
         log_info(log_cpu, "MUTEX_CREATE - Nombre: %s", instruccion->parametros2);
@@ -259,7 +263,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         send_mutex_create(instruccion->parametros2, sockets_cpu->socket_servidor->socket_Dispatch);
         
         contextoTid->registros->PC++;
-        sem_wait(&sem_syscall_interrumpida_o_finalizada);
+        sem_wait(&sem_syscall_finalizada);
         break;
     case MUTEX_LOCK:
         log_info(log_cpu, "MUTEX_LOCK - Nombre: %s", instruccion->parametros2);
@@ -268,7 +272,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         send_mutex_lock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_Dispatch);
         
         contextoTid->registros->PC++;
-        sem_wait(&sem_syscall_interrumpida_o_finalizada);
+        sem_wait(&sem_syscall_finalizada);
         break;
     case MUTEX_UNLOCK:
         log_info(log_cpu, "MUTEX_UNLOCK - Nombre: %s", instruccion->parametros2);
@@ -277,7 +281,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         send_mutex_unlock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_Dispatch);
         
         contextoTid->registros->PC++;
-        sem_wait(&sem_syscall_interrumpida_o_finalizada);
+        sem_wait(&sem_syscall_finalizada);
         break;
     case THREAD_EXIT:
         log_info(log_cpu, "THREAD_EXIT");
@@ -286,7 +290,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         send_thread_exit(sockets_cpu->socket_servidor->socket_Dispatch);
         
         contextoTid->registros->PC++;
-        sem_wait(&sem_syscall_interrumpida_o_finalizada);
+        sem_wait(&sem_syscall_finalizada);
         break;
     case PROCESS_EXIT:
         log_info(log_cpu, "PROCESS_EXIT");
@@ -295,7 +299,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         send_process_exit(sockets_cpu->socket_servidor->socket_Dispatch);
         
         contextoTid->registros->PC++;
-        sem_wait(&sem_syscall_interrumpida_o_finalizada);
+        sem_wait(&sem_syscall_finalizada);
         break;
     default:
         log_error(log_cpu, "Instrucción no válida");

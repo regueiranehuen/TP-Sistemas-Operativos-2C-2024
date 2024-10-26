@@ -14,6 +14,7 @@ int main(int argc, char *argv[])
 
     inicializar_mutex();
     inicializar_semaforos();
+    inicializar_estructuras();
 
     if (config == NULL)
     {
@@ -22,13 +23,11 @@ int main(int argc, char *argv[])
 
     sockets = hilos_memoria(logger, config);
 
-
-    // hay que crear un socket que sea servidor de cpu
-    int socket_cpu; // ?
-    hilo_recibe_cpu(socket_cpu);
-
-
+    hilo_recibe_cpu(sockets_iniciales->socket_cpu);
+    
+    sem_wait(&sem_fin_memoria);
     //sem_wait para terminar la ejecucion de memoria
+    
     destruir_mutex();
     destruir_semaforos();
 
@@ -36,6 +35,9 @@ int main(int argc, char *argv[])
     log_destroy(logger);
     close(sockets->socket_servidor);
     close(sockets->socket_cliente);
+    close(sockets_iniciales->socket_cpu);
+    close(sockets_iniciales->socket_kernel);
+    free(sockets_iniciales);
     free(sockets);
 
     return 0;

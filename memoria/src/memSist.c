@@ -1,6 +1,12 @@
 #include "includes/memSist.h"
 #include "includes/server.h"
 
+
+int longitud_maxima=200;
+int parametros_maximos=6;
+int instrucciones_maximas=200;
+
+
 void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
     FILE* archivo = fopen(nombre_archivo, "r");
     
@@ -56,13 +62,17 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
         }
         
         //list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
+
+
+
         list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
         indice_instruccion++;
-        instruccion_tid_pid->pc++;
+        instruccion_tid_pid->pc+=1;
         
     }
     fclose(archivo);
 }
+
 
 t_instruccion* obtener_instruccion(int tid, int pid,uint32_t pc){
     for (int i = 0; i < list_size(lista_instrucciones_tid_pid); i++){

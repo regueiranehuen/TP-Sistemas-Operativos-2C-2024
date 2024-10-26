@@ -33,7 +33,7 @@ pthread_mutex_t mutex_tid_pid_exec;
 pthread_mutex_t mutex_interrupt;
 
 
-sem_t sem_syscall_interrumpida_o_finalizada;
+sem_t sem_syscall_finalizada;
 sem_t sem_finalizacion_cpu;
 
 code_operacion devolucion_kernel;
@@ -130,6 +130,10 @@ int cliente_cpu_memoria(t_log *log, t_config *config)
     }
 
     log_info(log, "Handshake con memoria realizado correctamente.");
+
+    code_operacion cod_op = CPU;
+    send_code_operacion(cod_op,socket_cliente);
+    
     return socket_cliente;
 }
 
@@ -228,8 +232,6 @@ void* recibir_kernel_interrupt(void*args){
             hay_interrupcion = true;
             devolucion_kernel=FIN_QUANTUM_RR;
             pthread_mutex_unlock(&mutex_interrupt);
-
-            sem_post(&sem_syscall_interrumpida_o_finalizada);
             break;
         case DESALOJAR:
             log_info(log_cpu,"## Llega interrupción al puerto Interrupt");
@@ -237,8 +239,6 @@ void* recibir_kernel_interrupt(void*args){
             hay_interrupcion = true;
             devolucion_kernel=DESALOJAR;
             pthread_mutex_unlock(&mutex_interrupt);
-
-            sem_post(&sem_syscall_interrumpida_o_finalizada);
             break;
         default:
             break;
@@ -287,7 +287,7 @@ void* recibir_kernel_dispatch(void*args)
                     contextoTid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid);
                     log_info(log_cpu,"TID: %d - Solicito Contexto Ejecución",info->tid);
                 }
-                else if (paquete_solicitud_contexto_tid->codigo_operacion == -1){
+                else if (paquete_solicitud_contexto_tid->codigo_operacion == CONTEXTO_TID_INEXISTENTE){
                     log_error(log_cpu, "Error obteniendo contexto del tid %d", info->tid);
                     continue;
                 }
@@ -309,7 +309,7 @@ void* recibir_kernel_dispatch(void*args)
         break;
 
     case OK:
-        sem_post(&sem_syscall_interrumpida_o_finalizada);
+        sem_post(&sem_syscall_finalizada);
         break;
     default:
         break;

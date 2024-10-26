@@ -180,6 +180,36 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 
 }
 
+void send_fin_quantum_rr(int socket_cliente){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
+
+    buffer->size = 0;
+
+    syscalls syscall = ENUM_FIN_QUANTUM_RR;
+
+    send_paquete_syscall(buffer,socket_cliente,syscall);
+}
+
+void send_desalojo(int socket_cliente){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
+
+    buffer->size = 0;
+
+    syscalls syscall = ENUM_DESALOJAR;
+
+    send_paquete_syscall(buffer,socket_cliente,syscall);
+}
+
+void send_segmentation_fault(int socket_cliente){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
+
+    buffer->size = 0;
+
+    syscalls syscall = ENUM_SEGMENTATION_FAULT;
+
+    send_paquete_syscall(buffer,socket_cliente,syscall);
+}
+
 
 
 
@@ -199,7 +229,7 @@ void send_paquete_syscall_sin_parametros(int socket_cliente, syscalls syscall, t
 void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){
     t_paquete_syscall*paquete=malloc(sizeof(t_paquete_syscall));
 
-    if(syscall == ENUM_PROCESS_EXIT || syscall == ENUM_DUMP_MEMORY){
+    if(buffer->size == 0){
         send_paquete_syscall_sin_parametros(socket_cliente,syscall,paquete);
     } else{
 
@@ -545,7 +575,29 @@ code_operacion recibir_code_operacion(int socket_cliente){
     return code;
 }
 
+void send_inicializacion_hilo(int tid, int pid, char*arch_pseudocodigo,int socket_cliente){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
 
+    int offset = 0;
+    int length_arch_pseudocodigo=strlen(arch_pseudocodigo)+1;
+
+    buffer->size = 3*sizeof(int)+length_arch_pseudocodigo;
+    
+    buffer->stream = malloc(buffer->size);
+
+    
+
+    memcpy(buffer->stream, &pid,sizeof(int));
+    offset += sizeof(int);
+    memcpy(buffer->stream, &tid, sizeof(int));
+    offset += sizeof(int);
+    memcpy(buffer->stream,&length_arch_pseudocodigo,sizeof(int));
+    offset+=sizeof(int);
+    memcpy(buffer->stream,&arch_pseudocodigo,length_arch_pseudocodigo);
+    
+    send_paquete_code_operacion(THREAD_CREATE_AVISO,buffer,socket_cliente);
+    
+}
 
 void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_proceso, int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
@@ -586,6 +638,26 @@ t_args_inicializar_proceso* recepcionar_inicializacion_proceso(t_paquete_code_op
     memcpy(&length_arch_pseudocodigo, stream,sizeof(int));
     stream+=sizeof(int);
     memcpy(&(info->arch_pseudocodigo),stream,length_arch_pseudocodigo);
+
+    eliminar_paquete_code_op(paquete);
+
+    return info;
+}
+
+t_args_thread_create_aviso* recepcionar_inicializacion_hilo(t_paquete_code_operacion*paquete){
+    t_args_thread_create_aviso* info = malloc(paquete->buffer->size); // APLICAR SIEMPRE ASI
+
+    void* stream = paquete->buffer->stream;
+
+    int length_arch_pseudocodigo;
+
+    memcpy(&(info->pid),stream,sizeof(int));
+    stream += sizeof(int);
+    memcpy(&(info->tid),stream,sizeof(int));
+    stream+=sizeof(int);
+    memcpy(&length_arch_pseudocodigo, stream,sizeof(int));
+    stream+=sizeof(int);
+    memcpy(&(info->arch_pseudo),stream,length_arch_pseudocodigo);
 
     eliminar_paquete_code_op(paquete);
 
