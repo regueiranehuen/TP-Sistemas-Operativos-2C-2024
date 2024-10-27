@@ -5,6 +5,7 @@ static pthread_mutex_t cliente_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int client_count = 0; //numero incremental del numero del cliente
 sem_t sem_conexion_hecha;
 sem_t sem_fin_memoria;
+sem_t sem_conexion_iniciales;
 
 t_list*lista_contextos_pids;
 t_list*lista_instrucciones_tid_pid;
@@ -28,6 +29,8 @@ pthread_mutex_lock(&cliente_count_mutex);
 cliente_n = ++client_count;
 pthread_mutex_unlock(&cliente_count_mutex);
 if(cliente_n <= 2){//conexiones iniciales de cpu y kernel
+servidor_handshake(socket_cliente,args->log); 
+log_info(args->log, "Handshake memoria -> cliente_%d realizado correctamente", cliente_n);
 code_operacion modulo = recibir_code_operacion(socket_cliente);
 if (modulo == CPU){
     sockets_iniciales->socket_cpu = socket_cliente;
@@ -36,9 +39,8 @@ else if(modulo == KERNEL){
     sockets_iniciales->socket_kernel = socket_cliente; 
 }
 
-servidor_handshake(socket_cliente,args->log); 
-log_info(args->log, "Handshake memoria -> cliente_%d realizado correctamente", cliente_n);
 sem_post(&sem_conexion_hecha);
+sem_post(&sem_conexion_iniciales);
 }
 else {
 atender_conexiones(socket_cliente);
@@ -102,7 +104,7 @@ int servidor_memoria(t_log *log, t_config *config)
 
     log_info(log, "Servidor abierto correctamente");
 
-    respuesta = pthread_create(&hilo_gestor, NULL, gestor_clientes, (void *)args);
+    respuesta = pthread_create(&hilo_gestor, NULL, gestor_clientes, args);
 
     if (respuesta != 0)
     {
@@ -112,7 +114,6 @@ int servidor_memoria(t_log *log, t_config *config)
     }
 
     pthread_detach(hilo_gestor);
-    free(args);
     return socket_servidor;
 }
 
@@ -195,7 +196,7 @@ int resultado;
 
 sockets_memoria* sockets=malloc(sizeof(sockets_memoria));
 
-resultado = pthread_create (&hilo_cliente,NULL,funcion_hilo_cliente,(void*)args);
+resultado = pthread_create (&hilo_cliente,NULL,funcion_hilo_cliente,args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");
@@ -205,7 +206,7 @@ if(resultado != 0){
 
 log_info(log,"El hilo cliente se creo correctamente");
 
-resultado = pthread_create (&hilo_servidor,NULL,funcion_hilo_servidor,(void*)args);
+resultado = pthread_create (&hilo_servidor,NULL,funcion_hilo_servidor,args);
 
 if(resultado != 0){
     log_error(log,"Error al crear el hilo");

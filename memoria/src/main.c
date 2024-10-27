@@ -7,7 +7,8 @@ t_config *config;
 int main(int argc, char *argv[])
 {
 
-    sockets_memoria *sockets;
+    sockets_memoria *sockets = malloc(sizeof(sockets_memoria));
+    sockets_iniciales = malloc(sizeof(sockets_memoria));
 
     logger = log_create("memoria.log", "tp", true, LOG_LEVEL_TRACE);
     config = config_create("memoria.config");
@@ -19,9 +20,13 @@ int main(int argc, char *argv[])
     if (config == NULL)
     {
         log_error(logger, "Error al crear la configuración");
+        return -1;
     }
 
     sockets = hilos_memoria(logger, config);
+
+    sem_wait(&sem_conexion_iniciales); //esperar a que se haga la conexion con cpu y kernel
+    sem_wait(&sem_conexion_iniciales);
 
     hilo_recibe_cpu(sockets_iniciales->socket_cpu);
     

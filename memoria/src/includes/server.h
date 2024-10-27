@@ -8,7 +8,7 @@
 #include <semaphore.h>
 #include "utils/includes/serializacion.h"
 
-
+extern sem_t sem_conexion_iniciales;
 extern sem_t sem_conexion_hecha;
 extern sem_t sem_fin_memoria;
 extern t_list*lista_contextos_pids;
