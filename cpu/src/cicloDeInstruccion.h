@@ -7,10 +7,9 @@
 extern t_instruccion instruccion;
 extern bool seguir_ejecutando;
 
-extern int tid_exec;
-extern int pid_exec;
 
 void* ciclo_de_instruccion(void*args);
+t_contextos* esperar_thread_execute(int socket_cliente_Dispatch);
 void checkInterrupt(t_contexto_tid* contextoTid);
 t_instruccion* fetch(t_contexto_tid*contexto);
 op_code decode(t_instruccion *instruccion);
