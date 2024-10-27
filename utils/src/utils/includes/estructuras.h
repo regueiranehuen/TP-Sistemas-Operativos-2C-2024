@@ -28,7 +28,6 @@
 
 
 
-
 typedef struct{
     int pid;
     t_list*contextos_tids;

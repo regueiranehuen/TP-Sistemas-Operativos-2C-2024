@@ -883,8 +883,8 @@ t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete){
     nuevo_contexto->registros=malloc(sizeof(t_registros_cpu));
     
 
-    nuevo_contexto->tid = leer_entero(paquete->buffer->stream,&desp);
-    nuevo_contexto->pid=leer_entero(paquete->buffer->stream,&desp);
+    nuevo_contexto->pid = leer_entero(paquete->buffer->stream,&desp);
+    nuevo_contexto->tid=leer_entero(paquete->buffer->stream,&desp);
     nuevo_contexto->registros->PC = leer_entero_uint32(paquete->buffer->stream, &desp);
     nuevo_contexto->registros->AX = leer_entero_uint32(paquete->buffer->stream, &desp);
     nuevo_contexto->registros->BX = leer_entero_uint32(paquete->buffer->stream, &desp);
