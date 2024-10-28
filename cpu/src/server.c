@@ -238,18 +238,22 @@ void* recibir_kernel_interrupt(void*args){
     int noFinalizar = 0;
     while (noFinalizar != -1){
         
-        t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+        log_info(log_cpu,"esperando interrupciones");
+        //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+        code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
 
-        if (paquete == NULL) {
+        log_info(log_cpu,"llega el código %d a interrupt",code);
+
+        /*if (paquete == NULL) {
             log_info(log_cpu, "Error al recibir el paquete, cerrando hilo.");
             noFinalizar = -1; // Terminar el hilo si no se recibe un paquete válido
             break; // Salir del bucle
-        }
+        }*/
 
-        printf("Forro_Interrupt");
-        printf("forro:%d",paquete->code);
+        //printf("Forro_Interrupt");
+        //printf("forro:%d",code);
 
-        switch (paquete->code)
+        switch (code)
         {
         case FIN_QUANTUM_RR:
             log_info(log_cpu,"## Llega interrupción al puerto Interrupt");
@@ -269,80 +273,7 @@ void* recibir_kernel_interrupt(void*args){
             break;
         }
         
-        free(paquete);
     }
 
-    return NULL;
-}
-
-
-
-// Recepción de mensajes de Kernel Dispatch
-void* recibir_kernel_dispatch(void*args)
-{ 
-
-    int noFinalizar = 0;
-    while (noFinalizar != -1)
-    {
-        t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        printf("Forro_Dispatch");
-        switch (paquete->code)
-        {
-        case THREAD_EXECUTE_AVISO:
-            /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
-            t_tid_pid *info = recepcionar_tid_pid_code_op(paquete);
-
-            solicitar_contexto_pid(info->pid,sockets_cpu->socket_memoria);
-            
-            t_contexto_pid* contextoPid;
-            t_contexto_tid* contextoTid;
-
-            t_paquete* paquete_solicitud_contexto_pid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
-            if (paquete_solicitud_contexto_pid->codigo_operacion == CONTEXTO_PID_INEXISTENTE){
-                log_error(log_cpu, "El contexto del pid %d no existe", info->pid);
-                continue;
-            }
-            else if(paquete_solicitud_contexto_pid->codigo_operacion == OBTENCION_CONTEXTO_PID_OK){
-
-                contextoPid = recepcionar_contexto_pid(paquete_solicitud_contexto_pid);
-                solicitar_contexto_tid(info->pid,info->tid,sockets_cpu->socket_memoria);
-                log_info(log_cpu,"TID: %d - Solicito Contexto Ejecución",info->tid);
-
-                t_paquete *paquete_solicitud_contexto_tid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
-                
-
-                if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK){ // La memoria se encarga de crear el contexto del tid si es que no existe
-                    contextoTid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid);
-                    log_info(log_cpu,"TID: %d - Solicito Contexto Ejecución",info->tid);
-                }
-                else if (paquete_solicitud_contexto_tid->codigo_operacion == CONTEXTO_TID_INEXISTENTE){
-                    log_error(log_cpu, "Error obteniendo contexto del tid %d", info->tid);
-                    continue;
-                }
-
-            }
-            else if (paquete_solicitud_contexto_pid->codigo_operacion == -1){
-                log_error(log_cpu, "Error obteniendo contexto del tid %d", info->pid);
-                continue;
-            }
-
-            log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
-
-            pthread_mutex_lock(&mutex_contextos_exec); // Tal vez sea necesario usarlo despues, pero por ahora estas variables globales solo se modifican acá
-            contexto_pid_actual=contextoPid;
-            contexto_tid_actual=contextoTid;
-            pthread_mutex_unlock(&mutex_contextos_exec);
-            
-            sem_post(&sem_ciclo_instruccion);
-            
-        break;
-
-    case OK:
-        sem_post(&sem_syscall_finalizada);
-        break;
-    default:
-        break;
-    }
-    }
     return NULL;
 }

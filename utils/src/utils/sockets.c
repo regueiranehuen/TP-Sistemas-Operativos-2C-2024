@@ -112,7 +112,9 @@ int cliente_handshake(int socket_cliente, t_log* log) {
     }
 
     // Recibir respuesta del servidor
-    bytes = recv(socket_cliente, &result, sizeof(int32_t), MSG_WAITALL);
+    log_info(log,"QUIERO HANDSHAKE KERNEL->MEMORIA SOY CLIENTE SIUUU");
+    bytes = recv(socket_cliente, &result, sizeof(int32_t), 0);
+    log_info(log,"hola si recibo");
     if (bytes == -1) {
         log_error(log, "Error al recibir respuesta del servidor: %s", strerror(errno));
         return -1;

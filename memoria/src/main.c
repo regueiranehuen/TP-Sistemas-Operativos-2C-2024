@@ -26,9 +26,10 @@ int main(int argc, char *argv[])
     sockets = hilos_memoria(logger, config);
 
     sem_wait(&sem_conexion_iniciales); //esperar a que se haga la conexion con cpu y kernel
-    sem_wait(&sem_conexion_iniciales);
-    printf("empieza memoria \n");
-    hilo_recibe_cpu();
+    //printf("empieza memoria \n");
+
+
+    //hilo_recibe_cpu();
     
     sem_wait(&sem_fin_memoria);
     //sem_wait para terminar la ejecucion de memoria

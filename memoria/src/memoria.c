@@ -6,7 +6,9 @@ void atender_conexiones(int socket_cliente)
     code_operacion respuesta;
     while (estado_cpu != 0)
     {
+        log_info(logger,"jijo soy memoria");
         t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente);
+        log_info(logger,"recibi esto de kernel: %d",paquete->code);
         if (paquete == NULL)
         { // cierre de conexión
             break;
@@ -16,6 +18,7 @@ void atender_conexiones(int socket_cliente)
 
         case INICIALIZAR_PROCESO:
             t_args_inicializar_proceso *info_0 = recepcionar_inicializacion_proceso(paquete);
+
 
 
             pthread_mutex_lock(&mutex_lista_contextos_pids);

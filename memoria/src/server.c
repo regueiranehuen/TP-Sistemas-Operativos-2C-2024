@@ -14,7 +14,12 @@ pthread_mutex_t mutex_lista_contextos_pids;
 
 void* hilo_por_cliente (void* void_args){
 
+
+pthread_t hilo_cliente_cpu;
+
+
 hilo_clientes *args = (hilo_clientes*)void_args;
+
 
 int socket_cliente = esperar_cliente(args->log,args->socket_servidor);
 if (socket_cliente == -1) {
@@ -24,17 +29,29 @@ if (socket_cliente == -1) {
     return NULL;
 }
 
+servidor_handshake(socket_cliente,args->log); 
+
 int cliente_n;
 pthread_mutex_lock(&cliente_count_mutex);
 cliente_n = ++client_count;
 pthread_mutex_unlock(&cliente_count_mutex);
 if(cliente_n <= 2){//conexiones iniciales de cpu y kernel
-servidor_handshake(socket_cliente,args->log); 
 log_info(args->log, "Handshake memoria -> cliente_%d realizado correctamente", cliente_n);
 code_operacion modulo = recibir_code_operacion(socket_cliente);
 if (modulo == CPU){
     sockets_iniciales->socket_cpu = socket_cliente;
     printf("1_socket de cpu:%d\n",sockets_iniciales->socket_cpu);
+
+    //hilo_recibe_cpu();
+    
+    int resultado = pthread_create(&hilo_cliente_cpu, NULL, recibir_cpu, NULL);
+
+    if (resultado != 0)
+    {
+        log_error(logger, "Error al crear el hilo que recibe a cpu desde memoria");
+    }
+    
+
 }
 else if(modulo == KERNEL){
     sockets_iniciales->socket_kernel = socket_cliente;
@@ -50,6 +67,8 @@ sem_post(&sem_conexion_hecha);
 }
 free(args);
 
+pthread_detach(hilo_cliente_cpu);
+
 return NULL;
 }
 
@@ -57,6 +76,8 @@ return NULL;
 void* gestor_clientes(void* void_args){// Crear un hilo que crea hilos que crean conexiones para cada petición de kernel
 
 hilo_clientes *args = (hilo_clientes*)void_args;
+
+
 int respuesta;
 printf("Estado_servidor: %d\n", estado_cpu);
 while(estado_cpu != 0){// mientras el servidor este abierto

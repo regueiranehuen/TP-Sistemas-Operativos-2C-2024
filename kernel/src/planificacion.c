@@ -227,6 +227,7 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
         sem_post(&sem_desalojado);
             break;
         default:
+            log_info(logger,"se recibio el codigo %d no valido",paquete->syscall);
             log_info(logger,"Syscall no válida.\n");
             //send_code_operacion(TERMINAR,sockets->sockets_cliente_cpu->socket_Interrupt);
             break;
@@ -403,7 +404,9 @@ void espera_con_quantum(int quantum) {
         code_operacion cod_op = FIN_QUANTUM_RR;
         log_info(logger,"## (<%d>:<%d>) - Desalojado por fin de Quantum",hilo_exec->pid,hilo_exec->tid);
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+        log_info(logger,"voy a mandar el codigo correspondiente a fin quantum (%d)",FIN_QUANTUM_RR);
         send_code_operacion(cod_op,sockets->sockets_cliente_cpu->socket_Interrupt);
+        log_info(logger,"enviado fin quantum!");
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         t_tcb* hilo = hilo_exec;
         hilo->estado = TCB_READY;

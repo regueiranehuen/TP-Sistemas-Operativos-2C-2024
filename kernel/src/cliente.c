@@ -22,13 +22,13 @@ int cliente_Memoria_Kernel(t_log* log, t_config* config) {
         return -1;
     }
  
-   respuesta = cliente_handshake(socket_cliente,log);
-   if (respuesta == 0){
-    log_info(log,"Handshake de Kernel --> Memoria realizado correctamente");
-   }
-   else {
-    log_error(log, "Handshake de Kernel --> Memoria tuvo un error");
-   }
+//    respuesta = cliente_handshake(socket_cliente,log);
+//    if (respuesta == 0){
+//     log_info(log,"Handshake de Kernel --> Memoria realizado correctamente");
+//    }
+//    else {
+//     log_error(log, "Handshake de Kernel --> Memoria tuvo un error");
+//    }
     code_operacion cod_op = KERNEL;
     send_code_operacion(cod_op,socket_cliente);
     return socket_cliente;

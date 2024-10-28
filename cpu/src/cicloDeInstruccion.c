@@ -7,16 +7,20 @@ t_instruccion instruccion;
 bool seguir_ejecutando;
 
 void iniciar_cpu(){
-    pthread_t hilo_atiende_dispatch;
-    pthread_t hilo_atiende_interrupt;
+
     pthread_t hilo_ciclo_instruccion;
+    pthread_t hilo_atiende_interrupt;
+    
 
     int resultado;
-    resultado=pthread_create(&hilo_atiende_dispatch,NULL,recibir_kernel_dispatch,NULL);
+
+
+    resultado=pthread_create(&hilo_ciclo_instruccion,NULL,ciclo_de_instruccion,NULL);
 
     if (resultado != 0)
     {
-        log_error(log_cpu, "Error al crear el hilo que atiende dispatch en cpu");
+        log_error(log_cpu, "Error al crear el hilo que atiende los ciclos de instruccion en cpu");
+
     }
 
     resultado=pthread_create(&hilo_atiende_interrupt,NULL,recibir_kernel_interrupt,NULL);
@@ -27,43 +31,94 @@ void iniciar_cpu(){
 
     }
 
-    resultado=pthread_create(&hilo_ciclo_instruccion,NULL,ciclo_de_instruccion,NULL);
-
-    if (resultado != 0)
-    {
-        log_error(log_cpu, "Error al crear el hilo que atiende los ciclos de instruccion en cpu");
-
-    }
-
-    pthread_detach(hilo_atiende_dispatch);
-    pthread_detach(hilo_atiende_interrupt);
+    
     pthread_detach(hilo_ciclo_instruccion);
+    pthread_detach(hilo_atiende_interrupt);
+    
     
 }
 
-void* ciclo_de_instruccion(void*args){
+void *ciclo_de_instruccion(void *args)
+{
 
-    sem_wait(&sem_ciclo_instruccion);
+    int noFinalizar = 0;
 
-    pthread_mutex_lock(&mutex_contextos_exec);
-    t_contexto_tid*contexto_tid=contexto_tid_actual;
-    t_contexto_pid*contexto_pid=contexto_pid_actual;
-    pthread_mutex_lock(&mutex_contextos_exec);
-    
-    seguir_ejecutando = true;
-    while (seguir_ejecutando){
-        t_instruccion *instruccion = fetch(contexto_tid);
-        if (instruccion == NULL){
-            seguir_ejecutando = false;
-            continue;
-        }
-        op_code nombre_instruccion = decode(instruccion);
-        execute(contexto_pid, contexto_tid, nombre_instruccion, instruccion);
-        if(seguir_ejecutando){
-            checkInterrupt(contexto_tid);
+    while (noFinalizar != -1)
+    {
+        t_contextos *contextos = esperar_thread_execute(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+
+        if (contextos->contexto_pid != NULL && contextos->contexto_tid != NULL)
+        {
+            seguir_ejecutando = true;
+            while (seguir_ejecutando)
+            {
+                t_instruccion *instruccion = fetch(contextos->contexto_tid);
+                if (instruccion == NULL)
+                {
+                    seguir_ejecutando = false;
+                    continue;
+                }
+                op_code nombre_instruccion = decode(instruccion);
+                execute(contextos->contexto_pid, contextos->contexto_tid, nombre_instruccion, instruccion);
+                if (seguir_ejecutando)
+                {
+                    checkInterrupt(contextos->contexto_tid);
+                }
+            }
         }
     }
     return NULL;
+}
+
+t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
+{
+    log_info(log_cpu,"esperando thread execute");
+    t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente_Dispatch);
+    log_info(log_cpu,"se recibió el código %d",paquete->code);
+    t_contextos *contextos = malloc(sizeof(t_contextos));
+    contextos->contexto_pid = NULL;
+    contextos->contexto_tid = NULL;
+
+    if (paquete->code == THREAD_EXECUTE_AVISO)
+    {
+        /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
+        t_tid_pid *info = recepcionar_tid_pid_code_op(paquete);
+
+        solicitar_contexto_pid(info->pid, sockets_cpu->socket_memoria);
+
+        t_paquete *paquete_solicitud_contexto_pid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
+        if (paquete_solicitud_contexto_pid->codigo_operacion == CONTEXTO_PID_INEXISTENTE)
+        {
+            log_error(log_cpu, "El contexto del pid %d no existe", info->pid);
+        }
+        else if (paquete_solicitud_contexto_pid->codigo_operacion == OBTENCION_CONTEXTO_PID_OK)
+        {
+
+            contextos->contexto_pid = recepcionar_contexto_pid(paquete_solicitud_contexto_pid);
+            solicitar_contexto_tid(info->pid, info->tid, sockets_cpu->socket_memoria);
+            log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
+
+            t_paquete *paquete_solicitud_contexto_tid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
+
+            if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK)
+            { // La memoria se encarga de crear el contexto del tid si es que no existe
+                contextos->contexto_tid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid);
+                log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
+            }
+            else if (paquete_solicitud_contexto_tid->codigo_operacion == CONTEXTO_TID_INEXISTENTE)
+            {
+                log_error(log_cpu, "Error obteniendo contexto del tid %d", info->tid);
+            }
+        }
+        else if (paquete_solicitud_contexto_pid->codigo_operacion == -1)
+        {
+            log_error(log_cpu, "Error obteniendo contexto del tid %d", info->pid);
+        }
+
+        log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
+    }
+
+    return contextos;
 }
 
 /*
