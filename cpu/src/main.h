@@ -7,7 +7,4 @@
 #include "server.h"
 #include "auxiliares.h"
 
-void iniciar_cpu();
-
-
 #endif

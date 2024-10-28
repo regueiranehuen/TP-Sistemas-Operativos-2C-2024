@@ -27,8 +27,8 @@ int main(int argc, char *argv[])
 
     sem_wait(&sem_conexion_iniciales); //esperar a que se haga la conexion con cpu y kernel
     sem_wait(&sem_conexion_iniciales);
-
-    hilo_recibe_cpu(sockets_iniciales->socket_cpu);
+    printf("empieza memoria \n");
+    hilo_recibe_cpu();
     
     sem_wait(&sem_fin_memoria);
     //sem_wait para terminar la ejecucion de memoria
@@ -48,10 +48,10 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void hilo_recibe_cpu(int socket_servidor_cpu)
+void hilo_recibe_cpu()
 {
     pthread_t hilo_cliente_cpu;
-    int resultado = pthread_create(&hilo_cliente_cpu, NULL, recibir_cpu, &socket_servidor_cpu);
+    int resultado = pthread_create(&hilo_cliente_cpu, NULL, recibir_cpu, NULL);
 
     if (resultado != 0)
     {

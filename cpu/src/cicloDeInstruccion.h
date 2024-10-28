@@ -10,6 +10,7 @@ extern bool seguir_ejecutando;
 extern int tid_exec;
 extern int pid_exec;
 
+void iniciar_cpu();
 void* ciclo_de_instruccion(void*args);
 void checkInterrupt(t_contexto_tid* contextoTid);
 t_instruccion* fetch(t_contexto_tid*contexto);

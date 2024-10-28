@@ -6,6 +6,41 @@
 t_instruccion instruccion;
 bool seguir_ejecutando;
 
+void iniciar_cpu(){
+    pthread_t hilo_atiende_dispatch;
+    pthread_t hilo_atiende_interrupt;
+    pthread_t hilo_ciclo_instruccion;
+
+    int resultado;
+    resultado=pthread_create(&hilo_atiende_dispatch,NULL,recibir_kernel_dispatch,NULL);
+
+    if (resultado != 0)
+    {
+        log_error(log_cpu, "Error al crear el hilo que atiende dispatch en cpu");
+    }
+
+    resultado=pthread_create(&hilo_atiende_interrupt,NULL,recibir_kernel_interrupt,NULL);
+
+    if (resultado != 0)
+    {
+        log_error(log_cpu, "Error al crear el hilo que atiende interrupt en cpu");
+
+    }
+
+    resultado=pthread_create(&hilo_ciclo_instruccion,NULL,ciclo_de_instruccion,NULL);
+
+    if (resultado != 0)
+    {
+        log_error(log_cpu, "Error al crear el hilo que atiende los ciclos de instruccion en cpu");
+
+    }
+
+    pthread_detach(hilo_atiende_dispatch);
+    pthread_detach(hilo_atiende_interrupt);
+    pthread_detach(hilo_ciclo_instruccion);
+    
+}
+
 void* ciclo_de_instruccion(void*args){
 
     sem_wait(&sem_ciclo_instruccion);

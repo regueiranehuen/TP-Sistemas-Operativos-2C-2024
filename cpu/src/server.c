@@ -240,6 +240,15 @@ void* recibir_kernel_interrupt(void*args){
         
         t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
 
+        if (paquete == NULL) {
+            log_info(log_cpu, "Error al recibir el paquete, cerrando hilo.");
+            noFinalizar = -1; // Terminar el hilo si no se recibe un paquete válido
+            break; // Salir del bucle
+        }
+
+        printf("Forro_Interrupt");
+        printf("forro:%d",paquete->code);
+
         switch (paquete->code)
         {
         case FIN_QUANTUM_RR:
@@ -259,7 +268,10 @@ void* recibir_kernel_interrupt(void*args){
         default:
             break;
         }
+        
+        free(paquete);
     }
+
     return NULL;
 }
 
@@ -273,7 +285,7 @@ void* recibir_kernel_dispatch(void*args)
     while (noFinalizar != -1)
     {
         t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-
+        printf("Forro_Dispatch");
         switch (paquete->code)
         {
         case THREAD_EXECUTE_AVISO:

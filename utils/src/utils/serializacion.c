@@ -503,25 +503,56 @@ void send_paquete_code_operacion(code_operacion code, t_buffer*buffer, int socke
 
 
 
-t_paquete_code_operacion* recibir_paquete_code_operacion(int socket_cliente){
-    t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
-
-    paquete->buffer=malloc(sizeof(paquete->buffer));
-
-    // Primero recibimos el codigo de operacion
-    int bytes = recv(socket_cliente, &(paquete->code), sizeof(int), 0);
-
-    if (bytes == 0){
+t_paquete_code_operacion* recibir_paquete_code_operacion(int socket_cliente) {
+    t_paquete_code_operacion* paquete = malloc(sizeof(t_paquete_code_operacion));
+    if (paquete == NULL) {
+        // Manejo de error
         return NULL;
     }
-    else{
-        // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
-        
-        recv(socket_cliente, &(paquete->buffer->size), sizeof(uint32_t), 0);
-        paquete->buffer->stream = malloc(paquete->buffer->size);
-        recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
-        return paquete;
+
+    paquete->buffer = malloc(sizeof(t_buffer)); // Asegúrate de que t_buffer está definido
+    if (paquete->buffer == NULL) {
+        free(paquete); // Liberar paquete si no se puede asignar buffer
+        return NULL;
     }
+
+    // Primero recibimos el código de operación
+    int bytes = recv(socket_cliente, &(paquete->code), sizeof(int), 0);
+    if (bytes <= 0) {
+        free(paquete->buffer); // Liberar buffer antes de retornar
+        free(paquete); // Liberar paquete antes de retornar
+        return NULL; // Error o desconexión
+    }
+
+    // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
+    bytes = recv(socket_cliente, &(paquete->buffer->size), sizeof(uint32_t), 0);
+    if (bytes <= 0) {
+        free(paquete->buffer); // Liberar buffer antes de retornar
+        free(paquete); // Liberar paquete antes de retornar
+        return NULL; // Error o desconexión
+    }
+
+    // Asegúrate de que el tamaño sea válido antes de asignar memoria
+    if (paquete->buffer->size > 0) {
+        paquete->buffer->stream = malloc(paquete->buffer->size);
+        if (paquete->buffer->stream == NULL) {
+            free(paquete->buffer); // Liberar buffer si no se puede asignar stream
+            free(paquete); // Liberar paquete si falla
+            return NULL;
+        }
+
+        bytes = recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
+        if (bytes <= 0) {
+            free(paquete->buffer->stream); // Liberar stream antes de retornar
+            free(paquete->buffer); // Liberar buffer antes de retornar
+            free(paquete); // Liberar paquete antes de retornar
+            return NULL; // Error o desconexión
+        }
+    } else {
+        paquete->buffer->stream = NULL; // Si el tamaño es 0, no hay stream
+    }
+
+    return paquete;
 }
 
 t_tid_pid* recepcionar_tid_pid_code_op(t_paquete_code_operacion* paquete){

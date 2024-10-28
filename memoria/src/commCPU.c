@@ -1,13 +1,14 @@
 #include "includes/commCpu.h"
 
 void* recibir_cpu(void*args) {
-    int SOCKET_CLIENTE_CPU=*(int*)args;
 
+    printf("2_socket de cpu: %d", sockets_iniciales->socket_cpu);
     int retardo_respuesta = config_get_int_value(config,"RETARDO_RESPUESTA");
     int codigoOperacion = 0;
     while (codigoOperacion != -1) {
         
-        t_paquete*paquete_operacion = recibir_paquete_op_code(SOCKET_CLIENTE_CPU);
+        t_paquete*paquete_operacion = recibir_paquete_op_code(sockets_iniciales->socket_cpu);
+        printf("El mala leche recibio algo");
         usleep(retardo_respuesta * 1000);  // Aplicar retardo configurado
 
         switch (paquete_operacion->codigo_operacion) {
@@ -23,11 +24,11 @@ void* recibir_cpu(void*args) {
                 
                 if (contexto_tid == NULL){
                     log_error(logger, "No se encontro el contexto del tid %d asociado al pid %d", tid,pid);
-                    enviar_paquete_op_code(SOCKET_CLIENTE_CPU,CONTEXTO_TID_INEXISTENTE);
+                    enviar_paquete_op_code(sockets_iniciales->socket_cpu,CONTEXTO_TID_INEXISTENTE);
                     break;
                 }
 
-                enviar_contexto_tid(SOCKET_CLIENTE_CPU,contexto_tid);
+                enviar_contexto_tid(sockets_iniciales->socket_cpu,contexto_tid);
                 log_info(logger, "Enviado contexto para PID: %d, TID: %d", pid, tid);
                 
 
@@ -43,11 +44,11 @@ void* recibir_cpu(void*args) {
 
                 if (contextoPid == NULL){
                     log_error(logger, "No se encontro el contexto del pid %d", pid_obtencion);
-                    enviar_paquete_op_code(SOCKET_CLIENTE_CPU,CONTEXTO_PID_INEXISTENTE);
+                    enviar_paquete_op_code(sockets_iniciales->socket_cpu,CONTEXTO_PID_INEXISTENTE);
                     break;
                 }
 
-                enviar_contexto_pid(SOCKET_CLIENTE_CPU,contextoPid);
+                enviar_contexto_pid(sockets_iniciales->socket_cpu,contextoPid);
                 break;
             }
 
@@ -58,7 +59,7 @@ void* recibir_cpu(void*args) {
                 int tid = info->tid;
                 t_registros_cpu* registros_a_actualizar = recepcionar_registros(paquete_operacion);
                 actualizar_contexto(pid,tid,registros_a_actualizar);
-                send_code_operacion(OK,SOCKET_CLIENTE_CPU);
+                send_code_operacion(OK,sockets_iniciales->socket_cpu);
                 free(info);
                 log_info(logger, "## Contexto actualizado - (PID:TID) - (%d:%d)", pid,tid);
                 break;
@@ -71,7 +72,7 @@ void* recibir_cpu(void*args) {
 
                 t_instruccion *instruccion = obtener_instruccion(tid, pid,pc);
                 
-                enviar_instruccion(SOCKET_CLIENTE_CPU, instruccion, INSTRUCCION_OBTENIDA); 
+                enviar_instruccion(sockets_iniciales->socket_cpu, instruccion, INSTRUCCION_OBTENIDA); 
                 log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s> <%s> <%s> ",pid,tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4,instruccion->parametros5,instruccion->parametros6);
                 
                 free(instruccion);

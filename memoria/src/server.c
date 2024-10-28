@@ -34,9 +34,11 @@ log_info(args->log, "Handshake memoria -> cliente_%d realizado correctamente", c
 code_operacion modulo = recibir_code_operacion(socket_cliente);
 if (modulo == CPU){
     sockets_iniciales->socket_cpu = socket_cliente;
+    printf("1_socket de cpu:%d\n",sockets_iniciales->socket_cpu);
 }
 else if(modulo == KERNEL){
-    sockets_iniciales->socket_kernel = socket_cliente; 
+    sockets_iniciales->socket_kernel = socket_cliente;
+    printf("1_socket de kernel:%d\n",sockets_iniciales->socket_kernel); 
 }
 
 sem_post(&sem_conexion_hecha);
