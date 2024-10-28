@@ -51,10 +51,10 @@ void checkInterrupt(t_contexto_tid* contextoTid) {
             return;
         }
         if (devolucion_kernel == FIN_QUANTUM_RR){
-            send_fin_quantum_rr(sockets_cpu->socket_servidor->socket_Dispatch);
+            send_fin_quantum_rr(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         }
         else if (devolucion_kernel == DESALOJAR){
-            send_desalojo(sockets_cpu->socket_servidor->socket_Dispatch);
+            send_desalojo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         }
     }
 
@@ -218,7 +218,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         log_info(log_cpu, "DUMP_MEMORY");
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         
-        send_dump_memory(sockets_cpu->socket_servidor->socket_Dispatch);
+        send_dump_memory(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
         contextoTid->registros->PC++;
         
@@ -228,7 +228,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         log_info(log_cpu, "IO - Tiempo: %d", atoi(instruccion->parametros2));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         
-        send_IO(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_Dispatch);
+        send_IO(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
         contextoTid->registros->PC++;
         sem_wait(&sem_syscall_finalizada);
@@ -237,7 +237,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         log_info(log_cpu, "PROCESS_CREATE - PID: %s, Tamaño: %d, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         
-        send_process_create(instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4), sockets_cpu->socket_servidor->socket_Dispatch);
+        send_process_create(instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
         contextoTid->registros->PC++;
         sem_wait(&sem_syscall_finalizada);
@@ -246,7 +246,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         log_info(log_cpu, "THREAD_CREATE - TID: %s, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         
-        send_thread_create(instruccion->parametros2, atoi(instruccion->parametros3), sockets_cpu->socket_servidor->socket_Dispatch);
+        send_thread_create(instruccion->parametros2, atoi(instruccion->parametros3), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
         contextoTid->registros->PC++;
         sem_wait(&sem_syscall_finalizada);
@@ -255,7 +255,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         log_info(log_cpu, "THREAD_JOIN - TID: %d", atoi(instruccion->parametros2));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         
-        send_thread_join(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_Dispatch);
+        send_thread_join(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
         contextoTid->registros->PC++;
         sem_wait(&sem_syscall_finalizada);
@@ -264,7 +264,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         log_info(log_cpu, "THREAD_CANCEL - TID: %d", atoi(instruccion->parametros2));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         
-        send_thread_cancel(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_Dispatch);
+        send_thread_cancel(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
         contextoTid->registros->PC++;
         sem_wait(&sem_syscall_finalizada);
@@ -273,7 +273,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         log_info(log_cpu, "MUTEX_CREATE - Nombre: %s", instruccion->parametros2);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         
-        send_mutex_create(instruccion->parametros2, sockets_cpu->socket_servidor->socket_Dispatch);
+        send_mutex_create(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
         contextoTid->registros->PC++;
         sem_wait(&sem_syscall_finalizada);
@@ -282,7 +282,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         log_info(log_cpu, "MUTEX_LOCK - Nombre: %s", instruccion->parametros2);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         
-        send_mutex_lock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_Dispatch);
+        send_mutex_lock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
         contextoTid->registros->PC++;
         sem_wait(&sem_syscall_finalizada);
@@ -291,7 +291,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         log_info(log_cpu, "MUTEX_UNLOCK - Nombre: %s", instruccion->parametros2);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         
-        send_mutex_unlock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_Dispatch);
+        send_mutex_unlock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
         contextoTid->registros->PC++;
         sem_wait(&sem_syscall_finalizada);
@@ -300,7 +300,7 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         log_info(log_cpu, "THREAD_EXIT");
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         
-        send_thread_exit(sockets_cpu->socket_servidor->socket_Dispatch);
+        send_thread_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
         contextoTid->registros->PC++;
         sem_wait(&sem_syscall_finalizada);
@@ -309,8 +309,8 @@ void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code in
         log_info(log_cpu, "PROCESS_EXIT");
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         
-        send_process_exit(sockets_cpu->socket_servidor->socket_Dispatch);
-        
+        send_process_exit(sockets_cpu->socket_servidor->socket_servidor_Dispatch);
+    
         contextoTid->registros->PC++;
         sem_wait(&sem_syscall_finalizada);
         break;

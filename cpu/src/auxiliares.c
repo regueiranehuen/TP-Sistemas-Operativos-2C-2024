@@ -40,15 +40,18 @@ void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
 
     if (sockets == NULL || sockets->socket_memoria == -1 ||
         sockets->socket_servidor == NULL || 
-        sockets->socket_servidor->socket_Dispatch == -1 || 
-        sockets->socket_servidor->socket_Interrupt == -1) {
+        sockets->socket_servidor->socket_cliente_Dispatch == -1 || 
+        sockets->socket_servidor->socket_cliente_Interrupt == -1) {
 
         log_info(log, "Error en los sockets de cpu");
         }
         else{
     close(sockets->socket_memoria);
-    close(sockets->socket_servidor->socket_Dispatch);
-    close(sockets->socket_servidor->socket_Interrupt);
+    close(sockets->socket_servidor->socket_servidor_Dispatch);
+    close(sockets->socket_servidor->socket_servidor_Interrupt);
+    close(sockets->socket_servidor->socket_cliente_Dispatch);
+    close(sockets->socket_servidor->socket_cliente_Interrupt);
+
     }
     if (sockets != NULL) {
             if (sockets->socket_servidor != NULL) {

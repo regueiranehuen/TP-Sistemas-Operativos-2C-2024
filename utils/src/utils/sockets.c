@@ -148,16 +148,26 @@ socket_cliente = socket(server_info->ai_family,
                          server_info->ai_socktype,
                          server_info->ai_protocol);
 if (socket_cliente == -1){
-    log_info(log,"Error al conectarse con el servidor");
+    log_info(log,"Error al crear el socket");
     return socket_cliente;
 }
-	log_info(log,"Se pudo conectar al servidor");
-
-    connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen);
-
+    bool conexion = false;
+    int i = 1;
+    while(conexion != true && i<15){//15 segundos de espera para que el servidor haya arrancado
+    if(connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen) == 0){
+            conexion = true;
+            freeaddrinfo(server_info); // Liberar la memoria asignada por getaddrinfo()
+            return socket_cliente;
+    }
+    else{
+        log_info(log,"No se pudo conectar al servidor, esperando: %d segundos", i*1);
+        sleep(1*i);
+        i++;
+    }
+    }
     freeaddrinfo(server_info); // Liberar la memoria asignada por getaddrinfo()
 
-    return socket_cliente;
+    return -1;
 }
 
 

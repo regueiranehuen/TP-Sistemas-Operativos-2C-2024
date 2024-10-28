@@ -7,7 +7,7 @@
 #include "server.h"
 #include "auxiliares.h"
 
-void iniciar_cpu(int socket_dispatch,int socket_interrupt);
+void iniciar_cpu();
 
 
 #endif

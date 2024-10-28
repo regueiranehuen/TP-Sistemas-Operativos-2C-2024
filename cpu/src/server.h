@@ -8,8 +8,10 @@
 
 // **Estructuras**
 typedef struct {
-    int socket_Dispatch;
-    int socket_Interrupt;
+    int socket_servidor_Dispatch;
+    int socket_servidor_Interrupt;
+    int socket_cliente_Dispatch;
+    int socket_cliente_Interrupt;
 } t_socket_cpu;
 
 typedef struct {

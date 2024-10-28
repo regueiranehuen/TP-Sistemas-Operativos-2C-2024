@@ -162,7 +162,7 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
             THREAD_CANCEL(tid_thread_cancel);
             pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
             send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
-            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);              
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);            
             break;
         case ENUM_THREAD_EXIT:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_EXIT>", hilo_exec->pid, hilo_exec->tid);
