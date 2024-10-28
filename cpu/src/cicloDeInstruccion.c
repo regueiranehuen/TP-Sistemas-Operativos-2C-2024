@@ -6,15 +6,46 @@
 t_instruccion instruccion;
 bool seguir_ejecutando;
 
+void iniciar_cpu(){
+
+    pthread_t hilo_ciclo_instruccion;
+    pthread_t hilo_atiende_interrupt;
+    
+
+    int resultado;
+
+
+    resultado=pthread_create(&hilo_ciclo_instruccion,NULL,ciclo_de_instruccion,NULL);
+
+    if (resultado != 0)
+    {
+        log_error(log_cpu, "Error al crear el hilo que atiende los ciclos de instruccion en cpu");
+
+    }
+
+    resultado=pthread_create(&hilo_atiende_interrupt,NULL,recibir_kernel_interrupt,NULL);
+
+    if (resultado != 0)
+    {
+        log_error(log_cpu, "Error al crear el hilo que atiende interrupt en cpu");
+
+    }
+
+    
+    pthread_detach(hilo_ciclo_instruccion);
+    pthread_detach(hilo_atiende_interrupt);
+    
+    
+}
+
 void *ciclo_de_instruccion(void *args)
 {
 
-    int socket_cliente_Dispatch = *(int *)args;
     int noFinalizar = 0;
 
     while (noFinalizar != -1)
     {
-        t_contextos *contextos = esperar_thread_execute(socket_cliente_Dispatch);
+        t_contextos *contextos = esperar_thread_execute(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
         if (contextos->contexto_pid != NULL && contextos->contexto_tid != NULL)
         {
@@ -41,8 +72,9 @@ void *ciclo_de_instruccion(void *args)
 
 t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
 {
+    log_info(log_cpu,"esperando thread execute");
     t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente_Dispatch);
-
+    log_info(log_cpu,"se recibió el código %d",paquete->code);
     t_contextos *contextos = malloc(sizeof(t_contextos));
     contextos->contexto_pid = NULL;
     contextos->contexto_tid = NULL;
@@ -90,44 +122,37 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
 }
 
 /*
-    En este momento, se deberá chequear si el Kernel nos envió una interrupción al TID que se está ejecutando,
-    en caso afirmativo, se actualiza el Contexto de Ejecución en la Memoria y se devuelve el TID al Kernel con motivo de la interrupción.
-    Caso contrario, se descarta la interrupción.
-    */
+En este momento, se deberá chequear si el Kernel nos envió una interrupción al TID que se está ejecutando,
+en caso afirmativo, se actualiza el Contexto de Ejecución en la Memoria y se devuelve el TID al Kernel con motivo de la interrupción.
+Caso contrario, se descarta la interrupción.
+*/
 
-void checkInterrupt(t_contexto_tid *contextoTid)
-{
+void checkInterrupt(t_contexto_tid* contextoTid) {
 
     pthread_mutex_lock(&mutex_interrupt);
-
-    if (hay_interrupcion)
-    {
+    
+    if (hay_interrupcion) {
         hay_interrupcion = false;
-        pthread_mutex_unlock(&mutex_interrupt);
         seguir_ejecutando = false;
-        enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
+        enviar_registros_a_actualizar(sockets_cpu->socket_memoria,contextoTid->registros,contextoTid->pid,contextoTid->tid);
         code_operacion respuesta = recibir_code_operacion(sockets_cpu->socket_memoria);
-        if (respuesta != OK)
-        {
-            log_info(log_cpu, "Memoria no pudo actualizar los registros, muy poco sigma");
+        if(respuesta != OK){
+            log_info(log_cpu,"Memoria no pudo actualizar los registros, muy poco sigma");
             return;
         }
-        if (devolucion_kernel == FIN_QUANTUM_RR)
-        {
-            send_fin_quantum_rr(sockets_cpu->socket_servidor->socket_Dispatch);
+        if (devolucion_kernel == FIN_QUANTUM_RR){
+            send_fin_quantum_rr(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         }
-        else if (devolucion_kernel == DESALOJAR)
-        {
-            send_desalojo(sockets_cpu->socket_servidor->socket_Dispatch);
+        else if (devolucion_kernel == DESALOJAR){
+            send_desalojo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         }
     }
-    else
-    {
-        pthread_mutex_unlock(&mutex_interrupt);
-    }
+
+    pthread_mutex_unlock(&mutex_interrupt);
 }
-t_instruccion *fetch(t_contexto_tid *contexto)
-{
+
+
+t_instruccion *fetch(t_contexto_tid *contexto){
     pedir_instruccion_memoria(contexto->tid, contexto->pid, contexto->registros->PC);
 
     t_paquete *paquete = recibir_paquete_op_code(sockets_cpu->socket_memoria);
@@ -146,8 +171,7 @@ t_instruccion *fetch(t_contexto_tid *contexto)
     return instruccion;
 }
 
-void pedir_instruccion_memoria(int tid, int pid, uint32_t pc)
-{
+void pedir_instruccion_memoria(int tid, int pid, uint32_t pc){
     t_paquete *paquete = crear_paquete_op(OBTENER_INSTRUCCION);
     agregar_entero_int_a_paquete(paquete, tid);
     agregar_entero_int_a_paquete(paquete, pid);
@@ -157,8 +181,7 @@ void pedir_instruccion_memoria(int tid, int pid, uint32_t pc)
     eliminar_paquete(paquete);
 }
 
-op_code decode(t_instruccion *instruccion)
-{
+op_code decode(t_instruccion *instruccion){
     if (strcmp(instruccion->parametros1, "SET") == 0)
     {
         return SET;
@@ -235,17 +258,14 @@ op_code decode(t_instruccion *instruccion)
     return -1; // Código de operación no válido
 }
 
-// Durante el transcurso de la ejecución de un hilo, se irá actualizando su Contexto de Ejecución, que luego será devuelto a la Memoria bajo los siguientes escenarios:
+// Durante el transcurso de la ejecución de un hilo, se irá actualizando su Contexto de Ejecución, que luego será devuelto a la Memoria bajo los siguientes escenarios: 
 // finalización del mismo (PROCESS_EXIT o THREAD_EXIT), ejecutar una llamada al Kernel (syscall), deber ser desalojado (interrupción) o por la ocurrencia de un error Segmentation Fault.
 
-void execute(t_contexto_pid *contextoPid, t_contexto_tid *contextoTid, op_code instruccion_nombre, t_instruccion *instruccion)
-{
+
+void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code instruccion_nombre, t_instruccion *instruccion){
     log_info(log_cpu, "Ejecutando instrucción: %s", instruccion->parametros1);
 
-    code_operacion code;
-
-    switch (instruccion_nombre)
-    {
+    switch (instruccion_nombre){
     case SET:
         log_info(log_cpu, "SET - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
         funcSET(contextoTid, instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
@@ -260,7 +280,7 @@ void execute(t_contexto_pid *contextoPid, t_contexto_tid *contextoTid, op_code i
         log_info(log_cpu, "SUB - Registro: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
         funcSUB(contextoTid, instruccion->parametros2, instruccion->parametros3);
         contextoTid->registros->PC++;
-        break;
+        break; 
     case JNZ:
         log_info(log_cpu, "JNZ - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
         funcJNZ(contextoTid, instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
@@ -287,159 +307,105 @@ void execute(t_contexto_pid *contextoPid, t_contexto_tid *contextoTid, op_code i
     case DUMP_MEMORY:
         log_info(log_cpu, "DUMP_MEMORY");
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
-
-        send_dump_memory(sockets_cpu->socket_servidor->socket_Dispatch);
-
+        
+        send_dump_memory(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
-        code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
-        if (code != OK)
-        {
-            log_error(log_cpu, "SE ESPERABA UN OK");
-        }
+        
+        sem_wait(&sem_syscall_finalizada);
         break;
     case IO:
         log_info(log_cpu, "IO - Tiempo: %d", atoi(instruccion->parametros2));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
-
-        send_IO(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_Dispatch);
-
+        
+        send_IO(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
-
-        code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
-        if (code != OK)
-        {
-            log_error(log_cpu, "SE ESPERABA UN OK");
-        }
+        sem_wait(&sem_syscall_finalizada);
         break;
     case PROCESS_CREATE:
         log_info(log_cpu, "PROCESS_CREATE - PID: %s, Tamaño: %d, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
-
-        send_process_create(instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4), sockets_cpu->socket_servidor->socket_Dispatch);
-
+        
+        send_process_create(instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
-
-        code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
-        if (code != OK)
-        {
-            log_error(log_cpu, "SE ESPERABA UN OK");
-        }
+        sem_wait(&sem_syscall_finalizada);
         break;
     case THREAD_CREATE:
         log_info(log_cpu, "THREAD_CREATE - TID: %s, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
-
-        send_thread_create(instruccion->parametros2, atoi(instruccion->parametros3), sockets_cpu->socket_servidor->socket_Dispatch);
-
+        
+        send_thread_create(instruccion->parametros2, atoi(instruccion->parametros3), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
-
-        code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
-        if (code != OK)
-        {
-            log_error(log_cpu, "SE ESPERABA UN OK");
-        }
+        sem_wait(&sem_syscall_finalizada);
         break;
     case THREAD_JOIN:
         log_info(log_cpu, "THREAD_JOIN - TID: %d", atoi(instruccion->parametros2));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
-
-        send_thread_join(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_Dispatch);
-
+        
+        send_thread_join(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
-
-        code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
-        if (code != OK)
-        {
-            log_error(log_cpu, "SE ESPERABA UN OK");
-        }
+        sem_wait(&sem_syscall_finalizada);
         break;
     case THREAD_CANCEL:
         log_info(log_cpu, "THREAD_CANCEL - TID: %d", atoi(instruccion->parametros2));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
-
-        send_thread_cancel(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_Dispatch);
-
+        
+        send_thread_cancel(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
-
-        code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
-        if (code != OK)
-        {
-            log_error(log_cpu, "SE ESPERABA UN OK");
-        }
+        sem_wait(&sem_syscall_finalizada);
         break;
     case MUTEX_CREATE:
         log_info(log_cpu, "MUTEX_CREATE - Nombre: %s", instruccion->parametros2);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
-
-        send_mutex_create(instruccion->parametros2, sockets_cpu->socket_servidor->socket_Dispatch);
-
+        
+        send_mutex_create(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
-
-        code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
-        if (code != OK)
-        {
-            log_error(log_cpu, "SE ESPERABA UN OK");
-        }
+        sem_wait(&sem_syscall_finalizada);
         break;
     case MUTEX_LOCK:
         log_info(log_cpu, "MUTEX_LOCK - Nombre: %s", instruccion->parametros2);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
-
-        send_mutex_lock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_Dispatch);
-
+        
+        send_mutex_lock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
-
-        code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
-        if (code != OK)
-        {
-            log_error(log_cpu, "SE ESPERABA UN OK");
-        }
+        sem_wait(&sem_syscall_finalizada);
         break;
     case MUTEX_UNLOCK:
         log_info(log_cpu, "MUTEX_UNLOCK - Nombre: %s", instruccion->parametros2);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
-
-        send_mutex_unlock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_Dispatch);
-
+        
+        send_mutex_unlock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
-
-        code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
-        if (code != OK)
-        {
-            log_error(log_cpu, "SE ESPERABA UN OK");
-        }
+        sem_wait(&sem_syscall_finalizada);
         break;
     case THREAD_EXIT:
         log_info(log_cpu, "THREAD_EXIT");
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
-
-        send_thread_exit(sockets_cpu->socket_servidor->socket_Dispatch);
-
+        
+        send_thread_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
-
-        code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
-        if (code != OK)
-        {
-            log_error(log_cpu, "SE ESPERABA UN OK");
-        }
+        sem_wait(&sem_syscall_finalizada);
         break;
     case PROCESS_EXIT:
         log_info(log_cpu, "PROCESS_EXIT");
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
-
-        send_process_exit(sockets_cpu->socket_servidor->socket_Dispatch);
-
+        
+        send_process_exit(sockets_cpu->socket_servidor->socket_servidor_Dispatch);
+    
         contextoTid->registros->PC++;
-
-        code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_Dispatch);
-        if (code != OK)
-        {
-            log_error(log_cpu, "SE ESPERABA UN OK");
-        }
+        sem_wait(&sem_syscall_finalizada);
         break;
     default:
         log_error(log_cpu, "Instrucción no válida");
-        seguir_ejecutando = false;
         break;
     }
 }

@@ -8,8 +8,10 @@
 
 // **Estructuras**
 typedef struct {
-    int socket_Dispatch;
-    int socket_Interrupt;
+    int socket_servidor_Dispatch;
+    int socket_servidor_Interrupt;
+    int socket_cliente_Dispatch;
+    int socket_cliente_Interrupt;
 } t_socket_cpu;
 
 typedef struct {
@@ -38,11 +40,18 @@ extern pthread_t hilo_cliente;
 extern void* socket_servidor_kernel;
 extern void* socket_cliente_memoria;
 
+extern uint32_t tid_interrupt;
 extern bool hay_interrupcion;
 extern bool seguir_ejecutando;
 
+extern t_contexto_tid*contexto_tid_actual;
+extern t_contexto_pid*contexto_pid_actual;
+
+extern pthread_mutex_t mutex_contextos_exec;
 extern pthread_mutex_t mutex_interrupt;
 
+extern sem_t sem_ciclo_instruccion;
+extern sem_t sem_syscall_finalizada;
 extern sem_t sem_finalizacion_cpu;
 
 extern code_operacion devolucion_kernel;

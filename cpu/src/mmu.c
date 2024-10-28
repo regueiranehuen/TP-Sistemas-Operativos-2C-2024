@@ -12,7 +12,7 @@ uint32_t traducir_direccion_logica(t_contexto_tid*contexto_tid,t_contexto_pid *c
     if (direccion_logica >= limite || direccion_logica < 0) {
         log_error(log_cpu, "Segmentation Fault: Dirección lógica fuera del límite (%d)", direccion_logica);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria,contexto_tid->registros,contexto_pid->pid,contexto_tid->tid);
-        send_segmentation_fault(sockets_cpu->socket_servidor->socket_Dispatch);
+        send_segmentation_fault(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         return -1;  // Retorna error
     }
 

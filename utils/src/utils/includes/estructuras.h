@@ -329,7 +329,7 @@ void remover_contexto_pid_lista(t_contexto_pid* contexto);
 void remover_contexto_tid_lista(t_contexto_tid*contexto,t_list*lista);
 t_contexto_tid* obtener_tid_en_lista(int tid,t_list*contextos_tids);
 
-void agregar_entero_uint32_a_paquete(t_paquete *paquete, uint8_t numero);
+void agregar_entero_uint32_a_paquete(t_paquete *paquete, uint32_t numero);
 void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto);
 void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto);
 

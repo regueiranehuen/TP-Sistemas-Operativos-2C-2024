@@ -3,7 +3,7 @@
 int cliente_Memoria_Kernel(t_log* log, t_config* config) {
     char* ip;
     char* puerto;
-    int socket_cliente, respuesta;
+    int socket_cliente;
 
     // Asignar valores a las variables ip y puerto usando config_get_string_value
     ip = config_get_string_value(config, "IP_MEMORIA");
@@ -22,13 +22,13 @@ int cliente_Memoria_Kernel(t_log* log, t_config* config) {
         return -1;
     }
  
-   respuesta = cliente_handshake(socket_cliente,log);
-   if (respuesta == 0){
-    log_info(log,"Handshake de Kernel --> Memoria realizado correctamente");
-   }
-   else {
-    log_error(log, "Handshake de Kernel --> Memoria tuvo un error");
-   }
+//    respuesta = cliente_handshake(socket_cliente,log);
+//    if (respuesta == 0){
+//     log_info(log,"Handshake de Kernel --> Memoria realizado correctamente");
+//    }
+//    else {
+//     log_error(log, "Handshake de Kernel --> Memoria tuvo un error");
+//    }
     code_operacion cod_op = KERNEL;
     send_code_operacion(cod_op,socket_cliente);
     return socket_cliente;

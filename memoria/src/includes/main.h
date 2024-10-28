@@ -8,6 +8,6 @@ extern int estado_cpu;
 extern t_log* logger;
 extern t_config* config;
 
-void hilo_recibe_cpu(int socket_servidor_cpu);
+void hilo_recibe_cpu();
 
 #endif

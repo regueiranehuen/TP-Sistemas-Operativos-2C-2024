@@ -36,7 +36,6 @@ int socket_cliente;
 
 } sockets_memoria;
 
-
 extern t_sockets* sockets_iniciales;
 
 void* hilo_gestor_clientes (void* void_args);

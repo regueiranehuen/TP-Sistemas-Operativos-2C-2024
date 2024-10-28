@@ -22,13 +22,21 @@ pthread_t hilo_cliente;
 void *socket_servidor_kernel = NULL;
 void *socket_cliente_memoria = NULL;
 
+uint32_t tid_interrupt;
 bool hay_interrupcion = false;
 int es_por_usuario = 0;
 
 
+
+pthread_mutex_t mutex_contextos_exec;
 pthread_mutex_t mutex_interrupt;
 
 
+t_contexto_tid*contexto_tid_actual;
+t_contexto_pid*contexto_pid_actual;
+
+sem_t sem_ciclo_instruccion;
+sem_t sem_syscall_finalizada;
 sem_t sem_finalizacion_cpu;
 
 code_operacion devolucion_kernel;
@@ -90,11 +98,24 @@ t_socket_cpu *servidor_CPU_Kernel(t_log *log, t_config *config)
     respuesta_Dispatch = servidor_handshake(socket_cliente_Dispatch, log);
     respuesta_Interrupt = servidor_handshake(socket_cliente_Interrupt, log);
 
-    sockets->socket_Dispatch = socket_servidor_Dispatch;
-    sockets->socket_Interrupt = socket_servidor_Interrupt;
+    if (respuesta_Dispatch == 0){
+    log_info(log,"Handshake de CPU_Dispatch --> Kernel realizado correctamente");
+    }
+   else {
+    log_error(log, "Handshake de CPU_Dispatch --> Kernel tuvo un error");
+   }
+   if (respuesta_Interrupt == 0){
+    log_info(log,"Handshake de CPU_Interrupt --> Kernel realizado correctamente");
+   }
+   else {
+    log_error(log, "Handshake de CPU_Interrupt --> Kernel tuvo un error");
+   }
 
-    close(socket_cliente_Dispatch);
-    close(socket_cliente_Interrupt);
+    sockets->socket_servidor_Dispatch = socket_servidor_Dispatch;
+    sockets->socket_servidor_Interrupt = socket_servidor_Interrupt;
+    sockets->socket_cliente_Dispatch = socket_cliente_Dispatch;
+    sockets->socket_servidor_Interrupt = socket_cliente_Interrupt;
+
     return sockets;
 }
 
@@ -213,11 +234,25 @@ t_sockets_cpu *hilos_cpu(t_log *log, t_config *config)
 
 // Recepción de mensajes de Kernel Interrupt
 void* recibir_kernel_interrupt(void*args){
-    int socket_cliente_Interrupt = *(int*)args;
+
     int noFinalizar = 0;
     while (noFinalizar != -1){
         
-        t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(socket_cliente_Interrupt);
+        log_info(log_cpu,"esperando interrupciones");
+        //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+        //code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+        t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_servidor_Interrupt);
+
+        log_info(log_cpu,"llega el código %d a interrupt",paquete->code);
+
+        /*if (paquete == NULL) {
+            log_info(log_cpu, "Error al recibir el paquete, cerrando hilo.");
+            noFinalizar = -1; // Terminar el hilo si no se recibe un paquete válido
+            break; // Salir del bucle
+        }*/
+
+        //printf("Forro_Interrupt");
+        //printf("forro:%d",code);
 
         switch (paquete->code)
         {
@@ -238,6 +273,8 @@ void* recibir_kernel_interrupt(void*args){
         default:
             break;
         }
+        
     }
+
     return NULL;
 }

@@ -207,11 +207,14 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
     t_pcb *pcb = queue_peek(cola_new_procesos);
     pthread_mutex_unlock(&mutex_cola_new_procesos);
 
+    log_info(logger,"ME QUIERO CONECTAR A MEMORIA, QUE EMOCION! SEGURO NO SE ROMPE");
+
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
-
+    log_info(logger,"estoy x mandar a memoria la inicializacion");
     send_inicializacion_proceso(pcb->pid,pcb->tcb_main->pseudocodigo,pcb->tamanio_proceso,socket_memoria);
-
+    log_info(logger,"enviada inic");
     recv(socket_memoria, &respuesta, sizeof(int), 0);
+    log_info(logger,"recibi respuesta de memoria, es %d",respuesta);
     close(socket_memoria);
     if (respuesta == -1)
     {
