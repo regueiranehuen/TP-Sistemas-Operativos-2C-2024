@@ -232,6 +232,11 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
         
         int socket_memoria = cliente_Memoria_Kernel(logger, config);
         int resultado;
+
+        printf("tid:%d\n",pcb->tcb_main->tid);
+        printf("pid:%d\n",pcb->pid);
+        printf("pseudocodigo:%s\n",pcb->tcb_main->pseudocodigo);
+
         send_inicializacion_hilo(pcb->tcb_main->tid,pcb->pid,pcb->tcb_main->pseudocodigo,socket_memoria);
         recv(socket_memoria, &resultado, sizeof(int), 0);
         close(socket_memoria);

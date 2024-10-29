@@ -254,17 +254,47 @@ void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){
     eliminar_paquete_syscall(paquete);
 }
 }
-t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch){
-    t_paquete_syscall*paquete=malloc(sizeof(t_paquete_syscall));
-    paquete->buffer=malloc(sizeof(t_buffer));
+t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch) {
+    t_paquete_syscall* paquete = malloc(sizeof(t_paquete_syscall));
+    if (paquete == NULL) {
+        return NULL; // Error al asignar memoria
+    }
 
-    // Primero recibimos el codigo de operacion
-    recv(socket_dispatch, &(paquete->syscall), sizeof(paquete->syscall), 0);
+    paquete->buffer = malloc(sizeof(t_buffer));
+    if (paquete->buffer == NULL) {
+        free(paquete);
+        return NULL; // Error al asignar memoria
+    }
 
-    // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
-    recv(socket_dispatch, &(paquete->buffer->size), sizeof(uint32_t), 0);
+    // Primero recibimos el código de operación
+    if (recv(socket_dispatch, &(paquete->syscall), sizeof(paquete->syscall), 0) != sizeof(paquete->syscall)) {
+        free(paquete->buffer);
+        free(paquete);
+        return NULL; // Error al recibir el código de operación
+    }
+
+    // Luego recibimos el tamaño del buffer
+    if (recv(socket_dispatch, &(paquete->buffer->size), sizeof(uint32_t), 0) != sizeof(uint32_t)) {
+        free(paquete->buffer);
+        free(paquete);
+        return NULL; // Error al recibir el tamaño del buffer
+    }
+
+    // Asignamos memoria para el contenido del buffer según el tamaño recibido
     paquete->buffer->stream = malloc(paquete->buffer->size);
-    recv(socket_dispatch, paquete->buffer->stream, paquete->buffer->size, 0);
+    if (paquete->buffer->stream == NULL) {
+        free(paquete->buffer);
+        free(paquete);
+        return NULL; // Error al asignar memoria para el contenido del buffer
+    }
+
+    // Recibimos el contenido del buffer
+    if (recv(socket_dispatch, paquete->buffer->stream, paquete->buffer->size, 0) != paquete->buffer->size) {
+        free(paquete->buffer->stream);
+        free(paquete->buffer);
+        free(paquete);
+        return NULL; // Error al recibir el contenido del buffer
+    }
 
     return paquete;
 }

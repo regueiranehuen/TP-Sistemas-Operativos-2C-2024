@@ -122,6 +122,11 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
 
         t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch); 
 
+        if(paquete == NULL){
+            log_info(logger,"Paquete == NULL --> Conexion cerrada");
+            break;
+        }
+
          switch (paquete->syscall)
         {
 
