@@ -77,7 +77,7 @@ t_list *recibir_paquete(int socket_cliente)
 }
 
 t_paquete* recibir_paquete_op_code(int socket_cliente){
-    t_paquete*paquete=malloc(sizeof(t_paquete));
+    t_paquete* paquete = malloc(sizeof(t_paquete));
 
     paquete->buffer = malloc(sizeof(t_buffer));
 

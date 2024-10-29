@@ -74,7 +74,15 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
 {
     log_info(log_cpu,"esperando thread execute");
     t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente_Dispatch);
+    
+    if(paquete==NULL){
+        printf("Cpu recibio un paquete no valido de kernel por dispatch");
+        t_contextos* contextos = esperar_thread_execute(socket_cliente_Dispatch);
+        return contextos;
+    }
+    
     log_info(log_cpu,"se recibió el código %d",paquete->code);
+    
     t_contextos *contextos = malloc(sizeof(t_contextos));
     contextos->contexto_pid = NULL;
     contextos->contexto_tid = NULL;

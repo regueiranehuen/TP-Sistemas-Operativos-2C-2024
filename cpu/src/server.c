@@ -99,12 +99,14 @@ t_socket_cpu *servidor_CPU_Kernel(t_log *log, t_config *config)
     respuesta_Interrupt = servidor_handshake(socket_cliente_Interrupt, log);
 
     if (respuesta_Dispatch == 0){
+    log_info(log,"Socket Dispatch: %d", socket_cliente_Dispatch);
     log_info(log,"Handshake de CPU_Dispatch --> Kernel realizado correctamente");
     }
    else {
     log_error(log, "Handshake de CPU_Dispatch --> Kernel tuvo un error");
    }
    if (respuesta_Interrupt == 0){
+    log_info(log,"Socket Dispatch: %d", socket_cliente_Interrupt);
     log_info(log,"Handshake de CPU_Interrupt --> Kernel realizado correctamente");
    }
    else {
@@ -145,7 +147,13 @@ int cliente_cpu_memoria(t_log *log, t_config *config)
         return -1;
     }
 
-    log_info(log, "Handshake con memoria realizado correctamente.");
+    if (respuesta == 0){
+    log_info(log,"Socket Memoria: %d", socket_cliente);
+    log_info(log,"Handshake de CPU --> Memoria realizado correctamente");
+    }
+   else {
+    log_error(log, "Handshake de CPU --> Memoria tuvo un error");
+   }
 
     code_operacion cod_op = CPU;
     send_code_operacion(cod_op,socket_cliente);
@@ -239,20 +247,14 @@ void* recibir_kernel_interrupt(void*args){
     while (noFinalizar != -1){
         
         log_info(log_cpu,"esperando interrupciones");
-        //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
-        //code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
-        t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_servidor_Interrupt);
+        t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+        
+        if(paquete==NULL){
+            printf("Cpu recibio un paquete == NULL de cpu por interrupt");
+            break;
+        }
 
         log_info(log_cpu,"llega el código %d a interrupt",paquete->code);
-
-        /*if (paquete == NULL) {
-            log_info(log_cpu, "Error al recibir el paquete, cerrando hilo.");
-            noFinalizar = -1; // Terminar el hilo si no se recibe un paquete válido
-            break; // Salir del bucle
-        }*/
-
-        //printf("Forro_Interrupt");
-        //printf("forro:%d",code);
 
         switch (paquete->code)
         {

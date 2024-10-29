@@ -8,7 +8,13 @@ void* recibir_cpu(void*args) {
     while (codigoOperacion != -1) {
         
         t_paquete*paquete_operacion = recibir_paquete_op_code(sockets_iniciales->socket_cpu);
-        printf("El mala leche recibio algo");
+
+        if(paquete_operacion==NULL){
+            printf("Memoria recibio un paquete == NULL de cpu");
+            break;
+        }
+            printf("Memoria recibio el siguiente codigo operacion de CPU: %d",paquete_operacion->codigo_operacion);
+
         usleep(retardo_respuesta * 1000);  // Aplicar retardo configurado
 
         switch (paquete_operacion->codigo_operacion) {

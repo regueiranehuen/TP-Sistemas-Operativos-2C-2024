@@ -513,7 +513,7 @@ t_paquete_code_operacion* recibir_paquete_code_operacion(int socket_cliente){
     // Primero recibimos el codigo de operacion
     int bytes = recv(socket_cliente, &(paquete->code), sizeof(int), 0);
 
-    if (bytes == 0){
+    if (bytes <= 0){
         return NULL;
     }
     else{
@@ -582,22 +582,22 @@ code_operacion recibir_code_operacion(int socket_cliente){
 void send_inicializacion_hilo(int tid, int pid, char*arch_pseudocodigo,int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
 
-    int offset = 0;
+    
     int length_arch_pseudocodigo=strlen(arch_pseudocodigo)+1;
 
     buffer->size = 3*sizeof(int)+length_arch_pseudocodigo;
     
     buffer->stream = malloc(buffer->size);
-
+    void* stream = buffer->stream;
     
 
-    memcpy(buffer->stream, &pid,sizeof(int));
-    offset += sizeof(int);
-    memcpy(buffer->stream, &tid, sizeof(int));
-    offset += sizeof(int);
-    memcpy(buffer->stream,&length_arch_pseudocodigo,sizeof(int));
-    offset+=sizeof(int);
-    memcpy(buffer->stream,&arch_pseudocodigo,length_arch_pseudocodigo);
+    memcpy(stream, &pid,sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream, &tid, sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream,&length_arch_pseudocodigo,sizeof(int));
+    stream+=sizeof(int);
+    memcpy(stream,arch_pseudocodigo,length_arch_pseudocodigo);
     
     send_paquete_code_operacion(THREAD_CREATE_AVISO,buffer,socket_cliente);
     
@@ -606,22 +606,22 @@ void send_inicializacion_hilo(int tid, int pid, char*arch_pseudocodigo,int socke
 void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_proceso, int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
 
-    int offset = 0;
+    
     int length_arch_pseudocodigo=strlen(arch_pseudocodigo)+1;
 
     buffer->size = 3*sizeof(int)+length_arch_pseudocodigo;
     
     buffer->stream = malloc(buffer->size);
-
+    void* stream = buffer->stream;
     
 
-    memcpy(buffer->stream, &pid,sizeof(int));
-    offset += sizeof(int);
-    memcpy(buffer->stream,&tamanio_proceso,sizeof(int));
-    offset += sizeof(int);
-    memcpy(buffer->stream,&length_arch_pseudocodigo,sizeof(int));
-    offset+=sizeof(int);
-    memcpy(buffer->stream,arch_pseudocodigo,length_arch_pseudocodigo);
+    memcpy(stream, &pid,sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream,&tamanio_proceso,sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream,&length_arch_pseudocodigo,sizeof(int));
+    stream+=sizeof(int);
+    memcpy(stream,arch_pseudocodigo,length_arch_pseudocodigo);
     
     send_paquete_code_operacion(INICIALIZAR_PROCESO,buffer,socket_cliente);
     
@@ -629,10 +629,10 @@ void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_pro
 
 
 t_args_inicializar_proceso* recepcionar_inicializacion_proceso(t_paquete_code_operacion*paquete){
-    t_args_inicializar_proceso* info = malloc(paquete->buffer->size); // APLICAR SIEMPRE ASI
+    t_args_inicializar_proceso* info = malloc(sizeof(t_args_inicializar_proceso)); // APLICAR SIEMPRE ASI
 
     void* stream = paquete->buffer->stream;
-
+    
     int length_arch_pseudocodigo;
 
     memcpy(&(info->pid),stream,sizeof(int));
@@ -641,15 +641,17 @@ t_args_inicializar_proceso* recepcionar_inicializacion_proceso(t_paquete_code_op
     stream+=sizeof(int);
     memcpy(&length_arch_pseudocodigo, stream,sizeof(int));
     stream+=sizeof(int);
-    memcpy(&(info->arch_pseudocodigo),stream,length_arch_pseudocodigo);
 
+    info->arch_pseudocodigo = malloc(length_arch_pseudocodigo + 1); // +1 para el terminador NULL si es string
+    memcpy(info->arch_pseudocodigo,stream,length_arch_pseudocodigo);
+    
     eliminar_paquete_code_op(paquete);
 
     return info;
 }
 
 t_args_thread_create_aviso* recepcionar_inicializacion_hilo(t_paquete_code_operacion*paquete){
-    t_args_thread_create_aviso* info = malloc(paquete->buffer->size); // APLICAR SIEMPRE ASI
+    t_args_thread_create_aviso* info = malloc(sizeof(t_args_thread_create_aviso)); // APLICAR SIEMPRE ASI
 
     void* stream = paquete->buffer->stream;
 
@@ -661,8 +663,10 @@ t_args_thread_create_aviso* recepcionar_inicializacion_hilo(t_paquete_code_opera
     stream+=sizeof(int);
     memcpy(&length_arch_pseudocodigo, stream,sizeof(int));
     stream+=sizeof(int);
-    memcpy(&(info->arch_pseudo),stream,length_arch_pseudocodigo);
 
+    info->arch_pseudo = malloc(length_arch_pseudocodigo + 1);
+    memcpy(info->arch_pseudo,stream,length_arch_pseudocodigo);
+    
     eliminar_paquete_code_op(paquete);
 
     return info;

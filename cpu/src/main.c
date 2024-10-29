@@ -18,7 +18,4 @@ int main(int argc, char** argv) {
     terminar_programa();
 
     return 0;
-
-    //aca deberia empezar a ejecutar cada parte del ciclo de instrucciones, funcExecute, y mmu
-
 }

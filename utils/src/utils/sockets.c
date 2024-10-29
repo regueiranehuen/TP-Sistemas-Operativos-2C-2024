@@ -55,7 +55,9 @@ int esperar_cliente(t_log* log,int socket_servidor)
 {
 //accept
 	int socket_cliente;
+    
 	socket_cliente= accept(socket_servidor, NULL, NULL);
+    
 if (socket_cliente == -1){
     log_info(log,"Error en la conexion con el cliente");
     return -1;
@@ -112,9 +114,9 @@ int cliente_handshake(int socket_cliente, t_log* log) {
     }
 
     // Recibir respuesta del servidor
-    log_info(log,"QUIERO HANDSHAKE KERNEL->MEMORIA SOY CLIENTE SIUUU");
+    
     bytes = recv(socket_cliente, &result, sizeof(int32_t), 0);
-    log_info(log,"hola si recibo");
+
     if (bytes == -1) {
         log_error(log, "Error al recibir respuesta del servidor: %s", strerror(errno));
         return -1;
@@ -158,6 +160,7 @@ if (socket_cliente == -1){
     while(conexion != true && i<15){//15 segundos de espera para que el servidor haya arrancado
     if(connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen) == 0){
             conexion = true;
+            printf("Kernel se conecto");
             freeaddrinfo(server_info); // Liberar la memoria asignada por getaddrinfo()
             return socket_cliente;
     }
