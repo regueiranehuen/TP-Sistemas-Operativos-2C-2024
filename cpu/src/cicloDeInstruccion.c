@@ -91,7 +91,7 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
     {
         /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
         t_tid_pid *info = recepcionar_tid_pid_code_op(paquete);
-
+        
         solicitar_contexto_pid(info->pid, sockets_cpu->socket_memoria);
 
         t_paquete *paquete_solicitud_contexto_pid = recibir_paquete_op_code(sockets_cpu->socket_memoria);

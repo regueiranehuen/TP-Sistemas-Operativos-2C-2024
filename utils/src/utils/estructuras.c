@@ -954,6 +954,7 @@ t_contexto_pid* recepcionar_contexto_pid(t_paquete*paquete){
     nuevo_contexto->base=leer_entero_uint32(paquete->buffer->stream, &desp);
     nuevo_contexto->limite=leer_entero_uint32(paquete->buffer->stream, &desp);
     
+    nuevo_contexto->contextos_tids=list_create();
 
     int tamanio;
 

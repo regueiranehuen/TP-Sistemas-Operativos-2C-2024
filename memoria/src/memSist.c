@@ -7,14 +7,19 @@ int longitud_maxima=200;
 int parametros_maximos=6;
 int instrucciones_maximas=200;
 
-
 void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
-    FILE* archivo = fopen(nombre_archivo, "r");
+    printf("nombre del archivo: %s\n",nombre_archivo);
+
+    const char *ruta_relativa = nombre_archivo;
+    char*ruta_absoluta = obtener_ruta_absoluta(ruta_relativa);
+
+    FILE* archivo = fopen(ruta_absoluta, "r");
     
     if (archivo == NULL) {
         perror("Error al abrir el archivo");
         exit(EXIT_FAILURE);
     }
+    
     int indice_instruccion = 0;
     char linea[longitud_maxima];
 
@@ -25,6 +30,7 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
         instruccion_tid_pid->pc = 0;
         //instruccion_tid_pid->pc;
         instruccion_tid_pid->instrucciones = malloc(sizeof(t_instruccion));
+        log_info(logger,"reservé espacio para instrucciones!");
         //t_instruccion* instruccion = malloc(sizeof(t_instruccion));
         char* token = strtok(linea, " \t\n");
         int param_count = 0;
@@ -34,26 +40,32 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
                 case 0:
                     instruccion_tid_pid->instrucciones->parametros1 = "";
                     instruccion_tid_pid->instrucciones->parametros1 = strdup(token);
+                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros1);
                     break;
                 case 1:
                     instruccion_tid_pid->instrucciones->parametros2 = "";
                     instruccion_tid_pid->instrucciones->parametros2 = strdup(token);
+                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros2);
                     break;
                 case 2:
                     instruccion_tid_pid->instrucciones->parametros3 = "";
                     instruccion_tid_pid->instrucciones->parametros3 = strdup(token);
+                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros3);
                     break;
                 case 3:
                     instruccion_tid_pid->instrucciones->parametros4 = "";
                     instruccion_tid_pid->instrucciones->parametros4 = strdup(token);
+                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros4);
                     break;
                 case 4:
                     instruccion_tid_pid->instrucciones->parametros5 = "";
                     instruccion_tid_pid->instrucciones->parametros5 = strdup(token);
+                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros5);
                     break;
                 case 5:
                     instruccion_tid_pid->instrucciones->parametros6 = "";
                     instruccion_tid_pid->instrucciones->parametros6 = strdup(token);
+                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros6);
                     break;
                 default:
                     break;
@@ -66,10 +78,10 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
 
 
         pthread_mutex_lock(&mutex_lista_instruccion);
-;        list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
+        list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
         indice_instruccion++;
-
-        pthread_mutex_unlock(&mutex_lista_instruccion);        instruccion_tid_pid->pc+=1;
+        instruccion_tid_pid->pc+=1;
+        pthread_mutex_unlock(&mutex_lista_instruccion);        
         
     }
     fclose(archivo);

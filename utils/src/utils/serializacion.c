@@ -615,6 +615,9 @@ void send_inicializacion_hilo(int tid, int pid, char*arch_pseudocodigo,int socke
     
     int length_arch_pseudocodigo=strlen(arch_pseudocodigo)+1;
 
+    
+
+
     buffer->size = 3*sizeof(int)+length_arch_pseudocodigo;
     
     buffer->stream = malloc(buffer->size);
@@ -700,4 +703,16 @@ t_args_thread_create_aviso* recepcionar_inicializacion_hilo(t_paquete_code_opera
     eliminar_paquete_code_op(paquete);
 
     return info;
+}
+
+char* obtener_ruta_absoluta(const char *ruta_relativa) {
+    char* ruta_absoluta=malloc(100);
+
+    if (realpath(ruta_relativa, ruta_absoluta) != NULL) {
+        printf("Ruta absoluta: %s\n", ruta_absoluta);
+    } else {
+        perror("Error obteniendo la ruta absoluta");
+    }
+
+    return ruta_absoluta;
 }

@@ -250,7 +250,7 @@ void* recibir_kernel_interrupt(void*args){
         t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         
         if(paquete==NULL){
-            printf("Cpu recibio un paquete == NULL de cpu por interrupt");
+            printf("Cpu recibio un paquete == NULL de kernel por interrupt");
             break;
         }
 

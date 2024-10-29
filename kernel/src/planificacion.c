@@ -6,7 +6,7 @@ t_tcb *fifo_tcb()
 {
 
     sem_wait(&semaforo_cola_ready);//espera que haya elementos en la cola;
-
+    log_info(logger,"ENTRAMOS A FIFO");
         pthread_mutex_lock(&mutex_cola_ready);
         t_tcb *tcb = queue_pop(cola_ready_fifo);
         pthread_mutex_unlock(&mutex_cola_ready);
@@ -460,13 +460,14 @@ void ejecucion()
 
 code_operacion cod_op = THREAD_EXECUTE_AVISO;
 
+log_info(logger,"ENVIANDO TID %d Y PID %d",hilo_exec->tid,hilo_exec->pid);
 pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
 send_operacion_tid_pid(cod_op, hilo_exec->tid, hilo_exec->pid, sockets->sockets_cliente_cpu->socket_Dispatch);
 pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
-
+log_info(logger,"SE ENVIARON LOS TID Y PID");
     char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
 
-if(strcmp(algoritmo,"MULTINIVEL")==0){
+if(strcmp(algoritmo,"CMN")==0){
     char* quantum_char = config_get_string_value(config,"QUANTUM");
     int quantum = atoi(quantum_char);
     espera_con_quantum(quantum);

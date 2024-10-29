@@ -296,6 +296,7 @@ y le deberá indicar a la memoria la finalización de dicho proceso.
 
 void PROCESS_EXIT() // AVISO A MEMORIA
 {
+
     if(hilo_exec->tid != 0){
         log_info(logger,"Error, se intento ejecutar la syscall PROCESS_EXIT con un TID que no era el TID 0");
 
