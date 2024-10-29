@@ -15,7 +15,7 @@ pthread_mutex_t mutex_lista_contextos_pids;
 void* hilo_por_cliente (void* void_args){
 
 
-pthread_t hilo_cliente_cpu;
+//pthread_t hilo_cliente_cpu;
 
 
 hilo_clientes *args = (hilo_clientes*)void_args;
@@ -35,39 +35,46 @@ int cliente_n;
 pthread_mutex_lock(&cliente_count_mutex);
 cliente_n = ++client_count;
 pthread_mutex_unlock(&cliente_count_mutex);
-if(cliente_n <= 2){//conexiones iniciales de cpu y kernel
 log_info(args->log, "Handshake memoria -> cliente_%d realizado correctamente", cliente_n);
+
+//log_info(logger,"codigo modulo: ")
+if(cliente_n <= 2){//conexiones iniciales de cpu y kernel
 code_operacion modulo = recibir_code_operacion(socket_cliente);
 if (modulo == CPU){
     sockets_iniciales->socket_cpu = socket_cliente;
     printf("1_socket de cpu:%d\n",sockets_iniciales->socket_cpu);
 
+    sem_post(&sem_conexion_iniciales);
+    sem_post(&sem_conexion_hecha);
     //hilo_recibe_cpu();
     
-    int resultado = pthread_create(&hilo_cliente_cpu, NULL, recibir_cpu, NULL);
+    // int resultado = pthread_create(&hilo_cliente_cpu, NULL, recibir_cpu, NULL);
 
-    if (resultado != 0)
-    {
-        log_error(logger, "Error al crear el hilo que recibe a cpu desde memoria");
-    }
+    // if (resultado != 0)
+    // {
+    //     log_error(logger, "Error al crear el hilo que recibe a cpu desde memoria");
+    // }
     
 
 }
 else if(modulo == KERNEL){
     sockets_iniciales->socket_kernel = socket_cliente;
     printf("1_socket de kernel:%d\n",sockets_iniciales->socket_kernel); 
+    atender_conexiones(socket_cliente);
+    
 }
-
-sem_post(&sem_conexion_hecha);
 sem_post(&sem_conexion_iniciales);
+sem_post(&sem_conexion_hecha);
+
+//sem_post(&sem_conexion_iniciales);
 }
 else {
 atender_conexiones(socket_cliente);
 sem_post(&sem_conexion_hecha);
 }
-free(args);
+//free(args);
 
-pthread_detach(hilo_cliente_cpu);
+//pthread_detach(hilo_cliente_cpu);
 
 return NULL;
 }
@@ -212,8 +219,8 @@ args_hilo* args = malloc(sizeof(args_hilo));
 args->config=config;
 args->log=log;
 
-void* socket_cliente;
-void* socket_servidor;
+//void* socket_cliente;
+//void* socket_servidor;
 
 int resultado;
 
@@ -240,17 +247,19 @@ if(resultado != 0){
 log_info(log,"El hilo servidor se creo correctamente");
 
 
-pthread_join(hilo_cliente,&socket_cliente);
-pthread_join(hilo_servidor,&socket_servidor);
+//pthread_join(hilo_cliente,&socket_cliente);
+//pthread_join(hilo_servidor,&socket_servidor);
+pthread_detach(hilo_cliente);
+pthread_detach(hilo_servidor);
 
-resultado = (intptr_t)socket_cliente;
+// resultado = (intptr_t)socket_cliente;
 
-sockets->socket_cliente=resultado;
+// sockets->socket_cliente=resultado;
 
-resultado = (intptr_t)socket_servidor;
+// resultado = (intptr_t)socket_servidor;
 
-sockets->socket_servidor = resultado;
+// sockets->socket_servidor = resultado;
 
-free(args);
+// free(args);
 return sockets;
 }

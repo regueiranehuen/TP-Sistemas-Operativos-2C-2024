@@ -27,7 +27,8 @@ int main(int argc, char *argv[])
 
     sem_wait(&sem_conexion_iniciales); //esperar a que se haga la conexion con cpu y kernel
     //printf("empieza memoria \n");
-
+    log_info(logger,"jijoooooooo");
+    hilo_recibe_cpu();
 
     //hilo_recibe_cpu();
     

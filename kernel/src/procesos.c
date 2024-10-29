@@ -211,7 +211,9 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
     log_info(logger,"estoy x mandar a memoria la inicializacion");
+    log_info(logger, "EL NOMBRE DEL ARCHIVO DE PSEUDOCODIGO ES: %s",pcb->tcb_main->pseudocodigo);
     send_inicializacion_proceso(pcb->pid,pcb->tcb_main->pseudocodigo,pcb->tamanio_proceso,socket_memoria);
+    //send(socket_memoria,0,sizeof(int),0);
     log_info(logger,"enviada inic");
     recv(socket_memoria, &respuesta, sizeof(int), 0);
     log_info(logger,"recibi respuesta de memoria, es %d",respuesta);

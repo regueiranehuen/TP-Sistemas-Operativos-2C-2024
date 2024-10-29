@@ -2,11 +2,11 @@
 
 void* recibir_cpu(void*args) {
 
-    printf("2_socket de cpu: %d", sockets_iniciales->socket_cpu);
+    log_info(logger,"2_socket de cpu: %d", sockets_iniciales->socket_cpu);
     int retardo_respuesta = config_get_int_value(config,"RETARDO_RESPUESTA");
     int codigoOperacion = 0;
     while (codigoOperacion != -1) {
-        
+        log_info(logger,"while de recibir_cpu");
         t_paquete*paquete_operacion = recibir_paquete_op_code(sockets_iniciales->socket_cpu);
         printf("El mala leche recibio algo");
         usleep(retardo_respuesta * 1000);  // Aplicar retardo configurado

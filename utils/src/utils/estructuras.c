@@ -79,7 +79,7 @@ t_list *recibir_paquete(int socket_cliente)
 t_paquete* recibir_paquete_op_code(int socket_cliente){
     t_paquete*paquete=malloc(sizeof(t_paquete));
 
-    paquete->buffer=malloc(sizeof(paquete->buffer));
+    paquete->buffer = malloc(sizeof(t_buffer));
 
     // Primero recibimos el codigo de operacion
     int bytes = recv(socket_cliente, &(paquete->codigo_operacion), sizeof(paquete->codigo_operacion), 0);
@@ -193,7 +193,7 @@ void agregar_entero_uint8_a_paquete(t_paquete *paquete, uint8_t numero)
     paquete->buffer->size += sizeof(uint8_t);
 }
 
-void agregar_entero_uint32_a_paquete(t_paquete *paquete, uint8_t numero)
+void agregar_entero_uint32_a_paquete(t_paquete *paquete, uint32_t numero)
 {
 
     paquete->buffer->stream = realloc(paquete->buffer->stream, paquete->buffer->size + sizeof(uint32_t));
@@ -491,27 +491,49 @@ void agregar_instruccion_a_paquete(t_paquete *paquete, t_instruccion *instruccio
         agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
         agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
     }
-
-
-    if (strcmp(instruccion_nueva->parametros1, "RESIZE") == 0)
-    {
-        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
-    }
     if (strcmp(instruccion_nueva->parametros1, "JNZ") == 0)
     {
         agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
         agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
     }
-    if (strcmp(instruccion_nueva->parametros1, "WAIT") == 0)
+    if (strcmp(instruccion_nueva->parametros1, "LOG") == 0)
     {
         agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
     }
-    if (strcmp(instruccion_nueva->parametros1, "SIGNAL") == 0)
+    if (strcmp(instruccion_nueva->parametros1, "IO") == 0)
     {
         agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
     }
-    if (strcmp(instruccion_nueva->parametros1, "EXIT") == 0)
+    if (strcmp(instruccion_nueva->parametros1, "PROCESS_CREATE") == 0)
     {
+        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
+        agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
+        agregar_a_paquete(paquete, instruccion_nueva->parametros4, strlen(instruccion_nueva->parametros4) + 1);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "THREAD_CREATE") == 0)
+    {
+        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
+        agregar_a_paquete(paquete, instruccion_nueva->parametros3, strlen(instruccion_nueva->parametros3) + 1);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "THREAD_JOIN") == 0)
+    {
+        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "THREAD_CANCEL") == 0)
+    {
+        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "MUTEX_CREATE") == 0)
+    {
+        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "MUTEX_LOCK") == 0)
+    {
+        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
+    }
+    if (strcmp(instruccion_nueva->parametros1, "MUTEX_UNLOCK") == 0)
+    {
+        agregar_a_paquete(paquete, instruccion_nueva->parametros2, strlen(instruccion_nueva->parametros2) + 1);
     }
 }
 
@@ -538,12 +560,14 @@ int leer_entero(char *buffer, int *desplazamiento)
 int recepcionar_entero_paquete(t_paquete*paquete){
     int entero;
     memcpy(&entero, paquete->buffer->stream, sizeof(int));
+    paquete->buffer->stream+=sizeof(int);
     return entero;
 }
 
 uint32_t recepcionar_uint32_paquete(t_paquete*paquete){
     uint32_t entero;
     memcpy(&entero, paquete->buffer->stream, sizeof(uint32_t));
+    paquete->buffer->stream+=sizeof(uint32_t);
     return entero;
 }
 

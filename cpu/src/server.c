@@ -240,9 +240,10 @@ void* recibir_kernel_interrupt(void*args){
         
         log_info(log_cpu,"esperando interrupciones");
         //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
-        code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+        //code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+        t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_servidor_Interrupt);
 
-        log_info(log_cpu,"llega el código %d a interrupt",code);
+        log_info(log_cpu,"llega el código %d a interrupt",paquete->code);
 
         /*if (paquete == NULL) {
             log_info(log_cpu, "Error al recibir el paquete, cerrando hilo.");
@@ -253,7 +254,7 @@ void* recibir_kernel_interrupt(void*args){
         //printf("Forro_Interrupt");
         //printf("forro:%d",code);
 
-        switch (code)
+        switch (paquete->code)
         {
         case FIN_QUANTUM_RR:
             log_info(log_cpu,"## Llega interrupción al puerto Interrupt");

@@ -242,12 +242,12 @@ void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){
 
     memcpy(a_enviar + offset, &(paquete->syscall), sizeof(paquete->syscall));
     offset += sizeof(paquete->syscall);
-    memcpy(a_enviar + offset, &(paquete->buffer->size), sizeof(int));
+    memcpy(a_enviar + offset, &(paquete->buffer->size), sizeof(uint32_t));
     offset += sizeof(uint32_t);
     memcpy(a_enviar + offset, paquete->buffer->stream, paquete->buffer->size);
 
     // Por último enviamos
-    send(socket_cliente, a_enviar, buffer->size + sizeof(paquete->syscall) + sizeof(int),0);
+    send(socket_cliente, a_enviar, buffer->size + sizeof(paquete->syscall) + sizeof(uint32_t),0);
 
     // No nos olvidamos de liberar la memoria que ya no usaremos
     free(a_enviar);
@@ -256,7 +256,7 @@ void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){
 }
 t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch){
     t_paquete_syscall*paquete=malloc(sizeof(t_paquete_syscall));
-    paquete->buffer=malloc(sizeof(paquete->buffer));
+    paquete->buffer=malloc(sizeof(t_buffer));
 
     // Primero recibimos el codigo de operacion
     recv(socket_dispatch, &(paquete->syscall), sizeof(paquete->syscall), 0);
@@ -483,18 +483,17 @@ void send_paquete_solo_code_operacion(int socket_cliente,code_operacion code,t_p
 
 void send_paquete_code_operacion(code_operacion code, t_buffer* buffer, int socket_cliente) {
     t_paquete_code_operacion* paquete = malloc(sizeof(t_paquete_code_operacion));
-    paquete->code = code;
+    paquete->code = code; 
     paquete->buffer = buffer;
-
     // Ajustar tamaño del mensaje incluyendo code, buffer->size y el stream completo
-    int total_size = sizeof(int) + sizeof(int) + buffer->size;
+    int total_size = sizeof(int) + sizeof(uint32_t) + buffer->size;
     void *a_enviar = malloc(total_size);
 
     int offset = 0;
     memcpy(a_enviar + offset, &(paquete->code), sizeof(int));
     offset += sizeof(int);
-    memcpy(a_enviar + offset, &(paquete->buffer->size), sizeof(int));  // Agregar el tamaño del buffer
-    offset += sizeof(int);
+    memcpy(a_enviar + offset, &(paquete->buffer->size), sizeof(uint32_t));  // Agregar el tamaño del buffer
+    offset += sizeof(uint32_t);
     memcpy(a_enviar + offset, paquete->buffer->stream, paquete->buffer->size);
 
     send(socket_cliente, a_enviar, total_size, 0);
@@ -505,67 +504,54 @@ void send_paquete_code_operacion(code_operacion code, t_buffer* buffer, int sock
 
 
 
-t_paquete_code_operacion* recibir_paquete_code_operacion(int socket_cliente) {
-    t_paquete_code_operacion* paquete = malloc(sizeof(t_paquete_code_operacion));
-    if (paquete == NULL) {
-        // Manejo de error
-        return NULL;
-    }
+/*t_paquete_code_operacion* recibir_paquete_code_operacion(int socket_cliente){
+    t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
 
-    paquete->buffer = malloc(sizeof(t_buffer)); // Asegúrate de que t_buffer está definido
-    if (paquete->buffer == NULL) {
-        free(paquete); // Liberar paquete si no se puede asignar buffer
-        return NULL;
-    }
-
-    // Primero recibimos el código de operación
+    paquete->buffer=malloc(sizeof(t_buffer));
+    
+    // Primero recibimos el codigo de operacion
     int bytes = recv(socket_cliente, &(paquete->code), sizeof(int), 0);
-    if (bytes <= 0) {
-        free(paquete->buffer); // Liberar buffer antes de retornar
-        free(paquete); // Liberar paquete antes de retornar
-        return NULL; // Error o desconexión
-    }
+    //printf("RECIBI %d bytes\n",bytes);
 
-    // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
-    bytes = recv(socket_cliente, &(paquete->buffer->size), sizeof(uint32_t), 0);
-    if (bytes <= 0) {
-        // free(paquete->buffer); // Liberar buffer antes de retornar
-        // free(paquete); // Liberar paquete antes de retornar
-        // return NULL; // Error o desconexión
+
+    if (bytes == 0){
+        return NULL;
+
+    }
+    else{
+        // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
+        
+        recv(socket_cliente, &(paquete->buffer->size), sizeof(uint32_t), 0);
+        paquete->buffer->stream = malloc(paquete->buffer->size);
+        recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
         return paquete;
     }
+}*/
 
-    // Asegúrate de que el tamaño sea válido antes de asignar memoria
-    if (paquete->buffer->size > 0) {
-        paquete->buffer->stream = malloc(paquete->buffer->size);
-        if (paquete->buffer->stream == NULL) {
-            free(paquete->buffer); // Liberar buffer si no se puede asignar stream
-            free(paquete); // Liberar paquete si falla
-            return NULL;
-        }
+t_paquete_code_operacion*recibir_paquete_code_operacion(int socket_cliente){
+    t_paquete_code_operacion *paquete = malloc(sizeof(t_paquete_code_operacion));
+    paquete->buffer = malloc(sizeof(t_buffer));
 
-        bytes = recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
-        if (bytes <= 0) {
-            free(paquete->buffer->stream); // Liberar stream antes de retornar
-            free(paquete->buffer); // Liberar buffer antes de retornar
-            free(paquete); // Liberar paquete antes de retornar
-            return NULL; // Error o desconexión
-        }
-    } else {
-        paquete->buffer->stream = NULL; // Si el tamaño es 0, no hay stream
-    }
+    // Primero recibimos el codigo de operacion
+    recv(socket_cliente, &(paquete->code), sizeof(int), 0);
+
+    // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
+    recv(socket_cliente, &(paquete->buffer->size), sizeof(uint32_t), 0);
+    paquete->buffer->stream = malloc(paquete->buffer->size);
+    recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
 
     return paquete;
 }
 
-t_tid_pid* recepcionar_tid_pid_code_op(t_paquete_code_operacion* paquete){
-    t_tid_pid* info = malloc(sizeof(t_tid_pid));
+t_tid_pid *recepcionar_tid_pid_code_op(t_paquete_code_operacion *paquete)
+{
+    t_tid_pid *info = malloc(sizeof(t_tid_pid));
 
-    void* stream = paquete->buffer->stream;
+    void *stream = paquete->buffer->stream;
 
-    memcpy(&(info->tid),stream,sizeof(int));
+    memcpy(&(info->tid), stream, sizeof(int));
     stream += sizeof(int);
-    memcpy(&(info->pid), stream,sizeof(int)); // Primer parámetro para la syscall: nombre del archivo
+    memcpy(&(info->pid), stream, sizeof(int)); // Primer parámetro para la syscall: nombre del archivo
 
     eliminar_paquete_code_op(paquete);
 
@@ -580,7 +566,8 @@ int recepcionar_int_code_op(t_paquete_code_operacion* paquete){
     int valor;
 
     memcpy(&valor,stream,sizeof(int));
-    eliminar_paquete_code_op(paquete);
+    stream+=sizeof(int);
+    
 
     return valor;
 }
@@ -623,11 +610,11 @@ void send_inicializacion_hilo(int tid, int pid, char*arch_pseudocodigo,int socke
 
     memcpy(buffer->stream, &pid,sizeof(int));
     offset += sizeof(int);
-    memcpy(buffer->stream, &tid, sizeof(int));
+    memcpy(buffer->stream+offset, &tid, sizeof(int));
     offset += sizeof(int);
-    memcpy(buffer->stream,&length_arch_pseudocodigo,sizeof(int));
+    memcpy(buffer->stream+offset,&length_arch_pseudocodigo,sizeof(int));
     offset+=sizeof(int);
-    memcpy(buffer->stream,&arch_pseudocodigo,length_arch_pseudocodigo);
+    memcpy(buffer->stream+offset,&arch_pseudocodigo,length_arch_pseudocodigo);
     
     send_paquete_code_operacion(THREAD_CREATE_AVISO,buffer,socket_cliente);
     
@@ -640,43 +627,54 @@ void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_pro
     int length_arch_pseudocodigo=strlen(arch_pseudocodigo)+1;
 
     buffer->size = 3*sizeof(int)+length_arch_pseudocodigo;
-    
+    //buffer->offset=0; // Esto x las dudas nomas
     buffer->stream = malloc(buffer->size);
 
-    
+    memcpy(buffer->stream + offset, &pid, sizeof(int));
+    offset += sizeof(int);
 
-    memcpy(buffer->stream, &pid,sizeof(int));
+    memcpy(buffer->stream + offset, &tamanio_proceso, sizeof(int));
     offset += sizeof(int);
-    memcpy(buffer->stream,&tamanio_proceso,sizeof(int));
+
+    memcpy(buffer->stream + offset, &length_arch_pseudocodigo, sizeof(int));
     offset += sizeof(int);
-    memcpy(buffer->stream,&length_arch_pseudocodigo,sizeof(int));
-    offset+=sizeof(int);
-    memcpy(buffer->stream,arch_pseudocodigo,length_arch_pseudocodigo);
+
+    memcpy(buffer->stream + offset, arch_pseudocodigo, length_arch_pseudocodigo);
     
-    send_paquete_code_operacion(INICIALIZAR_PROCESO,buffer,socket_cliente);
+    send_paquete_code_operacion(INICIALIZAR_PROCESO, buffer, socket_cliente);
+
     
 }
 
 
-t_args_inicializar_proceso* recepcionar_inicializacion_proceso(t_paquete_code_operacion*paquete){
-    t_args_inicializar_proceso* info = malloc(paquete->buffer->size); // APLICAR SIEMPRE ASI
 
+t_args_inicializar_proceso* recepcionar_inicializacion_proceso(t_paquete_code_operacion* paquete) {
+    t_args_inicializar_proceso* info = malloc(sizeof(t_args_inicializar_proceso));
     void* stream = paquete->buffer->stream;
+
+    printf("QUIERO RECEPCIONAR INICIALIZACION VIEJOOO\n");
 
     int length_arch_pseudocodigo;
 
-    memcpy(&(info->pid),stream,sizeof(int));
-    stream += sizeof(int);
-    memcpy(&(info->tam_proceso), stream,sizeof(int));
-    stream+=sizeof(int);
-    memcpy(&length_arch_pseudocodigo, stream,sizeof(int));
-    stream+=sizeof(int);
-    memcpy(&(info->arch_pseudocodigo),stream,length_arch_pseudocodigo);
+    int desplazamiento = 0;
 
+    memcpy(&(info->pid), stream + desplazamiento, sizeof(int));
+    desplazamiento+= sizeof(int);  // Avanzar el puntero correctamente
+    printf("%d",info->pid);
+    memcpy(&(info->tam_proceso), stream + desplazamiento, sizeof(int));
+    desplazamiento+= sizeof(int);  // Avanzar el puntero correctamente
+    printf("%d",info->pid);
+    memcpy(&length_arch_pseudocodigo, stream + desplazamiento, sizeof(int));
+    desplazamiento+= sizeof(int); // Avanzar el puntero correctamente
+
+    info->arch_pseudocodigo = malloc(length_arch_pseudocodigo);
+    memcpy(info->arch_pseudocodigo, stream + desplazamiento, length_arch_pseudocodigo);
+    printf("%s",info->arch_pseudocodigo);
     eliminar_paquete_code_op(paquete);
 
     return info;
 }
+
 
 t_args_thread_create_aviso* recepcionar_inicializacion_hilo(t_paquete_code_operacion*paquete){
     t_args_thread_create_aviso* info = malloc(paquete->buffer->size); // APLICAR SIEMPRE ASI
@@ -691,6 +689,9 @@ t_args_thread_create_aviso* recepcionar_inicializacion_hilo(t_paquete_code_opera
     stream+=sizeof(int);
     memcpy(&length_arch_pseudocodigo, stream,sizeof(int));
     stream+=sizeof(int);
+
+    info->arch_pseudo=malloc(length_arch_pseudocodigo);
+
     memcpy(&(info->arch_pseudo),stream,length_arch_pseudocodigo);
 
     eliminar_paquete_code_op(paquete);

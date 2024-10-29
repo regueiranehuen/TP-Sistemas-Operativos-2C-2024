@@ -4,19 +4,20 @@ void atender_conexiones(int socket_cliente)
 {
 
     code_operacion respuesta;
-    while (estado_cpu != 0)
-    {
+    //while (estado_cpu != 0)
+    //{
         log_info(logger,"jijo soy memoria");
         t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente);
         log_info(logger,"recibi esto de kernel: %d",paquete->code);
         if (paquete == NULL)
         { // cierre de conexión
-            break;
+            return;
         }
         switch (paquete->code)
         { // hay que enviar el pid/tid correspondiente que vamos a crear o eliminar. Por ejemplo: Para thread_exit o thread_cancel hay que mandarle a memoria el tid que vamos a eliminar
 
         case INICIALIZAR_PROCESO:
+            printf("WOW EL CODIGO FUE INICIALIZAR PROCESO\n");
             t_args_inicializar_proceso *info_0 = recepcionar_inicializacion_proceso(paquete);
 
 
@@ -63,7 +64,8 @@ void atender_conexiones(int socket_cliente)
             log_info(logger, "Pedido no disponible");
             break;
         }
-    }
+        eliminar_paquete_code_op(paquete);
+    //}
     close(socket_cliente);
 }
 

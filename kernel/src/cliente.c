@@ -3,7 +3,7 @@
 int cliente_Memoria_Kernel(t_log* log, t_config* config) {
     char* ip;
     char* puerto;
-    int socket_cliente, respuesta;
+    int socket_cliente;
 
     // Asignar valores a las variables ip y puerto usando config_get_string_value
     ip = config_get_string_value(config, "IP_MEMORIA");
