@@ -24,7 +24,10 @@
   "settings": {
     "debug.onTaskErrors": "abort",
     "files.associations": {
-      "*.h": "c"
+      "*.h": "c",
+      "compare": "c",
+      "limits": "c",
+      "new": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
   }

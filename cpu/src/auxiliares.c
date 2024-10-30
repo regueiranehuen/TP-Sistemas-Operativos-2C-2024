@@ -68,4 +68,216 @@ void terminar_programa() {
     destruir_mutex();
     destruir_semaforos();
     log_info(log_cpu, "Estructuras liberadas");
-}  
+}
+
+t_instruccion *recepcionar_instruccion(t_paquete *paquete)
+{
+    // t_instruccion *instruccion_nueva = malloc(sizeof(t_instruccion));
+
+    void *stream = paquete->buffer->stream;
+    int cantParam = 0;
+    memcpy(&(cantParam), stream, sizeof(int));
+    stream += sizeof(int);
+
+    log_info(log_cpu, "Cantidad parametros:%d", cantParam);
+    int l1 = 0;
+    int l2 = 0;
+    int l3 = 0;
+    int l4 = 0;
+
+    memcpy(&l1, stream, sizeof(int));
+    stream += sizeof(int);
+    char *p1 = malloc(l1);
+    // instruccion_nueva+1->parametros1=malloc(l1);
+    memcpy(p1, stream, l1);
+    log_info(log_cpu, "Instruccion: %s", p1);
+    stream += l1;
+
+    /*if (cantParam == 1){
+
+        memcpy(&l2,stream,sizeof(int));
+        stream+=sizeof(int);
+        char*p2=malloc(l2+1);
+
+        memcpy(p2,stream,l2);
+        log_info(log_cpu,"Parametro: %s",p2);
+        stream+=l2;
+
+    }
+    if (cantParam == 2){
+        memcpy(&l2,stream,sizeof(int));
+        stream+=sizeof(int);
+        char*p2=malloc(l2+1);
+
+        memcpy(p2,stream,l2);
+        log_info(log_cpu,"Parametro: %s",p2);
+        stream+=l2;
+
+
+        memcpy(&l3,stream,sizeof(int));
+        stream+=sizeof(int);
+        char*p3=malloc(l3+1);
+        memcpy(p3,stream,l3);
+        log_info(log_cpu,"Parametro: %s",p3);
+        stream+=l3;
+    }
+    if (cantParam == 3){
+
+    }*/
+
+    memcpy(&l2, stream, sizeof(int));
+    stream += sizeof(int);
+    char *p2 = malloc(l2);
+
+    memcpy(p2, stream, l2);
+    log_info(log_cpu, "Parametro: %s", p2);
+    stream += l2;
+
+    memcpy(&l3, stream, sizeof(int));
+    stream += sizeof(int);
+    char *p3 = malloc(l3);
+    memcpy(p3, stream, l3);
+    log_info(log_cpu, "Parametro: %s", p3);
+    stream += l3;
+
+    memcpy(&l4, stream, sizeof(int));
+    stream += sizeof(int);
+    char *p4 = malloc(l4);
+    memcpy(p4, stream, l4);
+    log_info(log_cpu, "Parametro: %s", p4);
+    stream += l3;
+
+    // DUMP_MEMORY, THREAD_EXIT Y PROCESS_EXIT NO LLEVAN PARÁMETROS
+
+    t_instruccion *instruccion_nueva = malloc(l1 + l2 + l3 + l4);
+
+    eliminar_paquete(paquete);
+    return instruccion_nueva;
+}
+
+/*t_instruccion* recepcionar_instruccion(t_paquete* paquete) {
+    t_instruccion *instruccion_nueva = malloc(sizeof(t_instruccion));
+    if (!instruccion_nueva) {
+        log_error(log_cpu, "Error al asignar memoria para instruccion_nueva");
+        eliminar_paquete(paquete);
+        return NULL;  // Manejar error de asignación de memoria
+    }
+
+    void *stream = paquete->buffer->stream;
+    int cantParam = 0;
+    memcpy(&cantParam, stream, sizeof(int));
+    stream += sizeof(int);
+
+    log_info(log_cpu, "Cantidad parametros: %d", cantParam);
+
+    // Asignación de memoria y copia para el primer parámetro
+    int l1 = 0;
+    memcpy(&l1, stream, sizeof(int));
+    stream += sizeof(int);
+    instruccion_nueva->parametros1 = malloc(l1);
+    if (!instruccion_nueva->parametros1) {
+        log_error(log_cpu, "Error al asignar memoria para parametros1");
+        free(instruccion_nueva);
+        eliminar_paquete(paquete);
+        return NULL;  // Manejar error de asignación de memoria
+    }
+    memcpy(instruccion_nueva->parametros1, stream, l1);
+    log_info(log_cpu, "Instruccion: %s", instruccion_nueva->parametros1);
+    stream += l1;
+
+    // Manejo de parámetros adicionales
+    for (int i = 1; i <= cantParam; i++) {
+        int longitud = 0;
+        memcpy(&longitud, stream, sizeof(int));
+        stream += sizeof(int);
+
+        char **parametros = NULL;
+        switch (i) {
+            case 1: parametros = &instruccion_nueva->parametros2; break;
+            case 2: parametros = &instruccion_nueva->parametros3; break;
+            case 3: parametros = &instruccion_nueva->parametros4; break;
+            default: break;  // No debería llegar aquí
+        }
+
+        if (longitud > 0) {
+            *parametros = malloc(longitud);
+            if (!*parametros) {
+                log_error(log_cpu, "Error al asignar memoria para parametros%d", i);
+                free(instruccion_nueva->parametros1);
+                free(instruccion_nueva);
+                eliminar_paquete(paquete);
+                return NULL;  // Manejar error de asignación de memoria
+            }
+            memcpy(*parametros, stream, longitud);
+            log_info(log_cpu, "Parametro %d: %s", i, *parametros);
+            stream += longitud;
+        }
+    }
+
+    eliminar_paquete(paquete);
+    return instruccion_nueva;
+}*/
+
+/*void enviar_instruccion(int conexion, t_instruccion *instruccion_nueva, op_code codop) {
+    t_buffer *buffer = malloc(sizeof(t_buffer));
+    if (!buffer) {
+        log_error(logger, "Error al asignar memoria para el buffer");
+        return;  // Manejar error de asignación de memoria
+    }
+    
+    buffer->size = 0;
+    int cant_param = 0;
+    int longitudes[4] = {0};  // Array para almacenar las longitudes de los parámetros
+
+    // Calcular longitudes y cantidad de parámetros
+    for (int i = 0; i < 4; i++) {
+        char *param = NULL;
+        switch (i) {
+            case 0: param = instruccion_nueva->parametros1; break;
+            case 1: param = instruccion_nueva->parametros2; break;
+            case 2: param = instruccion_nueva->parametros3; break;
+            case 3: param = instruccion_nueva->parametros4; break;
+        }
+        if (param && strlen(param) > 0) {
+            longitudes[i] = strlen(param) + 1;  // +1 para el terminador nulo
+            buffer->size += longitudes[i];
+            cant_param++;
+        }
+    }
+
+    buffer->stream = malloc(buffer->size);
+    if (!buffer->stream) {
+        log_error(logger, "Error al asignar memoria para el stream del buffer");
+        free(buffer);
+        return;  // Manejar error de asignación de memoria
+    }
+
+    void *stream = buffer->stream;
+    memcpy(stream, &cant_param, sizeof(int));
+    stream += sizeof(int);
+
+    // Copiar parámetros al stream
+    for (int i = 0; i < cant_param; i++) {
+        memcpy(stream, &longitudes[i], sizeof(int));
+        stream += sizeof(int);
+        char *param = NULL;
+        switch (i) {
+            case 0: param = instruccion_nueva->parametros1; break;
+            case 1: param = instruccion_nueva->parametros2; break;
+            case 2: param = instruccion_nueva->parametros3; break;
+            case 3: param = instruccion_nueva->parametros4; break;
+        }
+        if (param) {
+            memcpy(stream, param, longitudes[i]);
+            stream += longitudes[i];
+        }
+    }
+
+    // Enviar el paquete con el código de operación
+    send_paquete_op_code(conexion, buffer, codop);
+
+    // Limpiar memoria
+    free(buffer->stream);
+    free(buffer);
+}*/
+

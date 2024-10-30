@@ -52,6 +52,7 @@ void *ciclo_de_instruccion(void *args)
             seguir_ejecutando = true;
             while (seguir_ejecutando)
             {
+                printf("ete sech");
                 t_instruccion *instruccion = fetch(contextos->contexto_tid);
                 if (instruccion == NULL)
                 {
@@ -94,9 +95,9 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
         
         printf("pid:%d\n",info->pid);
         printf("tid:%d\n",info->tid);
-
+    
         solicitar_contexto_pid(info->pid, sockets_cpu->socket_memoria);
-
+        printf("ya solicite el contexto\n");
         t_paquete *paquete_solicitud_contexto_pid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
         printf("Recibi solicitud de memoria\n");
         if (paquete_solicitud_contexto_pid->codigo_operacion == CONTEXTO_PID_INEXISTENTE)
@@ -105,17 +106,18 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
         }
         else if (paquete_solicitud_contexto_pid->codigo_operacion == OBTENCION_CONTEXTO_PID_OK)
         {
-
+            
             contextos->contexto_pid = recepcionar_contexto_pid(paquete_solicitud_contexto_pid);
             solicitar_contexto_tid(info->pid, info->tid, sockets_cpu->socket_memoria);
             log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
-
+            log_info(log_cpu,"PID: %d, BASE: %d, LIMITE: %d",contextos->contexto_pid->pid,contextos->contexto_pid->base,contextos->contexto_pid->limite);
             t_paquete *paquete_solicitud_contexto_tid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
-
+            printf("%d\n",paquete_solicitud_contexto_tid->codigo_operacion);
             if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK)
             { // La memoria se encarga de crear el contexto del tid si es que no existe
                 contextos->contexto_tid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid);
                 log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
+                printf("fentanilo:%d%d%d%d%d%d%d%d%d%d%d",contextos->contexto_tid->registros->AX,contextos->contexto_tid->registros->BX,contextos->contexto_tid->registros->CX,contextos->contexto_tid->registros->DX,contextos->contexto_tid->registros->EX,contextos->contexto_tid->registros->FX,contextos->contexto_tid->registros->GX,contextos->contexto_tid->registros->HX,contextos->contexto_tid->registros->PC,contextos->contexto_tid->pid,contextos->contexto_tid->tid);
             }
             else if (paquete_solicitud_contexto_tid->codigo_operacion == CONTEXTO_TID_INEXISTENTE)
             {
@@ -199,8 +201,6 @@ void send_solicitud_instruccion_memoria(int tid, int pid, uint32_t pc){
     op_code code = OBTENER_INSTRUCCION;
 
     send_paquete_op_code(sockets_cpu->socket_memoria,buffer,code);
-    free(buffer->stream);
-    free(buffer);
 }
 
 op_code decode(t_instruccion *instruccion){

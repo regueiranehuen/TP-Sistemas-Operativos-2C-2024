@@ -249,6 +249,7 @@ void send_contexto_pid(int socket_cliente,t_contexto_pid_send*contexto){
     memcpy(stream,&(contexto->base),sizeof(uint32_t));
     stream += sizeof(uint32_t);
     memcpy(stream,&(contexto->limite),sizeof(uint32_t));
+    stream+=sizeof(uint32_t);
 
     op_code code = OBTENCION_CONTEXTO_PID_OK;
 
@@ -315,116 +316,24 @@ void send_paquete_op_code(int socket, t_buffer* buffer, op_code code){
     paquete->codigo_operacion=code;
     paquete->buffer = buffer;
 
-    int total_size = sizeof(int) + sizeof(int) + buffer->size;
+    int total_size = sizeof(int) + sizeof(uint32_t) + buffer->size;
     void* a_enviar = malloc(total_size);
 
+    int offset=0;
 
-    memcpy(a_enviar, &(paquete->codigo_operacion), sizeof(int));
-    a_enviar += sizeof(int);
-    memcpy(a_enviar, &(paquete->buffer->size), sizeof(int));  // Agregar el tamaño del buffer
-    a_enviar += sizeof(uint32_t);
-    memcpy(a_enviar, paquete->buffer->stream, paquete->buffer->size);
+    memcpy(a_enviar+offset, &(paquete->codigo_operacion), sizeof(int));
+    offset += sizeof(int);
+    memcpy(a_enviar+offset, &(paquete->buffer->size), sizeof(uint32_t));  // Agregar el tamaño del buffer
+    offset += sizeof(uint32_t);
+    memcpy(a_enviar+offset, paquete->buffer->stream, paquete->buffer->size);
 
     send(socket, a_enviar, total_size, 0);
+    free(a_enviar);
     }
 
     eliminar_paquete(paquete);
 }
 
-void enviar_instruccion(int conexion, t_instruccion *instruccion_nueva, int codop)
-{
-    // no olvidar el codigo de operacion
-
-    t_buffer*buffer=malloc(sizeof(t_buffer));
-    buffer->size=0;
-    
-    int l1=strlen(instruccion_nueva->parametros1)+1;
-    int l2=strlen(instruccion_nueva->parametros2)+1;
-    int l3=strlen(instruccion_nueva->parametros3)+1;
-    int l4=strlen(instruccion_nueva->parametros4)+1;
-    //int l5=strlen(instruccion_nueva->parametros5)+1;
-    //int l6=strlen(instruccion_nueva->parametros6)+1;
-
-    int cant_param=0;
-
-    if (strlen(instruccion_nueva->parametros1)>0){
-        buffer->size+=strlen(instruccion_nueva->parametros1)+1;
-        cant_param+=1;
-    }
-    if (strlen(instruccion_nueva->parametros2)>0){
-        buffer->size+=strlen(instruccion_nueva->parametros2)+1;
-        cant_param+=1;
-    }
-    if (strlen(instruccion_nueva->parametros3)>0){
-        buffer->size+=strlen(instruccion_nueva->parametros3)+1;
-        cant_param+=1;
-    }
-    if (strlen(instruccion_nueva->parametros4)>0){
-        buffer->size+=strlen(instruccion_nueva->parametros4)+1;
-        cant_param+=1;
-    }
-    if (strlen(instruccion_nueva->parametros5)>0){
-        buffer->size+=strlen(instruccion_nueva->parametros5)+1;
-        cant_param+=1;
-    }
-    if (strlen(instruccion_nueva->parametros6)>0){
-        buffer->size+=strlen(instruccion_nueva->parametros6)+1;
-        cant_param+=1;
-    }
-
-    buffer->stream = malloc(buffer->size);
-    void* stream = buffer->stream;
-    if(cant_param==1){
-        memcpy(stream,&l1,sizeof(int));
-        stream += sizeof(int);
-        memcpy(stream,instruccion_nueva->parametros1,l1);
-        stream += l1;
-    }
-    if(cant_param==2){
-        memcpy(stream,&l1,sizeof(int));
-        stream += sizeof(int);
-        memcpy(stream,instruccion_nueva->parametros1,l1);
-        stream += l1;
-        memcpy(stream,&l2,sizeof(int));
-        stream += sizeof(int);
-        memcpy(stream,instruccion_nueva->parametros2,l2);
-        stream += l2;
-    }
-    if(cant_param==3){
-        memcpy(stream,&l1,sizeof(int));
-        stream += sizeof(int);
-        memcpy(stream,instruccion_nueva->parametros1,l1);
-        stream += l1;
-        memcpy(stream,&l2,sizeof(int));
-        stream += sizeof(int);
-        memcpy(stream,instruccion_nueva->parametros2,l2);
-        stream += l2;
-        memcpy(stream,&l3,sizeof(int));
-        stream += sizeof(int);
-        memcpy(stream,instruccion_nueva->parametros3,l3);
-        stream += l3;
-    }
-    if (cant_param==4){
-        memcpy(stream,&l1,sizeof(int));
-        stream += sizeof(int);
-        memcpy(stream,instruccion_nueva->parametros1,l1);
-        stream += l1;
-        memcpy(stream,&l2,sizeof(int));
-        stream += sizeof(int);
-        memcpy(stream,instruccion_nueva->parametros2,l2);
-        stream += l2;
-        memcpy(stream,&l3,sizeof(int));
-        stream += sizeof(int);
-        memcpy(stream,instruccion_nueva->parametros3,l3);
-        stream += l3;
-        memcpy(stream,&l4,sizeof(int));
-        stream += sizeof(int);
-        memcpy(stream,instruccion_nueva->parametros4,l4);
-        stream += l4;
-    }
-    
-    send_paquete_op_code(conexion,buffer,INSTRUCCION_OBTENIDA);
-}
 
 void enviar_3_enteros(int conexion, t_3_enteros *enteros, int codop)
 {
@@ -445,13 +354,14 @@ void enviar_codop(int conexion, op_code cod_op)
 }
 
 void solicitar_contexto_tid(int pid, int tid,int conexion){
-     t_buffer* buffer = malloc(sizeof(t_buffer));
+    t_buffer* buffer = malloc(sizeof(t_buffer));
 
     buffer->size = 2*sizeof(int);
     buffer->stream = malloc(buffer->size);
 
     void* stream = buffer->stream;
 
+    
     memcpy(stream,&pid,sizeof(int));
     stream += sizeof(int);
     memcpy(stream,&tid,sizeof(int));
@@ -793,64 +703,6 @@ void recibir_3_string(int conexion_kernel_cpu_dispatch, char **palabra1, char **
 }
 
 
-    
-    
-t_instruccion* recepcionar_instruccion(t_paquete*paquete){
-    t_instruccion *instruccion_nueva = malloc(paquete->buffer->size);
-
-    void*stream=paquete->buffer->stream;
-    int cantParam=0;
-    memcpy(&(cantParam), stream, sizeof(int));
-    stream += sizeof(int);
-
-    int l1,l2,l3,l4;
-
-    memcpy(&l1,stream,sizeof(int));
-;
-    stream+=sizeof(int);
-    memcpy(instruccion_nueva->parametros1,stream,l1);
-    stream+=l1;
-
-    if (cantParam == 2){
-        memcpy(&l2,stream,sizeof(int));
-        stream+=sizeof(int);
-        memcpy(instruccion_nueva->parametros2,stream,l2);
-        stream+=l2;
-    }
-    if (cantParam == 3){
-        memcpy(&l2,stream,sizeof(int));
-        stream+=sizeof(int);
-        memcpy(instruccion_nueva->parametros2,stream,l2);
-        stream+=l2;
-        memcpy(&l3,stream,sizeof(int));
-        stream+=sizeof(int);
-        memcpy(instruccion_nueva->parametros3,stream,l3);
-        stream+=l3;
-    }
-    if (cantParam == 4){
-        memcpy(&l2,stream,sizeof(int));
-        stream+=sizeof(int);
-        memcpy(instruccion_nueva->parametros2,stream,l2);
-        stream+=l2;
-        memcpy(&l3,stream,sizeof(int));
-        stream+=sizeof(int);
-        memcpy(instruccion_nueva->parametros3,stream,l3);
-        stream+=l3;
-        memcpy(&l4,stream,sizeof(int));
-        stream+=sizeof(int);
-        memcpy(instruccion_nueva->parametros4,stream,l4);
-        stream+=l4;
-    }
-
-    
-    // DUMP_MEMORY, THREAD_EXIT Y PROCESS_EXIT NO LLEVAN PARÁMETROS
-
-
-    eliminar_paquete(paquete);
-    return instruccion_nueva;
-}
-
-
 t_2_enteros *recibir_2_enteros(int socket)
 {
 
@@ -1000,6 +852,7 @@ t_tid_pid_pc*recepcionar_tid_pid_pc(t_paquete*paquete){
 t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete){ 
 
     t_contexto_tid*nuevo_contexto=malloc(sizeof(t_contexto_tid));
+    nuevo_contexto->registros=malloc(sizeof(t_registros_cpu));
     void* stream = paquete->buffer->stream;
     memcpy(&(nuevo_contexto->pid),stream,sizeof(int));
     stream += sizeof(int);
@@ -1070,7 +923,7 @@ t_tid_pid* recepcionar_solicitud_contexto_tid(t_paquete* paquete){
     t_tid_pid* info = malloc(sizeof(t_tid_pid));
     memcpy(&(info->pid),stream,sizeof(int));
     stream+= sizeof(int);
-    memcpy(&(info->pid),stream,sizeof(int));
+    memcpy(&(info->tid),stream,sizeof(int));
     
     eliminar_paquete(paquete);
     return info;
@@ -1096,8 +949,5 @@ t_instruccion_memoria* recepcionar_solicitud_instruccion_memoria(t_paquete* paqu
     eliminar_paquete(paquete);
     return info;
 }
-
-
-
 
 

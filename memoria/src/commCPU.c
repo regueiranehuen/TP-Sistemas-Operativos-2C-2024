@@ -20,7 +20,7 @@ void* recibir_cpu(void*args) {
         switch (paquete_operacion->codigo_operacion) {
             case OBTENER_CONTEXTO_TID: {
                 t_tid_pid *info = recepcionar_solicitud_contexto_tid(paquete_operacion);  // Recibe PID y TID
-        
+
                 log_info(logger, "## Contexto solicitado - (PID:TID) - (%d:%d)",info->pid,info->tid);
                 
                 t_contexto_tid*contexto_tid=obtener_contexto_tid(info->pid,info->tid);
@@ -74,11 +74,16 @@ void* recibir_cpu(void*args) {
             case OBTENER_INSTRUCCION: {
 
                 t_instruccion_memoria* solicitud_instruccion = recepcionar_solicitud_instruccion_memoria(paquete_operacion);
-
+                log_info(logger,"tid %d, pid %d, pc %d",solicitud_instruccion->tid,solicitud_instruccion->pid,solicitud_instruccion->pc);
                 t_instruccion *instruccion = obtener_instruccion(solicitud_instruccion->tid, solicitud_instruccion->pid,solicitud_instruccion->pc);
-                
+                if (instruccion==NULL){
+                    log_info(logger,"putoooo");
+                }
+
+                log_info(logger,"param 1: %s",instruccion->parametros1);
+                log_info(logger, "param 2: %s",instruccion->parametros2);
                 enviar_instruccion(sockets_iniciales->socket_cpu, instruccion, INSTRUCCION_OBTENIDA); 
-                log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s> <%s> <%s> ",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4,instruccion->parametros5,instruccion->parametros6);
+                log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s> ",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4);
                 
                 free(instruccion);
                 break;

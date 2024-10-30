@@ -638,6 +638,8 @@ void send_inicializacion_hilo(int tid, int pid, char*arch_pseudocodigo,int socke
     
 }
 
+
+
 void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_proceso, int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
 

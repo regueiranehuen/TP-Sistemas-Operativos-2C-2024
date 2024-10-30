@@ -175,8 +175,6 @@ typedef struct{
     char* parametros2;
     char* parametros3;
     char* parametros4;
-    char* parametros5;
-    char* parametros6;
 }t_instruccion;
 
 // Guardamos las instrucciones por pid, tid y program counter
@@ -287,7 +285,7 @@ void agregar_3_enteros_1_string_a_paquete(t_paquete *paquete, t_string_3enteros 
 void enviar_entero (int conexion, uint32_t numero, int codop);
 void enviar_string (int conexion, char* palabra, int codop);
 
-void enviar_instruccion (int conexion, t_instruccion* nueva_instruccion, int codop);
+void enviar_instruccion(int conexion, t_instruccion *instruccion_nueva, op_code codop);
 void enviar_2_enteros(int conexion, t_2_enteros* enteros, int codop);
 void enviar_3_enteros(int conexion, t_3_enteros* enteros, int codop);
 void enviar_2_enteros_1_string(int conexion, t_string_2enteros* enteros_string, int codop);

@@ -33,8 +33,7 @@ void liberar_instruccion(t_instruccion_tid_pid*instruccion){
     free(instruccion->instrucciones->parametros2);
     free(instruccion->instrucciones->parametros3);
     free(instruccion->instrucciones->parametros4);
-    free(instruccion->instrucciones->parametros5);
-    free(instruccion->instrucciones->parametros6);
+    
 
     free(instruccion);
 }

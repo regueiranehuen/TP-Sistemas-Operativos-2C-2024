@@ -7,6 +7,7 @@ int longitud_maxima=200;
 int parametros_maximos=6;
 int instrucciones_maximas=200;
 
+
 void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
     printf("nombre del archivo: %s\n",nombre_archivo);
 
@@ -27,8 +28,8 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
         t_instruccion_tid_pid* instruccion_tid_pid = malloc(sizeof(t_instruccion_tid_pid));
         instruccion_tid_pid->pid=pid;
         instruccion_tid_pid->tid=tid;
-        instruccion_tid_pid->pc = 0;
-        //instruccion_tid_pid->pc;
+        instruccion_tid_pid->pc = indice_instruccion;
+
         instruccion_tid_pid->instrucciones = malloc(sizeof(t_instruccion));
         log_info(logger,"reservé espacio para instrucciones!");
         //t_instruccion* instruccion = malloc(sizeof(t_instruccion));
@@ -57,37 +58,91 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
                     instruccion_tid_pid->instrucciones->parametros4 = strdup(token);
                     log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros4);
                     break;
-                case 4:
-                    instruccion_tid_pid->instrucciones->parametros5 = "";
-                    instruccion_tid_pid->instrucciones->parametros5 = strdup(token);
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros5);
-                    break;
-                case 5:
-                    instruccion_tid_pid->instrucciones->parametros6 = "";
-                    instruccion_tid_pid->instrucciones->parametros6 = strdup(token);
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros6);
-                    break;
                 default:
                     break;
             }
             token = strtok(NULL, " \t\n");
             param_count++;
         }
-        
+        log_info(logger,"cont parametros %d",param_count);
         //list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
-
+        inicializar_resto_parametros(param_count,instruccion_tid_pid);
 
         pthread_mutex_lock(&mutex_lista_instruccion);
         list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
         indice_instruccion++;
-        instruccion_tid_pid->pc+=1;
         pthread_mutex_unlock(&mutex_lista_instruccion);        
         
     }
     fclose(archivo);
 }
 
+void inicializar_resto_parametros(int cant_param, t_instruccion_tid_pid *instruccion)
+{
+    switch (cant_param)
+    {
+    case 1:
+        instruccion->instrucciones->parametros2 = "";
+        instruccion->instrucciones->parametros3 = "";
+        instruccion->instrucciones->parametros4 = "";
+        break;
+    case 2:
+        instruccion->instrucciones->parametros3 = "";
+        instruccion->instrucciones->parametros4 = "";
+        break;
+    case 3:
+        instruccion->instrucciones->parametros4 = "";
+        break;
+    default:
+        break;
+    }
+}
 
+void enviar_instruccion(int conexion, t_instruccion *instruccion_nueva, op_code codop)
+{
+    // no olvidar el codigo de operacion
+
+    t_buffer *buffer = malloc(sizeof(t_buffer));
+    // buffer->size=0;
+
+    int l1 = 0;
+    int l2 = 0;
+    int l3 = 0;
+    int l4 = 0;
+
+    // log_info(logger,"parametros 4:%s",instruccion_nueva->parametros4);
+    int cant_param = 0;
+
+    l1 = strlen(instruccion_nueva->parametros1) + 1;
+    l2 = strlen(instruccion_nueva->parametros2) + 1;
+    l3 = strlen(instruccion_nueva->parametros3) + 1;
+    l4 = strlen(instruccion_nueva->parametros4) + 1;
+    buffer->size = l1 + l2 + l3 + l4;
+
+    buffer->stream = malloc(buffer->size);
+    void *stream = buffer->stream;
+
+    memcpy(stream, &cant_param, sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream, &l1, sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream, instruccion_nueva->parametros1, l1);
+    stream += l1;
+    memcpy(stream, &l2, sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream, instruccion_nueva->parametros2, l2);
+    stream += l2;
+    memcpy(stream, &l3, sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream, instruccion_nueva->parametros3, l3);
+    stream += l3;
+    memcpy(stream, &l4, sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream, instruccion_nueva->parametros4, l4);
+    stream += l4;
+
+    send_paquete_op_code(conexion, buffer, INSTRUCCION_OBTENIDA);
+}
 
 void finalizar_hilo(int tid, int pid) {
     for (int i = 0; i < list_size(lista_instrucciones_tid_pid); i++) {
@@ -150,5 +205,3 @@ void copiarBytes(uint32_t tamanio, t_contexto_pid *contexto) {
 
     memcpy(destino, origen, tamanio);
 }
-
-
