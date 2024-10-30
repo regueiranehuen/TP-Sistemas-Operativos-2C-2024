@@ -72,7 +72,7 @@ void *ciclo_de_instruccion(void *args)
 
 t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
 {
-    log_info(log_cpu,"esperando thread execute");
+    log_info(log_cpu,"esperando thread execute\n");
     t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente_Dispatch);
     
     if(paquete==NULL){
@@ -81,20 +81,24 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
         return contextos;
     }
     
-    log_info(log_cpu,"se recibió el código %d",paquete->code);
+    log_info(log_cpu,"se recibió el código %d por dispatch\n",paquete->code);
     
     t_contextos *contextos = malloc(sizeof(t_contextos));
-    contextos->contexto_pid = NULL;
-    contextos->contexto_tid = NULL;
+    contextos->contexto_pid = malloc(sizeof(t_contexto_pid_send));
+    contextos->contexto_tid = malloc(sizeof(t_contexto_tid));
 
     if (paquete->code == THREAD_EXECUTE_AVISO)
     {
         /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
         t_tid_pid *info = recepcionar_tid_pid_code_op(paquete);
         
+        printf("pid:%d\n",info->pid);
+        printf("tid:%d\n",info->tid);
+
         solicitar_contexto_pid(info->pid, sockets_cpu->socket_memoria);
 
         t_paquete *paquete_solicitud_contexto_pid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
+        printf("Recibi solicitud de memoria\n");
         if (paquete_solicitud_contexto_pid->codigo_operacion == CONTEXTO_PID_INEXISTENTE)
         {
             log_error(log_cpu, "El contexto del pid %d no existe", info->pid);
@@ -161,7 +165,7 @@ void checkInterrupt(t_contexto_tid* contextoTid) {
 
 
 t_instruccion *fetch(t_contexto_tid *contexto){
-    pedir_instruccion_memoria(contexto->tid, contexto->pid, contexto->registros->PC);
+    send_solicitud_instruccion_memoria(contexto->tid, contexto->pid, contexto->registros->PC);
 
     t_paquete *paquete = recibir_paquete_op_code(sockets_cpu->socket_memoria);
     t_instruccion *instruccion = NULL;
@@ -179,14 +183,24 @@ t_instruccion *fetch(t_contexto_tid *contexto){
     return instruccion;
 }
 
-void pedir_instruccion_memoria(int tid, int pid, uint32_t pc){
-    t_paquete *paquete = crear_paquete_op(OBTENER_INSTRUCCION);
-    agregar_entero_int_a_paquete(paquete, tid);
-    agregar_entero_int_a_paquete(paquete, pid);
-    agregar_entero_uint32_a_paquete(paquete, pc);
+void send_solicitud_instruccion_memoria(int tid, int pid, uint32_t pc){
+    t_buffer* buffer = malloc(sizeof(t_buffer));
+    buffer->size = 2*sizeof(int) + sizeof(uint32_t);
+    buffer->stream = malloc(buffer->size);
 
-    enviar_paquete(paquete, sockets_cpu->socket_memoria);
-    eliminar_paquete(paquete);
+    void* stream = buffer->stream;
+
+    memcpy(stream,&(pid),sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream,&(tid),sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream,&(pc),sizeof(uint32_t));    
+
+    op_code code = OBTENER_INSTRUCCION;
+
+    send_paquete_op_code(sockets_cpu->socket_memoria,buffer,code);
+    free(buffer->stream);
+    free(buffer);
 }
 
 op_code decode(t_instruccion *instruccion){
@@ -270,7 +284,7 @@ op_code decode(t_instruccion *instruccion){
 // finalización del mismo (PROCESS_EXIT o THREAD_EXIT), ejecutar una llamada al Kernel (syscall), deber ser desalojado (interrupción) o por la ocurrencia de un error Segmentation Fault.
 
 
-void execute(t_contexto_pid *contextoPid,t_contexto_tid *contextoTid, op_code instruccion_nombre, t_instruccion *instruccion){
+void execute(t_contexto_pid_send *contextoPid,t_contexto_tid *contextoTid, op_code instruccion_nombre, t_instruccion *instruccion){
     log_info(log_cpu, "Ejecutando instrucción: %s", instruccion->parametros1);
 
     switch (instruccion_nombre){

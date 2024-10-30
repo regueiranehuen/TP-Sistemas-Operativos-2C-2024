@@ -36,6 +36,12 @@ typedef struct{
 }t_contexto_pid;
 
 typedef struct{
+    int pid;
+    uint32_t base;
+    uint32_t limite;
+}t_contexto_pid_send;
+
+typedef struct{
     uint32_t AX;
     uint32_t BX;
     uint32_t CX;
@@ -46,6 +52,12 @@ typedef struct{
     uint32_t HX;
     uint32_t PC;
 }t_registros_cpu; 
+
+typedef struct{
+int tid;
+int pid;
+uint32_t pc;
+}t_instruccion_memoria;
 
 typedef struct{
     int pid;
@@ -230,7 +242,7 @@ typedef struct {
 }t_string_mas_entero;
 
 typedef struct{
-    t_contexto_pid*contexto_pid;
+    t_contexto_pid_send*contexto_pid;
     t_contexto_tid*contexto_tid;
 }t_contextos;
 
@@ -330,20 +342,19 @@ void remover_contexto_tid_lista(t_contexto_tid*contexto,t_list*lista);
 t_contexto_tid* obtener_tid_en_lista(int tid,t_list*contextos_tids);
 
 void agregar_entero_uint32_a_paquete(t_paquete *paquete, uint32_t numero);
-void enviar_contexto_pid(int socket_cliente,t_contexto_pid*contexto);
-void enviar_contexto_tid(int socket_cliente,t_contexto_tid*contexto);
+void send_contexto_pid(int socket_cliente,t_contexto_pid_send*contexto);
+void send_contexto_tid(int socket_cliente,t_contexto_tid*contexto);
 
 op_code recibir_op_code(int socket_cliente);
 t_paquete* recibir_paquete_op_code(int socket_cliente);
 int leer_entero(char *buffer, int *desplazamiento);
 t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete);
-t_contexto_pid* recepcionar_contexto_pid(t_paquete*paquete);
 void enviar_tid_pid_op_code(int conexion,t_tid_pid* info, op_code codop);
 void solicitar_contexto_tid(int pid, int tid,int conexion);
 void solicitar_contexto_pid(int pid,int conexion);
 void pedir_creacion_contexto_tid(int pid, int tid,int conexion);
 t_tid_pid* recepcionar_tid_pid_op_code(t_paquete* paquete);
-void enviar_paquete_op_code(int socket, op_code code);
+void send_paquete_op_code(int socket, t_buffer* buffer, op_code code);
 int recepcionar_entero_paquete(t_paquete*paquete);
 void enviar_registros_a_actualizar(int socket_cliente,t_registros_cpu*registros,int pid, int tid);
 void enviar_program_counter_a_actualizar(int socket_cliente,int pc,int pid, int tid);
@@ -352,5 +363,12 @@ t_tid_pid_pc*recepcionar_tid_pid_pc(t_paquete*paquete);
 t_registros_cpu*recepcionar_registros(t_paquete*paquete);
 void actualizar_contexto(int pid, int tid, t_registros_cpu* reg);
 t_instruccion* obtener_instruccion(int tid, int pid,uint32_t pc);
+
+int recepcionar_solicitud_contexto_pid(t_paquete* paquete_operacion);
+
+t_tid_pid* recepcionar_solicitud_contexto_tid(t_paquete* paquete);
+void send_solicitud_instruccion_memoria(int tid, int pid, uint32_t pc);
+t_instruccion_memoria* recepcionar_solicitud_instruccion_memoria(t_paquete* paquete);
+t_contexto_pid_send* recepcionar_contexto_pid(t_paquete*paquete);
 
 #endif

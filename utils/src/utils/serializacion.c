@@ -237,17 +237,17 @@ void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){
     paquete->buffer=buffer;
 
     // Armamos el stream a enviar
-    void *a_enviar = malloc(buffer->size + sizeof(paquete->syscall) + sizeof(uint32_t));
+    void *a_enviar = malloc(buffer->size + sizeof(paquete->syscall) + sizeof(int));
     int offset = 0;
 
     memcpy(a_enviar + offset, &(paquete->syscall), sizeof(paquete->syscall));
     offset += sizeof(paquete->syscall);
-    memcpy(a_enviar + offset, &(paquete->buffer->size), sizeof(uint32_t));
-    offset += sizeof(uint32_t);
+    memcpy(a_enviar + offset, &(paquete->buffer->size), sizeof(int));
+    offset += sizeof(int);
     memcpy(a_enviar + offset, paquete->buffer->stream, paquete->buffer->size);
 
     // Por último enviamos
-    send(socket_cliente, a_enviar, buffer->size + sizeof(paquete->syscall) + sizeof(uint32_t),0);
+    send(socket_cliente, a_enviar, buffer->size + sizeof(paquete->syscall) + sizeof(int),0);
 
     // No nos olvidamos de liberar la memoria que ya no usaremos
     free(a_enviar);
@@ -256,6 +256,7 @@ void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){
 }
 t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch) {
     t_paquete_syscall* paquete = malloc(sizeof(t_paquete_syscall));
+
     if (paquete == NULL) {
         return NULL; // Error al asignar memoria
     }
@@ -274,7 +275,7 @@ t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch) {
     }
 
     // Luego recibimos el tamaño del buffer
-    if (recv(socket_dispatch, &(paquete->buffer->size), sizeof(uint32_t), 0) != sizeof(uint32_t)) {
+    if (recv(socket_dispatch, &(paquete->buffer->size), sizeof(int), 0) != sizeof(int)) {
         free(paquete->buffer);
         free(paquete);
         return NULL; // Error al recibir el tamaño del buffer
@@ -532,6 +533,7 @@ void send_paquete_code_operacion(code_operacion code, t_buffer* buffer, int sock
     free(a_enviar);
     eliminar_paquete_code_op(paquete); // Asegúrate de liberar bien todos los recursos en esta función
 }
+
 
 
 

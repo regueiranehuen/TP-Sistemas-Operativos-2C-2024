@@ -15,7 +15,7 @@ void* ciclo_de_instruccion(void*args);
 void checkInterrupt(t_contexto_tid* contextoTid);
 t_instruccion* fetch(t_contexto_tid*contexto);
 op_code decode(t_instruccion *instruccion);
-void execute(t_contexto_pid*contextoPid,t_contexto_tid* contextoTid ,op_code instruccion_nombre, t_instruccion* instruccion);
+void execute(t_contexto_pid_send*contextoPid,t_contexto_tid* contextoTid ,op_code instruccion_nombre, t_instruccion* instruccion);
 void pedir_instruccion_memoria(int tid, int pid, uint32_t pc);
 t_contextos *esperar_thread_execute(int socket_cliente_Dispatch);
 

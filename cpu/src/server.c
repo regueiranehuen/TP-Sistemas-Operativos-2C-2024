@@ -246,7 +246,7 @@ void* recibir_kernel_interrupt(void*args){
     int noFinalizar = 0;
     while (noFinalizar != -1){
         
-        log_info(log_cpu,"esperando interrupciones");
+        log_info(log_cpu,"esperando interrupciones\n");
         t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         
         if(paquete==NULL){

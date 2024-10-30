@@ -1,7 +1,7 @@
 #include "mmu.h"
 #include "server.h"
 
-uint32_t traducir_direccion_logica(t_contexto_tid*contexto_tid,t_contexto_pid *contexto_pid,uint32_t direccion_logica) { 
+uint32_t traducir_direccion_logica(t_contexto_tid*contexto_tid,t_contexto_pid_send *contexto_pid,uint32_t direccion_logica) { 
     uint32_t base = contexto_pid->base;
     uint32_t limite = contexto_pid->limite;  
 

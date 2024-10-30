@@ -662,9 +662,6 @@ void DUMP_MEMORY()
     t_tcb *tcb = hilo_exec;
 
     code_operacion cod_op = DUMP_MEMORIA;
-    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    send_operacion_tid_pid(cod_op,tcb->tid,tcb->pid,sockets->sockets_cliente_cpu->socket_Interrupt);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
     hilo_exec = NULL;
     tcb->estado = TCB_BLOCKED;

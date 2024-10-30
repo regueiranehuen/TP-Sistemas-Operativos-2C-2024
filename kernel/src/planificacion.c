@@ -119,9 +119,9 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
 {
     
         while(estado_kernel!=0){
-
+        log_info(logger,"Esperando syscalls\n");
         t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch); 
-
+        log_info(logger,"Se recibio una syscall");
         if(paquete == NULL){
             log_info(logger,"Paquete == NULL --> Conexion cerrada");
             break;
@@ -318,9 +318,9 @@ void *hilo_planificador_corto_plazo(void *arg)
     char*algoritmo=(char*)arg;
 
     while(estado_kernel!=0){
-
+    printf("Esperando a ser desalojado\n");
     sem_wait(&sem_desalojado);// tiene que empezar con valor 1 
-
+    printf("Desalojado\n");
         t_tcb* hilo_a_ejecutar;
         if (strings_iguales(algoritmo, "FIFO")){
         hilo_a_ejecutar = fifo_tcb();

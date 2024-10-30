@@ -19,42 +19,42 @@ void* recibir_cpu(void*args) {
 
         switch (paquete_operacion->codigo_operacion) {
             case OBTENER_CONTEXTO_TID: {
-                t_tid_pid *info = recepcionar_tid_pid_op_code(paquete_operacion);  // Recibe PID y TID
-                int pid = info->pid;
-                int tid = info->tid;
-
-                log_info(logger, "## Contexto solicitado - (PID:TID) - (%d:%d)",pid,tid);
+                t_tid_pid *info = recepcionar_solicitud_contexto_tid(paquete_operacion);  // Recibe PID y TID
+        
+                log_info(logger, "## Contexto solicitado - (PID:TID) - (%d:%d)",info->pid,info->tid);
                 
-                t_contexto_tid*contexto_tid=obtener_contexto_tid(pid,tid);
-                
+                t_contexto_tid*contexto_tid=obtener_contexto_tid(info->pid,info->tid);
                 
                 if (contexto_tid == NULL){
-                    log_error(logger, "No se encontro el contexto del tid %d asociado al pid %d", tid,pid);
-                    enviar_paquete_op_code(sockets_iniciales->socket_cpu,CONTEXTO_TID_INEXISTENTE);
+                    log_error(logger, "No se encontro el contexto del tid %d asociado al pid %d", contexto_tid->tid,contexto_tid->pid);
+                    send_paquete_op_code(sockets_iniciales->socket_cpu,NULL,CONTEXTO_TID_INEXISTENTE);
                     break;
                 }
 
-                enviar_contexto_tid(sockets_iniciales->socket_cpu,contexto_tid);
-                log_info(logger, "Enviado contexto para PID: %d, TID: %d", pid, tid);
+                send_contexto_tid(sockets_iniciales->socket_cpu,contexto_tid);
+                log_info(logger, "Enviado contexto para PID: %d, TID: %d", contexto_tid->pid, contexto_tid->tid);
                 
 
                 break;
             }
 
             case OBTENER_CONTEXTO_PID:{ 
-                int pid_obtencion = recepcionar_entero_paquete(paquete_operacion);
+                int pid_obtencion = recepcionar_solicitud_contexto_pid(paquete_operacion);
 
                 
-                t_contexto_pid*contextoPid = obtener_contexto_pid(pid_obtencion);
+                t_contexto_pid* contextoPid = obtener_contexto_pid(pid_obtencion);
                 
-
                 if (contextoPid == NULL){
                     log_error(logger, "No se encontro el contexto del pid %d", pid_obtencion);
-                    enviar_paquete_op_code(sockets_iniciales->socket_cpu,CONTEXTO_PID_INEXISTENTE);
+                    send_paquete_op_code(sockets_iniciales->socket_cpu,NULL,CONTEXTO_PID_INEXISTENTE);
                     break;
                 }
+                t_contexto_pid_send* contexto_a_enviar = malloc(sizeof(contexto_a_enviar));
+                contexto_a_enviar->pid = contextoPid->pid;
+                contexto_a_enviar->base = contextoPid->base;
+                contexto_a_enviar->limite=contextoPid->limite;
 
-                enviar_contexto_pid(sockets_iniciales->socket_cpu,contextoPid);
+                send_contexto_pid(sockets_iniciales->socket_cpu,contexto_a_enviar);
                 break;
             }
 
@@ -72,14 +72,13 @@ void* recibir_cpu(void*args) {
             }
 
             case OBTENER_INSTRUCCION: {
-                int tid = recepcionar_entero_paquete(paquete_operacion); 
-                int pid = recepcionar_entero_paquete(paquete_operacion);
-                uint32_t pc = recepcionar_uint32_paquete(paquete_operacion);
 
-                t_instruccion *instruccion = obtener_instruccion(tid, pid,pc);
+                t_instruccion_memoria* solicitud_instruccion = recepcionar_solicitud_instruccion_memoria(paquete_operacion);
+
+                t_instruccion *instruccion = obtener_instruccion(solicitud_instruccion->tid, solicitud_instruccion->pid,solicitud_instruccion->pc);
                 
                 enviar_instruccion(sockets_iniciales->socket_cpu, instruccion, INSTRUCCION_OBTENIDA); 
-                log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s> <%s> <%s> ",pid,tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4,instruccion->parametros5,instruccion->parametros6);
+                log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s> <%s> <%s> ",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4,instruccion->parametros5,instruccion->parametros6);
                 
                 free(instruccion);
                 break;
