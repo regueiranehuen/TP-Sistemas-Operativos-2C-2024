@@ -147,6 +147,7 @@ void checkInterrupt(t_contexto_tid* contextoTid) {
     
     if (hay_interrupcion) {
         hay_interrupcion = false;
+        pthread_mutex_unlock(&mutex_interrupt);
         seguir_ejecutando = false;
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria,contextoTid->registros,contextoTid->pid,contextoTid->tid);
         code_operacion respuesta = recibir_code_operacion(sockets_cpu->socket_memoria);
@@ -161,16 +162,20 @@ void checkInterrupt(t_contexto_tid* contextoTid) {
             send_desalojo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         }
     }
-
-    pthread_mutex_unlock(&mutex_interrupt);
+    else{
+        pthread_mutex_unlock(&mutex_interrupt);
+    }
 }
 
 
 t_instruccion *fetch(t_contexto_tid *contexto){
+
+    log_info(log_cpu,"ENTRAMOS A FETCH. Tid %d, program counter %d",contexto->tid,contexto->registros->PC);
+
     send_solicitud_instruccion_memoria(contexto->tid, contexto->pid, contexto->registros->PC);
 
     t_paquete *paquete = recibir_paquete_op_code(sockets_cpu->socket_memoria);
-    t_instruccion *instruccion = NULL;
+    t_instruccion *instruccion;
     if (paquete->codigo_operacion == -1)
     {
         log_error(log_cpu, "Error al recibir la instrucción");
@@ -204,6 +209,7 @@ void send_solicitud_instruccion_memoria(int tid, int pid, uint32_t pc){
 }
 
 op_code decode(t_instruccion *instruccion){
+    log_info(log_cpu,"ESTAMOS EN DECODE CON LA INSTRUCCIÓN %s",instruccion->parametros1);
     if (strcmp(instruccion->parametros1, "SET") == 0)
     {
         return SET;

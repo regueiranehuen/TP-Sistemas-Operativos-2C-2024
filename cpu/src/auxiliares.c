@@ -75,11 +75,11 @@ t_instruccion *recepcionar_instruccion(t_paquete *paquete)
     // t_instruccion *instruccion_nueva = malloc(sizeof(t_instruccion));
 
     void *stream = paquete->buffer->stream;
-    int cantParam = 0;
-    memcpy(&(cantParam), stream, sizeof(int));
-    stream += sizeof(int);
+    // int cantParam = 0;
+    // memcpy(&(cantParam), stream, sizeof(int));
+    //stream += sizeof(int);
 
-    log_info(log_cpu, "Cantidad parametros:%d", cantParam);
+    //log_info(log_cpu, "Cantidad parametros:%d", cantParam);
     int l1 = 0;
     int l2 = 0;
     int l3 = 0;
@@ -88,47 +88,13 @@ t_instruccion *recepcionar_instruccion(t_paquete *paquete)
     memcpy(&l1, stream, sizeof(int));
     stream += sizeof(int);
     char *p1 = malloc(l1);
-    // instruccion_nueva+1->parametros1=malloc(l1);
     memcpy(p1, stream, l1);
     log_info(log_cpu, "Instruccion: %s", p1);
     stream += l1;
 
-    /*if (cantParam == 1){
-
-        memcpy(&l2,stream,sizeof(int));
-        stream+=sizeof(int);
-        char*p2=malloc(l2+1);
-
-        memcpy(p2,stream,l2);
-        log_info(log_cpu,"Parametro: %s",p2);
-        stream+=l2;
-
-    }
-    if (cantParam == 2){
-        memcpy(&l2,stream,sizeof(int));
-        stream+=sizeof(int);
-        char*p2=malloc(l2+1);
-
-        memcpy(p2,stream,l2);
-        log_info(log_cpu,"Parametro: %s",p2);
-        stream+=l2;
-
-
-        memcpy(&l3,stream,sizeof(int));
-        stream+=sizeof(int);
-        char*p3=malloc(l3+1);
-        memcpy(p3,stream,l3);
-        log_info(log_cpu,"Parametro: %s",p3);
-        stream+=l3;
-    }
-    if (cantParam == 3){
-
-    }*/
-
     memcpy(&l2, stream, sizeof(int));
     stream += sizeof(int);
     char *p2 = malloc(l2);
-
     memcpy(p2, stream, l2);
     log_info(log_cpu, "Parametro: %s", p2);
     stream += l2;
@@ -145,12 +111,16 @@ t_instruccion *recepcionar_instruccion(t_paquete *paquete)
     char *p4 = malloc(l4);
     memcpy(p4, stream, l4);
     log_info(log_cpu, "Parametro: %s", p4);
-    stream += l3;
+    stream += l4;
 
     // DUMP_MEMORY, THREAD_EXIT Y PROCESS_EXIT NO LLEVAN PARÁMETROS
 
     t_instruccion *instruccion_nueva = malloc(l1 + l2 + l3 + l4);
-
+    instruccion_nueva->parametros1=p1;
+    instruccion_nueva->parametros2=p2;
+    instruccion_nueva->parametros3=p3;
+    instruccion_nueva->parametros4=p4;
+    
     eliminar_paquete(paquete);
     return instruccion_nueva;
 }

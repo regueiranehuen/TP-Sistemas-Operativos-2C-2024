@@ -111,19 +111,17 @@ void enviar_instruccion(int conexion, t_instruccion *instruccion_nueva, op_code 
     int l4 = 0;
 
     // log_info(logger,"parametros 4:%s",instruccion_nueva->parametros4);
-    int cant_param = 0;
 
     l1 = strlen(instruccion_nueva->parametros1) + 1;
     l2 = strlen(instruccion_nueva->parametros2) + 1;
     l3 = strlen(instruccion_nueva->parametros3) + 1;
     l4 = strlen(instruccion_nueva->parametros4) + 1;
-    buffer->size = l1 + l2 + l3 + l4;
+    buffer->size = sizeof(int) * 4 + l1 + l2 + l3 + l4;
+
 
     buffer->stream = malloc(buffer->size);
     void *stream = buffer->stream;
 
-    memcpy(stream, &cant_param, sizeof(int));
-    stream += sizeof(int);
     memcpy(stream, &l1, sizeof(int));
     stream += sizeof(int);
     memcpy(stream, instruccion_nueva->parametros1, l1);
