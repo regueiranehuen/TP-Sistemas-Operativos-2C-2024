@@ -56,10 +56,13 @@ void *ciclo_de_instruccion(void *args)
                 t_instruccion *instruccion = fetch(contextos->contexto_tid);
                 if (instruccion == NULL)
                 {
+                    printf("bro?");
                     seguir_ejecutando = false;
                     continue;
                 }
+                log_info(log_cpu,"entrando a decode. %s,%s,%s,%s",instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4);
                 op_code nombre_instruccion = decode(instruccion);
+                printf("saliendo de decode");
                 execute(contextos->contexto_pid, contextos->contexto_tid, nombre_instruccion, instruccion);
                 if (seguir_ejecutando)
                 {
@@ -117,7 +120,6 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
             { // La memoria se encarga de crear el contexto del tid si es que no existe
                 contextos->contexto_tid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid);
                 log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
-                printf("fentanilo:%d%d%d%d%d%d%d%d%d%d%d",contextos->contexto_tid->registros->AX,contextos->contexto_tid->registros->BX,contextos->contexto_tid->registros->CX,contextos->contexto_tid->registros->DX,contextos->contexto_tid->registros->EX,contextos->contexto_tid->registros->FX,contextos->contexto_tid->registros->GX,contextos->contexto_tid->registros->HX,contextos->contexto_tid->registros->PC,contextos->contexto_tid->pid,contextos->contexto_tid->tid);
             }
             else if (paquete_solicitud_contexto_tid->codigo_operacion == CONTEXTO_TID_INEXISTENTE)
             {
@@ -209,7 +211,7 @@ void send_solicitud_instruccion_memoria(int tid, int pid, uint32_t pc){
 }
 
 op_code decode(t_instruccion *instruccion){
-    log_info(log_cpu,"ESTAMOS EN DECODE CON LA INSTRUCCIÓN %s",instruccion->parametros1);
+    //log_info(log_cpu,"ESTAMOS EN DECODE CON LA INSTRUCCIÓN %s",instruccion->parametros1);
     if (strcmp(instruccion->parametros1, "SET") == 0)
     {
         return SET;
@@ -280,6 +282,9 @@ op_code decode(t_instruccion *instruccion){
     }
     else if (strcmp(instruccion->parametros1, "IO_FS_READ") == 0)
     {
+        //return IO_FS_READ;
+    }
+    else if(strcmp(instruccion->parametros1, "PROCESS_EXIT") == 0){
         return PROCESS_EXIT;
     }
 
@@ -427,7 +432,7 @@ void execute(t_contexto_pid_send *contextoPid,t_contexto_tid *contextoTid, op_co
         log_info(log_cpu, "PROCESS_EXIT");
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         
-        send_process_exit(sockets_cpu->socket_servidor->socket_servidor_Dispatch);
+        send_process_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
     
         contextoTid->registros->PC++;
         sem_wait(&sem_syscall_finalizada);

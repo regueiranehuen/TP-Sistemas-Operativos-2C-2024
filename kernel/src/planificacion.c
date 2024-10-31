@@ -6,7 +6,7 @@ t_tcb *fifo_tcb()
 {
 
     sem_wait(&semaforo_cola_ready);//espera que haya elementos en la cola;
-    log_info(logger,"ENTRAMOS A FIFO");
+    
         pthread_mutex_lock(&mutex_cola_ready);
         t_tcb *tcb = queue_pop(cola_ready_fifo);
         pthread_mutex_unlock(&mutex_cola_ready);
@@ -69,7 +69,9 @@ void planificador_largo_plazo()
     resultado = pthread_create(&hilo_plani_largo_plazo, NULL, hilo_planificador_largo_plazo, NULL);
     if (resultado != 0)
     {
+        pthread_mutex_lock(&mutex_log);
         log_error(logger, "Error al crear el hilo_planificador_largo_plazo");
+        pthread_mutex_unlock(&mutex_log);
         return;
     }
     pthread_detach(hilo_plani_largo_plazo);
@@ -87,7 +89,9 @@ void *hilo_planificador_largo_plazo(void *void_args)
 
     if (resultado != 0)
     {
+        pthread_mutex_lock(&mutex_log);
         log_error(logger, "Error al crear el hilo new_ready");
+        pthread_mutex_unlock(&mutex_log);
         return NULL;
     }
 
@@ -95,7 +99,9 @@ void *hilo_planificador_largo_plazo(void *void_args)
 
     if (resultado != 0)
     {
+        pthread_mutex_lock(&mutex_log);
         log_error(logger, "Error al crear el hilo procesos_exit");
+        pthread_mutex_unlock(&mutex_log);
         return NULL;
     }
 
@@ -103,7 +109,9 @@ void *hilo_planificador_largo_plazo(void *void_args)
   
     if (resultado != 0)
     {
+        pthread_mutex_lock(&mutex_log);
         log_error(logger, "Error al crear el hilo hilos_exit");
+        pthread_mutex_unlock(&mutex_log);
         return NULL;
     }
 
@@ -119,11 +127,13 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
 {
     
         while(estado_kernel!=0){
-        log_info(logger,"Esperando syscalls\n");
+        printf("esperando syscall\n");
         t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch); 
-        log_info(logger,"Se recibio una syscall");
+        printf("recibi syscall\n");
         if(paquete == NULL){
+            pthread_mutex_lock(&mutex_log);
             log_info(logger,"Paquete == NULL --> Conexion cerrada");
+            pthread_mutex_unlock(&mutex_log);
             break;
         }
 

@@ -223,7 +223,7 @@ void send_paquete_syscall_sin_parametros(int socket_cliente, syscalls syscall, t
 
     // Liberar la memoria que ya no usamos
     free(a_enviar);
-    eliminar_paquete_syscall(paquete);
+    free(paquete);
 }
 
 void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){

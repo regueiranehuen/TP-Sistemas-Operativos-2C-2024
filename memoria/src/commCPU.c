@@ -80,11 +80,19 @@ void* recibir_cpu(void*args) {
                     log_info(logger,"putoooo");
                 }
 
-                log_info(logger,"param 1: %s",instruccion->parametros1);
-                log_info(logger, "param 2: %s",instruccion->parametros2);
-                enviar_instruccion(sockets_iniciales->socket_cpu, instruccion, INSTRUCCION_OBTENIDA); 
-                log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s> ",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4);
-                
+                enviar_instruccion(sockets_iniciales->socket_cpu, instruccion, INSTRUCCION_OBTENIDA);
+                if(strcmp(instruccion->parametros2,"") == 0){
+                log_info(logger,"## Obtener instruccion - (PID:TID) - (%d:%d) - Instruccion: <%s>",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1);
+                }
+                else if(strcmp(instruccion->parametros3,"")== 0){
+                log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s>",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1,instruccion->parametros2);
+                }
+                else if(strcmp(instruccion->parametros4,"")== 0){
+                log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s>",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3);    
+                } 
+                else{
+                log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s>",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4);
+                }
                 free(instruccion);
                 break;
             }

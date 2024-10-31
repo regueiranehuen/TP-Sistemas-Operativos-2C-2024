@@ -66,6 +66,7 @@ void inicializar_mutex() {
     pthread_mutex_init(&mutex_cola_ready, NULL);
     pthread_mutex_init(&mutex_conexion_kernel_a_dispatch,NULL);
     pthread_mutex_init(&mutex_conexion_kernel_a_interrupt,NULL);
+    pthread_mutex_init(&mutex_log,NULL);
 }
 
 void destruir_mutex() {
@@ -76,6 +77,7 @@ void destruir_mutex() {
     pthread_mutex_destroy(&mutex_cola_ready);
     pthread_mutex_destroy(&mutex_conexion_kernel_a_dispatch);
     pthread_mutex_destroy(&mutex_conexion_kernel_a_interrupt);
+    pthread_mutex_destroy(&mutex_log);
 }
 
 void liberar_proceso (t_pcb * pcb){
