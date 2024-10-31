@@ -430,11 +430,22 @@ void execute(t_contexto_pid_send *contextoPid,t_contexto_tid *contextoTid, op_co
         break;
     case PROCESS_EXIT:
         log_info(log_cpu, "PROCESS_EXIT");
+
+        log_info(log_cpu,"PROGRAM COUNTER ACTUAL: %u",contextoTid->registros->PC);
+        log_info(log_cpu,"AX A ENVIAR: %u", contextoTid->registros->AX);
+        log_info(log_cpu,"BX A ENVIAR: %u", contextoTid->registros->BX);
+        log_info(log_cpu,"CX A ENVIAR: %u", contextoTid->registros->CX);
+        log_info(log_cpu,"DX A ENVIAR: %u", contextoTid->registros->DX);
+        log_info(log_cpu,"EX A ENVIAR: %u", contextoTid->registros->EX);
+        log_info(log_cpu,"FX A ENVIAR: %u", contextoTid->registros->FX);
+        log_info(log_cpu,"GX A ENVIAR: %u", contextoTid->registros->GX);
+        log_info(log_cpu,"HX A ENVIAR: %u", contextoTid->registros->HX);
+
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         
         send_process_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
     
-        contextoTid->registros->PC++;
+        // No hay que incrementar el PC
         sem_wait(&sem_syscall_finalizada);
         break;
     default:

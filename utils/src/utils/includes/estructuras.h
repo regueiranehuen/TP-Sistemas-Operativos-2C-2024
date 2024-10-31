@@ -296,12 +296,11 @@ void enviar_paquete_string(int conexion, char* string, op_code codOP, int tamani
 
 t_paquete* crear_paquete_op(op_code codop);
 
-
 // Una vez serializado -> recibimos y leemos estas variables
 
 int leer_entero(char *buffer, int * desplazamiento);
 uint8_t leer_entero_uint8(char *buffer, int * desplazamiento);
-uint32_t leer_entero_uint32(char *buffer, int * desplazamiento);
+uint32_t leer_entero_uint32(void*buffer, int *desplazamiento);
 char* leer_string(char *buffer, int * desplazamiento);
 //t_registros_cpu * leer_registros(char* buffer, int* desp);
 
@@ -351,14 +350,14 @@ void enviar_tid_pid_op_code(int conexion,t_tid_pid* info, op_code codop);
 void solicitar_contexto_tid(int pid, int tid,int conexion);
 void solicitar_contexto_pid(int pid,int conexion);
 void pedir_creacion_contexto_tid(int pid, int tid,int conexion);
-t_tid_pid* recepcionar_tid_pid_op_code(t_paquete* paquete);
+t_tid_pid* recepcionar_tid_pid_op_code(void*stream);
 void send_paquete_op_code(int socket, t_buffer* buffer, op_code code);
 int recepcionar_entero_paquete(t_paquete*paquete);
 void enviar_registros_a_actualizar(int socket_cliente,t_registros_cpu*registros,int pid, int tid);
 void enviar_program_counter_a_actualizar(int socket_cliente,int pc,int pid, int tid);
 uint32_t recepcionar_uint32_paquete(t_paquete*paquete);
 t_tid_pid_pc*recepcionar_tid_pid_pc(t_paquete*paquete);
-t_registros_cpu*recepcionar_registros(t_paquete*paquete);
+//t_registros_cpu*recepcionar_registros(t_paquete*paquete,void*stream);
 void actualizar_contexto(int pid, int tid, t_registros_cpu* reg);
 t_instruccion* obtener_instruccion(int tid, int pid,uint32_t pc);
 
@@ -368,5 +367,7 @@ t_tid_pid* recepcionar_solicitud_contexto_tid(t_paquete* paquete);
 void send_solicitud_instruccion_memoria(int tid, int pid, uint32_t pc);
 t_instruccion_memoria* recepcionar_solicitud_instruccion_memoria(t_paquete* paquete);
 t_contexto_pid_send* recepcionar_contexto_pid(t_paquete*paquete);
+
+uint32_t leer_registros(void*stream);
 
 #endif

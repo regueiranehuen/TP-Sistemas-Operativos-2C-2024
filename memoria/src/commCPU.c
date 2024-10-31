@@ -60,14 +60,23 @@ void* recibir_cpu(void*args) {
 
 
             case ACTUALIZAR_CONTEXTO_TID:{
-                t_tid_pid *info = recepcionar_tid_pid_op_code(paquete_operacion);  // Recibe PID y TID
-                int pid = info->pid;
-                int tid = info->tid;
-                t_registros_cpu* registros_a_actualizar = recepcionar_registros(paquete_operacion);
-                actualizar_contexto(pid,tid,registros_a_actualizar);
+
+                t_contexto_tid*contexto_tid=recepcionar_contexto_tid(paquete_operacion);
+
+                log_info(logger, "PROGRAM COUNTER ACTUAL: %u", contexto_tid->registros->PC);
+                log_info(logger, "AX A ENVIAR: %u", contexto_tid->registros->AX);
+                log_info(logger, "BX A ENVIAR: %u", contexto_tid->registros->BX);
+                log_info(logger, "CX A ENVIAR: %u", contexto_tid->registros->CX);
+                log_info(logger, "DX A ENVIAR: %u", contexto_tid->registros->DX);
+                log_info(logger, "EX A ENVIAR: %u", contexto_tid->registros->EX);
+                log_info(logger, "FX A ENVIAR: %u", contexto_tid->registros->FX);
+                log_info(logger, "GX A ENVIAR: %u", contexto_tid->registros->GX);
+                log_info(logger, "HX A ENVIAR: %u", contexto_tid->registros->HX);
+
+                actualizar_contexto(contexto_tid->pid,contexto_tid->tid,contexto_tid->registros);
                 send_code_operacion(OK,sockets_iniciales->socket_cpu);
-                free(info);
-                log_info(logger, "## Contexto actualizado - (PID:TID) - (%d:%d)", pid,tid);
+                log_info(logger, "## Contexto actualizado - (PID:TID) - (%d:%d)", contexto_tid->pid,contexto_tid->tid);
+                free(contexto_tid);
                 break;
             }
 

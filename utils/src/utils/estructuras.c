@@ -293,13 +293,39 @@ void send_contexto_tid(int socket_cliente,t_contexto_tid*contexto){
 
 
 void enviar_registros_a_actualizar(int socket_cliente,t_registros_cpu*registros,int pid, int tid){
-    t_paquete*paquete = crear_paquete_op(ACTUALIZAR_CONTEXTO_TID);
+    
+    t_buffer* buffer = malloc(sizeof(t_buffer));
+    
+    buffer->size = 2*sizeof(int) + 9*sizeof(uint32_t);
+    buffer->stream = malloc(buffer->size);
 
-    agregar_entero_int_a_paquete(paquete,pid);
-    agregar_entero_int_a_paquete(paquete,tid);
-    agregar_registros_a_paquete(paquete,registros);
-    enviar_paquete(paquete,socket_cliente);
-    eliminar_paquete(paquete);
+    void* stream = buffer->stream;
+
+    memcpy(stream,&(pid),sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream,&(tid),sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream,&(registros->AX),sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(stream,&(registros->BX),sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(stream,&(registros->CX),sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(stream,&(registros->DX),sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(stream,&(registros->EX),sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(stream,&(registros->FX),sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(stream,&(registros->GX),sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(stream,&(registros->HX),sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(stream,&(registros->PC),sizeof(uint32_t));
+    
+    op_code code = ACTUALIZAR_CONTEXTO_TID;
+
+    send_paquete_op_code(socket_cliente,buffer,code);
 }
 
 
@@ -575,11 +601,11 @@ void agregar_instruccion_a_paquete(t_paquete *paquete, t_instruccion *instruccio
 
 
 
-uint32_t leer_entero_uint32(char *buffer, int *desplazamiento)
+uint32_t leer_entero_uint32(void*buffer, int *desplazamiento)
 {
     uint32_t entero;
-    memcpy(&entero, buffer + (*desplazamiento), sizeof(uint32_t));
-    (*desplazamiento) += sizeof(uint32_t);
+    memcpy(&entero, buffer+(*desplazamiento), sizeof(uint32_t));
+    *desplazamiento += sizeof(uint32_t);
     return entero;
 }
 
@@ -820,16 +846,17 @@ t_string_mas_entero *recibir_string_mas_entero(int socket, t_log *loggs)
 
 
 
-t_tid_pid* recepcionar_tid_pid_op_code(t_paquete* paquete){
+t_tid_pid* recepcionar_tid_pid_op_code(void*stream){
     t_tid_pid* info = malloc(sizeof(t_tid_pid));
 
-    void* stream = paquete->buffer->stream;
+    
 
-    memcpy(&(info->tid),stream,sizeof(int));
+    memcpy(&(info->pid),stream,sizeof(int));
     stream += sizeof(int);
-    memcpy(&(info->pid), stream,sizeof(int)); // Primer parámetro para la syscall: nombre del archivo
+    memcpy(&(info->tid), stream,sizeof(int));
+    stream += sizeof(int);
 
-    eliminar_paquete(paquete);
+    //eliminar_paquete(paquete);
 
     return info;
 }
@@ -881,14 +908,41 @@ t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete){
     return nuevo_contexto;
 }
 
-t_registros_cpu*recepcionar_registros(t_paquete*paquete){
-    t_registros_cpu*reg=malloc(sizeof(t_registros_cpu));
-    
+uint32_t leer_registros(void*stream){
+    uint32_t reg=0;
 
+    memcpy(&reg,stream,sizeof(uint32_t));
+
+    stream+=sizeof(uint32_t);
+
+    return reg;
+}
+
+/*t_contexto_tid *recepcionar_registros(t_paquete *paquete, void *stream) {
+    t_registros_cpu *reg = malloc(sizeof(t_registros_cpu));
+
+    memcpy(&(reg->AX), stream, sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(&(reg->BX), stream, sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(&(reg->CX), stream, sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(&(reg->DX), stream, sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(&(reg->EX), stream, sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(&(reg->FX), stream, sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(&(reg->GX), stream, sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(&(reg->HX), stream, sizeof(uint32_t));
+    stream += sizeof(uint32_t);
+    memcpy(&(reg->PC), stream, sizeof(uint32_t)); // Último valor leído correctamente
 
     eliminar_paquete(paquete);
     return reg;
-}
+}*/
+
 
 t_contexto_pid_send* recepcionar_contexto_pid(t_paquete*paquete){
     t_contexto_pid_send* contexto = malloc(sizeof(t_contexto_pid_send));
@@ -949,5 +1003,3 @@ t_instruccion_memoria* recepcionar_solicitud_instruccion_memoria(t_paquete* paqu
     eliminar_paquete(paquete);
     return info;
 }
-
-

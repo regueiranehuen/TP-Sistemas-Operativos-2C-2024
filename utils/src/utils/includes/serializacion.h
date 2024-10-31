@@ -63,6 +63,7 @@ typedef struct{
     int pid;
 }t_tid_pid;
 
+
 typedef struct{
 	char*nombreArchivo;
 	int tamProceso;

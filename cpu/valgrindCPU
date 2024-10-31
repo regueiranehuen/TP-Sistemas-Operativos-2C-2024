@@ -1,0 +1,279 @@
+==50960== Memcheck, a memory error detector
+==50960== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==50960== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==50960== Command: ./bin/cpu
+==50960== Parent PID: 31215
+==50960== 
+==50960== Thread 3:
+==50960== Syscall param recvfrom(s) contains uninitialised byte(s)
+==50960==    at 0x499E6BE: __libc_recv (recv.c:28)
+==50960==    by 0x499E6BE: recv (recv.c:23)
+==50960==    by 0x111150: recibir_paquete_code_operacion (serializacion.c:546)
+==50960==    by 0x10D4CA: recibir_kernel_interrupt (server.c:250)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Thread 2:
+==50960== Invalid write of size 8
+==50960==    at 0x10ACA0: recepcionar_instruccion (auxiliares.c:120)
+==50960==    by 0x10B485: fetch (cicloDeInstruccion.c:187)
+==50960==    by 0x10AE39: ciclo_de_instruccion (cicloDeInstruccion.c:56)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960==  Address 0x4ab4668 is 8 bytes inside a block of size 11 alloc'd
+==50960==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10AC88: recepcionar_instruccion (auxiliares.c:118)
+==50960==    by 0x10B485: fetch (cicloDeInstruccion.c:187)
+==50960==    by 0x10AE39: ciclo_de_instruccion (cicloDeInstruccion.c:56)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Invalid write of size 8
+==50960==    at 0x10ACAC: recepcionar_instruccion (auxiliares.c:121)
+==50960==    by 0x10B485: fetch (cicloDeInstruccion.c:187)
+==50960==    by 0x10AE39: ciclo_de_instruccion (cicloDeInstruccion.c:56)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960==  Address 0x4ab4670 is 5 bytes after a block of size 11 alloc'd
+==50960==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10AC88: recepcionar_instruccion (auxiliares.c:118)
+==50960==    by 0x10B485: fetch (cicloDeInstruccion.c:187)
+==50960==    by 0x10AE39: ciclo_de_instruccion (cicloDeInstruccion.c:56)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Invalid write of size 8
+==50960==    at 0x10ACB8: recepcionar_instruccion (auxiliares.c:122)
+==50960==    by 0x10B485: fetch (cicloDeInstruccion.c:187)
+==50960==    by 0x10AE39: ciclo_de_instruccion (cicloDeInstruccion.c:56)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960==  Address 0x4ab4678 is 13 bytes after a block of size 11 alloc'd
+==50960==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10AC88: recepcionar_instruccion (auxiliares.c:118)
+==50960==    by 0x10B485: fetch (cicloDeInstruccion.c:187)
+==50960==    by 0x10AE39: ciclo_de_instruccion (cicloDeInstruccion.c:56)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Invalid read of size 8
+==50960==    at 0x10B8C1: execute (cicloDeInstruccion.c:298)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960==  Address 0x4ab4670 is 5 bytes after a block of size 11 alloc'd
+==50960==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10AC88: recepcionar_instruccion (auxiliares.c:118)
+==50960==    by 0x10B485: fetch (cicloDeInstruccion.c:187)
+==50960==    by 0x10AE39: ciclo_de_instruccion (cicloDeInstruccion.c:56)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484ED76: __strlen_sse2 (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x48EDD30: __vfprintf_internal (vfprintf-internal.c:1517)
+==50960==    by 0x48FF499: __vsnprintf_internal (vsnprintf.c:114)
+==50960==    by 0x4871440: _string_append_with_format_list (string.c:305)
+==50960==    by 0x4870885: string_from_vformat (string.c:74)
+==50960==    by 0x487048E: _log_write_in_level (log.c:140)
+==50960==    by 0x48701D7: log_info (log.c:97)
+==50960==    by 0x10B8F1: execute (cicloDeInstruccion.c:298)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484ED84: __strlen_sse2 (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x48EDD30: __vfprintf_internal (vfprintf-internal.c:1517)
+==50960==    by 0x48FF499: __vsnprintf_internal (vsnprintf.c:114)
+==50960==    by 0x4871440: _string_append_with_format_list (string.c:305)
+==50960==    by 0x4870885: string_from_vformat (string.c:74)
+==50960==    by 0x487048E: _log_write_in_level (log.c:140)
+==50960==    by 0x48701D7: log_info (log.c:97)
+==50960==    by 0x10B8F1: execute (cicloDeInstruccion.c:298)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x4904FB0: _IO_default_xsputn (genops.c:394)
+==50960==    by 0x4904FB0: _IO_default_xsputn (genops.c:370)
+==50960==    by 0x48EE00B: outstring_func (vfprintf-internal.c:239)
+==50960==    by 0x48EE00B: __vfprintf_internal (vfprintf-internal.c:1517)
+==50960==    by 0x48FF499: __vsnprintf_internal (vsnprintf.c:114)
+==50960==    by 0x4871440: _string_append_with_format_list (string.c:305)
+==50960==    by 0x4870885: string_from_vformat (string.c:74)
+==50960==    by 0x487048E: _log_write_in_level (log.c:140)
+==50960==    by 0x48701D7: log_info (log.c:97)
+==50960==    by 0x10B8F1: execute (cicloDeInstruccion.c:298)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484ED76: __strlen_sse2 (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x48EDD30: __vfprintf_internal (vfprintf-internal.c:1517)
+==50960==    by 0x48FF499: __vsnprintf_internal (vsnprintf.c:114)
+==50960==    by 0x487148F: _string_append_with_format_list (string.c:310)
+==50960==    by 0x4870885: string_from_vformat (string.c:74)
+==50960==    by 0x487048E: _log_write_in_level (log.c:140)
+==50960==    by 0x48701D7: log_info (log.c:97)
+==50960==    by 0x10B8F1: execute (cicloDeInstruccion.c:298)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484ED84: __strlen_sse2 (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x48EDD30: __vfprintf_internal (vfprintf-internal.c:1517)
+==50960==    by 0x48FF499: __vsnprintf_internal (vsnprintf.c:114)
+==50960==    by 0x487148F: _string_append_with_format_list (string.c:310)
+==50960==    by 0x4870885: string_from_vformat (string.c:74)
+==50960==    by 0x487048E: _log_write_in_level (log.c:140)
+==50960==    by 0x48701D7: log_info (log.c:97)
+==50960==    by 0x10B8F1: execute (cicloDeInstruccion.c:298)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x4904FB0: _IO_default_xsputn (genops.c:394)
+==50960==    by 0x4904FB0: _IO_default_xsputn (genops.c:370)
+==50960==    by 0x48EE00B: outstring_func (vfprintf-internal.c:239)
+==50960==    by 0x48EE00B: __vfprintf_internal (vfprintf-internal.c:1517)
+==50960==    by 0x48FF499: __vsnprintf_internal (vsnprintf.c:114)
+==50960==    by 0x487148F: _string_append_with_format_list (string.c:310)
+==50960==    by 0x4870885: string_from_vformat (string.c:74)
+==50960==    by 0x487048E: _log_write_in_level (log.c:140)
+==50960==    by 0x48701D7: log_info (log.c:97)
+==50960==    by 0x10B8F1: execute (cicloDeInstruccion.c:298)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Invalid read of size 8
+==50960==    at 0x10B8F6: execute (cicloDeInstruccion.c:299)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960==  Address 0x4ab4670 is 5 bytes after a block of size 11 alloc'd
+==50960==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10AC88: recepcionar_instruccion (auxiliares.c:118)
+==50960==    by 0x10B485: fetch (cicloDeInstruccion.c:187)
+==50960==    by 0x10AE39: ciclo_de_instruccion (cicloDeInstruccion.c:56)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484FBD4: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10C919: valor_registro_cpu (funcExecute.c:114)
+==50960==    by 0x10C24E: funcSET (funcExecute.c:4)
+==50960==    by 0x10B91A: execute (cicloDeInstruccion.c:299)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484FBE8: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10C919: valor_registro_cpu (funcExecute.c:114)
+==50960==    by 0x10C24E: funcSET (funcExecute.c:4)
+==50960==    by 0x10B91A: execute (cicloDeInstruccion.c:299)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484FBD4: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10C945: valor_registro_cpu (funcExecute.c:115)
+==50960==    by 0x10C24E: funcSET (funcExecute.c:4)
+==50960==    by 0x10B91A: execute (cicloDeInstruccion.c:299)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484FBE8: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10C945: valor_registro_cpu (funcExecute.c:115)
+==50960==    by 0x10C24E: funcSET (funcExecute.c:4)
+==50960==    by 0x10B91A: execute (cicloDeInstruccion.c:299)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484FBD4: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10C972: valor_registro_cpu (funcExecute.c:116)
+==50960==    by 0x10C24E: funcSET (funcExecute.c:4)
+==50960==    by 0x10B91A: execute (cicloDeInstruccion.c:299)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484FBD4: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10C99F: valor_registro_cpu (funcExecute.c:117)
+==50960==    by 0x10C24E: funcSET (funcExecute.c:4)
+==50960==    by 0x10B91A: execute (cicloDeInstruccion.c:299)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484FBD4: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10C9CC: valor_registro_cpu (funcExecute.c:118)
+==50960==    by 0x10C24E: funcSET (funcExecute.c:4)
+==50960==    by 0x10B91A: execute (cicloDeInstruccion.c:299)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484FBD4: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10C9F6: valor_registro_cpu (funcExecute.c:119)
+==50960==    by 0x10C24E: funcSET (funcExecute.c:4)
+==50960==    by 0x10B91A: execute (cicloDeInstruccion.c:299)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484FBD4: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10CA20: valor_registro_cpu (funcExecute.c:120)
+==50960==    by 0x10C24E: funcSET (funcExecute.c:4)
+==50960==    by 0x10B91A: execute (cicloDeInstruccion.c:299)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== Use of uninitialised value of size 8
+==50960==    at 0x484FBD4: strcmp (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==50960==    by 0x10CA4A: valor_registro_cpu (funcExecute.c:121)
+==50960==    by 0x10C24E: funcSET (funcExecute.c:4)
+==50960==    by 0x10B91A: execute (cicloDeInstruccion.c:299)
+==50960==    by 0x10AE7A: ciclo_de_instruccion (cicloDeInstruccion.c:63)
+==50960==    by 0x490BAC2: start_thread (pthread_create.c:442)
+==50960==    by 0x499CA03: clone (clone.S:100)
+==50960== 
+==50960== 
+==50960== Process terminating with default action of signal 2 (SIGINT)
+==50960==    at 0x4908117: __futex_abstimed_wait_common64 (futex-internal.c:57)
+==50960==    by 0x4908117: __futex_abstimed_wait_common (futex-internal.c:87)
+==50960==    by 0x4908117: __futex_abstimed_wait_cancelable64 (futex-internal.c:139)
+==50960==    by 0x4913C77: __new_sem_wait_slow64.constprop.0 (sem_waitcommon.c:183)
+==50960==    by 0x10CB42: main (main.c:16)
+==50960== 
+==50960== HEAP SUMMARY:
+==50960==     in use at exit: 16,271 bytes in 685 blocks
+==50960==   total heap usage: 16,839 allocs, 16,154 frees, 467,689 bytes allocated
+==50960== 
+==50960== LEAK SUMMARY:
+==50960==    definitely lost: 2,370 bytes in 389 blocks
+==50960==    indirectly lost: 1,753 bytes in 251 blocks
+==50960==      possibly lost: 544 bytes in 2 blocks
+==50960==    still reachable: 11,604 bytes in 43 blocks
+==50960==         suppressed: 0 bytes in 0 blocks
+==50960== Rerun with --leak-check=full to see details of leaked memory
+==50960== 
+==50960== Use --track-origins=yes to see where uninitialised values come from
+==50960== For lists of detected and suppressed errors, rerun with: -s
+==50960== ERROR SUMMARY: 339 errors from 22 contexts (suppressed: 0 from 0)
