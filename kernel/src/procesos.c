@@ -214,6 +214,7 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
     t_pcb *pcb = queue_peek(cola_new_procesos);
     pthread_mutex_unlock(&mutex_cola_new_procesos);
 
+    //intentar_de_nuevo:
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
     send_inicializacion_proceso(pcb->pid,pcb->tcb_main->pseudocodigo,pcb->tamanio_proceso,socket_memoria);
     recv(socket_memoria, &respuesta, sizeof(int), 0);
@@ -222,6 +223,7 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
     if (respuesta == -1)
     {
         sem_wait(&semaforo_new_ready_procesos); //espera a que se libere un proceso
+        //goto intentar_de_nuevo;
     }
     else
     {

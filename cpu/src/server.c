@@ -247,16 +247,12 @@ void* recibir_kernel_interrupt(void*args){
     while (noFinalizar != -1){
         
         log_info(log_cpu,"esperando interrupciones\n");
-        t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+        //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+        code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         
-        if(paquete==NULL){
-            printf("Cpu recibio un paquete == NULL de kernel por interrupt");
-            break;
-        }
+        log_info(log_cpu,"llega el código %d a interrupt",code);
 
-        log_info(log_cpu,"llega el código %d a interrupt",paquete->code);
-
-        switch (paquete->code)
+        switch (code)
         {
         case FIN_QUANTUM_RR:
             log_info(log_cpu,"## Llega interrupción al puerto Interrupt");
