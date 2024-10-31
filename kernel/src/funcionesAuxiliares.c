@@ -8,6 +8,7 @@ void inicializar_estados() {
     cola_ready_fifo = queue_create();
     cola_exit = queue_create();
     cola_IO = queue_create();
+    cola_exit_procesos = queue_create();
 
     // Inicialización de listas
     lista_ready_prioridad = list_create();

@@ -441,10 +441,11 @@ void execute(t_contexto_pid_send *contextoPid,t_contexto_tid *contextoTid, op_co
         log_info(log_cpu,"GX A ENVIAR: %u", contextoTid->registros->GX);
         log_info(log_cpu,"HX A ENVIAR: %u", contextoTid->registros->HX);
 
+        log_info(log_cpu,"ENVIO REGISTROS A ACTUALIZAR");
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
-        
+        log_info(log_cpu,"ENVIADOS. VOY A MANDAR PROCESS_EXIT");
         send_process_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-    
+        log_info(log_cpu,"PROCESS_EXIT ENVIADO");
         // No hay que incrementar el PC
         sem_wait(&sem_syscall_finalizada);
         break;

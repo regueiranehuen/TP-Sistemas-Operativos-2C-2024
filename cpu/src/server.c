@@ -266,6 +266,7 @@ void* recibir_kernel_interrupt(void*args){
             pthread_mutex_unlock(&mutex_interrupt);
             break;
         case DESALOJAR:
+            printf("LLEGÓ INTERRUPCIÓN\n");
             log_info(log_cpu,"## Llega interrupción al puerto Interrupt");
             pthread_mutex_lock(&mutex_interrupt);
             hay_interrupcion = true;

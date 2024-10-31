@@ -42,13 +42,14 @@ void send_thread_create(char*nombreArchivo,int prioridad,int socket_cliente){
 }
 
 void send_process_exit(int socket_cliente){
+
     t_buffer*buffer=malloc(sizeof(t_buffer));
 
     buffer->size = 0;
 
-syscalls syscall = ENUM_PROCESS_EXIT;
+    syscalls syscall = ENUM_PROCESS_EXIT;
 
-send_paquete_syscall(buffer,socket_cliente,syscall);
+    send_paquete_syscall(buffer,socket_cliente,syscall);
 
 }
 
@@ -214,90 +215,81 @@ void send_segmentation_fault(int socket_cliente){
 
 
 
-void send_paquete_syscall_sin_parametros(int socket_cliente, syscalls syscall, t_paquete_syscall* paquete) {
-    paquete->syscall = syscall;
-    void *a_enviar = malloc(sizeof(paquete->syscall)); // Solo enviamos la syscall
-    memcpy(a_enviar, &(paquete->syscall), sizeof(paquete->syscall));
+void send_paquete_syscall_sin_parametros(int socket_cliente, syscalls syscall) {
+    int n = 0;
+    printf("SYSCALL QUE ESTOY POR MANDAR: %d",syscall);
+    void *a_enviar = malloc(sizeof(int) + sizeof(int));
+    int offset = 0;
 
-    send(socket_cliente, a_enviar, sizeof(paquete->syscall), 0);
+    memcpy(a_enviar + offset, &syscall, sizeof(int));
+    offset += sizeof(int);
+    memcpy(a_enviar + offset, &n, sizeof(int));
+    
+    send(socket_cliente, a_enviar, sizeof(int) + sizeof(int),0);
 
-    // Liberar la memoria que ya no usamos
     free(a_enviar);
-    free(paquete);
+
 }
 
 void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){
-    t_paquete_syscall*paquete=malloc(sizeof(t_paquete_syscall));
+    
 
     if(buffer->size == 0){
-        send_paquete_syscall_sin_parametros(socket_cliente,syscall,paquete);
+        send_paquete_syscall_sin_parametros(socket_cliente,syscall);
     } else{
+
+    t_paquete_syscall*paquete=malloc(sizeof(t_paquete_syscall));
 
     paquete->syscall=syscall;
     paquete->buffer=buffer;
 
     // Armamos el stream a enviar
-    void *a_enviar = malloc(buffer->size + sizeof(paquete->syscall) + sizeof(int));
+    void *a_enviar = malloc(buffer->size + sizeof(int) + sizeof(int));
     int offset = 0;
 
-    memcpy(a_enviar + offset, &(paquete->syscall), sizeof(paquete->syscall));
-    offset += sizeof(paquete->syscall);
+    memcpy(a_enviar + offset, &(paquete->syscall), sizeof(int));
+    offset += sizeof(int);
     memcpy(a_enviar + offset, &(paquete->buffer->size), sizeof(int));
     offset += sizeof(int);
     memcpy(a_enviar + offset, paquete->buffer->stream, paquete->buffer->size);
 
     // Por último enviamos
-    send(socket_cliente, a_enviar, buffer->size + sizeof(paquete->syscall) + sizeof(int),0);
+    send(socket_cliente, a_enviar, buffer->size + sizeof(int) + sizeof(int),0);
 
     // No nos olvidamos de liberar la memoria que ya no usaremos
     free(a_enviar);
     eliminar_paquete_syscall(paquete);
 }
+
 }
+
+
 t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch) {
     t_paquete_syscall* paquete = malloc(sizeof(t_paquete_syscall));
 
-    if (paquete == NULL) {
-        return NULL; // Error al asignar memoria
+    paquete->buffer=malloc(sizeof(t_buffer));
+
+    // Primero recibimos el codigo de operacion
+    int bytes = recv(socket_dispatch, &(paquete->syscall), sizeof(int), 0);
+
+    if (bytes <= 0){
+        return NULL;
+    }
+    else{
+        // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
+        
+        recv(socket_dispatch, &(paquete->buffer->size), sizeof(uint32_t), 0);
+
+        if (paquete->buffer->size > 0){
+            paquete->buffer->stream = malloc(paquete->buffer->size);
+            recv(socket_dispatch, paquete->buffer->stream, paquete->buffer->size, 0);
+        }
+
+        
+        return paquete;
     }
 
-    paquete->buffer = malloc(sizeof(t_buffer));
-    if (paquete->buffer == NULL) {
-        free(paquete);
-        return NULL; // Error al asignar memoria
-    }
-
-    // Primero recibimos el código de operación
-    if (recv(socket_dispatch, &(paquete->syscall), sizeof(paquete->syscall), 0) != sizeof(paquete->syscall)) {
-        free(paquete->buffer);
-        free(paquete);
-        return NULL; // Error al recibir el código de operación
-    }
-
-    // Luego recibimos el tamaño del buffer
-    if (recv(socket_dispatch, &(paquete->buffer->size), sizeof(int), 0) != sizeof(int)) {
-        free(paquete->buffer);
-        free(paquete);
-        return NULL; // Error al recibir el tamaño del buffer
-    }
-
-    // Asignamos memoria para el contenido del buffer según el tamaño recibido
-    paquete->buffer->stream = malloc(paquete->buffer->size);
-    if (paquete->buffer->stream == NULL) {
-        free(paquete->buffer);
-        free(paquete);
-        return NULL; // Error al asignar memoria para el contenido del buffer
-    }
-
-    // Recibimos el contenido del buffer
-    if (recv(socket_dispatch, paquete->buffer->stream, paquete->buffer->size, 0) != paquete->buffer->size) {
-        free(paquete->buffer->stream);
-        free(paquete->buffer);
-        free(paquete);
-        return NULL; // Error al recibir el contenido del buffer
-    }
-
-    return paquete;
+    //return paquete;
 }
 
 int recibir_entero_buffer(t_paquete_syscall*paquete){
@@ -489,7 +481,7 @@ void send_operacion_pid_tamanio_proceso(code_operacion code, int pid, int tamani
     memcpy(buffer->stream + offset, &pid, sizeof(int));
     offset += sizeof(int);
     memcpy(buffer->stream + offset, &tamanio_proceso, sizeof(int));
-
+    
     send_paquete_code_operacion(code, buffer, socket_cliente);
 
     free(buffer->stream);

@@ -105,7 +105,7 @@ void send_mutex_unlock(char* recurso, int socket_cliente);
 void send_IO(int milisegundos, int socket_cliente);
 void send_dump_memory(int socket_cliente);
 
-void send_paquete_syscall_sin_parametros(int socket_cliente, syscalls syscall, t_paquete_syscall* paquete);
+void send_paquete_syscall_sin_parametros(int socket_cliente, syscalls syscall);
 void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall);
 t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch);
 
