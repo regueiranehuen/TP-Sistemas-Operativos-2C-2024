@@ -4,6 +4,14 @@
 
 int main(int argc, char *argv[])
 {
+    
+    logger = log_create("kernel.log", "tp", true, LOG_LEVEL_TRACE);
+    
+    if(argc <=1 || argc >3){
+    log_info(logger,"Ingrese ./bin/kernel <archivo_pseudocodigo> <tamaño proceso>");
+    log_destroy(logger);
+    return -1;
+    }
 
     char *archivo_pseudocodigo = argv[1];
     int tamanio_proceso = atoi(argv[2]);

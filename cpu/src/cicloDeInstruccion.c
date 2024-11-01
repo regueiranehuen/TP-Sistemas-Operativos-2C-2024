@@ -46,22 +46,22 @@ void *ciclo_de_instruccion(void *args)
             seguir_ejecutando = true;
             while (seguir_ejecutando)
             {
-                printf("ete sech");
+                
                 t_instruccion *instruccion = fetch(contextos->contexto_tid);
                 if (instruccion == NULL)
                 {
-                    printf("bro?");
+                    
                     seguir_ejecutando = false;
                     continue;
                 }
-                log_info(log_cpu, "entrando a decode. %s,%s,%s,%s", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3, instruccion->parametros4);
+                
                 op_code nombre_instruccion = decode(instruccion);
-                printf("saliendo de decode");
+                
                 execute(contextos->contexto_pid, contextos->contexto_tid, nombre_instruccion, instruccion);
                 if (seguir_ejecutando)
                 {
                     checkInterrupt(contextos->contexto_tid);
-                    log_info(log_cpu,"valor de seguir ejecutando:%d",seguir_ejecutando);
+                    
                 }
             }
             free(contextos->contexto_tid);
@@ -73,12 +73,12 @@ void *ciclo_de_instruccion(void *args)
 
 t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
 {
-    log_info(log_cpu, "esperando thread execute\n");
+    
     t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente_Dispatch);
 
     if (paquete == NULL)
     {
-        printf("Cpu recibio un paquete no valido de kernel por dispatch");
+        log_info(log_cpu,"Cpu recibio un paquete no valido de kernel por dispatch");
         return NULL;
     }
 
@@ -93,13 +93,12 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
         /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
         t_tid_pid *info = recepcionar_tid_pid_code_op(paquete);
 
-        printf("pid:%d\n", info->pid);
-        printf("tid:%d\n", info->tid);
+        
 
         solicitar_contexto_pid(info->pid, sockets_cpu->socket_memoria);
-        printf("ya solicite el contexto\n");
+        
         t_paquete *paquete_solicitud_contexto_pid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
-        printf("Recibi solicitud de memoria\n");
+        
         if (paquete_solicitud_contexto_pid->codigo_operacion == CONTEXTO_PID_INEXISTENTE)
         {
             log_error(log_cpu, "El contexto del pid %d no existe", info->pid);
@@ -147,7 +146,7 @@ void checkInterrupt(t_contexto_tid *contextoTid)
 
     if (hay_interrupcion)
     {
-        printf("bro?\n");
+        
         hay_interrupcion = false;
         seguir_ejecutando = false;
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
@@ -171,7 +170,7 @@ void checkInterrupt(t_contexto_tid *contextoTid)
     }
     else
     {
-        log_info(log_cpu, "Soy un chupaverga y no entro a interrupt");
+        
         pthread_mutex_unlock(&mutex_interrupt);
     }
 }
@@ -179,7 +178,7 @@ void checkInterrupt(t_contexto_tid *contextoTid)
 t_instruccion *fetch(t_contexto_tid *contexto)
 {
 
-    log_info(log_cpu, "ENTRAMOS A FETCH. Tid %d, program counter %d", contexto->tid, contexto->registros->PC);
+    
 
     send_solicitud_instruccion_memoria(contexto->tid, contexto->pid, contexto->registros->PC);
 
@@ -542,18 +541,18 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
     case PROCESS_EXIT:
     {
         log_info(log_cpu, "PROCESS_EXIT");
-        log_info(log_cpu, "ENVIO REGISTROS A ACTUALIZAR");
+        
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
-        log_info(log_cpu,"AAA RECIBIMOS ALGO DE MEMORIAAA");
+        
         if (code != OK)
         {
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
         }
         printf("CODE:%d", code);
-        log_info(log_cpu, "ENVIADOS. VOY A MANDAR PROCESS_EXIT");
+        
         send_process_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        log_info(log_cpu, "PROCESS_EXIT ENVIADO");
+        
 
         sem_wait(&sem_ok_o_interrupcion);
 

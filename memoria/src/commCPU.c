@@ -2,7 +2,7 @@
 
 void* recibir_cpu(void*args) {
 
-    log_info(logger,"2_socket de cpu: %d", sockets_iniciales->socket_cpu);
+    
     int retardo_respuesta = config_get_int_value(config,"RETARDO_RESPUESTA");
     int codigoOperacion = 0;
     while (codigoOperacion != -1) {
@@ -13,7 +13,7 @@ void* recibir_cpu(void*args) {
             printf("Memoria recibio un paquete == NULL de cpu");
             break;
         }
-            printf("Memoria recibio el siguiente codigo operacion de CPU: %d",paquete_operacion->codigo_operacion);
+            log_info(logger,"Memoria recibio el siguiente codigo operacion de CPU: %d",paquete_operacion->codigo_operacion);
 
         usleep(retardo_respuesta * 1000);  // Aplicar retardo configurado
 
@@ -60,7 +60,7 @@ void* recibir_cpu(void*args) {
 
 
             case ACTUALIZAR_CONTEXTO_TID:{
-
+                printf("entrando a actualizar_contexto\n");
                 t_contexto_tid*contexto_tid=recepcionar_contexto_tid(paquete_operacion);
 
                 log_info(logger, "PROGRAM COUNTER ACTUAL: %u", contexto_tid->registros->PC);
@@ -83,12 +83,11 @@ void* recibir_cpu(void*args) {
             case OBTENER_INSTRUCCION: {
 
                 t_instruccion_memoria* solicitud_instruccion = recepcionar_solicitud_instruccion_memoria(paquete_operacion);
-                log_info(logger,"tid %d, pid %d, pc %d",solicitud_instruccion->tid,solicitud_instruccion->pid,solicitud_instruccion->pc);
                 t_instruccion *instruccion = obtener_instruccion(solicitud_instruccion->tid, solicitud_instruccion->pid,solicitud_instruccion->pc);
                 if (instruccion==NULL){
-                    log_info(logger,"putoooo");
+                    log_info(logger,"instruccion no encontrada");
+                    break;
                 }
-
                 enviar_instruccion(sockets_iniciales->socket_cpu, instruccion, INSTRUCCION_OBTENIDA);
                 if(strcmp(instruccion->parametros2,"") == 0){
                 log_info(logger,"## Obtener instruccion - (PID:TID) - (%d:%d) - Instruccion: <%s>",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1);
@@ -144,6 +143,7 @@ void actualizar_contexto(int pid, int tid, t_registros_cpu* reg){
         contexto->registros->DX = reg->DX;
         contexto->registros->EX = reg->EX;
         contexto->registros->HX = reg->HX;
+        log_info(logger,"Contexto actualizado: Pid:%d, Registro AX:%d,Tid:%d",contexto->pid,contexto->registros->AX,contexto->tid);
     }
     pthread_mutex_unlock(&mutex_lista_contextos_pids);
 }
@@ -189,7 +189,7 @@ t_contexto_pid*inicializar_contexto_pid(int pid,uint32_t base, uint32_t limite){
         return nuevo_contexto;
     }
     else{
-        printf("NO SE PUDO INICIALIZAR EL CONTEXTO DEL PID %d\n",pid);
+        log_info(logger,"NO SE PUDO INICIALIZAR EL CONTEXTO DEL PID %d\n",pid);
     }
     return NULL;
     

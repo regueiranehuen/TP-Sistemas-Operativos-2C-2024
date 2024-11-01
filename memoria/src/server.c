@@ -31,15 +31,14 @@ void *hilo_por_cliente(void *void_args)
     client_count++;
     pthread_mutex_unlock(&cliente_count_mutex);
 
-    printf("Antes de handshake. Cliente_%d\n", cliente_n);
+    
     int resultado = servidor_handshake(socket_cliente, args->log);
-    printf("Despues de handshake. Cliente_%d\n", cliente_n);
+    
 
     if (resultado == 0)
     {
         log_info(args->log, "Handshake memoria -> cliente_%d realizado correctamente", cliente_n);
     }
-    printf("cliente_n:%d\n", cliente_n);
     if (cliente_n <= 2)
     { // conexiones iniciales de cpu y kernel
 
@@ -81,20 +80,18 @@ void *gestor_clientes(void *void_args)
     hilo_clientes *args = (hilo_clientes *)void_args;
 
     int respuesta;
-    printf("Estado_servidor: %d\n", estado_cpu);
     int i = 0;
-    printf("A\n");
     while (estado_cpu != 0)
     { // mientras el servidor este abierto
-        printf("iteracion:%d\n", i);
+        
         hilo_clientes *args_hilo = malloc(sizeof(hilo_clientes));
         args_hilo->log = args->log;
         args_hilo->socket_servidor = args->socket_servidor;
 
         pthread_t hilo_cliente;
-        printf("Hilo a crear\n");
+        
         respuesta = pthread_create(&hilo_cliente, NULL, hilo_por_cliente, (void *)args_hilo);
-        printf("Hilo creado\n");
+        
         if (respuesta != 0)
         {
             log_error(args->log, "Error al crear el hilo para el cliente");

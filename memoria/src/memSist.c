@@ -9,7 +9,7 @@ int instrucciones_maximas=200;
 
 
 void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
-    printf("nombre del archivo: %s\n",nombre_archivo);
+    
 
     const char *ruta_relativa = nombre_archivo;
     char*ruta_absoluta = obtener_ruta_absoluta(ruta_relativa);
@@ -31,7 +31,6 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
         instruccion_tid_pid->pc = indice_instruccion;
 
         instruccion_tid_pid->instrucciones = malloc(sizeof(t_instruccion));
-        log_info(logger,"reservé espacio para instrucciones!");
         //t_instruccion* instruccion = malloc(sizeof(t_instruccion));
         char* token = strtok(linea, " \t\n");
         int param_count = 0;
@@ -64,7 +63,6 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
             token = strtok(NULL, " \t\n");
             param_count++;
         }
-        log_info(logger,"cont parametros %d",param_count);
         //list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
         inicializar_resto_parametros(param_count,instruccion_tid_pid);
 
@@ -153,10 +151,10 @@ void finalizar_hilo(int tid, int pid) {
             liberar_instruccion(actual);
             pthread_mutex_unlock(&mutex_lista_instruccion);
             
-            
             i--; // Decrementa i para no saltar el siguiente elemento
         }
     }
+
     
     t_contexto_pid* contexto_pid = obtener_contexto_pid(pid);
     t_contexto_tid* contexto_tid = obtener_contexto_tid(pid,tid);
@@ -169,6 +167,7 @@ void eliminar_elemento_por_tid(int tid, t_list* contextos_tids) {
         t_contexto_tid* actual = list_get(contextos_tids, i);
         if (actual->tid == tid) {
             // Eliminar el elemento de la lista y liberar su memoria
+            log_info(logger,"Contexto a eliminar: Pid:%d, Registro AX:%d,Tid:%d",actual->pid,actual->registros->AX,actual->tid);
             list_remove(contextos_tids, i); // Libera la memoria del elemento eliminado
             free(actual->registros);
             free(actual);

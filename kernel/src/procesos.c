@@ -131,7 +131,6 @@ void proceso_exit()
     pthread_mutex_unlock(&mutex_cola_exit_procesos);
     
     send_operacion_pid(cod_op,proceso->pid,socket_memoria);
-    log_info(logger,"ENVIÉ EL AVISO DEL PROCESS EXIT. ESPERANDO RESPUESTA DE MEMORIA");
     recv(socket_memoria, &respuesta, sizeof(int), 0);
     close(socket_memoria);
     if (respuesta != OK)
@@ -236,10 +235,6 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
         int socket_memoria = cliente_Memoria_Kernel(logger, config);
         int resultado;
 
-        printf("tid:%d\n",pcb->tcb_main->tid);
-        printf("pid:%d\n",pcb->pid);
-        printf("pseudocodigo:%s\n",pcb->tcb_main->pseudocodigo);
-
         send_inicializacion_hilo(pcb->tcb_main->tid,pcb->pid,pcb->tcb_main->pseudocodigo,socket_memoria);
         recv(socket_memoria, &resultado, sizeof(int), 0);
         close(socket_memoria);
@@ -315,7 +310,6 @@ void PROCESS_EXIT()
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
         send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-
     return;
     }
     t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
@@ -478,7 +472,7 @@ void THREAD_CANCEL(int tid)
             sacar_tcb_de_lista(lista_ready_prioridad,tcb);
             pthread_mutex_unlock(&mutex_cola_ready);
         }
-        else if(strcmp(algoritmo,"MULTINIVEL")){
+        else if(strcmp(algoritmo,"CMN")){
             pthread_mutex_lock(&mutex_cola_ready);
             t_cola_prioridad* cola = cola_prioridad(colas_ready_prioridad,tcb->prioridad);
             sacar_tcb_de_cola(cola->cola,tcb);

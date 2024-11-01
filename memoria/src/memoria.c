@@ -7,7 +7,7 @@ void atender_conexiones(int socket_cliente)
     bool conexion = true;
     while (conexion)
     {
-        log_info(logger,"Socket 1era peticion en memoria: %d",socket_cliente);
+        
         t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente);
     
         if (paquete == NULL)
@@ -23,11 +23,6 @@ void atender_conexiones(int socket_cliente)
 
         case INICIALIZAR_PROCESO:
             t_args_inicializar_proceso *info_0 = recepcionar_inicializacion_proceso(paquete);
-
-            printf("pid:%d\n",info_0->pid);
-            printf("tam proceso:%d\n",info_0->tam_proceso);
-            printf("pseudocodigo:%s\n",info_0->arch_pseudocodigo);
-
             pthread_mutex_lock(&mutex_lista_contextos_pids);
             uint32_t base = obtener_base();
             pthread_mutex_unlock(&mutex_lista_contextos_pids);
@@ -52,16 +47,13 @@ void atender_conexiones(int socket_cliente)
         case THREAD_CREATE_AVISO:
             t_args_thread_create_aviso *info_4 = recepcionar_inicializacion_hilo(paquete);
             
-            printf("pid:%d\n",info_4->pid);
-            printf("pseudocodigo:%s\n",info_4->arch_pseudo);
-            printf("tid:%d\n",info_4->tid);
 
             t_contexto_pid *contexto_pid = obtener_contexto_pid(info_4->pid);
 
             if(contexto_pid == NULL){
             log_info(logger,"No se encontro el contexto buscado");
             }
-            printf("pid:%d\n",contexto_pid->pid);
+            
             inicializar_contexto_tid(contexto_pid, info_4->tid);
             cargar_instrucciones_desde_archivo(info_4->arch_pseudo,info_4->pid,info_4->tid);
             respuesta = OK;

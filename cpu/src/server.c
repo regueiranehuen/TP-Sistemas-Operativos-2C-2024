@@ -251,7 +251,7 @@ void* recibir_kernel_interrupt(void*args){
         //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         if(code > 100){
-            printf("falopa\n");
+            log_info(log_cpu,"Conexion cerrada por Interrupt");
             break;
         }
         log_info(log_cpu,"llega el código %d a interrupt",code);
@@ -278,8 +278,7 @@ void* recibir_kernel_interrupt(void*args){
             log_info(log_cpu,"## Terminó una syscall");
             sem_post(&sem_ok_o_interrupcion);
         default:
-        printf("Me pinto la de recibir mierda\n");
-        log_info(log_cpu,"codigo erroneo recibido: %d",code);
+        log_info(log_cpu,"codigo no valido recibido: %d",code);
             break;
         }
         
