@@ -1,7 +1,7 @@
 #include "auxiliares.h"
 
 void inicializar_semaforos(){
-    sem_init(&sem_syscall_finalizada,0,0);
+    sem_init(&sem_ok_o_interrupcion,0,0);
     sem_init(&sem_finalizacion_cpu,0,0);
     sem_init(&sem_ciclo_instruccion,0,0);
 }
@@ -31,7 +31,7 @@ void destruir_mutex(){
 }
 
 void destruir_semaforos(){
-    sem_destroy(&sem_syscall_finalizada);
+    sem_destroy(&sem_finalizacion_cpu);
     sem_destroy(&sem_finalizacion_cpu);
     sem_destroy(&sem_ciclo_instruccion);
 }

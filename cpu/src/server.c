@@ -36,8 +36,9 @@ t_contexto_tid*contexto_tid_actual;
 t_contexto_pid*contexto_pid_actual;
 
 sem_t sem_ciclo_instruccion;
-sem_t sem_syscall_finalizada;
+sem_t sem_ok_o_interrupcion;
 sem_t sem_finalizacion_cpu;
+
 
 code_operacion devolucion_kernel;
 
@@ -246,7 +247,7 @@ void* recibir_kernel_interrupt(void*args){
     int noFinalizar = 0;
     while (noFinalizar != -1){
         
-        //log_info(log_cpu,"esperando interrupciones\n");
+        log_info(log_cpu,"esperando interrupciones\n");
         //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         if(code > 100){
@@ -263,17 +264,22 @@ void* recibir_kernel_interrupt(void*args){
             hay_interrupcion = true;
             devolucion_kernel=FIN_QUANTUM_RR;
             pthread_mutex_unlock(&mutex_interrupt);
+            sem_post(&sem_ok_o_interrupcion);
             break;
         case DESALOJAR:
-            printf("LLEGÓ INTERRUPCIÓN\n");
             log_info(log_cpu,"## Llega interrupción al puerto Interrupt");
             pthread_mutex_lock(&mutex_interrupt);
             hay_interrupcion = true;
             devolucion_kernel=DESALOJAR;
             pthread_mutex_unlock(&mutex_interrupt);
+            sem_post(&sem_ok_o_interrupcion);
             break;
+        case OK:
+            log_info(log_cpu,"## Terminó una syscall");
+            sem_post(&sem_ok_o_interrupcion);
         default:
         printf("Me pinto la de recibir mierda\n");
+        log_info(log_cpu,"codigo erroneo recibido: %d",code);
             break;
         }
         

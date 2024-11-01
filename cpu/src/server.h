@@ -52,7 +52,7 @@ extern pthread_mutex_t mutex_interrupt;
 extern pthread_mutex_t mutex_motivo_devolucion;
 
 extern sem_t sem_ciclo_instruccion;
-extern sem_t sem_syscall_finalizada;
+extern sem_t sem_ok_o_interrupcion;
 extern sem_t sem_finalizacion_cpu;
 
 extern code_operacion devolucion_kernel;

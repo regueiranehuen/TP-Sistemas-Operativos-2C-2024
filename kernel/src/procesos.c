@@ -136,7 +136,7 @@ void proceso_exit()
     {
         printf("Error en la eliminación del proceso en memoria");
     }
-    else
+    else if (respuesta == OK)
     {
         pthread_mutex_lock(&mutex_cola_exit_procesos);
         t_pcb *proceso = queue_pop(cola_exit_procesos);
@@ -290,6 +290,10 @@ void PROCESS_CREATE(char *pseudocodigo, int tamanio_proceso, int prioridad)
     pthread_mutex_unlock(&mutex_cola_new_procesos);
     
     sem_post(&semaforo_cola_new_procesos);
+
+    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
     
 }
 
@@ -306,6 +310,10 @@ void PROCESS_EXIT()
         pthread_mutex_lock(&mutex_log);
         log_info(logger,"Error, se intento ejecutar la syscall PROCESS_EXIT con un TID que no era el TID 0");
         pthread_mutex_unlock(&mutex_log);
+        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+
     return;
     }
     t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
@@ -358,6 +366,9 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
         pthread_mutex_lock(&mutex_log);
         log_info(logger,"Error en la creacion del hilo");
         pthread_mutex_unlock(&mutex_log);
+        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         return;
     }
     else
@@ -371,6 +382,9 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
         log_info(logger,"## (<%d>:<%d>) Se crea el Hilo - Estado: READY",pcb->pid,tcb->tid);
         pthread_mutex_unlock(&mutex_log);
         pushear_cola_ready(tcb);
+        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
     }
 }
 
@@ -385,6 +399,12 @@ void THREAD_JOIN(int tid)
 
     if (buscar_tcb_por_tid(lista_tcbs,tid,hilo_exec) == NULL || buscar_tcb(tid, hilo_exec) == NULL)
     {
+        pthread_mutex_lock(&mutex_log);
+        log_info(logger,"## (<%d>:<%d>) - El hilo pasado por parámetro no existe/ya finalizó",hilo_exec->pid,hilo_exec->tid);
+        pthread_mutex_unlock(&mutex_log);
+        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         return;
     }
     t_tcb* tcb_aux = hilo_exec;
@@ -418,13 +438,13 @@ void THREAD_CANCEL(int tid)
 
     t_tcb *tcb = buscar_tcb_por_tid(lista_tcbs,tid,hilo_exec); // Debido a que solamente hilos vinculados por un mismo proceso se pueden cancelar entre si, el tid a cancelar debe ser del proceso del hilo que llamo a la funcion
 
-    if (tcb == NULL)
+    if (tcb == NULL || buscar_tcb(tid, hilo_exec) == NULL)
     {
-        return;
-    }
+        log_info(logger,"El tid %d pasado por parámetro no pertenece al proceso en ejecución/no existe/ya finalizó",tid);
+        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
-    if (buscar_tcb_por_tid(lista_tcbs,tid,hilo_exec) == NULL || buscar_tcb(tid, hilo_exec) == NULL)
-    {
         return;
     }
 
@@ -472,6 +492,9 @@ void THREAD_CANCEL(int tid)
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
     sem_post(&semaforo_cola_exit_hilos);
     }
+    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 }
 
 
@@ -524,6 +547,11 @@ void MUTEX_CREATE(char* recurso)//supongo que el recurso es el nombre del mutex
 
     list_add(lista_mutex, mutex);
     list_add(proceso_asociado->lista_mutex, mutex);
+
+    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+
 }
 
 void MUTEX_LOCK(char* recurso)
@@ -547,6 +575,9 @@ void MUTEX_LOCK(char* recurso)
     {
         mutex_asociado->hilo = hilo_aux;
         mutex_asociado->estado = LOCKED;
+        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
     }
     else
     {
@@ -554,7 +585,7 @@ void MUTEX_LOCK(char* recurso)
         hilo_exec = NULL;
         list_add(lista_bloqueados,hilo_aux);
         pthread_mutex_lock(&mutex_log);
-        log_info(logger,"## (<%d>:<%d>) - Bloqueado por: <MUTEX>",hilo_aux->pid,hilo_aux->tid);
+        log_info(logger,"## (<%d>:<%d>) - Bloqueado por: <%s>",hilo_aux->pid,hilo_aux->tid,recurso);
         pthread_mutex_unlock(&mutex_log);
         queue_push(mutex_asociado->cola_tcbs, hilo_aux);
         desalojado = true;
@@ -583,6 +614,10 @@ void MUTEX_UNLOCK(char* recurso)
 
     if (mutex_asociado->hilo != hilo_exec)
     {
+        log_info(logger, "El hilo que realizó la syscall no es el que tiene tomado el recurso");
+        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         return;
     }
     if (!queue_is_empty(mutex_asociado->cola_tcbs))
@@ -590,14 +625,16 @@ void MUTEX_UNLOCK(char* recurso)
         mutex_asociado->hilo = queue_pop(mutex_asociado->cola_tcbs);
         sacar_tcb_de_lista(lista_bloqueados,mutex_asociado->hilo);
         mutex_asociado->hilo->estado = TCB_READY;
-        t_tcb* tcb = mutex_asociado->hilo;
-        pushear_cola_ready(tcb);
+        pushear_cola_ready(mutex_asociado->hilo);
     }
     else
     {
         mutex_asociado->estado = UNLOCKED;
         mutex_asociado->hilo = NULL;
     }
+    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 }
 
 /*
