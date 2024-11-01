@@ -102,7 +102,7 @@ void* recibir_cpu(void*args) {
                 else{
                 log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s>",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4);
                 }
-                free(instruccion);
+                
                 break;
             }
 

@@ -132,7 +132,7 @@ void proceso_exit()
     log_info(logger,"ENVIÉ EL AVISO DEL PROCESS EXIT. ESPERANDO RESPUESTA DE MEMORIA");
     recv(socket_memoria, &respuesta, sizeof(int), 0);
     close(socket_memoria);
-    if (respuesta == -1)
+    if (respuesta != OK)
     {
         printf("Error en la eliminación del proceso en memoria");
     }
@@ -299,7 +299,7 @@ enviando todos sus TCBs asociados a la cola de EXIT. Esta instrucción sólo ser
 y le deberá indicar a la memoria la finalización de dicho proceso.
 */
 
-void PROCESS_EXIT() // AVISO A MEMORIA
+void PROCESS_EXIT()
 {
     log_info(logger,"ENTRAMOS A LA SYSCALL PROCESS_EXIT");
     if(hilo_exec->tid != 0){
@@ -309,16 +309,12 @@ void PROCESS_EXIT() // AVISO A MEMORIA
     return;
     }
     t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
-    log_info(logger,"RECIBIMOS EL PCB CON PID %d",pcb->pid);
 
         pcb->estado = PCB_EXIT;
 
-        log_info(logger,"EL ESTADO DEL PROCESO ES %d",pcb->estado);
 
         pthread_mutex_lock(&mutex_cola_exit_procesos);
-        log_info(logger,"voy a meter el proceso con pid %d en la cola de exit",pcb->pid);
         queue_push(cola_exit_procesos, pcb);
-        log_info(logger,"ya meti al proceso en la cola exit %d",pcb->pid);
         pthread_mutex_unlock(&mutex_cola_exit_procesos);
 
         sem_post(&semaforo_cola_exit_procesos);

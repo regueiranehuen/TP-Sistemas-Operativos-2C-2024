@@ -236,9 +236,11 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
             pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
             break;
         case ENUM_FIN_QUANTUM_RR:
+        log_info(logger,"SE RECIBIÓ EL CÓDIGO ENUM_FIN_QUANTUM_RR");
         sem_post(&sem_desalojado);
             break;
         case ENUM_DESALOJAR:
+        log_info(logger,"SE RECIBIÓ EL CÓDIGO ENUM_DESALOJAR");
         sem_post(&sem_desalojado);
             break;
         default:

@@ -30,10 +30,23 @@ void destruir_semaforos(){
 void liberar_instruccion(t_instruccion_tid_pid*instruccion){
     
     free(instruccion->instrucciones->parametros1);
-    free(instruccion->instrucciones->parametros2);
-    free(instruccion->instrucciones->parametros3);
-    free(instruccion->instrucciones->parametros4);
-    
 
+    if(strcmp(instruccion->instrucciones->parametros2,"")==0){
+        goto fin;
+    }
+    else if(strcmp(instruccion->instrucciones->parametros3,"")==0){
+        free(instruccion->instrucciones->parametros2);
+    }
+    else if(strcmp(instruccion->instrucciones->parametros4,"")==0){
+        free(instruccion->instrucciones->parametros2);
+        free(instruccion->instrucciones->parametros3);
+        
+    }
+    else{
+        free(instruccion->instrucciones->parametros2);
+        free(instruccion->instrucciones->parametros3);
+        free(instruccion->instrucciones->parametros4);
+    }
+    fin:
     free(instruccion);
 }

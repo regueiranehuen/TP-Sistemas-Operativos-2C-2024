@@ -69,7 +69,7 @@ void atender_conexiones(int socket_cliente)
             break;
         case THREAD_ELIMINATE_AVISO:
             t_tid_pid * info_thread_eliminate = recepcionar_tid_pid_code_op(paquete);
-            
+            log_info(logger,"PID:%d,TID:%d",info_thread_eliminate->pid,info_thread_eliminate->tid);
             finalizar_hilo(info_thread_eliminate->tid,info_thread_eliminate->pid);
             
             respuesta = OK;

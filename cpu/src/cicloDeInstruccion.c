@@ -41,7 +41,7 @@ void *ciclo_de_instruccion(void *args)
     {
         t_contextos *contextos = esperar_thread_execute(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
-        if (contextos->contexto_pid != NULL && contextos->contexto_tid != NULL)
+        if (contextos != NULL && contextos->contexto_pid != NULL && contextos->contexto_tid != NULL)
         {
             seguir_ejecutando = true;
             while (seguir_ejecutando)
@@ -61,6 +61,7 @@ void *ciclo_de_instruccion(void *args)
                 if (seguir_ejecutando)
                 {
                     checkInterrupt(contextos->contexto_tid);
+                    log_info(log_cpu,"valor de seguir ejecutando:%d",seguir_ejecutando);
                 }
             }
         }
@@ -76,8 +77,7 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
     if (paquete == NULL)
     {
         printf("Cpu recibio un paquete no valido de kernel por dispatch");
-        t_contextos *contextos = esperar_thread_execute(socket_cliente_Dispatch);
-        return contextos;
+        return NULL;
     }
 
     log_info(log_cpu, "se recibió el código %d por dispatch\n", paquete->code);
@@ -145,8 +145,8 @@ void checkInterrupt(t_contexto_tid *contextoTid)
 
     if (hay_interrupcion)
     {
+        printf("bro?\n");
         hay_interrupcion = false;
-        pthread_mutex_unlock(&mutex_interrupt);
         seguir_ejecutando = false;
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion respuesta = recibir_code_operacion(sockets_cpu->socket_memoria);
@@ -155,17 +155,21 @@ void checkInterrupt(t_contexto_tid *contextoTid)
             log_info(log_cpu, "Memoria no pudo actualizar los registros, muy poco sigma");
             return;
         }
+        printf("code:%d\n",respuesta);
         if (devolucion_kernel == FIN_QUANTUM_RR)
         {
             send_fin_quantum_rr(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         }
         else if (devolucion_kernel == DESALOJAR)
         {
+            log_info(log_cpu,"Mandando desalojo a kernel\n");
             send_desalojo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         }
+        pthread_mutex_unlock(&mutex_interrupt);
     }
     else
     {
+        log_info(log_cpu, "Soy un chupaverga y no entro a interrupt");
         pthread_mutex_unlock(&mutex_interrupt);
     }
 }

@@ -116,7 +116,7 @@ t_socket_cpu *servidor_CPU_Kernel(t_log *log, t_config *config)
     sockets->socket_servidor_Dispatch = socket_servidor_Dispatch;
     sockets->socket_servidor_Interrupt = socket_servidor_Interrupt;
     sockets->socket_cliente_Dispatch = socket_cliente_Dispatch;
-    sockets->socket_servidor_Interrupt = socket_cliente_Interrupt;
+    sockets->socket_cliente_Interrupt = socket_cliente_Interrupt;
 
     return sockets;
 }
@@ -249,8 +249,11 @@ void* recibir_kernel_interrupt(void*args){
         //log_info(log_cpu,"esperando interrupciones\n");
         //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
-        
-        //log_info(log_cpu,"llega el código %d a interrupt",code);
+        if(code > 100){
+            printf("falopa\n");
+            break;
+        }
+        log_info(log_cpu,"llega el código %d a interrupt",code);
 
         switch (code)
         {
@@ -270,6 +273,7 @@ void* recibir_kernel_interrupt(void*args){
             pthread_mutex_unlock(&mutex_interrupt);
             break;
         default:
+        printf("Me pinto la de recibir mierda\n");
             break;
         }
         

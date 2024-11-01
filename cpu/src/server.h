@@ -49,6 +49,7 @@ extern t_contexto_pid*contexto_pid_actual;
 
 extern pthread_mutex_t mutex_contextos_exec;
 extern pthread_mutex_t mutex_interrupt;
+extern pthread_mutex_t mutex_motivo_devolucion;
 
 extern sem_t sem_ciclo_instruccion;
 extern sem_t sem_syscall_finalizada;
