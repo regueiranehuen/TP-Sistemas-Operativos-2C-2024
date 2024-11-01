@@ -131,8 +131,12 @@ void* recibir_cpu(void*args) {
 void actualizar_contexto(int pid, int tid, t_registros_cpu* reg){
     pthread_mutex_lock(&mutex_lista_contextos_pids);
     t_contexto_tid *contexto = obtener_contexto_tid(pid, tid);
+    if(contexto == NULL){
+        log_info(logger,"MUY SIGMA DE MI PARTE");
+    }
     if (contexto != NULL)
     {
+        log_info(logger,"FORRO");
         contexto->registros->PC = reg->PC;
         contexto->registros->AX = reg->AX;
         contexto->registros->BX = reg->BX;

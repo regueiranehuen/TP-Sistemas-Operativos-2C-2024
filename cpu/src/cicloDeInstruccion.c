@@ -64,6 +64,8 @@ void *ciclo_de_instruccion(void *args)
                     log_info(log_cpu,"valor de seguir ejecutando:%d",seguir_ejecutando);
                 }
             }
+            free(contextos->contexto_tid);
+            free(contextos->contexto_pid);
         }
     }
     return NULL;
@@ -140,6 +142,7 @@ Caso contrario, se descarta la interrupción.
 
 void checkInterrupt(t_contexto_tid *contextoTid)
 {
+
     pthread_mutex_lock(&mutex_interrupt);
 
     if (hay_interrupcion)
@@ -164,12 +167,13 @@ void checkInterrupt(t_contexto_tid *contextoTid)
             log_info(log_cpu,"Mandando desalojo a kernel\n");
             send_desalojo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         }
+        pthread_mutex_unlock(&mutex_interrupt);
     }
     else
     {
-        log_info(log_cpu, "No llegó ninguna interrupción");
+        log_info(log_cpu, "Soy un chupaverga y no entro a interrupt");
+        pthread_mutex_unlock(&mutex_interrupt);
     }
-    pthread_mutex_unlock(&mutex_interrupt);
 }
 
 t_instruccion *fetch(t_contexto_tid *contexto)
@@ -330,16 +334,19 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         log_info(log_cpu, "READ_MEM - Dirección: %s", instruccion->parametros2);
         funcREAD_MEM(contextoPid, contextoTid, instruccion->parametros2, instruccion->parametros3);
         contextoTid->registros->PC++;
+
         break;
     case WRITE_MEM:
         log_info(log_cpu, "WRITE_MEM - Dirección: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
         funcWRITE_MEM(contextoPid, contextoTid, instruccion->parametros2, instruccion->parametros3);
         contextoTid->registros->PC++;
+
         break;
     case LOG:
         log_info(log_cpu, "LOG - Mensaje: %s", instruccion->parametros2);
         funcLOG(contextoTid, instruccion->parametros2);
         contextoTid->registros->PC++;
+
         break;
     case DUMP_MEMORY:
     {
@@ -355,9 +362,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
 
         log_info(log_cpu, "DUMP_MEMORY ENVIADO");
 
+        sem_wait(&sem_ok_o_interrupcion);
+
         
         contextoTid->registros->PC++;
-        sem_wait(&sem_ok_o_interrupcion);
+
         break;
     }
     case IO:
@@ -373,9 +382,10 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_IO(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "IO ENVIADO");
 
-        
-        contextoTid->registros->PC++;
         sem_wait(&sem_ok_o_interrupcion);
+
+        contextoTid->registros->PC++;
+
         break;
     }
     case PROCESS_CREATE:
@@ -391,9 +401,10 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_process_create(instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "PROCESS_CREATE ENVIADO");
 
-        
-        contextoTid->registros->PC++;
         sem_wait(&sem_ok_o_interrupcion);
+
+        contextoTid->registros->PC++;
+
         break;
     }
     case THREAD_CREATE:
@@ -409,9 +420,10 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_thread_create(instruccion->parametros2, atoi(instruccion->parametros3), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "THREAD_CREATE ENVIADO");
 
-        
-        contextoTid->registros->PC++;
         sem_wait(&sem_ok_o_interrupcion);
+
+        contextoTid->registros->PC++;
+
         break;
     }
     case THREAD_JOIN:
@@ -427,9 +439,9 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_thread_join(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "THREAD_JOIN ENVIADO");
 
-        
-        contextoTid->registros->PC++;
         sem_wait(&sem_ok_o_interrupcion);
+        contextoTid->registros->PC++;
+
         break;
     }
     case THREAD_CANCEL:
@@ -445,9 +457,9 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_thread_cancel(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "THREAD_CANCEL ENVIADO");
 
-        
-        contextoTid->registros->PC++;
         sem_wait(&sem_ok_o_interrupcion);
+        contextoTid->registros->PC++;
+
         break;
     }
     case MUTEX_CREATE:
@@ -463,9 +475,9 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_mutex_create(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "MUTEX_CREATE ENVIADO");
 
-        
-        contextoTid->registros->PC++;
         sem_wait(&sem_ok_o_interrupcion);
+        contextoTid->registros->PC++;
+
         break;
     }
     case MUTEX_LOCK:
@@ -481,9 +493,9 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_mutex_lock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "MUTEX_LOCK ENVIADO");
 
-        
-        contextoTid->registros->PC++;
         sem_wait(&sem_ok_o_interrupcion);
+        contextoTid->registros->PC++;
+
         break;
     }
     case MUTEX_UNLOCK:
@@ -501,10 +513,9 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_mutex_unlock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "MUTEX_UNLOCK ENVIADO");
 
-        
+        sem_wait(&sem_ok_o_interrupcion);
 
         contextoTid->registros->PC++;
-        sem_wait(&sem_ok_o_interrupcion);
 
         break;
     }
@@ -523,11 +534,9 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
 
         log_info(log_cpu, "THREAD_EXIT ENVIADO");
 
-        
-
-        contextoTid->registros->PC++;
         sem_wait(&sem_ok_o_interrupcion);
 
+        contextoTid->registros->PC++;
         break;
     }
     case PROCESS_EXIT:
@@ -546,11 +555,9 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_process_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "PROCESS_EXIT ENVIADO");
 
-        
-
-        // No hay que incrementar el program counter
         sem_wait(&sem_ok_o_interrupcion);
 
+        // No hay que incrementar el program counter
 
         break;
     }

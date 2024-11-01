@@ -84,6 +84,7 @@ t_tcb *crear_tcb(t_pcb *pcb)
     {
         tcb->prioridad = 0;
     }
+    tcb->cola_hilos_bloqueados= queue_create();
     pthread_mutex_init(&tcb->mutex_cola_hilos_bloqueados, NULL);
     pcb->contador_tid += 1;
     return tcb;
@@ -93,7 +94,8 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
 {
     t_pcb *pcb = crear_pcb();
     t_tcb* tcb = crear_tcb(pcb);
-    tcb->pseudocodigo = archivo_pseudocodigo;
+    tcb->pseudocodigo = malloc(strlen(archivo_pseudocodigo) + 1);
+    strcpy(tcb->pseudocodigo, archivo_pseudocodigo);
     pcb->tamanio_proceso = tamanio_proceso;
     tcb->prioridad = 0;
     pcb->tcb_main = tcb;
@@ -168,12 +170,13 @@ void hilo_exit()
 
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     t_tcb *hilo = queue_pop(cola_exit);
+    printf("tid:%d\n",hilo->tid);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
     send_operacion_tid_pid(cod_op,hilo->tid,hilo->pid,socket_memoria);
     close(socket_memoria);
     
     int tam_cola = queue_size(hilo->cola_hilos_bloqueados);
-    if (tam_cola != 0)
+    if (tam_cola > 0)
     {
 
         for (int i = 0; i < tam_cola; i++)
@@ -251,7 +254,6 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
         else
     {
         pcb->tcb_main->estado = TCB_READY;
-        list_add(lista_tcbs,pcb->tcb_main);
         pthread_mutex_lock(&mutex_log);
         log_info(logger,"## (<%d>:<%d>) Se crea el Hilo - Estado: READY",pcb->pid,pcb->tcb_main->tid);
         pthread_mutex_unlock(&mutex_log);
@@ -376,8 +378,8 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
         t_tcb *tcb = crear_tcb(pcb);
         tcb->prioridad = prioridad;
         tcb->estado = TCB_READY;
-        tcb->pseudocodigo = pseudocodigo;
-        list_add(lista_tcbs,tcb);
+        tcb->pseudocodigo = malloc(strlen(pseudocodigo) + 1);
+        strcpy(tcb->pseudocodigo, pseudocodigo);
         pthread_mutex_lock(&mutex_log);
         log_info(logger,"## (<%d>:<%d>) Se crea el Hilo - Estado: READY",pcb->pid,tcb->tid);
         pthread_mutex_unlock(&mutex_log);

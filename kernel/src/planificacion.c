@@ -199,7 +199,7 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
             queue_push(cola_exit_procesos, pcb);
             pthread_mutex_unlock(&mutex_cola_exit_procesos);
             pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
-            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+            send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
             pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
             break;
         case ENUM_FIN_QUANTUM_RR:
