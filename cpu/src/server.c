@@ -246,11 +246,11 @@ void* recibir_kernel_interrupt(void*args){
     int noFinalizar = 0;
     while (noFinalizar != -1){
         
-        log_info(log_cpu,"esperando interrupciones\n");
+        //log_info(log_cpu,"esperando interrupciones\n");
         //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         
-        log_info(log_cpu,"llega el código %d a interrupt",code);
+        //log_info(log_cpu,"llega el código %d a interrupt",code);
 
         switch (code)
         {

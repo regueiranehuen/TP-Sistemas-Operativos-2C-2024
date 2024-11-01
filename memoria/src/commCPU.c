@@ -192,18 +192,18 @@ t_contexto_pid*inicializar_contexto_pid(int pid,uint32_t base, uint32_t limite){
 }
 
 t_contexto_tid*obtener_contexto_tid(int pid, int tid){ // hay que usar mutex cada vez que se usa esta funcion
-    pthread_mutex_lock(&mutex_lista_contextos_pids);
+    //pthread_mutex_lock(&mutex_lista_contextos_pids);
     for (int i = 0; i < list_size(lista_contextos_pids); i++){
         
         t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
         t_list*contextos_tids=cont_actual->contextos_tids;
         if (pid == cont_actual->pid && esta_tid_en_lista(tid,contextos_tids)){
-            pthread_mutex_unlock(&mutex_lista_contextos_pids);
+            //pthread_mutex_unlock(&mutex_lista_contextos_pids);
             return obtener_tid_en_lista(tid,contextos_tids);
         }
  
     }
-    pthread_mutex_unlock(&mutex_lista_contextos_pids);
+    //pthread_mutex_unlock(&mutex_lista_contextos_pids);
     return NULL;
 }
 

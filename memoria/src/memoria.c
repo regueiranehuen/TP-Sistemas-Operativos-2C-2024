@@ -71,7 +71,7 @@ void atender_conexiones(int socket_cliente)
             t_tid_pid * info_thread_eliminate = recepcionar_tid_pid_code_op(paquete);
             
             finalizar_hilo(info_thread_eliminate->tid,info_thread_eliminate->pid);
-
+            
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
             break;

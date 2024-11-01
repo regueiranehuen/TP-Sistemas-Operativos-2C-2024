@@ -212,9 +212,6 @@ void send_segmentation_fault(int socket_cliente){
 }
 
 
-
-
-
 void send_paquete_syscall_sin_parametros(int socket_cliente, syscalls syscall) {
     int n = 0;
     printf("SYSCALL QUE ESTOY POR MANDAR: %d",syscall);
