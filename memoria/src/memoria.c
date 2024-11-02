@@ -26,7 +26,7 @@ void atender_conexiones(int socket_cliente)
             pthread_mutex_lock(&mutex_lista_contextos_pids);
             uint32_t base = obtener_base();
             pthread_mutex_unlock(&mutex_lista_contextos_pids);
-
+            
             inicializar_contexto_pid(info_0->pid, base, info_0->tam_proceso);
 
             respuesta = OK;

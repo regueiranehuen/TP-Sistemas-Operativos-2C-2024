@@ -370,4 +370,5 @@ t_contexto_pid_send* recepcionar_contexto_pid(t_paquete*paquete);
 
 uint32_t leer_registros(void*stream);
 
+
 #endif

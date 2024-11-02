@@ -709,3 +709,23 @@ char* obtener_ruta_absoluta(const char *ruta_relativa) {
 
     return ruta_absoluta;
 }
+
+t_log_level log_level(t_config* config){
+    char* log_level = config_get_string_value(config,"LOG_LEVEL");
+    if(strcmp(log_level,"TRACE")== 0){
+    return LOG_LEVEL_TRACE;
+    }
+    else if(strcmp(log_level,"DEBUG")== 0){
+    return LOG_LEVEL_DEBUG;
+    }
+    else if(strcmp(log_level,"INFO")== 0){
+    return LOG_LEVEL_INFO;
+    }
+    else if(strcmp(log_level,"WARNING")==0){
+    return LOG_LEVEL_WARNING;
+    }
+    else if(strcmp(log_level,"ERROR")==0){
+    return LOG_LEVEL_ERROR;
+    }
+    return -1;
+}

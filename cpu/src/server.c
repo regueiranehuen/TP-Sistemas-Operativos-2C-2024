@@ -9,7 +9,7 @@ char *ip_memoria = NULL;
 int puerto_memoria = 0;
 int puerto_escucha_dispatch = 0;
 int puerto_escucha_interrupt = 0;
-char *log_level = NULL;
+char* log_level_config = NULL;
 
 int socket_servidor_Dispatch = 0, socket_servidor_Interrupt = 0;
 int socket_cliente_Dispatch = 0, socket_cliente_Interrupt = 0;
@@ -52,7 +52,7 @@ void leer_config(char *path)
     puerto_memoria = config_get_int_value(config, "PUERTO_MEMORIA");
     puerto_escucha_dispatch = config_get_int_value(config, "PUERTO_ESCUCHA_DISPATCH");
     puerto_escucha_interrupt = config_get_int_value(config, "PUERTO_ESCUCHA_INTERRUPT");
-    log_level = config_get_string_value(config, "LOG_LEVEL");
+    log_level_config = config_get_string_value(config, "LOG_LEVEL");
     log_info(log_cpu, "Configuración del CPU cargada.");
 }
 

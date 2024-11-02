@@ -4,8 +4,9 @@
 
 int main(int argc, char *argv[])
 {
-    
-    logger = log_create("kernel.log", "tp", true, LOG_LEVEL_TRACE);
+    config = config_create("kernel.config");
+    t_log_level log_level_int = log_level(config);
+    logger = log_create("kernel.log", "tp", true, log_level_int);
     
     if(argc <=1 || argc >3){
     log_info(logger,"Ingrese ./bin/kernel <archivo_pseudocodigo> <tamaño proceso>");
@@ -15,12 +16,6 @@ int main(int argc, char *argv[])
 
     char *archivo_pseudocodigo = argv[1];
     int tamanio_proceso = atoi(argv[2]);
-    
-    //char *archivo_pseudocodigo = "pseudocodigo.txt";
-    //int tamanio_proceso = 2000;
-    
-    logger = log_create("kernel.log", "tp", true, LOG_LEVEL_TRACE);
-    config = config_create("kernel.config");
 
     inicializar_estados();
     inicializar_semaforos();

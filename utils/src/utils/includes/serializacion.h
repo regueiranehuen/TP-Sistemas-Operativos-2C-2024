@@ -147,4 +147,6 @@ void send_inicializacion_hilo(int tid, int pid, char*arch_pseudocodigo,int socke
 t_args_thread_create_aviso* recepcionar_inicializacion_hilo(t_paquete_code_operacion*paquete);
 char* obtener_ruta_absoluta(const char *ruta_relativa);
 
+t_log_level log_level(t_config* config);
+
 #endif
