@@ -242,7 +242,7 @@ void send_contexto_pid(int socket_cliente,t_contexto_pid_send*contexto){
     buffer->size = 2*sizeof(uint32_t) + sizeof(int);
     buffer->stream = malloc(buffer->size);
 
-    void* stream = buffer->stream;
+    char* stream = buffer->stream;
 
     memcpy(stream,&(contexto->pid),sizeof(int));
     stream += sizeof(int);
