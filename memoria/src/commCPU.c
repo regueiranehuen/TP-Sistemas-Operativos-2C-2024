@@ -49,7 +49,7 @@ void* recibir_cpu(void*args) {
                     send_paquete_op_code(sockets_iniciales->socket_cpu,NULL,CONTEXTO_PID_INEXISTENTE);
                     break;
                 }
-                t_contexto_pid_send* contexto_a_enviar = malloc(sizeof(contexto_a_enviar));
+                t_contexto_pid_send* contexto_a_enviar = malloc(sizeof(t_contexto_pid_send));
                 contexto_a_enviar->pid = contextoPid->pid;
                 contexto_a_enviar->base = contextoPid->base;
                 contexto_a_enviar->limite=contextoPid->limite;

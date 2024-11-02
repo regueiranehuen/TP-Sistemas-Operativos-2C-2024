@@ -1,25 +1,21 @@
 #include "includes/memoria.h"
 
-void atender_conexiones(int socket_cliente)
-{
+void atender_conexiones(int socket_cliente){
 
     code_operacion respuesta;
     bool conexion = true;
-    while (conexion)
-    {
+    while (conexion){
         
         t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente);
     
-        if (paquete == NULL)
-        {   log_info(logger,"Cierre de conexion");
+        if (paquete == NULL){   log_info(logger,"Cierre de conexion");
             conexion = false;
             continue;
         }
 
         log_info(logger,"recibi esto de kernel: %d",paquete->code);
 
-        switch (paquete->code)
-        { // hay que enviar el pid/tid correspondiente que vamos a crear o eliminar. Por ejemplo: Para thread_exit o thread_cancel hay que mandarle a memoria el tid que vamos a eliminar
+        switch (paquete->code){ // hay que enviar el pid/tid correspondiente que vamos a crear o eliminar. Por ejemplo: Para thread_exit o thread_cancel hay que mandarle a memoria el tid que vamos a eliminar
 
         case INICIALIZAR_PROCESO:
             t_args_inicializar_proceso *info_0 = recepcionar_inicializacion_proceso(paquete);
