@@ -141,24 +141,24 @@ void enviar_instruccion(int conexion, t_instruccion *instruccion_nueva, op_code 
 }
 
 void finalizar_hilo(int tid, int pid) {
+    pthread_mutex_lock(&mutex_lista_instruccion);
     for (int i = 0; i < list_size(lista_instrucciones_tid_pid); i++) {
-        pthread_mutex_lock(&mutex_lista_instruccion);
         t_instruccion_tid_pid* actual = list_get(lista_instrucciones_tid_pid, i);
-        pthread_mutex_unlock(&mutex_lista_instruccion);
+        
         if (actual->pid == pid && actual->tid == tid) {
-            pthread_mutex_lock(&mutex_lista_instruccion);
+
             list_remove(lista_instrucciones_tid_pid, i);
             liberar_instruccion(actual);
-            pthread_mutex_unlock(&mutex_lista_instruccion);
-            
+      
             i--; // Decrementa i para no saltar el siguiente elemento
         }
     }
-
-    
+    pthread_mutex_unlock(&mutex_lista_instruccion);
+    pthread_mutex_lock(&mutex_lista_contextos_pids);
     t_contexto_pid* contexto_pid = obtener_contexto_pid(pid);
     t_contexto_tid* contexto_tid = obtener_contexto_tid(pid,tid);
     eliminar_elemento_por_tid(contexto_tid->tid, contexto_pid->contextos_tids);
+    pthread_mutex_unlock(&mutex_lista_contextos_pids);
 }
 
 void eliminar_elemento_por_tid(int tid, t_list* contextos_tids) {
@@ -167,13 +167,13 @@ void eliminar_elemento_por_tid(int tid, t_list* contextos_tids) {
         t_contexto_tid* actual = list_get(contextos_tids, i);
         if (actual->tid == tid) {
             // Eliminar el elemento de la lista y liberar su memoria
-            log_info(logger,"Contexto a eliminar: Pid:%d, Registro AX:%d,Tid:%d",actual->pid,actual->registros->AX,actual->tid);
             list_remove(contextos_tids, i); // Libera la memoria del elemento eliminado
             free(actual->registros);
             free(actual);
+
             break; // Salir del bucle después de eliminar el primer elemento encontrado
         }
-    }
+    }   
 }
 
 

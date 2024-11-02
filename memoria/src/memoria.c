@@ -47,14 +47,16 @@ void atender_conexiones(int socket_cliente)
         case THREAD_CREATE_AVISO:
             t_args_thread_create_aviso *info_4 = recepcionar_inicializacion_hilo(paquete);
             
-
             t_contexto_pid *contexto_pid = obtener_contexto_pid(info_4->pid);
 
             if(contexto_pid == NULL){
             log_info(logger,"No se encontro el contexto buscado");
             }
             
-            inicializar_contexto_tid(contexto_pid, info_4->tid);
+            if (info_4->tid != 0){ // Ya que el hilo 0 se inicializa cuando se inicializa el proceso
+                inicializar_contexto_tid(contexto_pid, info_4->tid);
+            }
+            
             cargar_instrucciones_desde_archivo(info_4->arch_pseudo,info_4->pid,info_4->tid);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
