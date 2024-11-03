@@ -26,12 +26,17 @@ void atender_conexiones(int socket_cliente)
             pthread_mutex_lock(&mutex_lista_contextos_pids);
             uint32_t base = obtener_base();
             pthread_mutex_unlock(&mutex_lista_contextos_pids);
-            
+            int resultado = inicializar_proceso(info_0->pid,info_0->tam_proceso,config);
+            if(resultado ==-1){
+            respuesta = resultado;
+            send(socket_cliente,&respuesta,sizeof(int,0));  
+            }
+            else{
             inicializar_contexto_pid(info_0->pid, base, info_0->tam_proceso);
 
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
-
+            }
             break;
 
         case DUMP_MEMORIA:
