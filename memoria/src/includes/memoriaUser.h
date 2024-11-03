@@ -5,10 +5,6 @@
 #include <utils/includes/sockets.h>
 #include "utils/includes/serializacion.h"
 
-#define MEM_SIZE 1024 // Lo debe sacar de la config pero lo borraron ni idea
-#define TAMANO_PARTICION_FIJA 64 // Lo debe sacar de la config pero lo borraron ni idea
-
-
 typedef enum {
     PARTICION_FIJA,
     PARTICION_DINAMICA
@@ -46,12 +42,23 @@ typedef struct {
 } t_tabla_libres;
 
 typedef struct {
-    void* memoria;                  
+     void* memoria;                  
     t_tabla_segmentos tabla_segmentos;
     t_tabla_libres tabla_libres;
     t_esquema_particion esquema;
     int tamano_memoria;
+    int* tamanos_particiones;
+    int num_particiones;
 } t_memoria;
+
+t_memoria* inicializar_memoria(t_esquema_particion esquema, int tamano, int* tamanos_particiones, int num_particiones);
+void liberar_memoria(t_memoria* memoria);
+void unir_bloques_libres(t_memoria* memoria);
+int asignar_memoria_fija(t_memoria* memoria, int pid);
+int asignar_memoria_dinamica(t_memoria* memoria, int id_proceso, int tamano_requerido, t_estrategia_busqueda estrategia);
+int asignar_memoria(t_memoria* memoria, int pid, int tamano);
+void liberar_memoria_proceso(t_memoria* memoria, int pid);
+void mostrar_estado_memoria(t_memoria* memoria);
 
 
 #endif

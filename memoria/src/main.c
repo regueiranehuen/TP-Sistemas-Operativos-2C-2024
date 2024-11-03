@@ -1,8 +1,10 @@
 #include "includes/main.h"
+#include "includes/memoriaUser.h"
 
 int estado_cpu = 1;
 t_log *logger;
 t_config *config;
+
 
 int main(int argc, char *argv[])
 {
@@ -12,6 +14,9 @@ int main(int argc, char *argv[])
 
     logger = log_create("memoria.log", "tp", true, LOG_LEVEL_TRACE);
     config = config_create("memoria.config");
+
+    leer_config(argv[1]);
+    t_memoria* mem = inicializar_memoria(esquema, tamanio_memoria, particiones, 6);
 
     inicializar_mutex();
     inicializar_semaforos();
@@ -59,3 +64,15 @@ void hilo_recibe_cpu()
     }
     pthread_detach(hilo_cliente_cpu);
 }
+
+void leer_config(char* path) {
+
+    config = iniciar_config(path);
+
+    tamanio_memoria = config_get_int_value(config, "TAM_MEMORIA");
+    retardo_restp = config_get_int_value(config, "RETARDO_RESPUESTA");
+    esquema = config_get_int_value(config, "FIJAS");
+    algoritmo_busqueda = config_get_string_value(config, "ALGORITMO_BUSQUEDA");
+    particiones = config_get_string_value(config, "PARTICIONES");
+}
+

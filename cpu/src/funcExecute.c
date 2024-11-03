@@ -49,9 +49,10 @@ void funcWRITE_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,ch
 
     if (direccionFisica >= 0) {
         uint32_t valor = obtener_valor_registro(contextoTid,registro_datos);
-        escribir_valor_en_memoria(direccionFisica, valor);
-        log_info(log_cpu, "WRITE_MEM: Dirección %d, Valor %d", 
-                 direccionFisica, valor);
+        int ret = escribir_valor_en_memoria(direccionFisica, valor);
+        if(ret == OK) {
+            log_info(log_cpu, "WRITE_MEM: Dirección %d, Valor %d", direccionFisica, valor);
+        }
     } else {
         log_error(log_cpu, "Dirección física inválida: %d", direccionFisica);
     }
@@ -64,7 +65,7 @@ uint32_t leer_valor_de_memoria(uint32_t direccionFisica) {
     eliminar_paquete(paquete);
 
     int cod_op = recibir_operacion(sockets_cpu->socket_memoria);
-    if (cod_op == READ_MEM) {
+    if (cod_op == READ_MEM_RESULTADO) {
         uint32_t valor = recibir_entero_uint32(sockets_cpu->socket_memoria);
         return valor;
     } else {
@@ -74,12 +75,21 @@ uint32_t leer_valor_de_memoria(uint32_t direccionFisica) {
 }
 
 
-void escribir_valor_en_memoria(uint32_t direccionFisica, uint32_t valor) {
+int escribir_valor_en_memoria(uint32_t direccionFisica, uint32_t valor) {
     t_paquete* paquete = crear_paquete_op(WRITE_MEM);
     agregar_entero_a_paquete(paquete, direccionFisica); // Solo dirección
     agregar_entero_a_paquete(paquete, valor); // Valor a escribir
     enviar_paquete(paquete, sockets_cpu->socket_memoria);
     eliminar_paquete(paquete);
+
+    int cod_op = recibir_operacion(sockets_cpu->socket_memoria);
+    if(cod_op == OK) {
+        int valor = recibir_entero(sockets_cpu->socket_memoria);
+        return valor;
+    } else {
+        log_error(log_cpu, "Error al escribir en memoria");
+        return 0;
+    }
 }
 
 uint32_t tamanio_registro(char *registro){

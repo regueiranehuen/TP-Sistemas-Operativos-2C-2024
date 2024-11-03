@@ -1,5 +1,6 @@
 #include "includes/commCpu.h"
 
+
 void* recibir_cpu(void*args) {
 
     
@@ -106,11 +107,19 @@ void* recibir_cpu(void*args) {
             }
 
             case READ_MEM: {
-                
+            
+                uint32_t direccionFisica = recibir_entero_uint32(sockets_iniciales->socket_cpu); // Suponiendo que recibes la dirección
+                uint32_t valor = leer_memoria(memoria, direccionFisica);
+                enviar_entero(sockets_iniciales->socket_cpu, valor);
+                break;
             }
 
             case WRITE_MEM: {
-                
+                uint32_t direccionFisica = recibir_entero_uint32(sockets_iniciales->socket_cpu);
+                uint32_t valor = recibir_entero_uint32(sockets_iniciales->socket_cpu);
+                escribir_memoria(memoria, direccionFisica, valor);
+                enviar_codigo(OK, sockets_iniciales->socket_cpu);
+                break;
             }
 
             case 1:
@@ -289,6 +298,16 @@ void liberar_contexto_pid(t_contexto_pid *contexto_pid){
 
 void liberar_lista_contextos(){
     list_destroy_and_destroy_elements(lista_contextos_pids,(void*)liberar_contexto_pid);
+}
+
+uint32_t leer_memoria(t_memoria* memoria, int direccion_fisica) {
+    uint32_t valor;
+    memcpy(&valor, (char*)memoria->memoria + direccion_fisica, sizeof(uint32_t));
+    return valor;
+}
+
+void escribir_memoria(t_memoria* memoria, int direccion_fisica, uint32_t valor) {
+    memcpy((char*)memoria->memoria + direccion_fisica, &valor, sizeof(uint32_t));
 }
 
 

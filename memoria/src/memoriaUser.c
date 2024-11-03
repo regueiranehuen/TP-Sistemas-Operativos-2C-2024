@@ -1,7 +1,13 @@
 #include "includes/memoriaUser.h"
 
+int tamanio_memoria;
+int retardo_restp;
+int esquema;
+char* algoritmo_busqueda;
+char* particiones;
+
 // Inicializar la memoria con un esquema de partición y tamaño de memoria
-t_memoria* inicializar_memoria(t_esquema_particion esquema, int tamano) {
+t_memoria* inicializar_memoria(t_esquema_particion esquema, int tamano, int* tamanos_particiones, int num_particiones) {
     t_memoria* memoria = malloc(sizeof(t_memoria));
     memoria->memoria = malloc(tamano);
     memset(memoria->memoria, 0, tamano);
@@ -12,6 +18,13 @@ t_memoria* inicializar_memoria(t_esquema_particion esquema, int tamano) {
     memoria->esquema = esquema;
     memoria->tamano_memoria = tamano;
 
+    memoria->tamanos_particiones = malloc(num_particiones * sizeof(int));
+    for (int i = 0; i < num_particiones; i++) {
+        memoria->tamanos_particiones[i] = tamanos_particiones[i];
+    }
+    memoria->num_particiones = num_particiones;
+
+    
     // Inicializar un bloque libre que cubre toda la memoria para particiones dinámicas
     if (esquema == PARTICION_DINAMICA) {
         memoria->tabla_libres.bloques_libres = malloc(sizeof(t_segmento_libre));
@@ -32,7 +45,7 @@ void liberar_memoria(t_memoria* memoria) {
 }
 
 // Función auxiliar para buscar y marcar bloques libres contiguos (solo partición dinámica)
-void coalesce_bloques_libres(t_memoria* memoria) {
+void unir_bloques_libres(t_memoria* memoria) {
     for (int i = 0; i < memoria->tabla_libres.num_bloques_libres - 1; i++) {
         t_segmento_libre* actual = &memoria->tabla_libres.bloques_libres[i];
         t_segmento_libre* siguiente = &memoria->tabla_libres.bloques_libres[i + 1];
@@ -53,13 +66,11 @@ void coalesce_bloques_libres(t_memoria* memoria) {
 
 // Asignar memoria con partición fija
 int asignar_memoria_fija(t_memoria* memoria, int pid) {
-    int num_particiones = memoria->tamano_memoria / TAMANO_PARTICION_FIJA;
-
-    for (int i = 0; i < num_particiones; i++) {
-        int base = i * TAMANO_PARTICION_FIJA;
+    for (int i = 0; i < memoria->num_particiones; i++) {
+        int base = i * memoria->tamanos_particiones[i]; // Ajuste de base
         int ocupado = 0;
 
-        for (int j = base; j < base + TAMANO_PARTICION_FIJA; j++) {
+        for (int j = base; j < base + memoria->tamanos_particiones[i]; j++) {
             if (((char*)memoria->memoria)[j] != 0) {
                 ocupado = 1;
                 break;
@@ -67,7 +78,7 @@ int asignar_memoria_fija(t_memoria* memoria, int pid) {
         }
 
         if (!ocupado) {
-            for (int j = base; j < base + TAMANO_PARTICION_FIJA; j++) {
+            for (int j = base; j < base + memoria->tamanos_particiones[i]; j++) {
                 ((char*)memoria->memoria)[j] = pid;
             }
 
@@ -75,7 +86,7 @@ int asignar_memoria_fija(t_memoria* memoria, int pid) {
                                                          (memoria->tabla_segmentos.num_segmentos + 1) * sizeof(t_segmento_usuario));
             memoria->tabla_segmentos.segmentos[memoria->tabla_segmentos.num_segmentos].pid = pid;
             memoria->tabla_segmentos.segmentos[memoria->tabla_segmentos.num_segmentos].base = base;
-            memoria->tabla_segmentos.segmentos[memoria->tabla_segmentos.num_segmentos].limite = TAMANO_PARTICION_FIJA;
+            memoria->tabla_segmentos.segmentos[memoria->tabla_segmentos.num_segmentos].limite = memoria->tamanos_particiones[i]; // Ajuste de límite
             memoria->tabla_segmentos.num_segmentos++;
             return base;
         }
@@ -172,7 +183,7 @@ void liberar_memoria_proceso(t_memoria* memoria, int pid) {
             memoria->tabla_segmentos.num_segmentos--;
             memoria->tabla_segmentos.segmentos = realloc(memoria->tabla_segmentos.segmentos, 
                                                          memoria->tabla_segmentos.num_segmentos * sizeof(t_segmento_usuario));
-            coalesce_bloques_libres(memoria);
+            unir_bloques_libres(memoria);
             return;
         }
     }
@@ -185,7 +196,7 @@ void mostrar_estado_memoria(t_memoria* memoria) {
            memoria->esquema == PARTICION_FIJA ? "Partición Fija" : "Partición Dinámica");
     
     printf("\n-- Bloques de Memoria --\n");
-    for (int i = 0; i < MEM_SIZE; i++) {
+    for (int i = 0; i < tamanio_memoria; i++) {
         printf("%d ", ((char*)memoria->memoria)[i]);
         if ((i + 1) % 16 == 0) {
             printf("\n");
