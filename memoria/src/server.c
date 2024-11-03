@@ -64,7 +64,7 @@ void *hilo_por_cliente(void *void_args)
     }
     else
     {
-        log_info(args->log, "%d_Peticion de kernel", socket_cliente);
+        log_info(args->log, "## Kernel Conectado - FD del socket: <%d>", socket_cliente);
         sem_post(&sem_conexion_hecha);
         atender_conexiones(socket_cliente);
     }

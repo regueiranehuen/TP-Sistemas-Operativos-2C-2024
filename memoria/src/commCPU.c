@@ -30,7 +30,7 @@ void* recibir_cpu(void*args) {
                     send_paquete_op_code(sockets_iniciales->socket_cpu,NULL,CONTEXTO_TID_INEXISTENTE);
                     break;
                 }
-
+                
                 send_contexto_tid(sockets_iniciales->socket_cpu,contexto_tid);
                 log_info(logger, "Enviado contexto para PID: %d, TID: %d", contexto_tid->pid, contexto_tid->tid);
                 
@@ -74,6 +74,7 @@ void* recibir_cpu(void*args) {
                 log_info(logger, "HX A ENVIAR: %u", contexto_tid->registros->HX);
 
                 actualizar_contexto(contexto_tid->pid,contexto_tid->tid,contexto_tid->registros);
+                log_info(logger,"## Contexto Actualizado - (PID:TID) - (%d:%d)",contexto_tid->pid,contexto_tid->tid);
                 send_code_operacion(OK,sockets_iniciales->socket_cpu);
                 
                 //free(contexto_tid);

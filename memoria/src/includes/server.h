@@ -18,7 +18,6 @@ extern pthread_mutex_t mutex_lista_contextos_pids;
 extern t_list*lista_instrucciones_tid_pid;
 
 
-
 typedef struct{
     int socket_servidor;
     t_log* log;

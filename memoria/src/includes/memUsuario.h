@@ -1,7 +1,7 @@
 #ifndef MEMUSUARIO_H
 #define MEMUSUARIO_H
 
-#include "includes/server.h"
+#include "server.h"
 
 extern void* memoria;
 extern t_list* lista_particiones;
@@ -29,5 +29,13 @@ int fija_worst(int pid, int tamanio_proceso, int tamanio_lista);
 int dinamica_first(int pid, int tamanio_proceso, int tamanio_lista);
 int dinamica_best(int pid, int tamanio_proceso, int tamanio_lista);
 int dinamica_worst(int pid, int tamanio_proceso, int tamanio_lista);
+
+void liberar_espacio_proceso(int pid);
+void fusionar_particiones_libres(t_list* lista_particiones);
+
+void escritura_datos_archivo(int pid,int tid);
+
+t_particiones* busqueda_particion(int pid);
+char* generar_nombre_archivo(int pid, int tid);
 
 #endif

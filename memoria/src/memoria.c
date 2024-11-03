@@ -29,11 +29,11 @@ void atender_conexiones(int socket_cliente)
             int resultado = inicializar_proceso(info_0->pid,info_0->tam_proceso,config);
             if(resultado ==-1){
             respuesta = resultado;
-            send(socket_cliente,&respuesta,sizeof(int,0));  
+            send(socket_cliente,&respuesta,sizeof(int),0);  
             }
             else{
             inicializar_contexto_pid(info_0->pid, base, info_0->tam_proceso);
-
+            log_info(logger,"## Proceso Creado -  PID: %d - Tamaño: %d",info_0->pid,info_0->tam_proceso);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
             }
@@ -41,28 +41,44 @@ void atender_conexiones(int socket_cliente)
 
         case DUMP_MEMORIA:
             t_tid_pid *info_1 = recepcionar_tid_pid_code_op(paquete);
+            log_info(logger,"## Memory Dump solicitado - (PID:TID) - (%d:%d)",info_1->pid,info_1->tid);
+            int socket_filesystem = cliente_memoria_filesystem(logger,config);
+            t_contexto_pid *contexto_pid_1 = obtener_contexto_pid(info_1->pid);
+            int tamanio_proceso = (contexto_pid_1->limite - contexto_pid_1->base);
+            send_dump_memory_filesystem(info_1->pid,info_1->tid,tamanio_proceso,socket_filesystem);
+            recv(socket_filesystem,&respuesta,sizeof(int),0);
+            close(socket_filesystem);
+            if(respuesta != OK){
+            send(socket_cliente, &respuesta, sizeof(int), 0);
+            }
+            escritura_datos_archivo(info_1->pid,info_1->tid);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
             break;
         case PROCESS_EXIT_AVISO:
             int pid_1 = recepcionar_int_code_op(paquete);
+            liberar_espacio_proceso(pid_1);
+            t_contexto_pid* contexto_pid = obtener_contexto_pid(pid_1);
+            int tamanio_proceso_1 = contexto_pid->limite-contexto_pid->base;
+            log_info(logger,"## Proceso Destruido -  PID: %d - Tamaño: %d",pid_1,tamanio_proceso_1);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
             break;
         case THREAD_CREATE_AVISO:
             t_args_thread_create_aviso *info_4 = recepcionar_inicializacion_hilo(paquete);
             
-            t_contexto_pid *contexto_pid = obtener_contexto_pid(info_4->pid);
+            t_contexto_pid *contexto_pid_4 = obtener_contexto_pid(info_4->pid);
 
-            if(contexto_pid == NULL){
+            if(contexto_pid_4 == NULL){
             log_info(logger,"No se encontro el contexto buscado");
             }
             
             if (info_4->tid != 0){ // Ya que el hilo 0 se inicializa cuando se inicializa el proceso
-                inicializar_contexto_tid(contexto_pid, info_4->tid);
+                inicializar_contexto_tid(contexto_pid_4, info_4->tid);
             }
             
             cargar_instrucciones_desde_archivo(info_4->arch_pseudo,info_4->pid,info_4->tid);
+            log_info(logger,"## Hilo Creado - (PID:TID) - (%d:%d)",info_4->pid,info_4->tid);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
             break;
@@ -70,7 +86,7 @@ void atender_conexiones(int socket_cliente)
             t_tid_pid * info_thread_eliminate = recepcionar_tid_pid_code_op(paquete);
             log_info(logger,"PID:%d,TID:%d",info_thread_eliminate->pid,info_thread_eliminate->tid);
             finalizar_hilo(info_thread_eliminate->tid,info_thread_eliminate->pid);
-            
+            log_info(logger,"## Hilo Destruido - (PID:TID) - (%d:%d)",info_4->pid,info_4->tid);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
             break;

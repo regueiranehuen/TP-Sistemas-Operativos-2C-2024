@@ -394,3 +394,87 @@ int inicializar_proceso(int pid, int tamanio_proceso, t_config *config)
     }
     return resultado;
 }
+
+void liberar_espacio_proceso(int pid){
+      for (int i = 0; i < list_size(lista_particiones); i++) {
+        t_particiones* particion = list_get(lista_particiones, i);
+        if (particion->ocupada && particion->pid) {
+            particion->ocupada = false;
+            particion->pid = -1;
+        }
+    }
+    fusionar_particiones_libres(lista_particiones);//acomodar la lista
+}
+
+void fusionar_particiones_libres(t_list* lista_particiones) {
+    int i = 0;
+
+    while (i < list_size(lista_particiones) - 1) {
+        t_particiones* particion_actual = list_get(lista_particiones, i);
+        t_particiones* particion_siguiente = list_get(lista_particiones, i + 1);
+
+        // Verificar si ambas particiones están libres y son adyacentes
+        if (!particion_actual->ocupada && !particion_siguiente->ocupada && 
+            particion_actual->limite == particion_siguiente->base) {
+
+            // Fusionar las particiones
+            particion_actual->limite = particion_siguiente->limite;
+
+            // Eliminar la partición siguiente ya que fue fusionada
+            list_remove_and_destroy_element(lista_particiones, i + 1, free);
+
+            // No incrementamos `i` ya que necesitamos verificar la nueva partición fusionada con la siguiente
+        } else {
+            // Si no se fusiona, avanzamos al siguiente par de particiones
+            i++;
+        }
+    }
+}
+
+void escritura_datos_archivo(int pid,int tid){
+t_particiones* particion = busqueda_particion(pid);
+char* path = generar_nombre_archivo(pid,tid);
+char* ruta_absoluta = obtener_ruta_absoluta(path);
+FILE* archivo = fopen(ruta_absoluta,"wb");
+void* puntero = memoria + particion->base;
+
+size_t tamanio_a_escribir = particion->limite - particion->base;
+
+    size_t bytes_escritos = fwrite(puntero, 1, tamanio_a_escribir, archivo);
+    if (bytes_escritos != tamanio_a_escribir) {
+        perror("Error al escribir en el archivo");
+    }
+
+    fclose(archivo);
+}
+
+t_particiones* busqueda_particion(int pid){
+    for (int i = 0; i < list_size(lista_particiones); i++) {
+        t_particiones* particion = list_get(lista_particiones, i);
+        if (particion->pid) {
+            return particion;
+        }
+    }
+    return NULL;
+}
+
+char* generar_nombre_archivo(int pid, int tid){
+    // Obtener el tiempo actual
+    time_t now = time(NULL);
+    struct tm *tm_now = localtime(&now);
+    // Crear un buffer para el timestamp en formato YYYYMMDD-HHMMSS
+    char timestamp[20];
+    strftime(timestamp, sizeof(timestamp), "%Y%m%d-%H%M%S", tm_now);
+
+    // Asignar memoria para el nombre del archivo
+    char* nombre_archivo = malloc(256); // Asegúrate de que el tamaño sea suficiente
+    if (nombre_archivo == NULL) {
+        perror("Error al asignar memoria");
+        return NULL; // Manejar error de memoria
+    }
+
+    // Formatear el nombre del archivo
+    sprintf(nombre_archivo, "%d-%d-%s.dmp", pid, tid, timestamp);
+
+    return nombre_archivo;
+}
