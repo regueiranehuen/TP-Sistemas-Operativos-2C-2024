@@ -1,4 +1,6 @@
 #include "includes/commCpu.h"
+//#include "includes/memoriaUser.h"
+t_memoria* mem;
 
 
 void* recibir_cpu(void*args) {
@@ -16,10 +18,11 @@ void* recibir_cpu(void*args) {
         }
             log_info(logger,"Memoria recibio el siguiente codigo operacion de CPU: %d",paquete_operacion->codigo_operacion);
 
-        usleep(retardo_respuesta * 1000);  // Aplicar retardo configurado
+        usleep(retardo_respuesta * 1000);
 
         switch (paquete_operacion->codigo_operacion) {
             case OBTENER_CONTEXTO_TID: {
+                usleep(retardo_respuesta * 1000);
                 t_tid_pid *info = recepcionar_solicitud_contexto_tid(paquete_operacion);  // Recibe PID y TID
 
                 log_info(logger, "## Contexto solicitado - (PID:TID) - (%d:%d)",info->pid,info->tid);
@@ -40,6 +43,7 @@ void* recibir_cpu(void*args) {
             }
 
             case OBTENER_CONTEXTO_PID:{ 
+                usleep(retardo_respuesta * 1000);
                 int pid_obtencion = recepcionar_solicitud_contexto_pid(paquete_operacion);
 
                 pthread_mutex_lock(&mutex_lista_contextos_pids);
@@ -61,6 +65,7 @@ void* recibir_cpu(void*args) {
 
 
             case ACTUALIZAR_CONTEXTO_TID:{
+                usleep(retardo_respuesta * 1000);
                 printf("entrando a actualizar_contexto\n");
                 t_contexto_tid*contexto_tid=recepcionar_contexto_tid(paquete_operacion);
 
@@ -82,7 +87,7 @@ void* recibir_cpu(void*args) {
             }
 
             case OBTENER_INSTRUCCION: {
-
+                usleep(retardo_respuesta * 1000);
                 t_instruccion_memoria* solicitud_instruccion = recepcionar_solicitud_instruccion_memoria(paquete_operacion);
                 t_instruccion *instruccion = obtener_instruccion(solicitud_instruccion->tid, solicitud_instruccion->pid,solicitud_instruccion->pc);
                 if (instruccion==NULL){
@@ -107,18 +112,19 @@ void* recibir_cpu(void*args) {
             }
 
             case READ_MEM: {
-            
-                uint32_t direccionFisica = recibir_entero_uint32(sockets_iniciales->socket_cpu); // Suponiendo que recibes la dirección
-                uint32_t valor = leer_memoria(memoria, direccionFisica);
-                enviar_entero(sockets_iniciales->socket_cpu, valor);
+                usleep(retardo_respuesta * 1000);
+                uint32_t direccionFisica = recibir_entero_uint32(sockets_iniciales->socket_cpu);
+                uint32_t valor = leer_memoria(mem, direccionFisica);
+                enviar_entero(sockets_iniciales->socket_cpu, valor, READ_MEM_RESULTADO);
                 break;
             }
 
             case WRITE_MEM: {
+                usleep(retardo_respuesta * 1000);
                 uint32_t direccionFisica = recibir_entero_uint32(sockets_iniciales->socket_cpu);
                 uint32_t valor = recibir_entero_uint32(sockets_iniciales->socket_cpu);
-                escribir_memoria(memoria, direccionFisica, valor);
-                enviar_codigo(OK, sockets_iniciales->socket_cpu);
+                escribir_memoria(mem, direccionFisica, valor);
+                send_code_operacion(OK, sockets_iniciales->socket_cpu);
                 break;
             }
 

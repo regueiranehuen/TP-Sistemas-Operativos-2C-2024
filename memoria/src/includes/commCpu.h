@@ -3,7 +3,7 @@
 
 #include "server.h"
 #include "utils/includes/estructuras.h"
-#include "includes/memoriaUser.h"
+#include "memoriaUser.h"
 
 void* recibir_cpu(void*args);
 t_contexto_pid* obtener_contexto_pid(int pid);

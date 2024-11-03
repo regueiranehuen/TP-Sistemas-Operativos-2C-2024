@@ -23,6 +23,20 @@ void atender_conexiones(int socket_cliente){
             uint32_t base = obtener_base();
             pthread_mutex_unlock(&mutex_lista_contextos_pids);
 
+            if (mem->esquema == PARTICION_FIJA) {
+                base = asignar_memoria_fija(mem->memoria, info_0->pid);
+            } else {
+                base = asignar_memoria_dinamica(mem->memoria, info_0->pid, info_0->tam_proceso, mem->estrategia);
+            }
+
+            if (base == -1) {
+                respuesta = ERROR; // No se pudo asignar memoria
+                log_info(logger, "No se pudo asignar memoria");
+            } else {
+                inicializar_contexto_pid(info_0->pid, base, info_0->tam_proceso);
+                respuesta = OK;
+            }
+
             inicializar_contexto_pid(info_0->pid, base, info_0->tam_proceso);
 
             respuesta = OK;
@@ -37,6 +51,7 @@ void atender_conexiones(int socket_cliente){
             break;
         case PROCESS_EXIT_AVISO:
             int pid_1 = recepcionar_int_code_op(paquete);
+            liberar_memoria_proceso(mem->memoria, pid_1);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
             break;

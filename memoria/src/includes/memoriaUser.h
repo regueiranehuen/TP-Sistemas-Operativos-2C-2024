@@ -2,7 +2,7 @@
 #define MEMORIAUSER_H
 
 #include "utils/includes/estructuras.h"
-#include <utils/includes/sockets.h>
+#include "utils/includes/sockets.h"
 #include "utils/includes/serializacion.h"
 
 typedef enum {
@@ -15,9 +15,6 @@ typedef enum {
     BEST_FIT,
     WORST_FIT
 } t_estrategia_busqueda;
-
-//sacarlo tambien de config
-t_estrategia_busqueda estrategia;
 
 // Ver si conviene usar una copia o los propios contextos
 typedef struct {
@@ -46,12 +43,15 @@ typedef struct {
     t_tabla_segmentos tabla_segmentos;
     t_tabla_libres tabla_libres;
     t_esquema_particion esquema;
+    t_estrategia_busqueda estrategia;
     int tamano_memoria;
-    int* tamanos_particiones;
+    int* lista_particiones;
     int num_particiones;
 } t_memoria;
 
-t_memoria* inicializar_memoria(t_esquema_particion esquema, int tamano, int* tamanos_particiones, int num_particiones);
+extern t_memoria* mem;
+
+t_memoria* inicializar_memoria(t_esquema_particion esquema, int tamano, int* lista_particiones, int num_particiones);
 void liberar_memoria(t_memoria* memoria);
 void unir_bloques_libres(t_memoria* memoria);
 int asignar_memoria_fija(t_memoria* memoria, int pid);
