@@ -67,59 +67,33 @@ void leer_config(char* path) {
     config = iniciar_config(path);
 
     mem->tamano_memoria = config_get_int_value(config, "TAM_MEMORIA");
-    mem->esquema = config_get_int_value(config, "FIJAS");
-    mem->estrategia = config_get_int_value(config, "ALGORITMO_BUSQUEDA");
+    char* esquema_string = config_get_string_value(config, "ESQUEMA");
+    char* estrategia_string = config_get_string_value(config, "ALGORITMO_BUSQUEDA");
 
-    // Obtener la cadena de particiones
-    char* particiones_string = config_get_string_value(config, "PARTICIONES");
-    int count;
-    if (particiones_string != NULL) {
-        count = 0;
-        mem->lista_particiones = parse_partitions(particiones_string, &count);
-        
-        if (mem->lista_particiones) {
-            // Aquí puedes usar mem->lista_particiones y count como necesites
-            // Por ejemplo, podrías imprimir las particiones
-            for (int i = 0; i < count; i++) {
-                printf("Partición %d: %d\n", i + 1, mem->lista_particiones[i]);
-            }
-        }
-    } else {
-        fprintf(stderr, "Error: No se pudo obtener la configuración de PARTICIONES.\n");
+    if(strcmp(esquema_string,"FIJAS") == 0){
+        mem->esquema = PARTICION_FIJA;
+    }else{
+        mem->esquema = PARTICION_DINAMICA;
     }
-    mem->num_particiones = count;
+
+    if(strcmp(estrategia_string,"FIRST") == 0){
+        mem->estrategia = FIRST_FIT;
+    }else if (strcmp(estrategia_string,"BEST") == 0){
+        mem->estrategia = BEST_FIT;
+    }else {
+        mem->estrategia = WORST_FIT;
+    }
+    // Obtener la cadena de particiones
+    mem->lista_particiones = convertirArrayDeNumeros(config_get_array_value(config, "PARTICIONES"));
 }
 
-int* parse_partitions(const char* partition_string, int* count) {
-    int size = 4;
-    int* partitions = malloc(sizeof(int) * size);  // Almacenamos los enteros
-    if (!partitions) {
-        perror("Failed to allocate memory");
-        return NULL; // Manejo de error
-    }
+int* convertirArrayDeNumeros(char** caracteres){
+    int size = string_array_size(caracteres);
+    int* intArray = (int*)malloc(size * sizeof(int));
 
-    char* token;
-    char* str_copy = strdup(partition_string); // Hacemos una copia de la cadena
-
-    token = strtok(str_copy, ",");  // Separa la cadena por comas
-    *count = 0;  // Inicializa el contador
-
-    while (token != NULL) {
-        // Si el arreglo está lleno, lo duplicamos
-        if (*count >= size) {
-            size *= 2;
-            partitions = realloc(partitions, sizeof(int) * size);
-            if (!partitions) {
-                perror("Failed to allocate memory");
-                free(str_copy); // Libera la copia de la cadena
-                return NULL; // Manejo de error
-            }
+        for (int i = 0; i < size; ++i) {
+            intArray[i] = atoi(caracteres[i]);
         }
-        partitions[*count] = atoi(token); // Convierte y almacena el número
-        (*count)++;  // Incrementa el contador
-        token = strtok(NULL, ",");  // Obtiene el siguiente token
-    }
-
-    free(str_copy); // Libera la copia de la cadena
-    return partitions; // Retorna el arreglo dinámico
+        
+    return intArray;
 }

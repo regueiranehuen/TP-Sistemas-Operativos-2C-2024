@@ -17,8 +17,6 @@ void* recibir_cpu(void*args) {
         }
             log_info(logger,"Memoria recibio el siguiente codigo operacion de CPU: %d",paquete_operacion->codigo_operacion);
 
-        usleep(retardo_respuesta * 1000);
-
         switch (paquete_operacion->codigo_operacion) {
             case OBTENER_CONTEXTO_TID: {
                 usleep(retardo_respuesta * 1000);

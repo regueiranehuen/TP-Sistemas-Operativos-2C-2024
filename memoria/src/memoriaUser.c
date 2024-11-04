@@ -7,8 +7,8 @@ t_memoria* inicializar_memoria(t_esquema_particion esquema, int tamano, int* lis
     t_memoria* memoria = malloc(sizeof(t_memoria));
     memoria->memoria = malloc(tamano);
     memset(memoria->memoria, 0, tamano);
-    memoria->tabla_segmentos.segmentos = NULL;
-    memoria->tabla_segmentos.num_segmentos = 0;
+    memoria->tabla_particiones.particiones = NULL;
+    memoria->tabla_particiones.num_particiones = 0;
     memoria->tabla_libres.bloques_libres = NULL;
     memoria->tabla_libres.num_bloques_libres = 0;
     memoria->esquema = esquema;
@@ -22,7 +22,7 @@ t_memoria* inicializar_memoria(t_esquema_particion esquema, int tamano, int* lis
 
     // Inicializar un bloque libre que cubre toda la memoria para particiones dinámicas
     if (esquema == PARTICION_DINAMICA) {
-        memoria->tabla_libres.bloques_libres = malloc(sizeof(t_segmento_libre));
+        memoria->tabla_libres.bloques_libres = malloc(sizeof(t_particion_libre));
         memoria->tabla_libres.bloques_libres[0].base = 0;
         memoria->tabla_libres.bloques_libres[0].tamano = tamano;
         memoria->tabla_libres.num_bloques_libres = 1;
@@ -32,7 +32,7 @@ t_memoria* inicializar_memoria(t_esquema_particion esquema, int tamano, int* lis
 }
 
 void liberar_memoria(t_memoria* memoria) {
-    free(memoria->tabla_segmentos.segmentos);
+    free(memoria->tabla_particiones.particiones);
     free(memoria->tabla_libres.bloques_libres);
     free(memoria->memoria);
     free(memoria->lista_particiones);
@@ -41,8 +41,8 @@ void liberar_memoria(t_memoria* memoria) {
 
 void unir_bloques_libres(t_memoria* memoria) {
     for (int i = 0; i < memoria->tabla_libres.num_bloques_libres - 1; i++) {
-        t_segmento_libre* actual = &memoria->tabla_libres.bloques_libres[i];
-        t_segmento_libre* siguiente = &memoria->tabla_libres.bloques_libres[i + 1];
+        t_particion_libre* actual = &memoria->tabla_libres.bloques_libres[i];
+        t_particion_libre* siguiente = &memoria->tabla_libres.bloques_libres[i + 1];
 
         if (actual->base + actual->tamano == siguiente->base) {
             actual->tamano += siguiente->tamano;
@@ -52,7 +52,7 @@ void unir_bloques_libres(t_memoria* memoria) {
             }
             memoria->tabla_libres.num_bloques_libres--;
             memoria->tabla_libres.bloques_libres = realloc(memoria->tabla_libres.bloques_libres,
-                                                           memoria->tabla_libres.num_bloques_libres * sizeof(t_segmento_libre));
+                                                           memoria->tabla_libres.num_bloques_libres * sizeof(t_particion_libre));
             i--;
         }
     }
@@ -75,12 +75,12 @@ int asignar_memoria_fija(t_memoria* memoria, int pid) {
                 ((char*)memoria->memoria)[j] = pid;
             }
 
-            memoria->tabla_segmentos.segmentos = realloc(memoria->tabla_segmentos.segmentos, 
-                                                         (memoria->tabla_segmentos.num_segmentos + 1) * sizeof(t_contexto_pid_send));
-            memoria->tabla_segmentos.segmentos[memoria->tabla_segmentos.num_segmentos].pid = pid;
-            memoria->tabla_segmentos.segmentos[memoria->tabla_segmentos.num_segmentos].base = base;
-            memoria->tabla_segmentos.segmentos[memoria->tabla_segmentos.num_segmentos].limite = memoria->lista_particiones[i];
-            memoria->tabla_segmentos.num_segmentos++;
+            memoria->tabla_particiones.particiones = realloc(memoria->tabla_particiones.particiones, 
+                                                         (memoria->tabla_particiones.num_particiones + 1) * sizeof(t_contexto_pid_send));
+            memoria->tabla_particiones.particiones[memoria->tabla_particiones.num_particiones].pid = pid;
+            memoria->tabla_particiones.particiones[memoria->tabla_particiones.num_particiones].base = base;
+            memoria->tabla_particiones.particiones[memoria->tabla_particiones.num_particiones].limite = memoria->lista_particiones[i];
+            memoria->tabla_particiones.num_particiones++;
             return base;
         }
     }
@@ -131,7 +131,7 @@ int asignar_memoria_dinamica(t_memoria* memoria, int id_proceso, int tamano_requ
         }
         memoria->tabla_libres.num_bloques_libres--;
         memoria->tabla_libres.bloques_libres = realloc(memoria->tabla_libres.bloques_libres, 
-                                                       memoria->tabla_libres.num_bloques_libres * sizeof(t_segmento_libre));
+                                                       memoria->tabla_libres.num_bloques_libres * sizeof(t_particion_libre));
     }
 
     return base;
@@ -146,13 +146,14 @@ int asignar_memoria(t_memoria* memoria, int pid, int tamano) {
     return -1;
 }
 
+//solo para dinamica
 void liberar_memoria_proceso(t_memoria* memoria, int pid) {
     bool encontrado = false; // Bandera para indicar si se encontró el proceso
-    for (int i = 0; i < memoria->tabla_segmentos.num_segmentos; i++) {
-        if (memoria->tabla_segmentos.segmentos[i].pid == pid) {
+    for (int i = 0; i < memoria->tabla_particiones.num_particiones; i++) {
+        if (memoria->tabla_particiones.particiones[i].pid == pid) {
             encontrado = true; // Se encontró el proceso
-            int base = memoria->tabla_segmentos.segmentos[i].base;
-            int limite = memoria->tabla_segmentos.segmentos[i].limite;
+            int base = memoria->tabla_particiones.particiones[i].base;
+            int limite = memoria->tabla_particiones.particiones[i].limite;
 
             // Limpiar la memoria del proceso
             for (int j = base; j < base + limite; j++) {
@@ -161,7 +162,7 @@ void liberar_memoria_proceso(t_memoria* memoria, int pid) {
 
             // Añadir el bloque liberado a la tabla de bloques libres
             memoria->tabla_libres.bloques_libres = realloc(memoria->tabla_libres.bloques_libres, 
-                                                           (memoria->tabla_libres.num_bloques_libres + 1) * sizeof(t_segmento_libre));
+                                                           (memoria->tabla_libres.num_bloques_libres + 1) * sizeof(t_particion_libre));
             memoria->tabla_libres.bloques_libres[memoria->tabla_libres.num_bloques_libres].base = base;
             memoria->tabla_libres.bloques_libres[memoria->tabla_libres.num_bloques_libres].tamano = limite;
             memoria->tabla_libres.num_bloques_libres++;
@@ -169,14 +170,14 @@ void liberar_memoria_proceso(t_memoria* memoria, int pid) {
             // Unir bloques libres para compactar
             unir_bloques_libres(memoria);
 
-            // Remover segmento de la tabla de segmentos
-            for (int j = i; j < memoria->tabla_segmentos.num_segmentos - 1; j++) {
-                memoria->tabla_segmentos.segmentos[j] = memoria->tabla_segmentos.segmentos[j + 1];
+            // Remover particion de la tabla de particions
+            for (int j = i; j < memoria->tabla_particiones.num_particiones - 1; j++) {
+                memoria->tabla_particiones.particiones[j] = memoria->tabla_particiones.particiones[j + 1];
             }
-            memoria->tabla_segmentos.num_segmentos--;
-            memoria->tabla_segmentos.segmentos = realloc(memoria->tabla_segmentos.segmentos, 
-                                                         memoria->tabla_segmentos.num_segmentos * sizeof(t_contexto_pid_send));
-            break; // Salir del bucle después de liberar el segmento
+            memoria->tabla_particiones.num_particiones--;
+            memoria->tabla_particiones.particiones = realloc(memoria->tabla_particiones.particiones, 
+                                                         memoria->tabla_particiones.num_particiones * sizeof(t_contexto_pid_send));
+            break; // Salir del bucle después de liberar el particion
         }
     }
     if (!encontrado) {
@@ -186,9 +187,9 @@ void liberar_memoria_proceso(t_memoria* memoria, int pid) {
 
 void mostrar_memoria(t_memoria* memoria) {
     printf("Estado de la memoria (%d bytes):\n", memoria->tamano_memoria);
-    for (int i = 0; i < memoria->tabla_segmentos.num_segmentos; i++) {
-        printf("Proceso PID: %d, Base: %d, Limite: %d\n", memoria->tabla_segmentos.segmentos[i].pid, 
-               memoria->tabla_segmentos.segmentos[i].base, memoria->tabla_segmentos.segmentos[i].limite);
+    for (int i = 0; i < memoria->tabla_particiones.num_particiones; i++) {
+        printf("Proceso PID: %d, Base: %d, Limite: %d\n", memoria->tabla_particiones.particiones[i].pid, 
+               memoria->tabla_particiones.particiones[i].base, memoria->tabla_particiones.particiones[i].limite);
     }
 
     printf("Bloques libres:\n");
