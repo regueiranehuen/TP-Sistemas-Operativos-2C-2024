@@ -20,6 +20,6 @@ void logRegistro(t_contexto_tid*contexto,char* registro) ;
 
 uint32_t tamanio_registro(char *registro);
 uint32_t leer_valor_de_memoria(uint32_t direccionFisica);
-void escribir_valor_en_memoria(uint32_t direccionFisica, uint32_t valor);
+int escribir_valor_en_memoria(uint32_t direccionFisica, uint32_t valor);
 
 #endif

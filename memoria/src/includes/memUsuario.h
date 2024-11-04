@@ -9,33 +9,37 @@ extern int tamanio_memoria;
 
 typedef struct{
     bool ocupada;
-    int base;
-    int limite;
+    uint32_t base;
+    uint32_t limite;
     int tamanio;
     int pid;
 }t_particiones;
 
+
 void inicializar_Memoria(t_config *config);
 void cargar_particiones_lista(char **particiones);
-int inicializar_proceso(int pid, int tamanio_proceso, t_config* config);
+t_particiones* inicializar_proceso(int pid, int tamanio_proceso, t_config* config);
 
-int busqueda_fija(int pid,int tamanio_proceso,char* algoritmo_busqueda,int tamanio_lista);
-int busqueda_dinamica(int pid, int tamanio_proceso, char* algoritmo_busqueda,int tamanio_lista);
+t_particiones* busqueda_fija(int pid,int tamanio_proceso,char* algoritmo_busqueda,int tamanio_lista);
+t_particiones* busqueda_dinamica(int pid, int tamanio_proceso, char* algoritmo_busqueda,int tamanio_lista);
 
-int fija_first(int pid, int tamanio_proceso, int tamanio_lista);
-int fija_best(int pid, int tamanio_proceso, int tamanio_lista);
-int fija_worst(int pid, int tamanio_proceso, int tamanio_lista);
+t_particiones* fija_first(int pid, int tamanio_proceso, int tamanio_lista);
+t_particiones* fija_best(int pid, int tamanio_proceso, int tamanio_lista);
+t_particiones* fija_worst(int pid, int tamanio_proceso, int tamanio_lista);
 
-int dinamica_first(int pid, int tamanio_proceso, int tamanio_lista);
-int dinamica_best(int pid, int tamanio_proceso, int tamanio_lista);
-int dinamica_worst(int pid, int tamanio_proceso, int tamanio_lista);
+t_particiones* dinamica_first(int pid, int tamanio_proceso, int tamanio_lista);
+t_particiones* dinamica_best(int pid, int tamanio_proceso, int tamanio_lista);
+t_particiones* dinamica_worst(int pid, int tamanio_proceso, int tamanio_lista);
 
 void liberar_espacio_proceso(int pid);
-void fusionar_particiones_libres(t_list* lista_particiones);
+void fusionar_particiones_libres(t_list* lista_particiones,t_particiones* particion_actual,int indice);
 
 void escritura_datos_archivo(int pid,int tid);
 
 t_particiones* busqueda_particion(int pid);
 char* generar_nombre_archivo(int pid, int tid);
+
+uint32_t leer_Memoria(uint32_t direccionFisica);
+int escribir_Memoria(t_write_mem* info);
 
 #endif

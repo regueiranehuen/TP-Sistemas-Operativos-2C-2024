@@ -24,15 +24,13 @@ void atender_conexiones(int socket_cliente)
         case INICIALIZAR_PROCESO:
             t_args_inicializar_proceso *info_0 = recepcionar_inicializacion_proceso(paquete);
             pthread_mutex_lock(&mutex_lista_contextos_pids);
-            uint32_t base = obtener_base();
             pthread_mutex_unlock(&mutex_lista_contextos_pids);
-            int resultado = inicializar_proceso(info_0->pid,info_0->tam_proceso,config);
-            if(resultado ==-1){
-            respuesta = resultado;
-            send(socket_cliente,&respuesta,sizeof(int),0);  
-            }
-            else{
-            inicializar_contexto_pid(info_0->pid, base, info_0->tam_proceso);
+            t_particiones* particion = inicializar_proceso(info_0->pid,info_0->tam_proceso,config);
+            if(particion == NULL){
+            respuesta = -1;
+            send(socket_cliente,&respuesta,sizeof(int),0);       
+            }else{
+            inicializar_contexto_pid(info_0->pid, particion->base,particion->limite,particion->tamanio);
             log_info(logger,"## Proceso Creado -  PID: %d - Tamaño: %d",info_0->pid,info_0->tam_proceso);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);

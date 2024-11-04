@@ -53,7 +53,8 @@ void* recibir_cpu(void*args) {
                 contexto_a_enviar->pid = contextoPid->pid;
                 contexto_a_enviar->base = contextoPid->base;
                 contexto_a_enviar->limite=contextoPid->limite;
-
+                contexto_a_enviar->tamanio_proceso = contextoPid->tamanio_proceso;
+                
                 send_contexto_pid(sockets_iniciales->socket_cpu,contexto_a_enviar);
                 break;
             }
@@ -107,11 +108,33 @@ void* recibir_cpu(void*args) {
             }
 
             case READ_MEM: {
+                uint32_t direccionFisica = recepcionar_read_mem(paquete_operacion);
+
+                uint32_t valor = leer_Memoria(direccionFisica);
+
+                op_code code;
+                if(valor == 0xFFFFFFFF){
+                code = ERROR;
+                send_valor_read_mem(valor,sockets_iniciales->socket_cpu,code);
+                }
+                else{
+                code = OK_OP_CODE;
+                send_valor_read_mem(valor,sockets_iniciales->socket_cpu,code);
+                }
                 
+            break;    
             }
 
             case WRITE_MEM: {
-                
+            t_write_mem* info_0 = recepcionar_write_mem(paquete_operacion);
+
+            int resultado = escribir_Memoria(info_0);
+
+            if(resultado == 0){
+            op_code code = OK_OP_CODE;
+            send(sockets_iniciales->socket_cpu,&code,sizeof(op_code),0);
+            }
+            break;  
             }
 
             case 1:
@@ -172,11 +195,12 @@ t_contexto_tid* inicializar_contexto_tid(t_contexto_pid* cont,int tid){
 }
 
 // Se debe usar despues de un PROCESS_CREATE y para el proceso inicial de la CPU
-t_contexto_pid*inicializar_contexto_pid(int pid,uint32_t base, uint32_t limite){ 
+t_contexto_pid*inicializar_contexto_pid(int pid,uint32_t base, uint32_t limite,int tamanio_proceso){ 
     t_contexto_pid*nuevo_contexto=malloc(sizeof(t_contexto_pid));
     nuevo_contexto->pid=pid;
     nuevo_contexto->base=base;
     nuevo_contexto->limite=limite;
+    nuevo_contexto->tamanio_proceso = tamanio_proceso;
 
     nuevo_contexto->contextos_tids=list_create();
 // Paso como segundo parámetro el 0 ya que el proceso está siendo inicializado, y al iniciarse si o si tiene que tener un hilo
