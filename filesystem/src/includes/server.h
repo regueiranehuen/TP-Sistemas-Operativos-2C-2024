@@ -4,6 +4,7 @@
 #include "utils/includes/sockets.h"
 #include "utils/includes/serializacion.h"
 #include <semaphore.h>
+#include "main.h"
 
 typedef struct{
     int socket_servidor;

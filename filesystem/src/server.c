@@ -1,4 +1,5 @@
 #include "includes/server.h"
+#include "includes/peticiones.h"
 
 int estado_filesystem;
 sem_t sem_conexion_hecha;
@@ -39,7 +40,7 @@ void *hilo_por_cliente(void *void_args)
     {
         log_info(args->log, "%d_Peticion de Memoria", socket_cliente);
         sem_post(&sem_conexion_hecha);
-        //atender_conexiones(socket_cliente); funcion para atender las peticiones de memoria
+        atender_conexiones(socket_cliente);
     }
 
     free(args);
