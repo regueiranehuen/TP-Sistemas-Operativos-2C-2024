@@ -7,8 +7,7 @@ t_config *config;
 //t_memoria* mem;
 
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
 
     sockets_memoria *sockets = malloc(sizeof(sockets_memoria));
     sockets_iniciales = malloc(sizeof(sockets_memoria));
@@ -23,8 +22,7 @@ int main(int argc, char *argv[])
     inicializar_semaforos();
     inicializar_estructuras();
 
-    if (config == NULL)
-    {
+    if (config == NULL){
         log_error(logger, "Error al crear la configuración");
         return -1;
     }
@@ -54,8 +52,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void hilo_recibe_cpu()
-{
+void hilo_recibe_cpu(){
     pthread_t hilo_cliente_cpu;
     int resultado = pthread_create(&hilo_cliente_cpu, NULL, recibir_cpu, NULL);
 

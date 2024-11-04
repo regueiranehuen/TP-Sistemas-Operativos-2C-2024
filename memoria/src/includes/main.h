@@ -3,6 +3,8 @@
 
 #include "server.h"
 #include "auxiliaresMem.h"
+#include "commCpu.h"
+#include "memoriaUser.h"
 
 extern int estado_cpu;
 extern t_log* logger;

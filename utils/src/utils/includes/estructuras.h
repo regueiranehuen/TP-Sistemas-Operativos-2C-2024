@@ -27,7 +27,6 @@
 #include "serializacion.h"
 
 
-
 typedef struct{
     int pid;
     t_list*contextos_tids;
@@ -65,14 +64,51 @@ typedef struct{
     t_registros_cpu*registros;
 }t_contexto_tid;
 
-
-
 typedef struct {
     t_contexto_tid* contexto;
 	//t_contexto* contexto;
 	int quantum_utilizado;
 	t_temporal* quantum;
 }t_pcb;
+
+//estructuras para memoria de usuario
+
+typedef enum {
+    PARTICION_FIJA,
+    PARTICION_DINAMICA
+} t_esquema_particion;
+
+typedef enum {
+    FIRST_FIT,
+    BEST_FIT,
+    WORST_FIT
+} t_estrategia_busqueda;
+
+typedef struct {
+    t_contexto_pid_send* segmentos;
+    int num_segmentos;
+} t_tabla_segmentos;
+
+typedef struct {
+    int base;    
+    int tamano;        
+} t_segmento_libre;
+
+typedef struct {
+    t_segmento_libre* bloques_libres;
+    int num_bloques_libres;
+} t_tabla_libres;
+
+typedef struct {
+     void* memoria;                  
+    t_tabla_segmentos tabla_segmentos;
+    t_tabla_libres tabla_libres;
+    t_esquema_particion esquema;
+    t_estrategia_busqueda estrategia;
+    int tamano_memoria;
+    int* lista_particiones;
+    int num_particiones;
+} t_memoria;
 
 typedef enum {
     SUCCESS,

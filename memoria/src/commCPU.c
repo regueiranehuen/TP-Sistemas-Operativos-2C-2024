@@ -5,7 +5,6 @@ t_memoria* mem;
 
 void* recibir_cpu(void*args) {
 
-    
     int retardo_respuesta = config_get_int_value(config,"RETARDO_RESPUESTA");
     int codigoOperacion = 0;
     while (codigoOperacion != -1) {
@@ -142,6 +141,8 @@ void* recibir_cpu(void*args) {
     return NULL;
 }
 
+
+//Al actualizar el contexto hay que guardalo en la memoria, incluir memoriaUser.c
 void actualizar_contexto(int pid, int tid, t_registros_cpu* reg){
     pthread_mutex_lock(&mutex_lista_contextos_pids);
     t_contexto_tid *contexto = obtener_contexto_tid(pid, tid);

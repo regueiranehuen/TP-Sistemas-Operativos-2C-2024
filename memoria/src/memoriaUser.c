@@ -1,5 +1,7 @@
 #include "includes/memoriaUser.h"
 
+//Falta la parte de la creacion y eliminacion de hilos
+
 
 t_memoria* inicializar_memoria(t_esquema_particion esquema, int tamano, int* lista_particiones, int num_particiones) {
     t_memoria* memoria = malloc(sizeof(t_memoria));
@@ -74,7 +76,7 @@ int asignar_memoria_fija(t_memoria* memoria, int pid) {
             }
 
             memoria->tabla_segmentos.segmentos = realloc(memoria->tabla_segmentos.segmentos, 
-                                                         (memoria->tabla_segmentos.num_segmentos + 1) * sizeof(t_segmento_usuario));
+                                                         (memoria->tabla_segmentos.num_segmentos + 1) * sizeof(t_contexto_pid_send));
             memoria->tabla_segmentos.segmentos[memoria->tabla_segmentos.num_segmentos].pid = pid;
             memoria->tabla_segmentos.segmentos[memoria->tabla_segmentos.num_segmentos].base = base;
             memoria->tabla_segmentos.segmentos[memoria->tabla_segmentos.num_segmentos].limite = memoria->lista_particiones[i];
@@ -173,7 +175,7 @@ void liberar_memoria_proceso(t_memoria* memoria, int pid) {
             }
             memoria->tabla_segmentos.num_segmentos--;
             memoria->tabla_segmentos.segmentos = realloc(memoria->tabla_segmentos.segmentos, 
-                                                         memoria->tabla_segmentos.num_segmentos * sizeof(t_segmento_usuario));
+                                                         memoria->tabla_segmentos.num_segmentos * sizeof(t_contexto_pid_send));
             break; // Salir del bucle después de liberar el segmento
         }
     }
