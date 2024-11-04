@@ -53,9 +53,9 @@ typedef struct{
 }t_registros_cpu; 
 
 typedef struct{
-int tid;
-int pid;
-uint32_t pc;
+    int tid;
+    int pid;
+    uint32_t pc;
 }t_instruccion_memoria;
 
 typedef struct{
@@ -85,23 +85,23 @@ typedef enum {
 } t_estrategia_busqueda;
 
 typedef struct {
-    t_contexto_pid_send* segmentos;
-    int num_segmentos;
-} t_tabla_segmentos;
+    t_contexto_pid_send* particiones;
+    int num_particiones;
+} t_tabla_particiones;
 
 typedef struct {
     int base;    
     int tamano;        
-} t_segmento_libre;
+} t_particion_libre;
 
 typedef struct {
-    t_segmento_libre* bloques_libres;
+    t_particion_libre* bloques_libres;
     int num_bloques_libres;
 } t_tabla_libres;
 
 typedef struct {
-     void* memoria;                  
-    t_tabla_segmentos tabla_segmentos;
+    void* memoria;                  
+    t_tabla_particiones tabla_particiones;
     t_tabla_libres tabla_libres;
     t_esquema_particion esquema;
     t_estrategia_busqueda estrategia;
