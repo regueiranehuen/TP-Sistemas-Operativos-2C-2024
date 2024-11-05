@@ -1,7 +1,5 @@
 #include "includes/commCpu.h"
 //#include "includes/memoriaUser.h"
-t_memoria* mem;
-
 
 void* recibir_cpu(void*args) {
 
@@ -16,6 +14,7 @@ void* recibir_cpu(void*args) {
             break;
         }
             log_info(logger,"Memoria recibio el siguiente codigo operacion de CPU: %d",paquete_operacion->codigo_operacion);
+
 
         switch (paquete_operacion->codigo_operacion) {
             case OBTENER_CONTEXTO_TID: {
@@ -39,7 +38,7 @@ void* recibir_cpu(void*args) {
                 break;
             }
 
-            case OBTENER_CONTEXTO_PID:{ 
+            case OBTENER_CONTEXTO_PID:{ // calcular base y limite antes de enviar
                 usleep(retardo_respuesta * 1000);
                 int pid_obtencion = recepcionar_solicitud_contexto_pid(paquete_operacion);
 
@@ -53,6 +52,7 @@ void* recibir_cpu(void*args) {
                 }
                 t_contexto_pid_send* contexto_a_enviar = malloc(sizeof(t_contexto_pid_send));
                 contexto_a_enviar->pid = contextoPid->pid;
+                
                 contexto_a_enviar->base = contextoPid->base;
                 contexto_a_enviar->limite=contextoPid->limite;
 
@@ -111,7 +111,7 @@ void* recibir_cpu(void*args) {
             case READ_MEM: {
                 usleep(retardo_respuesta * 1000);
                 uint32_t direccionFisica = recibir_entero_uint32(sockets_iniciales->socket_cpu);
-                uint32_t valor = leer_memoria(mem, direccionFisica);
+                uint32_t valor = leer_memoria(memoria, direccionFisica);
                 enviar_entero(sockets_iniciales->socket_cpu, valor, READ_MEM_RESULTADO);
                 break;
             }
@@ -120,7 +120,7 @@ void* recibir_cpu(void*args) {
                 usleep(retardo_respuesta * 1000);
                 uint32_t direccionFisica = recibir_entero_uint32(sockets_iniciales->socket_cpu);
                 uint32_t valor = recibir_entero_uint32(sockets_iniciales->socket_cpu);
-                escribir_memoria(mem, direccionFisica, valor);
+                escribir_memoria(memoria, direccionFisica, valor);
                 send_code_operacion(OK, sockets_iniciales->socket_cpu);
                 break;
             }

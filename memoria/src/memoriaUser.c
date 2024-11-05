@@ -3,17 +3,12 @@
 //Falta la parte de la creacion y eliminacion de hilos
 
 
-t_memoria* inicializar_memoria(t_esquema_particion esquema, int tamano, int* lista_particiones, int num_particiones) {
-    t_memoria* memoria = malloc(sizeof(t_memoria));
+t_memoria* inicializar_memoria(t_esquema_particion esquema, int tamano, int* lista_particiones) {
+    
     memoria->memoria = malloc(tamano);
     memset(memoria->memoria, 0, tamano);
-    memoria->tabla_particiones.particiones = NULL;
-    memoria->tabla_particiones.num_particiones = 0;
-    memoria->tabla_libres.bloques_libres = NULL;
-    memoria->tabla_libres.num_bloques_libres = 0;
-    memoria->esquema = esquema;
-    memoria->tamano_memoria = tamano;
 
+    int num_particiones = tamano / lista_particiones[0];
     memoria->lista_particiones = malloc(num_particiones * sizeof(int));
     for (int i = 0; i < num_particiones; i++) {
         memoria->lista_particiones[i] = lista_particiones[i];

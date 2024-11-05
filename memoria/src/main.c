@@ -1,10 +1,7 @@
 #include "includes/main.h"
-//#include "includes/memoriaUser.h"
-
 int estado_cpu = 1;
 t_log *logger;
 t_config *config;
-//t_memoria* mem;
 
 
 int main(int argc, char *argv[]){
@@ -15,8 +12,9 @@ int main(int argc, char *argv[]){
     logger = log_create("memoria.log", "tp", true, LOG_LEVEL_TRACE);
     config = config_create("memoria.config");
 
-    leer_config(argv[1]);
-    mem = inicializar_memoria(mem->esquema, mem->tamano_memoria, mem->lista_particiones, mem->num_particiones); // ver como contabilizar las particiones
+    memoria = malloc(sizeof(t_memoria));
+    leer_config();
+    memoria = inicializar_memoria(memoria->esquema, memoria->tamano_memoria, memoria->lista_particiones);
 
     inicializar_mutex();
     inicializar_semaforos();
@@ -31,6 +29,8 @@ int main(int argc, char *argv[]){
 
     sem_wait(&sem_conexion_iniciales); //esperar a que se haga la conexion con cpu y kernel
     sem_wait(&sem_conexion_iniciales);
+
+    mostrar_memoria(memoria);
 
     hilo_recibe_cpu();
     
@@ -63,28 +63,26 @@ void hilo_recibe_cpu(){
     pthread_detach(hilo_cliente_cpu);
 }
 
-void leer_config(char* path) {
-    config = iniciar_config(path);
-
-    mem->tamano_memoria = config_get_int_value(config, "TAM_MEMORIA");
+void leer_config() {
+    memoria->tamano_memoria = config_get_int_value(config, "TAM_MEMORIA");
     char* esquema_string = config_get_string_value(config, "ESQUEMA");
     char* estrategia_string = config_get_string_value(config, "ALGORITMO_BUSQUEDA");
 
     if(strcmp(esquema_string,"FIJAS") == 0){
-        mem->esquema = PARTICION_FIJA;
+        memoria->esquema = PARTICION_FIJA;
     }else{
-        mem->esquema = PARTICION_DINAMICA;
+        memoria->esquema = PARTICION_DINAMICA;
     }
 
     if(strcmp(estrategia_string,"FIRST") == 0){
-        mem->estrategia = FIRST_FIT;
+        memoria->estrategia = FIRST_FIT;
     }else if (strcmp(estrategia_string,"BEST") == 0){
-        mem->estrategia = BEST_FIT;
+        memoria->estrategia = BEST_FIT;
     }else {
-        mem->estrategia = WORST_FIT;
+        memoria->estrategia = WORST_FIT;
     }
     // Obtener la cadena de particiones
-    mem->lista_particiones = convertirArrayDeNumeros(config_get_array_value(config, "PARTICIONES"));
+    memoria->lista_particiones = convertirArrayDeNumeros(config_get_array_value(config, "PARTICIONES"));
 }
 
 int* convertirArrayDeNumeros(char** caracteres){

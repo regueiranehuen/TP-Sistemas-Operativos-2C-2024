@@ -32,8 +32,7 @@ void iniciar_cpu()
     pthread_detach(hilo_atiende_interrupt);
 }
 
-void *ciclo_de_instruccion(void *args)
-{
+void *ciclo_de_instruccion(void *args){
 
     int noFinalizar = 0;
 
@@ -71,8 +70,7 @@ void *ciclo_de_instruccion(void *args)
     return NULL;
 }
 
-t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
-{
+t_contextos *esperar_thread_execute(int socket_cliente_Dispatch){
     
     t_paquete_code_operacion *paquete = recibir_paquete_code_operacion(socket_cliente_Dispatch);
 
@@ -111,7 +109,7 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
             log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
             log_info(log_cpu, "PID: %d, BASE: %d, LIMITE: %d", contextos->contexto_pid->pid, contextos->contexto_pid->base, contextos->contexto_pid->limite);
             t_paquete *paquete_solicitud_contexto_tid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
-            printf("%d\n", paquete_solicitud_contexto_tid->codigo_operacion);
+            //printf("%d\n", paquete_solicitud_contexto_tid->codigo_operacion);
             if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK)
             { // La memoria se encarga de crear el contexto del tid si es que no existe
                 contextos->contexto_tid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid);
@@ -303,8 +301,7 @@ op_code decode(t_instruccion *instruccion)
 // Durante el transcurso de la ejecución de un hilo, se irá actualizando su Contexto de Ejecución, que luego será devuelto a la Memoria bajo los siguientes escenarios:
 // finalización del mismo (PROCESS_EXIT o THREAD_EXIT), ejecutar una llamada al Kernel (syscall), deber ser desalojado (interrupción) o por la ocurrencia de un error Segmentation Fault.
 
-void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_code instruccion_nombre, t_instruccion *instruccion)
-{
+void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_code instruccion_nombre, t_instruccion *instruccion){
     log_info(log_cpu, "Ejecutando instrucción: %s", instruccion->parametros1);
 
     switch (instruccion_nombre)

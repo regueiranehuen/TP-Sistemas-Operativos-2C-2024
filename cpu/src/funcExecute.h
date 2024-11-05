@@ -19,8 +19,8 @@ char* encontrarValorDeRegistro(char* registro);
 void logRegistro(t_contexto_tid*contexto,char* registro) ;
 
 uint32_t tamanio_registro(char *registro);
-uint32_t leer_valor_de_memoria(uint32_t direccionFisica);
-int escribir_valor_en_memoria(uint32_t direccionFisica, uint32_t valor); 
+int leer_valor_de_memoria(int direccionFisica);
+int escribir_valor_en_memoria(int direccionFisica, uint32_t valor); 
 
 
 #endif

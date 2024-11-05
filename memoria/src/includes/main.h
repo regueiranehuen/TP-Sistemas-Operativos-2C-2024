@@ -16,7 +16,7 @@ extern char* algoritmo_busqueda;
 extern char* particiones;
 
 void hilo_recibe_cpu();
-void leer_config(char* path);
+void leer_config();
 int* convertirArrayDeNumeros(char** caracteres);
 
 #endif

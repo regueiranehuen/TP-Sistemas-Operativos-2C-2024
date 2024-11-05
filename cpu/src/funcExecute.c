@@ -34,7 +34,7 @@ void funcREAD_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,cha
     int direccionFisica = traducir_direccion_logica(contextoTid,contextoPid,direccionLogica);
 
     if (direccionFisica >= 0) {
-        uint32_t valor = leer_valor_de_memoria(direccionFisica);
+        int valor = leer_valor_de_memoria(direccionFisica);
         valor_registro_cpu(contextoTid,registro_datos, valor);
         log_info(log_cpu, "READ_MEM: Dirección %d, Valor %d",
                  direccionFisica, valor);
@@ -45,8 +45,8 @@ void funcREAD_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,cha
 }
 
 void funcWRITE_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,char* registro_direccion, char* registro_datos) {
-    uint32_t direccionLogica = obtener_valor_registro(contextoTid,registro_direccion);
-    uint32_t direccionFisica = traducir_direccion_logica(contextoTid,contextoPid,direccionLogica);
+    int direccionLogica = obtener_valor_registro(contextoTid,registro_direccion);
+    int direccionFisica = traducir_direccion_logica(contextoTid,contextoPid,direccionLogica);
 
     if (direccionFisica >= 0) {
         uint32_t valor = obtener_valor_registro(contextoTid,registro_datos);
@@ -72,7 +72,7 @@ uint32_t obtener_valor_registro(t_contexto_tid*contexto,char* registro) {
     if (strcmp(registro, "FX") == 0) return contexto->registros->FX;
     if (strcmp(registro, "GX") == 0) return contexto->registros->GX;
     if (strcmp(registro, "HX") == 0) return contexto->registros->HX;
-    printf("Registro desconocido: %s\n", registro);
+    //printf("Registro desconocido: %s\n", registro);
     return 0;
 }
 
@@ -93,7 +93,7 @@ void logRegistro(t_contexto_tid*contexto,char* registro) {
     log_info(log_cpu, "Registro %s: %u", registro, valor);
 }
 
-uint32_t leer_valor_de_memoria(uint32_t direccionFisica) {
+int leer_valor_de_memoria(int direccionFisica) {
     t_paquete* paquete = crear_paquete_op(READ_MEM);
     agregar_entero_a_paquete(paquete, direccionFisica); // Solo dirección
     enviar_paquete(paquete, sockets_cpu->socket_memoria);
@@ -110,7 +110,7 @@ uint32_t leer_valor_de_memoria(uint32_t direccionFisica) {
 }
 
 
-int escribir_valor_en_memoria(uint32_t direccionFisica, uint32_t valor) {
+int escribir_valor_en_memoria(int direccionFisica, uint32_t valor) {
     t_paquete* paquete = crear_paquete_op(WRITE_MEM);
     agregar_entero_a_paquete(paquete, direccionFisica); // Solo dirección
     agregar_entero_a_paquete(paquete, valor); // Valor a escribir
