@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
     t_log_level log_level_int = log_level(config);
     logger = log_create("memoria.log", "tp", true, log_level_int);
     
-
+    inicializar_Memoria(config);
     inicializar_mutex();
     inicializar_semaforos();
     inicializar_estructuras();

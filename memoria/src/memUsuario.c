@@ -13,22 +13,28 @@ void inicializar_Memoria(t_config *config)
 
     lista_particiones = list_create();
 
-    uint32_t* ptr = (uint32_t*)memoria;
+    uint32_t *ptr = (uint32_t *)memoria;
     size_t num_elementos = tamanio_memoria / sizeof(uint32_t); // Número de elementos uint32_t
 
-    for (size_t i = 0; i < num_elementos; i++) {
+    for (size_t i = 0; i < num_elementos; i++)
+    {
         ptr[i] = 0xFFFFFFFF; // Usar 0xFFFFFFFF para mayor claridad
     }
 
-    if(strcmp(esquema, "DINAMICAS")){
-        t_particiones* particion_inicial = malloc(sizeof(t_particiones));
+    if (strcmp(esquema, "DINAMICAS") == 0)
+    {
+        t_particiones *particion_inicial = malloc(sizeof(t_particiones));
         particion_inicial->base = 0;
         particion_inicial->limite = tamanio_memoria;
         particion_inicial->tamanio = tamanio_memoria;
         particion_inicial->ocupada = false;
-        list_add(lista_particiones,particion_inicial);
+        list_add(lista_particiones, particion_inicial);
     }
-
+    else if (strcmp(esquema, "FIJAS") == 0)
+    {
+        char **particiones = config_get_array_value(config, "PARTICIONES");
+        cargar_particiones_lista(particiones);
+    }
 }
 
 void cargar_particiones_lista(char **particiones)
@@ -50,11 +56,13 @@ void cargar_particiones_lista(char **particiones)
     }
 }
 
-t_particiones* busqueda_fija(int pid, int tamanio_proceso, char *algoritmo_busqueda, int tamanio_lista)
+t_particiones *busqueda_fija(int pid, int tamanio_proceso, char *algoritmo_busqueda, int tamanio_lista)
 {
-    t_particiones* particion = NULL;
-    if (strcmp(algoritmo_busqueda, "FIRST"))
+    t_particiones *particion = NULL;
+
+    if (strcmp(algoritmo_busqueda, "FIRST") == 0)
     {
+        printf("entre a first\n");
         particion = fija_first(pid, tamanio_proceso, tamanio_lista);
     }
     if (strcmp(algoritmo_busqueda, "BEST") == 0)
@@ -67,7 +75,7 @@ t_particiones* busqueda_fija(int pid, int tamanio_proceso, char *algoritmo_busqu
     }
     return particion;
 }
-t_particiones* fija_first(int pid, int tamanio_proceso, int tamanio_lista)
+t_particiones *fija_first(int pid, int tamanio_proceso, int tamanio_lista)
 {
     t_particiones *particion;
     for (int i = 0; i < tamanio_lista; i++)
@@ -82,7 +90,7 @@ t_particiones* fija_first(int pid, int tamanio_proceso, int tamanio_lista)
     }
     return NULL;
 }
-t_particiones* fija_best(int pid, int tamanio_proceso, int tamanio_lista)
+t_particiones *fija_best(int pid, int tamanio_proceso, int tamanio_lista)
 {
     t_particiones *particion;
     int tamanio_ideal = -1;
@@ -108,7 +116,7 @@ t_particiones* fija_best(int pid, int tamanio_proceso, int tamanio_lista)
     particion->ocupada = true;
     return particion;
 }
-t_particiones* fija_worst(int pid, int tamanio_proceso, int tamanio_lista)
+t_particiones *fija_worst(int pid, int tamanio_proceso, int tamanio_lista)
 {
     t_particiones *particion;
     int tamanio_ideal = -1;
@@ -135,9 +143,9 @@ t_particiones* fija_worst(int pid, int tamanio_proceso, int tamanio_lista)
     return particion;
 }
 
-t_particiones* busqueda_dinamica(int pid, int tamanio_proceso, char *algoritmo_busqueda, int tamanio_lista)
+t_particiones *busqueda_dinamica(int pid, int tamanio_proceso, char *algoritmo_busqueda, int tamanio_lista)
 {
-    t_particiones* particion = NULL;
+    t_particiones *particion = NULL;
     if (strcmp(algoritmo_busqueda, "FIRST") == 0)
     {
         particion = dinamica_first(pid, tamanio_proceso, tamanio_lista);
@@ -154,223 +162,224 @@ t_particiones* busqueda_dinamica(int pid, int tamanio_proceso, char *algoritmo_b
     return particion;
 }
 
-t_particiones* dinamica_first(int pid, int tamanio_proceso, int tamanio_lista)
+t_particiones *dinamica_first(int pid, int tamanio_proceso, int tamanio_lista)
 {
     t_particiones *particion;
-    
-        for (int i = 1; i < tamanio_lista; i++)
-        {
-            particion = list_get(lista_particiones, i - 1);
 
-            if (!particion->ocupada && particion->tamanio >= tamanio_proceso)
+    for (int i = 0; i < tamanio_lista; i++)
+    {
+        particion = list_get(lista_particiones, i);
+
+        if (!particion->ocupada && particion->tamanio >= tamanio_proceso)
+        {
+            particion->pid = pid;
+            particion->ocupada = true;
+            particion->limite = tamanio_proceso + particion->base;
+            particion->tamanio = tamanio_proceso;
+
+            if (i + 1 < tamanio_lista)
             {
-                particion->pid = pid;
-                particion->ocupada = true;
-                particion->limite = tamanio_proceso + particion->base;
                 t_particiones *particion_aux = list_get(lista_particiones, i);
-                if (particion_aux != NULL)
+                if (particion->limite != particion_aux->base)
                 {
-                    if (particion->limite != particion_aux->base)
+
+                    t_particiones *particion_restante = malloc(sizeof(t_particiones));
+                    particion_restante->base = particion->limite;
+
+                    particion_restante->ocupada = false;
+
+                    if (particion_aux->ocupada)
                     {
-
-                        t_particiones *particion_restante = malloc(sizeof(t_particiones));
-                        particion_restante->base = particion->limite;
-
-                        particion_restante->ocupada = false;
-
-                        if (particion_aux->ocupada)
-                        {
-                            particion_restante->limite = particion_aux->base;
-                        }
-                        else
-                        {
-                            particion_restante->limite = particion_aux->limite;
-                            list_remove(lista_particiones, i);
-                        }
-                        particion_restante->tamanio = particion_restante->limite - particion_restante->base;
-                        list_add_in_index(lista_particiones,i,particion_restante);
+                        particion_restante->limite = particion_aux->base;
                     }
-                }
-                else{
-                    if(particion->limite != tamanio_memoria){
-                        t_particiones *particion_restante = malloc(sizeof(t_particiones));
-                        particion_restante->base = particion ->limite;
-                        particion_restante->limite = tamanio_memoria;
-                        particion_restante->ocupada = false;
-                        particion_restante->tamanio = particion_restante->limite - particion_restante->base;
-                        list_add_in_index(lista_particiones,i,particion_restante);
+                    else
+                    {
+                        particion_restante->limite = particion_aux->limite;
+                        list_remove(lista_particiones, i);
                     }
+                    particion_restante->tamanio = particion_restante->limite - particion_restante->base;
+                    list_add_in_index(lista_particiones, i, particion_restante);
                 }
-                return particion;
-            }
-        }
-        return NULL;
-    }
-
-
-t_particiones* dinamica_best(int pid, int tamanio_proceso, int tamanio_lista)
-{
-    t_particiones *particion = malloc(sizeof(t_particiones));
-    int ubicacion_ideal = 0;
-    int index = -1;
-    
-        for (int i = 0; i < tamanio_lista; i++)
-        {
-            particion = list_get(lista_particiones, i);
-            if (!particion->ocupada && particion->tamanio >= tamanio_proceso)
-            { // caso donde la particion de la lista pueda alojar al proceso
-                if (ubicacion_ideal == 0)
-                { // caso donde todavia no se encontro una ubicacion ideal
-                    ubicacion_ideal = particion->tamanio - tamanio_proceso;
-                    index = i;
-                }
-                else if (ubicacion_ideal > particion->tamanio - tamanio_proceso)
-                { // caso donde el proceso pueda alojarse en una particion
-                    ubicacion_ideal = particion->tamanio - tamanio_proceso;
-                    index = i;
-                }
-            }
-        }
-        if (ubicacion_ideal == 0)
-        {
-            return NULL;
-        }
-        else
-        {
-
-            particion = list_get(lista_particiones, index);
-            particion->pid = pid;
-            particion->tamanio = tamanio_proceso - particion->base;
-            particion->ocupada = true;
-            particion->limite = particion->base + tamanio_proceso;
-
-            t_particiones *particion_aux = list_get(lista_particiones, index + 1);
-            if (particion_aux == NULL)
-            {
-                if(particion->limite != tamanio_memoria){
-                        t_particiones *particion_restante = malloc(sizeof(t_particiones));
-                        particion_restante->base = particion ->limite;
-                        particion_restante->limite = tamanio_memoria;
-                        particion_restante->ocupada = false;
-                        particion_restante->tamanio = particion_restante->limite - particion_restante->base;
-                        list_add_in_index(lista_particiones,index + 1,particion_restante);
-                    }
             }
             else
             {
-                if (particion->limite != particion_aux->base)
-                    {
-
-                        t_particiones *particion_restante = malloc(sizeof(t_particiones));
-                        particion_restante->base = particion->limite;
-
-                        particion_restante->ocupada = false;
-
-                        if (particion_aux->ocupada)
-                        {
-                            particion_restante->limite = particion_aux->base;
-                        }
-                        else
-                        {
-                            particion_restante->limite = particion_aux->limite;
-                            list_remove(lista_particiones, index+1);
-                        }
-                        particion_restante->tamanio = particion_restante->limite - particion_restante->base;
-                        list_add_in_index(lista_particiones,index+1,particion_restante);
-                    }
+                if (particion->limite != tamanio_memoria)
+                {
+                    t_particiones *particion_restante = malloc(sizeof(t_particiones));
+                    particion_restante->base = particion->limite;
+                    particion_restante->limite = tamanio_memoria;
+                    particion_restante->ocupada = false;
+                    particion_restante->tamanio = particion_restante->limite - particion_restante->base;
+                    list_add_in_index(lista_particiones, i, particion_restante);
+                }
             }
-
             return particion;
         }
-        return NULL;
     }
-t_particiones* dinamica_worst(int pid, int tamanio_proceso, int tamanio_lista)
+    return NULL;
+}
+
+t_particiones *dinamica_best(int pid, int tamanio_proceso, int tamanio_lista)
 {
-    t_particiones *particion = malloc(sizeof(t_particiones));
-    int ubicacion_ideal = 0;
+    int ubicacion_ideal = -1;
     int index = -1;
 
-        for (int i = 1; i < tamanio_lista; i++)
-        {
-            particion = list_get(lista_particiones, i);
-            if (!particion->ocupada && particion->tamanio >= tamanio_proceso)
-            { // caso donde la particion de la lista pueda alojar al proceso
-                if (ubicacion_ideal == 0)
-                { // caso donde todavia no se encontro una ubicacion ideal
-                    ubicacion_ideal = particion->tamanio - tamanio_proceso;
-                    index = i;
-                }
-                else if (ubicacion_ideal < particion->tamanio - tamanio_proceso)
-                { // caso donde el proceso pueda alojarse en una particion
-                    ubicacion_ideal = particion->tamanio - tamanio_proceso;
-                    index = i;
-                }
+    for (int i = 0; i < tamanio_lista; i++)
+    {
+        t_particiones *particion = list_get(lista_particiones, i);
+        if (!particion->ocupada && particion->tamanio >= tamanio_proceso)
+        { // caso donde la particion de la lista pueda alojar al proceso
+            if (ubicacion_ideal == -1 || ubicacion_ideal > (particion->tamanio - tamanio_proceso))
+            { // caso donde todavia no se encontro una ubicacion ideal
+                ubicacion_ideal = particion->tamanio - tamanio_proceso;
+                index = i;
             }
         }
-        if (ubicacion_ideal == 0)
+    }
+    if (ubicacion_ideal == -1)
+    {
+        return NULL;
+    }
+    else
+    {
+
+        t_particiones *particion = list_get(lista_particiones, index);
+        particion->pid = pid;
+        particion->tamanio = tamanio_proceso;
+        particion->ocupada = true;
+        particion->limite = particion->base + tamanio_proceso;
+        if (index + 1 >= tamanio_lista)
         {
-            return NULL;
+
+            if (particion->limite != tamanio_memoria)
+            {
+                t_particiones *particion_restante = malloc(sizeof(t_particiones));
+                particion_restante->base = particion->limite;
+                particion_restante->limite = tamanio_memoria;
+                particion_restante->ocupada = false;
+                particion_restante->tamanio = particion_restante->limite - particion_restante->base;
+                list_add_in_index(lista_particiones, index + 1, particion_restante);
+            }
         }
         else
         {
-
-            particion = list_get(lista_particiones, index);
-            particion->pid = pid;
-            particion->tamanio = tamanio_proceso - particion->base;
-            particion->ocupada = true;
-            particion->limite = particion->base + tamanio_proceso;
-
             t_particiones *particion_aux = list_get(lista_particiones, index + 1);
-            if (particion_aux == NULL)
+            if (particion->limite != particion_aux->base)
             {
-                if(particion->limite != tamanio_memoria){
-                        t_particiones *particion_restante = malloc(sizeof(t_particiones));
-                        particion_restante->base = particion ->limite;
-                        particion_restante->limite = tamanio_memoria;
-                        particion_restante->ocupada = false;
-                        particion_restante->tamanio = particion_restante->limite - particion_restante->base;
-                        list_add_in_index(lista_particiones,index + 1,particion_restante);
-                    }
+
+                t_particiones *particion_restante = malloc(sizeof(t_particiones));
+                particion_restante->base = particion->limite;
+
+                particion_restante->ocupada = false;
+
+                if (particion_aux->ocupada)
+                {
+                    particion_restante->limite = particion_aux->base;
+                }
+                else
+                {
+                    particion_restante->limite = particion_aux->limite;
+                    list_remove(lista_particiones, index + 1);
+                }
+                particion_restante->tamanio = particion_restante->limite - particion_restante->base;
+                list_add_in_index(lista_particiones, index + 1, particion_restante);
             }
-            else
-            {
-                if (particion->limite != particion_aux->base)
-                    {
-
-                        t_particiones *particion_restante = malloc(sizeof(t_particiones));
-                        particion_restante->base = particion->limite;
-
-                        particion_restante->ocupada = false;
-
-                        if (particion_aux->ocupada)
-                        {
-                            particion_restante->limite = particion_aux->base;
-                        }
-                        else
-                        {
-                            particion_restante->limite = particion_aux->limite;
-                            list_remove(lista_particiones, index+1);
-                        }
-                        particion_restante->tamanio = particion_restante->limite - particion_restante->base;
-                        list_add_in_index(lista_particiones,index+1,particion_restante);
-                    }
-            }
-
-            return particion;
         }
-        
+
+        return particion;
+    }
+    return NULL;
+}
+t_particiones *dinamica_worst(int pid, int tamanio_proceso, int tamanio_lista)
+{
+
+    int ubicacion_ideal = -1;
+    int index = -1;
+
+    for (int i = 0; i < tamanio_lista; i++)
+    {
+        t_particiones* particion = list_get(lista_particiones, i);
+        if (!particion->ocupada && particion->tamanio >= tamanio_proceso)
+        { // caso donde la particion de la lista pueda alojar al proceso
+            if (ubicacion_ideal == -1)
+            { // caso donde todavia no se encontro una ubicacion ideal
+                ubicacion_ideal = particion->tamanio - tamanio_proceso;
+                index = i;
+            }
+            else if (ubicacion_ideal < (particion->tamanio - tamanio_proceso))
+            { // caso donde el proceso pueda alojarse en una particion
+                ubicacion_ideal = particion->tamanio - tamanio_proceso;
+                index = i;
+            }
+        }
+    }
+    if (ubicacion_ideal == -1)
+    {
         return NULL;
     }
+    else
+    {
 
-t_particiones* inicializar_proceso(int pid, int tamanio_proceso, t_config *config)
+        t_particiones* particion = list_get(lista_particiones, index);
+        particion->pid = pid;
+        particion->tamanio = tamanio_proceso;
+        particion->ocupada = true;
+        particion->limite = particion->base + tamanio_proceso;
+
+        if (index + 1 >= tamanio_lista)
+        {
+            if (particion->limite != tamanio_memoria)
+            {
+                t_particiones *particion_restante = malloc(sizeof(t_particiones));
+                particion_restante->base = particion->limite;
+                particion_restante->limite = tamanio_memoria;
+                particion_restante->ocupada = false;
+                particion_restante->tamanio = particion_restante->limite - particion_restante->base;
+                list_add_in_index(lista_particiones, index + 1, particion_restante);
+            }
+        }
+        else
+        {
+            t_particiones *particion_aux = list_get(lista_particiones, index + 1);
+
+            if (particion->limite != particion_aux->base)
+            {
+
+                t_particiones *particion_restante = malloc(sizeof(t_particiones));
+                particion_restante->base = particion->limite;
+
+                particion_restante->ocupada = false;
+
+                if (particion_aux->ocupada)
+                {
+                    particion_restante->limite = particion_aux->base;
+                }
+                else
+                {
+                    particion_restante->limite = particion_aux->limite;
+                    list_remove(lista_particiones, index + 1);
+                }
+                particion_restante->tamanio = particion_restante->limite - particion_restante->base;
+                list_add_in_index(lista_particiones, index + 1, particion_restante);
+            }
+        }
+
+        return particion;
+    }
+
+    return NULL;
+}
+
+t_particiones *inicializar_proceso(int pid, int tamanio_proceso, t_config *config)
 {
     int tamanio_lista = list_size(lista_particiones);
-    char *esquema = config_get_string_value(config, "PARTICIONES");
+    char *esquema = config_get_string_value(config, "ESQUEMA");
     char *algoritmo_busqueda = config_get_string_value(config, "ALGORITMO_BUSQUEDA");
-    t_particiones* particion = NULL;
-
+    t_particiones *particion = NULL;
+    printf("esquema:%s\n", esquema);
     if (strcmp(esquema, "FIJAS") == 0)
     {
+        printf("entre a fijas\n");
         particion = busqueda_fija(pid, tamanio_proceso, algoritmo_busqueda, tamanio_lista);
     }
     else if (strcmp(esquema, "DINAMICAS") == 0)
@@ -389,41 +398,79 @@ void liberar_espacio_proceso(int pid)
         {
             particion->ocupada = false;
             particion->pid = -1;
-            fusionar_particiones_libres(lista_particiones,particion,i); // Se acomoda la lista si la particiÃ³n tiene particiones vecinas desocupadas
+            char *esquema = config_get_string_value(config, "ESQUEMA");
+            if (strcmp(esquema, "DINAMICAS") == 0)
+            {
+                fusionar_particiones_libres(lista_particiones, particion, i); // Se acomoda la lista si la particion tiene particiones vecinas desocupadas
+            }
             return;
         }
     }
-    
 }
 
-void fusionar_particiones_libres(t_list* lista_particiones,t_particiones* particion_actual,int indice){
-    
-    t_particiones* particion_anterior = list_get(lista_particiones,indice - 1);
-    t_particiones* particion_siguiente = list_get(lista_particiones,indice + 1);
+void fusionar_particiones_libres(t_list *lista_particiones, t_particiones *particion_actual, int indice) {
+    printf("Indice: %d\n", indice);
+    int tamanio_lista = list_size(lista_particiones);
 
-    
-    if (!particion_anterior->ocupada && !particion_siguiente->ocupada){ // Si la partición tiene vecinos desocupados
-
-        particion_anterior->limite = particion_siguiente->limite;
-        particion_anterior->tamanio = particion_anterior->limite - particion_anterior->base;
-
-        list_remove_and_destroy_element(lista_particiones,indice,free);
-        list_remove_and_destroy_element(lista_particiones,indice+1,free);
-        return;
-    }
+    // Si la partición actual es la primera
+    if (indice == 0) {
+        printf("Base partición actual: %d\n", particion_actual->base);
         
-    else if (!particion_anterior->ocupada){ // Si la partición actual tiene la partición anterior desocupada  
-        particion_anterior->limite = particion_actual->limite;
-        particion_anterior->tamanio = particion_anterior->limite - particion_anterior->base;
-        list_remove_and_destroy_element(lista_particiones,indice,free);
-        return;
-    }
+        // Verificar si existe una partición siguiente
+        if (indice + 1 < tamanio_lista) {
+            t_particiones *particion_siguiente = list_get(lista_particiones, indice + 1);
+            printf("Base partición siguiente: %d\n", particion_siguiente->base);
 
-    else if (!particion_siguiente->ocupada){ // Si la partición actual tiene la partición siguiente desocupada    
-        particion_actual->limite = particion_siguiente->limite;
-        particion_actual->tamanio = particion_actual->limite - particion_actual->base;
-        list_remove_and_destroy_element(lista_particiones,indice+1,free);
-        return;
+            if (!particion_siguiente->ocupada) {
+                // Fusionar con la partición siguiente
+                particion_actual->limite = particion_siguiente->limite;
+                particion_actual->tamanio = particion_actual->limite - particion_actual->base;
+
+                list_remove_and_destroy_element(lista_particiones, indice + 1, free);  // Eliminar partición siguiente
+                return;
+            }
+        }
+    } else {
+        t_particiones *particion_anterior = list_get(lista_particiones, indice - 1);
+        printf("Base partición anterior: %d\n", particion_anterior->base);
+        printf("Base partición actual: %d\n", particion_actual->base);
+
+        // Si la partición actual tiene partición anterior y siguiente
+        if (indice + 1 < tamanio_lista) {
+            t_particiones *particion_siguiente = list_get(lista_particiones, indice + 1);
+            printf("Base partición siguiente: %d\n", particion_siguiente->base);
+
+            if (!particion_anterior->ocupada && !particion_siguiente->ocupada) {
+                // Fusionar con anterior y siguiente
+                particion_anterior->limite = particion_siguiente->limite;
+                particion_anterior->tamanio = particion_anterior->limite - particion_anterior->base;
+
+                list_remove_and_destroy_element(lista_particiones, indice, free); // Eliminar partición actual
+                list_remove_and_destroy_element(lista_particiones, indice + 1, free); // Eliminar partición siguiente
+                return;
+            } else if (!particion_anterior->ocupada) {
+                // Fusionar con la partición anterior
+                particion_anterior->limite = particion_actual->limite;
+                particion_anterior->tamanio = particion_anterior->limite - particion_anterior->base;
+                list_remove_and_destroy_element(lista_particiones, indice, free);  // Eliminar partición actual
+                return;
+            } else if (!particion_siguiente->ocupada) {
+                // Fusionar con la partición siguiente
+                particion_actual->limite = particion_siguiente->limite;
+                particion_actual->tamanio = particion_actual->limite - particion_actual->base;
+                list_remove_and_destroy_element(lista_particiones, indice + 1, free);  // Eliminar partición siguiente
+                return;
+            }
+        } else {
+            // Si no hay partición siguiente
+            if (!particion_anterior->ocupada) {
+                // Fusionar solo con la partición anterior
+                particion_anterior->limite = particion_actual->limite;
+                particion_anterior->tamanio = particion_anterior->limite - particion_anterior->base;
+                list_remove_and_destroy_element(lista_particiones, indice, free);  // Eliminar partición actual
+                return;
+            }
+        }
     }
 }
 
@@ -482,24 +529,25 @@ char *generar_nombre_archivo(int pid, int tid)
     return nombre_archivo;
 }
 
-uint32_t leer_Memoria(uint32_t direccionFisica) {
+uint32_t leer_Memoria(uint32_t direccionFisica)
+{
 
-    uint32_t* valor = (uint32_t*)((char*)memoria + direccionFisica); 
+    uint32_t *valor = (uint32_t *)((char *)memoria + direccionFisica);
 
-   
-    if (*valor == 0xFFFFFFFF) { 
+    if (*valor == 0xFFFFFFFF)
+    {
         return 0xFFFFFFFF;
     }
 
-   
-    return *valor; 
+    return *valor;
 }
 
-int escribir_Memoria(t_write_mem* info) {
+int escribir_Memoria(t_write_mem *info)
+{
     // Convertir 'memoria' a uint32_t* y calcular la posición deseada
-    uint32_t* direccion = (uint32_t*)((char*)memoria + info->direccionFisica);
+    uint32_t *direccion = (uint32_t *)((char *)memoria + info->direccionFisica);
 
     *direccion = info->valor;
 
-    return 0; 
+    return 0;
 }
