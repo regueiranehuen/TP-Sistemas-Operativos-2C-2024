@@ -1,5 +1,5 @@
 #include "includes/memoriaUser.h"
-
+t_memoria* memoria;
 //Falta la parte de la creacion y eliminacion de hilos
 
 

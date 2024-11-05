@@ -4,6 +4,7 @@
 #include "utils/includes/estructuras.h"
 #include "utils/includes/sockets.h"
 #include "utils/includes/serializacion.h"
+
 extern t_memoria* memoria;
 
 t_memoria* inicializar_memoria(t_esquema_particion esquema, int tamano, int* lista_particiones);

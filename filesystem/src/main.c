@@ -6,8 +6,9 @@ t_log * log;
 t_config * config;
 int socket_servidor;
 
-log = log_create ("filesystem.log","tp",true,LOG_LEVEL_TRACE);
 config = config_create("filesystem.config");
+t_log_level log_level_int = log_level(config);
+log = log_create ("filesystem.log","tp",true,log_level_int);
 
 socket_servidor = hilo_filesystem(log,config);
 
