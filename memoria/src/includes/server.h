@@ -8,17 +8,6 @@
 #include <semaphore.h>
 #include "utils/includes/serializacion.h"
 
-extern sem_t sem_conexion_iniciales;
-extern sem_t sem_conexion_hecha;
-extern sem_t sem_fin_memoria;
-extern t_list*lista_contextos_pids;
-
-extern pthread_mutex_t mutex_lista_contextos_pids;
-
-extern t_list*lista_instrucciones_tid_pid;
-
-
-
 typedef struct{
     int socket_servidor;
     t_log* log;
@@ -30,13 +19,17 @@ typedef struct{//sockets iniciales de kernel y cpu
 }t_sockets;
 
 typedef struct{
-
-int socket_servidor;
-int socket_cliente;
-
+    int socket_servidor;
+    int socket_cliente;
 } sockets_memoria;
 
 extern t_sockets* sockets_iniciales;
+extern sem_t sem_conexion_iniciales;
+extern sem_t sem_conexion_hecha;
+extern sem_t sem_fin_memoria;
+extern t_list*lista_contextos_pids;
+extern pthread_mutex_t mutex_lista_contextos_pids;
+extern t_list*lista_instrucciones_tid_pid;
 
 void* hilo_gestor_clientes (void* void_args);
 int servidor_memoria (t_log* log, t_config* config);

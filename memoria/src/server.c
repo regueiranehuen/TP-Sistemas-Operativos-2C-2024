@@ -1,16 +1,13 @@
 #include "includes/server.h"
-
-t_sockets *sockets_iniciales;
 static pthread_mutex_t cliente_count_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int client_count = 0; // numero incremental del numero del cliente
+static int client_count = 0;
 sem_t sem_conexion_hecha;
 sem_t sem_fin_memoria;
 sem_t sem_conexion_iniciales;
-
 t_list *lista_contextos_pids;
 t_list *lista_instrucciones_tid_pid;
-
 pthread_mutex_t mutex_lista_contextos_pids;
+t_sockets* sockets_iniciales;
 
 void *hilo_por_cliente(void *void_args){
 
@@ -34,16 +31,14 @@ void *hilo_por_cliente(void *void_args){
     int resultado = servidor_handshake(socket_cliente, args->log);
     
 
-    if (resultado == 0)
-    {
+    if (resultado == 0){
         log_info(args->log, "Handshake memoria -> cliente_%d realizado correctamente", cliente_n);
     }
-    if (cliente_n <= 2)
-    { // conexiones iniciales de cpu y kernel
+
+    if (cliente_n <= 2){ // conexiones iniciales de cpu y kernel
 
         code_operacion modulo = recibir_code_operacion(socket_cliente);
-        switch (modulo)
-        {
+        switch (modulo){
         case CPU:
             sockets_iniciales->socket_cpu = socket_cliente;
             printf("1_socket de cpu:%d\n", sockets_iniciales->socket_cpu);
@@ -61,9 +56,8 @@ void *hilo_por_cliente(void *void_args){
             break;
         }
     }
-    else
-    {
-        log_info(args->log, "%d_Peticion de kernel", socket_cliente);
+    else{
+        log_info(args->log, "## Kernel Conectado - FD del socket: <%d>", socket_cliente);
         sem_post(&sem_conexion_hecha);
         atender_conexiones(socket_cliente);
     }
@@ -73,15 +67,13 @@ void *hilo_por_cliente(void *void_args){
     return NULL;
 }
 
-void *gestor_clientes(void *void_args)
-{ // Crear un hilo que crea hilos que crean conexiones para cada petición de kernel
+void *gestor_clientes(void *void_args){ // Crear un hilo que crea hilos que crean conexiones para cada petición de kernel
 
     hilo_clientes *args = (hilo_clientes *)void_args;
 
     int respuesta;
     int i = 0;
-    while (estado_cpu != 0)
-    { // mientras el servidor este abierto
+    while (estado_cpu != 0){ // mientras el servidor este abierto
         
         hilo_clientes *args_hilo = malloc(sizeof(hilo_clientes));
         args_hilo->log = args->log;

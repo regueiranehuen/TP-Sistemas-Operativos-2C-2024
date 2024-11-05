@@ -77,6 +77,7 @@ void* recibir_cpu(void*args) {
                 log_info(logger, "HX A ENVIAR: %u", contexto_tid->registros->HX);
 
                 actualizar_contexto(contexto_tid->pid,contexto_tid->tid,contexto_tid->registros);
+                log_info(logger,"## Contexto Actualizado - (PID:TID) - (%d:%d)",contexto_tid->pid,contexto_tid->tid);
                 send_code_operacion(OK,sockets_iniciales->socket_cpu);
                 
                 //free(contexto_tid);
