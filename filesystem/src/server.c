@@ -1,4 +1,6 @@
 #include "includes/server.h"
+#include "includes/peticiones.h"
+
 int estado_filesystem;
 sem_t sem_conexion_hecha;
 static int client_count = 0;
@@ -8,6 +10,7 @@ void *hilo_por_cliente(void *void_args){
 
     hilo_clientes *args = (hilo_clientes *)void_args;
     int socket_cliente = esperar_cliente(args->log, args->socket_servidor);
+
     if (socket_cliente == -1){
         log_error(args->log, "Error al esperar cliente");
         free(args);
@@ -24,15 +27,17 @@ void *hilo_por_cliente(void *void_args){
     if (resultado == 0){
         log_info(args->log, "Handshake filesystem -> cliente_%d realizado correctamente", cliente_n);
     }
+
     if (cliente_n <= 1){ // conexion inicial con memoria
-    close(socket_cliente);
+        close(socket_cliente);
     }
     else{
         log_info(args->log, "%d_Peticion de Memoria", socket_cliente);
         sem_post(&sem_conexion_hecha);
-        //atender_conexiones(socket_cliente); funcion para atender las peticiones de memoria
+        atender_conexiones(socket_cliente);
     }
     free(args);
+
     return NULL;
 }
 
@@ -100,7 +105,6 @@ void* funcion_hilo_servidor(void* void_args){
     
     args_hilo* args = ((args_hilo*)void_args);
 
-
     int socket_servidor = servidor_FileSystem_Memoria(args->log, args->config);
     if (socket_servidor == -1) {
         log_error(args->log, "No se pudo establecer la conexion con Memoria");
@@ -112,31 +116,31 @@ void* funcion_hilo_servidor(void* void_args){
 
 int hilo_filesystem(t_log* log, t_config* config){
 
-pthread_t hilo_servidor;
+    pthread_t hilo_servidor;
 
-args_hilo* args = malloc(sizeof(args_hilo)); 
+    args_hilo* args = malloc(sizeof(args_hilo)); 
 
-args->config=config;
-args->log=log;
+    args->config=config;
+    args->log=log;
 
-void* socket_servidor;
+    void* socket_servidor;
 
-int resultado;
+    int resultado;
 
-resultado = pthread_create (&hilo_servidor,NULL,funcion_hilo_servidor,(void*)args);
+    resultado = pthread_create (&hilo_servidor,NULL,funcion_hilo_servidor,(void*)args);
 
-if(resultado != 0){
-    log_error(log,"Error al crear el hilo");
-    free (args);
-    return -1;
-}
+    if(resultado != 0){
+        log_error(log,"Error al crear el hilo");
+        free (args);
+        return -1;
+    }
 
-log_info(log,"El hilo servidor se creo correctamente");
+    log_info(log,"El hilo servidor se creo correctamente");
 
-pthread_join(hilo_servidor,&socket_servidor);
+    pthread_join(hilo_servidor,&socket_servidor);
 
-resultado = (intptr_t)socket_servidor;
+    resultado = (intptr_t)socket_servidor;
 
-free(args);
-return resultado;
+    free(args);
+    return resultado;
 }

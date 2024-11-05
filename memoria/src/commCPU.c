@@ -53,8 +53,12 @@ void* recibir_cpu(void*args) {
                 t_contexto_pid_send* contexto_a_enviar = malloc(sizeof(t_contexto_pid_send));
                 contexto_a_enviar->pid = contextoPid->pid;
                 
+                //CALCULARLOS ANTES DE ENVIARLOS
                 contexto_a_enviar->base = contextoPid->base;
                 contexto_a_enviar->limite=contextoPid->limite;
+
+                contexto_a_enviar->tamanio_proceso = contextoPid->tamanio_proceso;
+
 
                 send_contexto_pid(sockets_iniciales->socket_cpu,contexto_a_enviar);
                 break;
@@ -108,7 +112,7 @@ void* recibir_cpu(void*args) {
                 
                 break;
             }
-
+            //REVISAR SU READ MEM Y WRITE MEM
             case READ_MEM: {
                 usleep(retardo_respuesta * 1000);
                 uint32_t direccionFisica = recibir_entero_uint32(sockets_iniciales->socket_cpu);
@@ -186,11 +190,12 @@ t_contexto_tid* inicializar_contexto_tid(t_contexto_pid* cont,int tid){
 }
 
 // Se debe usar despues de un PROCESS_CREATE y para el proceso inicial de la CPU
-t_contexto_pid*inicializar_contexto_pid(int pid,uint32_t base, uint32_t limite){ 
+t_contexto_pid*inicializar_contexto_pid(int pid,uint32_t base, uint32_t limite,int tamanio_proceso){ 
     t_contexto_pid*nuevo_contexto=malloc(sizeof(t_contexto_pid));
     nuevo_contexto->pid=pid;
     nuevo_contexto->base=base;
     nuevo_contexto->limite=limite;
+    nuevo_contexto->tamanio_proceso = tamanio_proceso;
 
     nuevo_contexto->contextos_tids=list_create();
 // Paso como segundo parámetro el 0 ya que el proceso está siendo inicializado, y al iniciarse si o si tiene que tener un hilo

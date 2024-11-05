@@ -31,14 +31,22 @@ typedef struct{
     int pid;
     t_list*contextos_tids;
     uint32_t base; 
-    uint32_t limite; 
+    uint32_t limite;
+    int tamanio_proceso; 
 }t_contexto_pid;
 
 typedef struct{
     int pid;
     uint32_t base;
     uint32_t limite;
+    int tamanio_proceso; 
 }t_contexto_pid_send;
+
+
+typedef struct{
+    uint32_t direccionFisica;
+    uint32_t valor;
+}t_write_mem; //FUNCION?
 
 typedef struct{
     uint32_t AX;
@@ -125,6 +133,7 @@ typedef struct {
 
 typedef enum // SOLO USARLO CON MEMORIA
 {
+    ERROR=-1,
     Algo, //hay un case -1 que lo cambie a 1
     //ESTADOS
     NEW,
@@ -172,7 +181,6 @@ typedef enum // SOLO USARLO CON MEMORIA
     TERMINO_PROCESO,
     INTERRUPCION,
     INTERRUPCION_USUARIO,
-    ERROR,
     LLAMADA_POR_INSTRUCCION,
     //COMUNICACION MEMORIA CON MODULOS
     CREAR_PROCESO,
@@ -204,6 +212,7 @@ typedef enum // SOLO USARLO CON MEMORIA
     INSTRUCCION_OBTENIDA,
     ESPACIO_USUARIO,
     WRITE_OK,
+    OK_OP_CODE
 
 }op_code; // USARLO SOLAMENTE CON MEMORIA
 
@@ -363,7 +372,11 @@ void recibir_2_string_mas_3_u32(int socket, char** palabra1,char** palabra2, uin
 //t_contexto *recibir_contexto_para_thread_execute(int socket,uint32_t tid);
 
 //  NUEVAS FUNCIONES POST CHECKPOINT 2
-
+void send_read_mem(uint32_t direccionFisica, int socket_memoria);
+uint32_t recepcionar_read_mem(t_paquete* paquete);
+void send_valor_read_mem(uint32_t valor, int socket_cliente, op_code code);
+void send_write_mem(uint32_t direccionFisica, uint32_t valor, int socket_memoria);
+t_write_mem* recepcionar_write_mem(t_paquete* paquete);
 
 bool esta_tid_en_lista(int tid,t_list*contextos_tids);
 void agregar_contexto_pid_a_paquete(t_paquete*paquete,t_contexto_pid*contexto);

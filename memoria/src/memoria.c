@@ -29,12 +29,15 @@ void atender_conexiones(int socket_cliente){
             } else {
                 base = asignar_memoria_dinamica(memoria->memoria, info_0->pid, info_0->tam_proceso, memoria->estrategia);
             }
+            
+            //Ellos envian limite y tamaño de proceso, el limite va a ser siempre el tamaño del proceso/tamaño particion me parece innecesario mandarlo pero ya fue
+            int limite;
 
             if (base == -1) {
                 respuesta = ERROR; // No se pudo asignar memoria
                 log_info(logger, "No se pudo asignar memoria");
             } else {
-                inicializar_contexto_pid(info_0->pid, base, info_0->tam_proceso);//falta tam_proceso en memoria fija
+                inicializar_contexto_pid(info_0->pid, base, limite,info_0->tam_proceso);//falta tam_proceso en memoria fija
                 respuesta = OK;
             }
             

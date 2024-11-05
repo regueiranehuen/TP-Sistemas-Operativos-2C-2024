@@ -35,29 +35,33 @@ void funcREAD_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,cha
 
     if (direccionFisica >= 0) {
         int valor = leer_valor_de_memoria(direccionFisica);
-        valor_registro_cpu(contextoTid,registro_datos, valor);
-        log_info(log_cpu, "READ_MEM: Dirección %d, Valor %d",
-                 direccionFisica, valor);
-    } else {
-        log_error(log_cpu, "Dirección física inválida: %d", direccionFisica);
-    }
+        if(valor != -1){
+            valor_registro_cpu(contextoTid,registro_datos, valor);
+            log_info(log_cpu,"## Lectura - (PID:TID) - (%d:%d) - Dir. Física: %d - Tamaño: %d",contextoTid->pid,contextoTid->tid,direccionFisica,contextoPid->tamanio_proceso);
+            log_info(log_cpu, "READ_MEM: Dirección %d, Valor %d", direccionFisica, valor);
+        } else {
+            log_error(log_cpu, "Dirección física inválida: %d", direccionFisica);
+            }
     log_info(log_cpu, "## TID: <%u> - Acción: <LEER> - Dirección Física: <%u>", contextoTid->tid, direccionFisica);
+    }
 }
 
-void funcWRITE_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,char* registro_direccion, char* registro_datos) {
+void funcWRITE_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,char* registro_direccion, char* registro_datos){
     int direccionLogica = obtener_valor_registro(contextoTid,registro_direccion);
     int direccionFisica = traducir_direccion_logica(contextoTid,contextoPid,direccionLogica);
 
     if (direccionFisica >= 0) {
+
         uint32_t valor = obtener_valor_registro(contextoTid,registro_datos);
         int ret = escribir_valor_en_memoria(direccionFisica, valor);
+
         if(ret == OK) {
-            log_info(log_cpu, "WRITE_MEM: Dirección %d, Valor %d", direccionFisica, valor);
+            log_info(log_cpu,"## Escritura - (PID:TID) - (%d:%d) - Dir. Física: %u - Tamaño: %d",contextoTid->pid,contextoTid->tid,direccionFisica,contextoPid->tamanio_proceso);
         }
     } else {
         log_error(log_cpu, "Dirección física inválida: %d", direccionFisica);
     }
-    log_info(log_cpu, "## TID: <%u> - Acción: <ESCRIBIR> - Dirección Física: <%u>", contextoTid->tid, direccionFisica);
+    //log_info(log_cpu, "## TID: <%u> - Acción: <ESCRIBIR> - Dirección Física: <%u>", contextoTid->tid, direccionFisica);
 }
 
 
@@ -94,37 +98,25 @@ void logRegistro(t_contexto_tid*contexto,char* registro) {
 }
 
 int leer_valor_de_memoria(int direccionFisica) {
-    t_paquete* paquete = crear_paquete_op(READ_MEM);
-    agregar_entero_a_paquete(paquete, direccionFisica); // Solo dirección
-    enviar_paquete(paquete, sockets_cpu->socket_memoria);
-    eliminar_paquete(paquete);
-
-    int cod_op = recibir_operacion(sockets_cpu->socket_memoria);
-    if (cod_op == READ_MEM_RESULTADO) {
-        uint32_t valor = recibir_entero_uint32(sockets_cpu->socket_memoria);
+    send_read_mem(direccionFisica,sockets_cpu->socket_memoria);
+    t_paquete* paquete = recibir_paquete_op_code(sockets_cpu->socket_memoria);
+    if (paquete->codigo_operacion == OK_OP_CODE) {
+        uint32_t valor = recepcionar_read_mem(paquete);
         return valor;
     } else {
         log_error(log_cpu, "Error al leer memoria");
-        return 0; // Valor por defecto en caso de error
+        return -1; // Valor por defecto en caso de error
     }
 }
 
-
-int escribir_valor_en_memoria(int direccionFisica, uint32_t valor) {
-    t_paquete* paquete = crear_paquete_op(WRITE_MEM);
-    agregar_entero_a_paquete(paquete, direccionFisica); // Solo dirección
-    agregar_entero_a_paquete(paquete, valor); // Valor a escribir
-    enviar_paquete(paquete, sockets_cpu->socket_memoria);
-    eliminar_paquete(paquete);
-
-    int cod_op = recibir_operacion(sockets_cpu->socket_memoria);
-    if(cod_op == OK) {
-        int valor = recibir_entero(sockets_cpu->socket_memoria);
-        return valor;
-    } else {
-        log_error(log_cpu, "Error al escribir en memoria");
-        return 0;
+int escribir_valor_en_memoria(uint32_t direccionFisica, uint32_t valor) {
+    send_write_mem(direccionFisica,valor,sockets_cpu->socket_memoria);
+    op_code code_op;
+    recv(sockets_cpu->socket_memoria,&code_op,sizeof(op_code),0);
+    if(code_op == OK_OP_CODE){
+    return 0;
     }
+    return -1;
 }
 
 uint32_t tamanio_registro(char *registro){
