@@ -29,6 +29,7 @@ void *hilo_por_cliente(void *void_args){
     }
 
     if (cliente_n <= 1){ // conexion inicial con memoria
+        sem_post(&sem_conexion_hecha);
         close(socket_cliente);
     }
     else{
