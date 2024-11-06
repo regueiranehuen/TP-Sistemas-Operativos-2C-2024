@@ -30,7 +30,11 @@ void funcLOG(t_contexto_tid*contexto,char* registro) {
 }
 
 void funcREAD_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,char* registro_datos, char* registro_direccion) {
+    printf("registro de datos:%s\n",registro_datos);
+    printf("registro de direccion:%s\n",registro_direccion);
+
     uint32_t direccionLogica = obtener_valor_registro(contextoTid,registro_direccion);
+    printf("Direccion logica:%d\n",direccionLogica);
     uint32_t direccionFisica = traducir_direccion_logica(contextoTid,contextoPid,direccionLogica);
 
     if (direccionFisica >= 0) {
@@ -103,9 +107,10 @@ uint32_t tamanio_registro(char *registro){
 }
 
 
-//--FUNIONES EXTRAS
+//--FUNCIONES EXTRAS
 
 uint32_t obtener_valor_registro(t_contexto_tid*contexto,char* registro) {
+    printf("registro:%s\n",registro);
     if (strcmp(registro, "AX") == 0) return contexto->registros->AX;
     if (strcmp(registro, "BX") == 0) return contexto->registros->BX;
     if (strcmp(registro, "CX") == 0) return contexto->registros->CX;
@@ -120,7 +125,10 @@ uint32_t obtener_valor_registro(t_contexto_tid*contexto,char* registro) {
 
 void valor_registro_cpu(t_contexto_tid*contexto,char* registro, uint32_t valor) {
     if (strcmp(registro, "AX") == 0) contexto->registros->AX = valor;
-    else if (strcmp(registro, "BX") == 0) contexto->registros->BX = valor;
+    else if (strcmp(registro, "BX") == 0){
+        contexto->registros->BX = valor;
+        log_info(log_cpu,"SI ESCRIBO ESTO ES QUE ESTOY RE BASADO AAAAAH Y MI VALOR ES:%d",contexto->registros->BX);
+    }
     else if (strcmp(registro, "CX") == 0) contexto->registros->CX = valor;
     else if (strcmp(registro, "DX") == 0) contexto->registros->DX = valor;
     else if (strcmp(registro, "EX") == 0) contexto->registros->EX = valor;

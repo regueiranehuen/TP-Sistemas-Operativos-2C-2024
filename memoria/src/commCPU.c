@@ -109,25 +109,27 @@ void* recibir_cpu(void*args) {
 
             case READ_MEM: {
                 uint32_t direccionFisica = recepcionar_read_mem(paquete_operacion);
-
+                log_info(logger,"direccionFisica recibida:%d",direccionFisica);
                 uint32_t valor = leer_Memoria(direccionFisica);
-
+                log_info(logger,"valor leido de memoria:%d",valor);
                 op_code code;
                 if(valor == 0xFFFFFFFF){
                 code = ERROR;
                 send_valor_read_mem(valor,sockets_iniciales->socket_cpu,code);
+                log_info(logger,"entre a error");
                 }
                 else{
                 code = OK_OP_CODE;
                 send_valor_read_mem(valor,sockets_iniciales->socket_cpu,code);
+                log_info(logger,"entre a ok");
                 }
-                
             break;    
             }
 
             case WRITE_MEM: {
             t_write_mem* info_0 = recepcionar_write_mem(paquete_operacion);
-
+            log_info(logger,"direccion Fisica recibida:%d",info_0->direccionFisica);
+            log_info(logger,"valor recibido:%d",info_0->valor);
             int resultado = escribir_Memoria(info_0);
 
             if(resultado == 0){
