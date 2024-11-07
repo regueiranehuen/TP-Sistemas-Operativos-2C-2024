@@ -1,13 +1,7 @@
-<<<<<<< Updated upstream
-SET AX 1
-JNZ AX 3
-SET BX 1
-=======
 SET AX 40
 SET BX 60
 WRITE_MEM AX BX
 SET BX 5
 READ_MEM BX AX
 LOG BX
->>>>>>> Stashed changes
 PROCESS_EXIT
