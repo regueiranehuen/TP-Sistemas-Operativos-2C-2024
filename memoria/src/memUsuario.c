@@ -177,42 +177,8 @@ t_particiones *dinamica_first(int pid, int tamanio_proceso, int tamanio_lista)
             particion->limite = tamanio_proceso + particion->base;
             particion->tamanio = tamanio_proceso;
 
-            if (i + 1 < tamanio_lista)
-            {
-                t_particiones *particion_aux = list_get(lista_particiones, i);
-                if (particion->limite != particion_aux->base)
-                {
+            acomodar_particion_siguiente(particion,i,tamanio_lista);
 
-                    t_particiones *particion_restante = malloc(sizeof(t_particiones));
-                    particion_restante->base = particion->limite;
-
-                    particion_restante->ocupada = false;
-
-                    if (particion_aux->ocupada)
-                    {
-                        particion_restante->limite = particion_aux->base;
-                    }
-                    else
-                    {
-                        particion_restante->limite = particion_aux->limite;
-                        list_remove(lista_particiones, i);
-                    }
-                    particion_restante->tamanio = particion_restante->limite - particion_restante->base;
-                    list_add_in_index(lista_particiones, i, particion_restante);
-                }
-            }
-            else
-            {
-                if (particion->limite != tamanio_memoria)
-                {
-                    t_particiones *particion_restante = malloc(sizeof(t_particiones));
-                    particion_restante->base = particion->limite;
-                    particion_restante->limite = tamanio_memoria;
-                    particion_restante->ocupada = false;
-                    particion_restante->tamanio = particion_restante->limite - particion_restante->base;
-                    list_add_in_index(lista_particiones, i, particion_restante);
-                }
-            }
             return particion;
         }
     }
@@ -248,48 +214,14 @@ t_particiones *dinamica_best(int pid, int tamanio_proceso, int tamanio_lista)
         particion->tamanio = tamanio_proceso;
         particion->ocupada = true;
         particion->limite = particion->base + tamanio_proceso;
-        if (index + 1 >= tamanio_lista)
-        {
 
-            if (particion->limite != tamanio_memoria)
-            {
-                t_particiones *particion_restante = malloc(sizeof(t_particiones));
-                particion_restante->base = particion->limite;
-                particion_restante->limite = tamanio_memoria;
-                particion_restante->ocupada = false;
-                particion_restante->tamanio = particion_restante->limite - particion_restante->base;
-                list_add_in_index(lista_particiones, index + 1, particion_restante);
-            }
-        }
-        else
-        {
-            t_particiones *particion_aux = list_get(lista_particiones, index + 1);
-            if (particion->limite != particion_aux->base)
-            {
-
-                t_particiones *particion_restante = malloc(sizeof(t_particiones));
-                particion_restante->base = particion->limite;
-
-                particion_restante->ocupada = false;
-
-                if (particion_aux->ocupada)
-                {
-                    particion_restante->limite = particion_aux->base;
-                }
-                else
-                {
-                    particion_restante->limite = particion_aux->limite;
-                    list_remove(lista_particiones, index + 1);
-                }
-                particion_restante->tamanio = particion_restante->limite - particion_restante->base;
-                list_add_in_index(lista_particiones, index + 1, particion_restante);
-            }
-        }
+        acomodar_particion_siguiente(particion,index,tamanio_lista);
 
         return particion;
     }
     return NULL;
 }
+
 t_particiones *dinamica_worst(int pid, int tamanio_proceso, int tamanio_lista)
 {
 
@@ -326,48 +258,53 @@ t_particiones *dinamica_worst(int pid, int tamanio_proceso, int tamanio_lista)
         particion->ocupada = true;
         particion->limite = particion->base + tamanio_proceso;
 
-        if (index + 1 >= tamanio_lista)
-        {
-            if (particion->limite != tamanio_memoria)
-            {
-                t_particiones *particion_restante = malloc(sizeof(t_particiones));
-                particion_restante->base = particion->limite;
-                particion_restante->limite = tamanio_memoria;
-                particion_restante->ocupada = false;
-                particion_restante->tamanio = particion_restante->limite - particion_restante->base;
-                list_add_in_index(lista_particiones, index + 1, particion_restante);
-            }
-        }
-        else
-        {
-            t_particiones *particion_aux = list_get(lista_particiones, index + 1);
-
-            if (particion->limite != particion_aux->base)
-            {
-
-                t_particiones *particion_restante = malloc(sizeof(t_particiones));
-                particion_restante->base = particion->limite;
-
-                particion_restante->ocupada = false;
-
-                if (particion_aux->ocupada)
-                {
-                    particion_restante->limite = particion_aux->base;
-                }
-                else
-                {
-                    particion_restante->limite = particion_aux->limite;
-                    list_remove(lista_particiones, index + 1);
-                }
-                particion_restante->tamanio = particion_restante->limite - particion_restante->base;
-                list_add_in_index(lista_particiones, index + 1, particion_restante);
-            }
-        }
+        acomodar_particion_siguiente(particion,index,tamanio_lista);
 
         return particion;
     }
 
     return NULL;
+}
+
+void acomodar_particion_siguiente(t_particiones *particion, int index, int tamanio_lista)
+{
+    if (index + 1 == tamanio_lista)
+    {
+
+        if (particion->limite != tamanio_memoria)
+        {
+            t_particiones *particion_restante = malloc(sizeof(t_particiones));
+            particion_restante->base = particion->limite;
+            particion_restante->limite = tamanio_memoria;
+            particion_restante->ocupada = false;
+            particion_restante->tamanio = particion_restante->limite - particion_restante->base;
+            list_add_in_index(lista_particiones, index + 1, particion_restante);
+        }
+    }
+    else
+    {
+        t_particiones *particion_aux = list_get(lista_particiones, index + 1);
+        if (particion->limite != particion_aux->base)
+        {
+            list_remove(lista_particiones, index + 1);
+            t_particiones *particion_restante = malloc(sizeof(t_particiones));
+            particion_restante->base = particion->limite;
+
+            particion_restante->ocupada = false;
+
+            if (particion_aux->ocupada)
+            {
+                particion_restante->limite = particion_aux->base;
+            }
+            else
+            {
+                particion_restante->limite = particion_aux->limite;
+            }
+            particion_restante->tamanio = particion_restante->limite - particion_restante->base;
+            list_add_in_index(lista_particiones, index + 1, particion_restante);
+            list_add_in_index(lista_particiones, index + 2, particion_aux);
+        }
+    }
 }
 
 t_particiones *inicializar_proceso(int pid, int tamanio_proceso, t_config *config)

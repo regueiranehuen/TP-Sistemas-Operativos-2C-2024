@@ -41,5 +41,5 @@ char* generar_nombre_archivo(int pid, int tid);
 
 uint32_t leer_Memoria(uint32_t direccionFisica);
 int escribir_Memoria(t_write_mem* info);
-
+void acomodar_particion_siguiente(t_particiones *particion, int index, int tamanio_lista);
 #endif
