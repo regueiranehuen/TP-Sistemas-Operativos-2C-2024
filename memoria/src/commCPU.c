@@ -1,8 +1,8 @@
 #include "includes/commCpu.h"
-//#include "includes/memoriaUser.h"
 
 void* recibir_cpu(void*args) {
 
+    
     int retardo_respuesta = config_get_int_value(config,"RETARDO_RESPUESTA");
     int codigoOperacion = 0;
     while (codigoOperacion != -1) {
@@ -15,10 +15,10 @@ void* recibir_cpu(void*args) {
         }
             log_info(logger,"Memoria recibio el siguiente codigo operacion de CPU: %d",paquete_operacion->codigo_operacion);
 
+        usleep(retardo_respuesta * 1000);  // Aplicar retardo configurado
 
         switch (paquete_operacion->codigo_operacion) {
             case OBTENER_CONTEXTO_TID: {
-                usleep(retardo_respuesta * 1000);
                 t_tid_pid *info = recepcionar_solicitud_contexto_tid(paquete_operacion);  // Recibe PID y TID
 
                 log_info(logger, "## Contexto solicitado - (PID:TID) - (%d:%d)",info->pid,info->tid);
@@ -30,7 +30,7 @@ void* recibir_cpu(void*args) {
                     send_paquete_op_code(sockets_iniciales->socket_cpu,NULL,CONTEXTO_TID_INEXISTENTE);
                     break;
                 }
-
+                
                 send_contexto_tid(sockets_iniciales->socket_cpu,contexto_tid);
                 log_info(logger, "Enviado contexto para PID: %d, TID: %d", contexto_tid->pid, contexto_tid->tid);
                 
@@ -38,8 +38,7 @@ void* recibir_cpu(void*args) {
                 break;
             }
 
-            case OBTENER_CONTEXTO_PID:{ // calcular base y limite antes de enviar
-                usleep(retardo_respuesta * 1000);
+            case OBTENER_CONTEXTO_PID:{ 
                 int pid_obtencion = recepcionar_solicitud_contexto_pid(paquete_operacion);
 
                 pthread_mutex_lock(&mutex_lista_contextos_pids);
@@ -50,23 +49,18 @@ void* recibir_cpu(void*args) {
                     send_paquete_op_code(sockets_iniciales->socket_cpu,NULL,CONTEXTO_PID_INEXISTENTE);
                     break;
                 }
-                t_contexto_pid_send* contexto_a_enviar = malloc(sizeof(t_contexto_pid_send));
+                t_contexto_pid_send* contexto_a_enviar = malloc(sizeof(contexto_a_enviar));
                 contexto_a_enviar->pid = contextoPid->pid;
-                
-                //CALCULARLOS ANTES DE ENVIARLOS
                 contexto_a_enviar->base = contextoPid->base;
                 contexto_a_enviar->limite=contextoPid->limite;
-
                 contexto_a_enviar->tamanio_proceso = contextoPid->tamanio_proceso;
-
-
+                
                 send_contexto_pid(sockets_iniciales->socket_cpu,contexto_a_enviar);
                 break;
             }
 
 
             case ACTUALIZAR_CONTEXTO_TID:{
-                usleep(retardo_respuesta * 1000);
                 printf("entrando a actualizar_contexto\n");
                 t_contexto_tid*contexto_tid=recepcionar_contexto_tid(paquete_operacion);
 
@@ -89,7 +83,7 @@ void* recibir_cpu(void*args) {
             }
 
             case OBTENER_INSTRUCCION: {
-                usleep(retardo_respuesta * 1000);
+
                 t_instruccion_memoria* solicitud_instruccion = recepcionar_solicitud_instruccion_memoria(paquete_operacion);
                 t_instruccion *instruccion = obtener_instruccion(solicitud_instruccion->tid, solicitud_instruccion->pid,solicitud_instruccion->pc);
                 if (instruccion==NULL){
@@ -112,22 +106,37 @@ void* recibir_cpu(void*args) {
                 
                 break;
             }
-            //REVISAR SU READ MEM Y WRITE MEM
+
             case READ_MEM: {
-                usleep(retardo_respuesta * 1000);
-                uint32_t direccionFisica = recibir_entero_uint32(sockets_iniciales->socket_cpu);
-                uint32_t valor = leer_memoria(memoria, direccionFisica);
-                enviar_entero(sockets_iniciales->socket_cpu, valor, READ_MEM_RESULTADO);
-                break;
+                uint32_t direccionFisica = recepcionar_read_mem(paquete_operacion);
+                log_info(logger,"direccionFisica recibida:%d",direccionFisica);
+                uint32_t valor = leer_Memoria(direccionFisica);
+                log_info(logger,"valor leido de memoria:%d",valor);
+                op_code code;
+                if(valor == 0xFFFFFFFF){
+                code = ERROR;
+                send_valor_read_mem(valor,sockets_iniciales->socket_cpu,code);
+                log_info(logger,"entre a error");
+                }
+                else{
+                code = OK_OP_CODE;
+                send_valor_read_mem(valor,sockets_iniciales->socket_cpu,code);
+                log_info(logger,"entre a ok");
+                }
+            break;    
             }
 
             case WRITE_MEM: {
-                usleep(retardo_respuesta * 1000);
-                uint32_t direccionFisica = recibir_entero_uint32(sockets_iniciales->socket_cpu);
-                uint32_t valor = recibir_entero_uint32(sockets_iniciales->socket_cpu);
-                escribir_memoria(memoria, direccionFisica, valor);
-                send_code_operacion(OK, sockets_iniciales->socket_cpu);
-                break;
+            t_write_mem* info_0 = recepcionar_write_mem(paquete_operacion);
+            log_info(logger,"direccion Fisica recibida:%d",info_0->direccionFisica);
+            log_info(logger,"valor recibido:%d",info_0->valor);
+            int resultado = escribir_Memoria(info_0);
+
+            if(resultado == 0){
+            op_code code = OK_OP_CODE;
+            send(sockets_iniciales->socket_cpu,&code,sizeof(op_code),0);
+            }
+            break;  
             }
 
             case 1:
@@ -144,8 +153,6 @@ void* recibir_cpu(void*args) {
     return NULL;
 }
 
-
-//Al actualizar el contexto hay que guardalo en la memoria, incluir memoriaUser.c
 void actualizar_contexto(int pid, int tid, t_registros_cpu* reg){
     pthread_mutex_lock(&mutex_lista_contextos_pids);
     t_contexto_tid *contexto = obtener_contexto_tid(pid, tid);
@@ -310,7 +317,7 @@ void liberar_contexto_pid(t_contexto_pid *contexto_pid){
 void liberar_lista_contextos(){
     list_destroy_and_destroy_elements(lista_contextos_pids,(void*)liberar_contexto_pid);
 }
-
+/*
 uint32_t leer_memoria(t_memoria* memoria, int direccion_fisica) {
     uint32_t valor;
     memcpy(&valor, (char*)memoria->memoria + direccion_fisica, sizeof(uint32_t));
@@ -321,4 +328,5 @@ void escribir_memoria(t_memoria* memoria, int direccion_fisica, uint32_t valor) 
     memcpy((char*)memoria->memoria + direccion_fisica, &valor, sizeof(uint32_t));
 }
 
+*/
 

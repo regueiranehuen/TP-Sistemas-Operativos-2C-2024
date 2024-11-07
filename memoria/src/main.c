@@ -1,8 +1,8 @@
 #include "includes/main.h"
+
 int estado_cpu = 1;
 t_log *logger;
 t_config *config;
-
 
 int main(int argc, char *argv[]){
 
@@ -12,11 +12,8 @@ int main(int argc, char *argv[]){
     config = config_create("memoria.config");
     t_log_level log_level_int = log_level(config);
     logger = log_create("memoria.log", "tp", true, log_level_int);
-
-    memoria = malloc(sizeof(t_memoria));
-    leer_config();
-    memoria = inicializar_memoria(memoria->esquema, memoria->tamano_memoria, memoria->lista_particiones);
-
+    
+    inicializar_Memoria(config);
     inicializar_mutex();
     inicializar_semaforos();
     inicializar_estructuras();
@@ -30,8 +27,6 @@ int main(int argc, char *argv[]){
 
     sem_wait(&sem_conexion_iniciales); //esperar a que se haga la conexion con cpu y kernel
     sem_wait(&sem_conexion_iniciales);
-
-    mostrar_memoria(memoria);
 
     hilo_recibe_cpu();
     
@@ -63,7 +58,7 @@ void hilo_recibe_cpu(){
     }
     pthread_detach(hilo_cliente_cpu);
 }
-
+/*
 void leer_config() {
     memoria->tamano_memoria = config_get_int_value(config, "TAM_MEMORIA");
     char* esquema_string = config_get_string_value(config, "ESQUEMA");
@@ -96,3 +91,4 @@ int* convertirArrayDeNumeros(char** caracteres){
         
     return intArray;
 }
+*/

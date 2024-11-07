@@ -1,21 +1,22 @@
 #include "includes/server.h"
+
+t_sockets *sockets_iniciales;
 static pthread_mutex_t cliente_count_mutex = PTHREAD_MUTEX_INITIALIZER;
-static int client_count = 0;
+static int client_count = 0; // numero incremental del numero del cliente
 sem_t sem_conexion_hecha;
 sem_t sem_fin_memoria;
 sem_t sem_conexion_iniciales;
+
 t_list *lista_contextos_pids;
 t_list *lista_instrucciones_tid_pid;
+
 pthread_mutex_t mutex_lista_contextos_pids;
-t_sockets* sockets_iniciales;
 
 void *hilo_por_cliente(void *void_args){
-
     hilo_clientes *args = (hilo_clientes *)void_args;
 
     int socket_cliente = esperar_cliente(args->log, args->socket_servidor);
-    if (socket_cliente == -1)
-    {
+    if (socket_cliente == -1){
         log_error(args->log, "Error al esperar cliente");
         free(args);
         return NULL;
@@ -34,7 +35,6 @@ void *hilo_por_cliente(void *void_args){
     if (resultado == 0){
         log_info(args->log, "Handshake memoria -> cliente_%d realizado correctamente", cliente_n);
     }
-
     if (cliente_n <= 2){ // conexiones iniciales de cpu y kernel
 
         code_operacion modulo = recibir_code_operacion(socket_cliente);
@@ -68,11 +68,10 @@ void *hilo_por_cliente(void *void_args){
 }
 
 void *gestor_clientes(void *void_args){ // Crear un hilo que crea hilos que crean conexiones para cada petición de kernel
-
     hilo_clientes *args = (hilo_clientes *)void_args;
-
     int respuesta;
     int i = 0;
+    
     while (estado_cpu != 0){ // mientras el servidor este abierto
         
         hilo_clientes *args_hilo = malloc(sizeof(hilo_clientes));
@@ -96,9 +95,7 @@ void *gestor_clientes(void *void_args){ // Crear un hilo que crea hilos que crea
     return NULL;
 }
 
-int servidor_memoria(t_log *log, t_config *config)
-{
-
+int servidor_memoria(t_log *log, t_config *config){
     hilo_clientes *args = malloc(sizeof(hilo_clientes));
 
     char *puerto;
@@ -113,8 +110,7 @@ int servidor_memoria(t_log *log, t_config *config)
     args->log = log;
     args->socket_servidor = socket_servidor;
 
-    if (socket_servidor == -1)
-    {
+    if (socket_servidor == -1){
         log_error(log, "Error al iniciar el servidor");
         return -1;
     }
@@ -123,8 +119,7 @@ int servidor_memoria(t_log *log, t_config *config)
 
     respuesta = pthread_create(&hilo_gestor, NULL, gestor_clientes, args);
 
-    if (respuesta != 0)
-    {
+    if (respuesta != 0){
         log_error(log, "Error al crear el hilo_gestor_clientes");
         free(args);
         return -1;
@@ -134,8 +129,7 @@ int servidor_memoria(t_log *log, t_config *config)
     return socket_servidor;
 }
 
-void *funcion_hilo_servidor(void *void_args)
-{
+void *funcion_hilo_servidor(void *void_args){
 
     args_hilo *args = (args_hilo *)void_args;
 
@@ -149,18 +143,14 @@ void *funcion_hilo_servidor(void *void_args)
     return (void *)(intptr_t)socket_servidor;
 }
 
-int cliente_memoria_filesystem(t_log *log, t_config *config)
-{
-
+int cliente_memoria_filesystem(t_log *log, t_config *config){
     char *ip, *puerto;
     int socket_cliente, respuesta;
-
     ip = config_get_string_value(config, "IP_FILESYSTEM");
     puerto = config_get_string_value(config, "PUERTO_FILESYSTEM");
 
     // Verificar que ip y puerto no sean NULL
-    if (ip == NULL || puerto == NULL)
-    {
+    if (ip == NULL || puerto == NULL){
         log_info(log, "No se pudo obtener IP o PUERTO de la configuración");
         return -1;
     }
@@ -168,34 +158,28 @@ int cliente_memoria_filesystem(t_log *log, t_config *config)
     // Crear conexion
     socket_cliente = crear_conexion(log, ip, puerto);
 
-    if (socket_cliente == -1)
-    {
+    if (socket_cliente == -1){
         log_info(log, "No se pudo crear la conexion");
         return -1;
     }
 
     respuesta = cliente_handshake(socket_cliente, log);
 
-    if (respuesta == 0)
-    {
+    if (respuesta == 0){
         log_info(log, "Handshake de Memoria --> Filesystem realizado correctamente");
     }
-    else
-    {
+    else{
         log_error(log, "Handshake de Memoria --> Filesystem tuvo un error");
     }
 
     return socket_cliente;
 }
 
-void *funcion_hilo_cliente(void *void_args)
-{
-
+void *funcion_hilo_cliente(void *void_args){
     args_hilo *args = ((args_hilo *)void_args);
-
     int socket_cliente = cliente_memoria_filesystem(args->log, args->config);
-    if (socket_cliente == -1)
-    {
+
+    if (socket_cliente == -1){
         log_error(args->log, "No se pudo establecer la conexion con filesystem");
         pthread_exit(NULL);
     }
@@ -203,9 +187,7 @@ void *funcion_hilo_cliente(void *void_args)
     return (void *)(intptr_t)socket_cliente;
 }
 
-sockets_memoria *hilos_memoria(t_log *log, t_config *config)
-{
-
+sockets_memoria *hilos_memoria(t_log *log, t_config *config){
     pthread_t hilo_servidor;
     pthread_t hilo_cliente;
 
@@ -223,8 +205,7 @@ sockets_memoria *hilos_memoria(t_log *log, t_config *config)
 
     resultado = pthread_create(&hilo_cliente, NULL, funcion_hilo_cliente, args);
 
-    if (resultado != 0)
-    {
+    if (resultado != 0){
         log_error(log, "Error al crear el hilo");
         free(args);
         return NULL;
@@ -234,8 +215,7 @@ sockets_memoria *hilos_memoria(t_log *log, t_config *config)
 
     resultado = pthread_create(&hilo_servidor, NULL, funcion_hilo_servidor, args);
 
-    if (resultado != 0)
-    {
+    if (resultado != 0){
         log_error(log, "Error al crear el hilo");
         free(args);
         return NULL;

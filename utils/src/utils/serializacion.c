@@ -608,7 +608,7 @@ void send_inicializacion_hilo(int tid, int pid, char*arch_pseudocodigo,int socke
     
     buffer->stream = malloc(buffer->size);
     void* stream = buffer->stream;
-
+    
     memcpy(stream, &pid,sizeof(int));
     stream += sizeof(int);
     memcpy(stream, &tid, sizeof(int));
@@ -626,7 +626,6 @@ void send_inicializacion_hilo(int tid, int pid, char*arch_pseudocodigo,int socke
 void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_proceso, int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
 
-    
     int length_arch_pseudocodigo=strlen(arch_pseudocodigo)+1;
 
     buffer->size = 3*sizeof(int)+length_arch_pseudocodigo;
@@ -634,7 +633,6 @@ void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_pro
     buffer->stream = malloc(buffer->size);
     void* stream = buffer->stream;
     
-
     memcpy(stream, &pid,sizeof(int));
     stream += sizeof(int);
     memcpy(stream,&tamanio_proceso,sizeof(int));
@@ -645,6 +643,39 @@ void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_pro
     
     send_paquete_code_operacion(INICIALIZAR_PROCESO,buffer,socket_cliente);
     
+}
+
+void send_dump_memory_filesystem(int pid,int tid,int tamanio_proceso,int socket_cliente){
+    t_buffer* buffer = malloc(sizeof(t_buffer));
+    
+    buffer->size = 3*sizeof(int);
+    buffer->stream = malloc(buffer->size);
+    void* stream = buffer->stream;
+
+    memcpy(stream,&pid,sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream,&tid,sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream,&tamanio_proceso,sizeof(int));
+    
+    send_paquete_code_operacion(DUMP_MEMORIA,buffer,socket_cliente);
+
+}
+
+t_args_dump_memory* recepcionar_dump_memory_filesystem(t_paquete_code_operacion* paquete){
+   t_args_dump_memory* info = malloc(sizeof(t_args_dump_memory)); // APLICAR SIEMPRE ASI
+
+    void* stream = paquete->buffer->stream;
+
+    memcpy(&(info->pid),stream,sizeof(int));
+    stream += sizeof(int);
+    memcpy(&(info->tid), stream,sizeof(int));
+    stream+=sizeof(int);
+    memcpy(&(info->tamanio_proceso), stream,sizeof(int));
+    
+    eliminar_paquete_code_op(paquete);
+
+    return info; 
 }
 
 
@@ -722,32 +753,4 @@ t_log_level log_level(t_config* config){
     return LOG_LEVEL_ERROR;
     }
     return -1;
-}
-
-void send_dump_memory_filesystem(int pid,int tid,int tamanio_proceso,int socket_cliente){
-    t_buffer* buffer = malloc(sizeof(t_buffer));
-    
-    buffer->size = 3*sizeof(int);
-    buffer->stream = malloc(buffer->size);
-    void* stream = buffer->stream;
-    memcpy(stream,&pid,sizeof(int));
-    stream += sizeof(int);
-    memcpy(stream,&tid,sizeof(int));
-    stream += sizeof(int);
-    memcpy(stream,&tamanio_proceso,sizeof(int));
-    
-    send_paquete_code_operacion(DUMP_MEMORIA,buffer,socket_cliente);
-}
-
-t_args_dump_memory* recepcionar_dump_memory_filesystem(t_paquete_code_operacion* paquete){
-    t_args_dump_memory* info = malloc(sizeof(t_args_dump_memory)); // APLICAR SIEMPRE ASI
-    void* stream = paquete->buffer->stream;
-    memcpy(&(info->pid),stream,sizeof(int));
-    stream += sizeof(int);
-    memcpy(&(info->tid), stream,sizeof(int));
-    stream+=sizeof(int);
-    memcpy(&(info->tamanio_proceso), stream,sizeof(int));
-    
-    eliminar_paquete_code_op(paquete);
-    return info; 
 }

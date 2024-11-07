@@ -16,7 +16,7 @@ void copiarBytes(uint32_t tamanio, t_contexto_pid *contexto);
 void finalizar_hilo(int tid, int pid);
 void eliminar_elemento_por_tid(int tid, t_list* contextos_tids);
 void inicializar_resto_parametros(int cant_param, t_instruccion_tid_pid *instruccion);
-
+char* limpiar_token(char* token);
 
 
 #endif

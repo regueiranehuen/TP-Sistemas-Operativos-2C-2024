@@ -8,6 +8,9 @@
 #include <semaphore.h>
 #include "utils/includes/serializacion.h"
 
+
+
+
 typedef struct{
     int socket_servidor;
     t_log* log;

@@ -99,8 +99,6 @@ typedef struct{
 }t_args_thread_create_aviso;
 
 
-
-
 void send_process_create(char* nombreArchivo, int tamProceso, int prioridad, int socket_cliente);
 void send_thread_create(char*nombreArchivo,int prioridad,int socket_cliente);
 void send_process_exit(int socket_cliente);
@@ -155,7 +153,9 @@ t_args_thread_create_aviso* recepcionar_inicializacion_hilo(t_paquete_code_opera
 char* obtener_ruta_absoluta(const char *ruta_relativa);
 
 t_log_level log_level(t_config* config);
+
 void send_dump_memory_filesystem(int pid,int tid,int tamanio_proceso,int socket_cliente);
 t_args_dump_memory* recepcionar_dump_memory_filesystem(t_paquete_code_operacion* paquete);
+
 
 #endif

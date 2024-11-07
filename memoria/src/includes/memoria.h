@@ -7,7 +7,7 @@
 #include "main.h"
 #include "commCpu.h"
 #include "memSist.h"
-#include "memoriaUser.h"
+#include "memUsuario.h"
 
 void atender_conexiones(int socket_cliente);
 uint32_t obtener_base();

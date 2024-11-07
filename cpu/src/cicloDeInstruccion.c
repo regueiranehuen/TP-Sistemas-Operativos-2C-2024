@@ -109,7 +109,9 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch){
             log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
             log_info(log_cpu, "PID: %d, BASE: %d, LIMITE: %d", contextos->contexto_pid->pid, contextos->contexto_pid->base, contextos->contexto_pid->limite);
             t_paquete *paquete_solicitud_contexto_tid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
-            //printf("%d\n", paquete_solicitud_contexto_tid->codigo_operacion);
+            
+            //Poner log si es necesario
+            printf("%d\n", paquete_solicitud_contexto_tid->codigo_operacion);
             if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK)
             { // La memoria se encarga de crear el contexto del tid si es que no existe
                 contextos->contexto_tid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid);
@@ -191,6 +193,14 @@ t_instruccion *fetch(t_contexto_tid *contexto)
     else if (paquete->codigo_operacion == INSTRUCCION_OBTENIDA)
     {
         instruccion = recepcionar_instruccion(paquete);
+        int str = strlen(instruccion->parametros1);
+        log_info(log_cpu,"strlen:%d",str);
+        str = strlen(instruccion->parametros2);
+        log_info(log_cpu,"strlen:%d",str);
+        str = strlen(instruccion->parametros3);
+        log_info(log_cpu,"strlen:%d",str);
+        str = strlen(instruccion->parametros4);
+        log_info(log_cpu,"strlen:%d",str);
     }
     log_info(log_cpu, "TID: %i - FETCH - Program Counter: %i", contexto->tid, contexto->registros->PC);
     return instruccion;

@@ -6,5 +6,4 @@
 extern t_log* log_filesystem;
 extern t_config* config;
 
-
 #endif

@@ -27,6 +27,7 @@
 #include "serializacion.h"
 
 
+
 typedef struct{
     int pid;
     t_list*contextos_tids;
@@ -39,14 +40,8 @@ typedef struct{
     int pid;
     uint32_t base;
     uint32_t limite;
-    int tamanio_proceso; 
+    int tamanio_proceso;
 }t_contexto_pid_send;
-
-
-typedef struct{
-    uint32_t direccionFisica;
-    uint32_t valor;
-}t_write_mem; //FUNCION?
 
 typedef struct{
     uint32_t AX;
@@ -61,10 +56,15 @@ typedef struct{
 }t_registros_cpu; 
 
 typedef struct{
-    int tid;
-    int pid;
-    uint32_t pc;
+int tid;
+int pid;
+uint32_t pc;
 }t_instruccion_memoria;
+
+typedef struct{
+    uint32_t direccionFisica;
+    uint32_t valor;
+}t_write_mem;
 
 typedef struct{
     int pid;
@@ -72,51 +72,14 @@ typedef struct{
     t_registros_cpu*registros;
 }t_contexto_tid;
 
+
+
 typedef struct {
     t_contexto_tid* contexto;
 	//t_contexto* contexto;
 	int quantum_utilizado;
 	t_temporal* quantum;
 }t_pcb;
-
-//estructuras para memoria de usuario
-
-typedef enum {
-    PARTICION_FIJA,
-    PARTICION_DINAMICA
-} t_esquema_particion;
-
-typedef enum {
-    FIRST_FIT,
-    BEST_FIT,
-    WORST_FIT
-} t_estrategia_busqueda;
-
-typedef struct {
-    t_contexto_pid_send* particiones;
-    int num_particiones;
-} t_tabla_particiones;
-
-typedef struct {
-    int base;    
-    int tamano;        
-} t_particion_libre;
-
-typedef struct {
-    t_particion_libre* bloques_libres;
-    int num_bloques_libres;
-} t_tabla_libres;
-
-typedef struct {
-    void* memoria;                  
-    t_tabla_particiones tabla_particiones;
-    t_tabla_libres tabla_libres;
-    t_esquema_particion esquema;
-    t_estrategia_busqueda estrategia;
-    int tamano_memoria;
-    int* lista_particiones;
-    int num_particiones;
-} t_memoria;
 
 typedef enum {
     SUCCESS,
@@ -131,8 +94,7 @@ typedef struct {
     motivo_exit motivo;
 }t_pcb_exit;
 
-typedef enum // SOLO USARLO CON MEMORIA
-{
+typedef enum {// SOLO USARLO CON MEMORIA
     ERROR=-1,
     Algo, //hay un case -1 que lo cambie a 1
     //ESTADOS
@@ -146,9 +108,7 @@ typedef enum // SOLO USARLO CON MEMORIA
 	PAQUETE,
     SET,
     READ_MEM,
-    READ_MEM_RESULTADO,
     WRITE_MEM,
-    WRITE_MEM_RESULTADO,
     SUM,
     SUB,
     JNZ,
@@ -213,7 +173,6 @@ typedef enum // SOLO USARLO CON MEMORIA
     ESPACIO_USUARIO,
     WRITE_OK,
     OK_OP_CODE
-
 }op_code; // USARLO SOLAMENTE CON MEMORIA
 
 
@@ -372,11 +331,7 @@ void recibir_2_string_mas_3_u32(int socket, char** palabra1,char** palabra2, uin
 //t_contexto *recibir_contexto_para_thread_execute(int socket,uint32_t tid);
 
 //  NUEVAS FUNCIONES POST CHECKPOINT 2
-void send_read_mem(uint32_t direccionFisica, int socket_memoria);
-uint32_t recepcionar_read_mem(t_paquete* paquete);
-void send_valor_read_mem(uint32_t valor, int socket_cliente, op_code code);
-void send_write_mem(uint32_t direccionFisica, uint32_t valor, int socket_memoria);
-t_write_mem* recepcionar_write_mem(t_paquete* paquete);
+
 
 bool esta_tid_en_lista(int tid,t_list*contextos_tids);
 void agregar_contexto_pid_a_paquete(t_paquete*paquete,t_contexto_pid*contexto);
@@ -420,5 +375,12 @@ t_instruccion_memoria* recepcionar_solicitud_instruccion_memoria(t_paquete* paqu
 t_contexto_pid_send* recepcionar_contexto_pid(t_paquete*paquete);
 
 uint32_t leer_registros(void*stream);
+
+void send_read_mem(uint32_t direccionFisica, int socket_memoria);
+uint32_t recepcionar_read_mem(t_paquete* paquete);
+void send_valor_read_mem(uint32_t valor, int socket_cliente, op_code code);
+
+void send_write_mem(uint32_t direccionFisica, uint32_t valor, int socket_memoria);
+t_write_mem* recepcionar_write_mem(t_paquete* paquete);
 
 #endif
