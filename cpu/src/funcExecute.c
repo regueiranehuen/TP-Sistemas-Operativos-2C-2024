@@ -34,26 +34,30 @@ void funcREAD_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,cha
     printf("registro de direccion:%s\n",registro_direccion);
 
     uint32_t direccionLogica = obtener_valor_registro(contextoTid,registro_direccion);
-    printf("Direccion logica:%d\n",direccionLogica);
-    uint32_t direccionFisica = traducir_direccion_logica(contextoTid,contextoPid,direccionLogica);
+    uint32_t* punteroDireccionFisica = traducir_direccion_logica(contextoTid,contextoPid,direccionLogica);
+    uint32_t direccionFisica;
 
-    if (direccionFisica >= 0) {
+    if (punteroDireccionFisica != NULL) {
+        direccionFisica = *punteroDireccionFisica;
         uint32_t valor = leer_valor_de_memoria(direccionFisica);
         if(valor != -1){
         valor_registro_cpu(contextoTid,registro_datos, valor);
         log_info(log_cpu,"## Lectura - (PID:TID) - (%d:%d) - Dir. Física: %d - Tamaño: %d",contextoTid->pid,contextoTid->tid,direccionFisica,contextoPid->tamanio_proceso);
         log_info(log_cpu, "READ_MEM: Dirección %d, Valor %d", direccionFisica, valor);
         }
+        free(punteroDireccionFisica);
     } else {
-        log_error(log_cpu, "Dirección física inválida: %d", direccionFisica);
+        log_error(log_cpu, "Dirección física inválida: Se recibió NULL");
     }
 }
 
 void funcWRITE_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,char* registro_direccion, char* registro_datos) {
     uint32_t direccionLogica = obtener_valor_registro(contextoTid,registro_direccion);
-    uint32_t direccionFisica = traducir_direccion_logica(contextoTid,contextoPid,direccionLogica);
+    uint32_t* punteroDireccionFisica = traducir_direccion_logica(contextoTid,contextoPid,direccionLogica);
+    uint32_t direccionFisica;
 
-    if (direccionFisica >= 0) {
+    if (punteroDireccionFisica != NULL) {
+        direccionFisica = *punteroDireccionFisica;
         uint32_t valor = obtener_valor_registro(contextoTid,registro_datos);
         int resultado = escribir_valor_en_memoria(direccionFisica, valor);
         if(resultado == 0){
@@ -62,8 +66,9 @@ void funcWRITE_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,ch
         else{
         log_info(log_cpu,"Error en la escritura en memoria");
         }
+        free(punteroDireccionFisica);
     } else {
-        log_error(log_cpu, "Dirección física inválida: %d", direccionFisica);
+        log_error(log_cpu, "Dirección física inválida: Se recibió NULL");
     }
 }
 
