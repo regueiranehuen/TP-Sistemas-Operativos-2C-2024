@@ -391,12 +391,11 @@ t_buffer* buffer = malloc(sizeof(t_buffer));
 
  memcpy(stream,&valor,sizeof(uint32_t));
  stream += sizeof(uint32_t);
- op_code code = OK;
 
-    send_paquete_op_code(valor,buffer,code);
+    send_paquete_op_code(socket_cliente,buffer,code);
 }
 else{
-    send_paquete_op_code(valor,NULL,code);
+    send_paquete_op_code(socket_cliente,NULL,code);
 }
 
 }
@@ -419,7 +418,7 @@ void send_read_mem(uint32_t direccionFisica, int socket_memoria){
 void send_write_mem(uint32_t direccionFisica, uint32_t valor, int socket_memoria){
 t_buffer* buffer = malloc(sizeof(t_buffer));
 
- buffer->size = sizeof(uint32_t);
+ buffer->size = 2*sizeof(uint32_t);
  buffer->stream = malloc(buffer->size);
  
  void* stream = buffer->stream;
