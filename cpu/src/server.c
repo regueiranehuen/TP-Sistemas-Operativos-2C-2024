@@ -277,6 +277,7 @@ void* recibir_kernel_interrupt(void*args){
         case OK:
             log_info(log_cpu,"## Terminó una syscall");
             sem_post(&sem_ok_o_interrupcion);
+            break;
         default:
         log_info(log_cpu,"codigo no valido recibido: %d",code);
             break;

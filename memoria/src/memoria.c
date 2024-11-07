@@ -97,12 +97,3 @@ void atender_conexiones(int socket_cliente)
     }
     close(socket_cliente);
 }
-
-uint32_t obtener_base(){
-    uint32_t baseActual=0;
-    for (int i = 0; i <list_size(lista_contextos_pids); i++){
-        t_contexto_pid*contActual=list_get(lista_contextos_pids,i);
-        baseActual+=contActual->limite;
-    }
-    return baseActual;
-}

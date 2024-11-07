@@ -61,7 +61,6 @@ void *ciclo_de_instruccion(void *args)
                 if (seguir_ejecutando)
                 {
                     checkInterrupt(contextos->contexto_tid);
-                    
                 }
             }
             free(contextos->contexto_tid);

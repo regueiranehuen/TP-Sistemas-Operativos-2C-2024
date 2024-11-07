@@ -90,6 +90,9 @@ void* recibir_cpu(void*args) {
                     log_info(logger,"instruccion no encontrada");
                     break;
                 }
+                else{
+                    log_info(logger,"super instruccion a enviar: %s %s %s ",instruccion->parametros1,instruccion->parametros2,instruccion->parametros3);
+                }
                 enviar_instruccion(sockets_iniciales->socket_cpu, instruccion, INSTRUCCION_OBTENIDA);
                 if(strcmp(instruccion->parametros2,"") == 0){
                 log_info(logger,"## Obtener instruccion - (PID:TID) - (%d:%d) - Instruccion: <%s>",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1);
@@ -108,6 +111,7 @@ void* recibir_cpu(void*args) {
             }
 
             case READ_MEM: {
+                log_info(logger,"VOY A RECEPCIONAR EL READ MEM");
                 uint32_t direccionFisica = recepcionar_read_mem(paquete_operacion);
 
                 uint32_t valor = leer_Memoria(direccionFisica);
