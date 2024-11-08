@@ -344,26 +344,7 @@ t_process_create* parametros_process_create(t_paquete_syscall *paquete){
 
 }
 
-t_thread_create* parametros_thread_create(t_paquete_syscall*paquete){
-    t_thread_create*info = malloc(paquete->buffer->size);
 
-    void * stream = paquete->buffer->stream;
-
-    int sizeNombreArchivo;
-    // Deserializamos los campos que tenemos en el buffer
-    memcpy(&sizeNombreArchivo, stream, sizeof(int)); // Recibimos el size del nombre del archivo de pseudocodigo
-    stream += sizeof(int);
-
-    memcpy(&(info->nombreArchivo), stream, sizeNombreArchivo); // Primer parámetro para la syscall: nombre del archivo
-    stream += sizeNombreArchivo;
-    memcpy(&(info->prioridad), stream, sizeof(int));
-    stream += sizeof(int);
-
-    eliminar_paquete_syscall(paquete);
-
-    return info;
-
-}
 
 int recibir_entero_paquete_syscall(t_paquete_syscall* paquete){
 

@@ -148,11 +148,15 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
         case ENUM_PROCESS_EXIT:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <PROCESS_EXIT>", hilo_exec->pid, hilo_exec->tid);
             PROCESS_EXIT();
+            eliminar_paquete_syscall(paquete);
             break;
         case ENUM_THREAD_CREATE:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_CREATE>", hilo_exec->pid, hilo_exec->tid);
             t_thread_create* paramThreadCreate = parametros_thread_create(paquete);
-            THREAD_CREATE(paramThreadCreate->nombreArchivo,paramThreadCreate->prioridad); 
+            log_info(logger,"NOMBRE PSEUDOCODIGO RECIBIDO THREAD CREATE: %s",paramThreadCreate->nombreArchivo);
+            log_info(logger,"VOY A ENTRAR A THREAD CREATE");
+            THREAD_CREATE(paramThreadCreate->nombreArchivo,paramThreadCreate->prioridad);
+            free(paramThreadCreate); 
             break;
         case ENUM_THREAD_JOIN:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_JOIN>", hilo_exec->pid, hilo_exec->tid);
@@ -232,6 +236,31 @@ pthread_mutex_unlock(&mutex_cola_ready);
 return tcb_prioritario;
 
 }
+
+t_thread_create* parametros_thread_create(t_paquete_syscall*paquete){
+    log_info(logger,"VOY A RECIBIR LOS PARAMETROS THREAD CREATE QUE EMOPCION");
+    t_thread_create*info = malloc(sizeof(t_thread_create));
+    
+    void * stream = paquete->buffer->stream;
+
+    int sizeNombreArchivo;
+    // Deserializamos los campos que tenemos en el buffer
+    memcpy(&sizeNombreArchivo, stream, sizeof(int)); // Recibimos el size del nombre del archivo de pseudocodigo
+    stream += sizeof(int);
+    log_info(logger,"SIze nombre archivo: %d",sizeNombreArchivo);
+    info->nombreArchivo = malloc(sizeNombreArchivo);
+    memcpy(info->nombreArchivo, stream, sizeNombreArchivo); // Primer parámetro para la syscall: nombre del archivo
+    stream += sizeNombreArchivo;
+    log_info(logger,"nombre archivo: %s",info->nombreArchivo);
+    memcpy(&(info->prioridad), stream, sizeof(int));
+    stream += sizeof(int);
+    log_info(logger,"Prioridad: %d",info->prioridad);
+    eliminar_paquete_syscall(paquete);
+
+    return info;
+
+}
+
 
 void round_robin(t_queue *cola_ready_prioridad)
 {

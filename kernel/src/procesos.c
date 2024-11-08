@@ -351,37 +351,36 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
 
     t_pcb* pcb = buscar_pcb_por_pid(lista_pcbs,hilo_exec->pid);
 
+    // Creo la estructura del tcb
+    t_tcb* tcb = crear_tcb(pcb);
+    tcb->prioridad = prioridad;
+    tcb->estado = TCB_READY;
+    tcb->pseudocodigo = malloc(strlen(pseudocodigo) + 1);
+    strcpy(tcb->pseudocodigo, pseudocodigo);
+    // Solicito a memoria que se inicialice el hilo
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
-
     send_inicializacion_hilo(hilo_exec->tid, hilo_exec->pid, pseudocodigo,socket_memoria);
     recv(socket_memoria, &resultado, sizeof(int), 0);
     close(socket_memoria);
 
+    // Si la memoria no pudo inicializar el hilo
     if (resultado == -1)
     {
         pthread_mutex_lock(&mutex_log);
         log_info(logger,"Error en la creacion del hilo");
         pthread_mutex_unlock(&mutex_log);
-        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
-        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-        return;
+        liberar_tcb(tcb);
     }
     else
     {
-        t_tcb *tcb = crear_tcb(pcb);
-        tcb->prioridad = prioridad;
-        tcb->estado = TCB_READY;
-        tcb->pseudocodigo = malloc(strlen(pseudocodigo) + 1);
-        strcpy(tcb->pseudocodigo, pseudocodigo);
         pthread_mutex_lock(&mutex_log);
         log_info(logger,"## (<%d>:<%d>) Se crea el Hilo - Estado: READY",pcb->pid,tcb->tid);
         pthread_mutex_unlock(&mutex_log);
         pushear_cola_ready(tcb);
-        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
-        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
     }
+    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 }
 
 /*

@@ -26,11 +26,15 @@ void* recibir_cpu(void*args) {
                 t_contexto_tid*contexto_tid=obtener_contexto_tid(info->pid,info->tid);
                 pthread_mutex_unlock(&mutex_lista_contextos_pids);
                 if (contexto_tid == NULL){
-                    log_error(logger, "No se encontro el contexto del tid %d asociado al pid %d", contexto_tid->tid,contexto_tid->pid);
-                    send_paquete_op_code(sockets_iniciales->socket_cpu,NULL,CONTEXTO_TID_INEXISTENTE);
+                    log_error(logger, "No se encontro el contexto del tid %d asociado al pid %d. VAMOS A CREARLO!", info->tid,info->pid);
+                    t_contexto_pid* cont_pid = obtener_contexto_pid(info->pid);
+                    t_contexto_tid* cont_tid_inic = inicializar_contexto_tid(cont_pid,info->tid);
+                    send_contexto_tid(sockets_iniciales->socket_cpu,cont_tid_inic);
+                    log_info(logger, "Enviado contexto para PID: %d, TID: %d", info->pid, info->tid);
+                    free(info);
                     break;
                 }
-                
+                free(info);
                 send_contexto_tid(sockets_iniciales->socket_cpu,contexto_tid);
                 log_info(logger, "Enviado contexto para PID: %d, TID: %d", contexto_tid->pid, contexto_tid->tid);
                 
