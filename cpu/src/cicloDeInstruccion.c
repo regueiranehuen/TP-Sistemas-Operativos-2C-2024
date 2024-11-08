@@ -86,8 +86,7 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch){
     contextos->contexto_pid = malloc(sizeof(t_contexto_pid_send));
     contextos->contexto_tid = malloc(sizeof(t_contexto_tid));
 
-    if (paquete->code == THREAD_EXECUTE_AVISO)
-    {
+    if (paquete->code == THREAD_EXECUTE_AVISO){
         /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
         t_tid_pid *info = recepcionar_tid_pid_code_op(paquete);
 
@@ -97,12 +96,12 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch){
         
         t_paquete *paquete_solicitud_contexto_pid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
         
-        if (paquete_solicitud_contexto_pid->codigo_operacion == CONTEXTO_PID_INEXISTENTE)
-        {
+        if (paquete_solicitud_contexto_pid->codigo_operacion == CONTEXTO_PID_INEXISTENTE){
+
             log_error(log_cpu, "El contexto del pid %d no existe", info->pid);
         }
         else if (paquete_solicitud_contexto_pid->codigo_operacion == OBTENCION_CONTEXTO_PID_OK)
-        {
+{
 
             contextos->contexto_pid = recepcionar_contexto_pid(paquete_solicitud_contexto_pid);
             solicitar_contexto_tid(info->pid, info->tid, sockets_cpu->socket_memoria);
@@ -122,12 +121,12 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch){
                 log_error(log_cpu, "Error obteniendo contexto del tid %d", info->tid);
             }
         }
-        else if (paquete_solicitud_contexto_pid->codigo_operacion == -1)
-        {
+        else if (paquete_solicitud_contexto_pid->codigo_operacion == -1){
+
             log_error(log_cpu, "Error obteniendo contexto del tid %d", info->pid);
         }
 
-        log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
+            log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
     }
 
     return contextos;
@@ -139,8 +138,7 @@ en caso afirmativo, se actualiza el Contexto de Ejecución en la Memoria y se de
 Caso contrario, se descarta la interrupción.
 */
 
-void checkInterrupt(t_contexto_tid *contextoTid)
-{
+void checkInterrupt(t_contexto_tid *contextoTid){
 
     pthread_mutex_lock(&mutex_interrupt);
 
@@ -151,8 +149,7 @@ void checkInterrupt(t_contexto_tid *contextoTid)
         seguir_ejecutando = false;
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion respuesta = recibir_code_operacion(sockets_cpu->socket_memoria);
-        if (respuesta != OK)
-        {
+        if (respuesta != OK){
             log_info(log_cpu, "Memoria no pudo actualizar los registros, muy poco sigma");
             return;
         }

@@ -603,6 +603,9 @@ code_operacion recibir_code_operacion(int socket_cliente){
 void send_inicializacion_hilo(int tid, int pid, char*arch_pseudocodigo,int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
 
+    printf("Direccion de arch_pseudocodigo: %p\n", (void*)arch_pseudocodigo);
+    printf("Contenido de arch_pseudocodigo: %s\n", arch_pseudocodigo);
+
     int length_arch_pseudocodigo=strlen(arch_pseudocodigo)+1;
     buffer->size = 3*sizeof(int)+length_arch_pseudocodigo;
     
@@ -620,7 +623,6 @@ void send_inicializacion_hilo(int tid, int pid, char*arch_pseudocodigo,int socke
     send_paquete_code_operacion(THREAD_CREATE_AVISO,buffer,socket_cliente);
     
 }
-
 
 
 void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_proceso, int socket_cliente){

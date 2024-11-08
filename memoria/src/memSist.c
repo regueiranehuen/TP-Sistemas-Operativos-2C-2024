@@ -15,11 +15,9 @@ char* limpiar_token(char* token) {
     return token;
 }
 
-void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
-    
-
+void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid) {
     const char *ruta_relativa = nombre_archivo;
-    char*ruta_absoluta = obtener_ruta_absoluta(ruta_relativa);
+    char* ruta_absoluta = obtener_ruta_absoluta(ruta_relativa);
 
     FILE* archivo = fopen(ruta_absoluta, "r");
     
@@ -33,45 +31,66 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
 
     while (fgets(linea, longitud_maxima, archivo) != NULL && indice_instruccion < instrucciones_maximas) {
         t_instruccion_tid_pid* instruccion_tid_pid = malloc(sizeof(t_instruccion_tid_pid));
-        instruccion_tid_pid->pid=pid;
-        instruccion_tid_pid->tid=tid;
+        if (!instruccion_tid_pid) {
+            perror("Error al asignar memoria para t_instruccion_tid_pid");
+            exit(EXIT_FAILURE);
+        }
+
+        instruccion_tid_pid->pid = pid;
+        instruccion_tid_pid->tid = tid;
         instruccion_tid_pid->pc = indice_instruccion;
 
         instruccion_tid_pid->instrucciones = malloc(sizeof(t_instruccion));
-        //t_instruccion* instruccion = malloc(sizeof(t_instruccion));
+        if (!instruccion_tid_pid->instrucciones) {
+            perror("Error al asignar memoria para t_instruccion");
+            exit(EXIT_FAILURE);
+        }
+
+        // Tokenización de la línea
         char* token = strtok(linea, " \t\n");
         int param_count = 0;
 
         while (token != NULL && param_count < parametros_maximos) {
             switch (param_count) {
                 case 0:
-                    instruccion_tid_pid->instrucciones->parametros1 = "";
+                    // Asignación de memoria para el primer parámetro
                     instruccion_tid_pid->instrucciones->parametros1 = strdup(limpiar_token(token));
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros1);
-                    int str = strlen(instruccion_tid_pid->instrucciones->parametros1);
-                    log_info(logger,"strlen:%d",str);
+                    if (!instruccion_tid_pid->instrucciones->parametros1) {
+                        perror("Error al asignar memoria para parametros1");
+                        exit(EXIT_FAILURE);
+                    }
+                    log_info(logger, "%s", instruccion_tid_pid->instrucciones->parametros1);
+                    log_info(logger, "strlen: %zu", strlen(instruccion_tid_pid->instrucciones->parametros1));
                     break;
                 case 1:
-                    instruccion_tid_pid->instrucciones->parametros2 = "";
+                    // Asignación de memoria para el segundo parámetro
                     instruccion_tid_pid->instrucciones->parametros2 = strdup(limpiar_token(token));
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros2);
-                    str = strlen(instruccion_tid_pid->instrucciones->parametros2);
-                    log_info(logger,"strlen:%d",str);
+                    if (!instruccion_tid_pid->instrucciones->parametros2) {
+                        perror("Error al asignar memoria para parametros2");
+                        exit(EXIT_FAILURE);
+                    }
+                    log_info(logger, "%s", instruccion_tid_pid->instrucciones->parametros2);
+                    log_info(logger, "strlen: %zu", strlen(instruccion_tid_pid->instrucciones->parametros2));
                     break;
                 case 2:
-                    instruccion_tid_pid->instrucciones->parametros3 = "";
+                    // Asignación de memoria para el tercer parámetro
                     instruccion_tid_pid->instrucciones->parametros3 = strdup(limpiar_token(token));
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros3);
-                    str = strlen(instruccion_tid_pid->instrucciones->parametros3);
-                    log_info(logger,"strlen:%d",str);
-                    log_info(logger,"hola%shola",instruccion_tid_pid->instrucciones->parametros3);
+                    if (!instruccion_tid_pid->instrucciones->parametros3) {
+                        perror("Error al asignar memoria para parametros3");
+                        exit(EXIT_FAILURE);
+                    }
+                    log_info(logger, "%s", instruccion_tid_pid->instrucciones->parametros3);
+                    log_info(logger, "strlen: %zu", strlen(instruccion_tid_pid->instrucciones->parametros3));
                     break;
                 case 3:
-                    instruccion_tid_pid->instrucciones->parametros4 = "";
+                    // Asignación de memoria para el cuarto parámetro
                     instruccion_tid_pid->instrucciones->parametros4 = strdup(limpiar_token(token));
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros4);
-                    str = strlen(instruccion_tid_pid->instrucciones->parametros4);
-                    log_info(logger,"strlen:%d",str);
+                    if (!instruccion_tid_pid->instrucciones->parametros4) {
+                        perror("Error al asignar memoria para parametros4");
+                        exit(EXIT_FAILURE);
+                    }
+                    log_info(logger, "%s", instruccion_tid_pid->instrucciones->parametros4);
+                    log_info(logger, "strlen: %zu", strlen(instruccion_tid_pid->instrucciones->parametros4));
                     break;
                 default:
                     break;
@@ -79,14 +98,13 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
             token = strtok(NULL, " \t\n");
             param_count++;
         }
-        //list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
-        inicializar_resto_parametros(param_count,instruccion_tid_pid);
+
+        inicializar_resto_parametros(param_count, instruccion_tid_pid);
 
         pthread_mutex_lock(&mutex_lista_instruccion);
-        list_add(lista_instrucciones_tid_pid,instruccion_tid_pid);
+        list_add(lista_instrucciones_tid_pid, instruccion_tid_pid);
         indice_instruccion++;
         pthread_mutex_unlock(&mutex_lista_instruccion);        
-        
     }
     fclose(archivo);
 }

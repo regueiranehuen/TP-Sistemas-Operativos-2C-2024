@@ -64,15 +64,15 @@ typedef enum {
 
 
 typedef struct{
-int tid;
-int prioridad;
-int pid; // proceso asociado al hilo
-estado_hilo estado;
-char* pseudocodigo;
-int pseudocodigo_length;
-t_queue* cola_hilos_bloqueados;
-pthread_mutex_t mutex_cola_hilos_bloqueados;
-bool desalojo;
+    int tid;
+    int prioridad;
+    int pid; // proceso asociado al hilo
+    estado_hilo estado;
+    char* pseudocodigo;
+    int pseudocodigo_length;
+    t_queue* cola_hilos_bloqueados;
+    pthread_mutex_t mutex_cola_hilos_bloqueados;
+    bool desalojo;
 }t_tcb;
 
 typedef struct{

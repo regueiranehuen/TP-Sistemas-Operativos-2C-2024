@@ -90,8 +90,8 @@ t_tcb *crear_tcb(t_pcb *pcb)
     return tcb;
 }
 
-void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
-{
+void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso){
+    
     t_pcb *pcb = crear_pcb();
     t_tcb* tcb = crear_tcb(pcb);
     tcb->pseudocodigo = malloc(strlen(archivo_pseudocodigo) + 1);
@@ -344,8 +344,7 @@ THREAD_CREATE, esta syscall recibirá como parámetro de la CPU el nombre del ar
 Al momento de crear el nuevo hilo, deberá generar el nuevo TCB con un TID autoincremental y poner al mismo en el estado READY.
 */
 
-void THREAD_CREATE(char *pseudocodigo, int prioridad)
-{
+void THREAD_CREATE(char *pseudocodigo, int prioridad){
 
     int resultado = 0;
 
@@ -353,12 +352,7 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
 
-    send_inicializacion_hilo(hilo_exec->tid, hilo_exec->pid, pseudocodigo,socket_memoria);
-    recv(socket_memoria, &resultado, sizeof(int), 0);
-    close(socket_memoria);
-
-    if (resultado == -1)
-    {
+    if (resultado == -1){
         pthread_mutex_lock(&mutex_log);
         log_info(logger,"Error en la creacion del hilo");
         pthread_mutex_unlock(&mutex_log);
@@ -372,9 +366,15 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
         t_tcb *tcb = crear_tcb(pcb);
         tcb->prioridad = prioridad;
         tcb->estado = TCB_READY;
+        printf("tamaño pseudocodigo: %li",sizeof(tcb->pseudocodigo)); // los 2 instrucciones tread create deberian tener el mismo tamaño creo, si se modifica hay un error ahi, creo
         tcb->pseudocodigo = malloc(strlen(pseudocodigo) + 1);
         strcpy(tcb->pseudocodigo, pseudocodigo);
         pthread_mutex_lock(&mutex_log);
+
+        send_inicializacion_hilo(tcb->tid, tcb->pid, tcb->pseudocodigo,socket_memoria);
+        recv(socket_memoria, &resultado, sizeof(int), 0);
+        close(socket_memoria);
+
         log_info(logger,"## (<%d>:<%d>) Se crea el Hilo - Estado: READY",pcb->pid,tcb->tid);
         pthread_mutex_unlock(&mutex_log);
         pushear_cola_ready(tcb);
@@ -390,8 +390,7 @@ estado BLOCK hasta que el TID pasado por parámetro finalice. En caso de que el 
  por parámetro no exista o ya haya finalizado,
 esta syscall no hace nada y el hilo que la invocó continuará su ejecución.*/
 
-void THREAD_JOIN(int tid)
-{
+void THREAD_JOIN(int tid){
 
     if (buscar_tcb_por_tid(lista_tcbs,tid,hilo_exec) == NULL || buscar_tcb(tid, hilo_exec) == NULL)
     {

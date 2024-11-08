@@ -4,8 +4,7 @@ void *memoria;
 t_list *lista_particiones;
 int tamanio_memoria;
 
-void inicializar_Memoria(t_config *config)
-{
+void inicializar_Memoria(t_config *config){
     tamanio_memoria = config_get_int_value(config, "TAM_MEMORIA");
 
     memoria = malloc(tamanio_memoria);
@@ -37,8 +36,7 @@ void inicializar_Memoria(t_config *config)
     }
 }
 
-void cargar_particiones_lista(char **particiones)
-{
+void cargar_particiones_lista(char **particiones){
     int i = 0;
     int base = 0;
     while (particiones[i] != NULL)
@@ -56,8 +54,7 @@ void cargar_particiones_lista(char **particiones)
     }
 }
 
-t_particiones *busqueda_fija(int pid, int tamanio_proceso, char *algoritmo_busqueda, int tamanio_lista)
-{
+t_particiones *busqueda_fija(int pid, int tamanio_proceso, char *algoritmo_busqueda, int tamanio_lista){
     t_particiones *particion = NULL;
 
     if (strcmp(algoritmo_busqueda, "FIRST") == 0)
@@ -75,8 +72,8 @@ t_particiones *busqueda_fija(int pid, int tamanio_proceso, char *algoritmo_busqu
     }
     return particion;
 }
-t_particiones *fija_first(int pid, int tamanio_proceso, int tamanio_lista)
-{
+
+t_particiones *fija_first(int pid, int tamanio_proceso, int tamanio_lista){
     t_particiones *particion;
     for (int i = 0; i < tamanio_lista; i++)
     {
@@ -90,8 +87,8 @@ t_particiones *fija_first(int pid, int tamanio_proceso, int tamanio_lista)
     }
     return NULL;
 }
-t_particiones *fija_best(int pid, int tamanio_proceso, int tamanio_lista)
-{
+
+t_particiones *fija_best(int pid, int tamanio_proceso, int tamanio_lista){
     t_particiones *particion;
     int tamanio_ideal = -1;
     int index = 0;
@@ -116,8 +113,8 @@ t_particiones *fija_best(int pid, int tamanio_proceso, int tamanio_lista)
     particion->ocupada = true;
     return particion;
 }
-t_particiones *fija_worst(int pid, int tamanio_proceso, int tamanio_lista)
-{
+
+t_particiones *fija_worst(int pid, int tamanio_proceso, int tamanio_lista){
     t_particiones *particion;
     int tamanio_ideal = -1;
     int index = -1;
@@ -143,8 +140,7 @@ t_particiones *fija_worst(int pid, int tamanio_proceso, int tamanio_lista)
     return particion;
 }
 
-t_particiones *busqueda_dinamica(int pid, int tamanio_proceso, char *algoritmo_busqueda, int tamanio_lista)
-{
+t_particiones *busqueda_dinamica(int pid, int tamanio_proceso, char *algoritmo_busqueda, int tamanio_lista){
     t_particiones *particion = NULL;
     if (strcmp(algoritmo_busqueda, "FIRST") == 0)
     {
@@ -162,8 +158,7 @@ t_particiones *busqueda_dinamica(int pid, int tamanio_proceso, char *algoritmo_b
     return particion;
 }
 
-t_particiones *dinamica_first(int pid, int tamanio_proceso, int tamanio_lista)
-{
+t_particiones *dinamica_first(int pid, int tamanio_proceso, int tamanio_lista){
     t_particiones *particion;
 
     for (int i = 0; i < tamanio_lista; i++)
@@ -185,8 +180,7 @@ t_particiones *dinamica_first(int pid, int tamanio_proceso, int tamanio_lista)
     return NULL;
 }
 
-t_particiones *dinamica_best(int pid, int tamanio_proceso, int tamanio_lista)
-{
+t_particiones *dinamica_best(int pid, int tamanio_proceso, int tamanio_lista){
     int ubicacion_ideal = -1;
     int index = -1;
 
@@ -222,8 +216,7 @@ t_particiones *dinamica_best(int pid, int tamanio_proceso, int tamanio_lista)
     return NULL;
 }
 
-t_particiones *dinamica_worst(int pid, int tamanio_proceso, int tamanio_lista)
-{
+t_particiones *dinamica_worst(int pid, int tamanio_proceso, int tamanio_lista){
 
     int ubicacion_ideal = -1;
     int index = -1;
@@ -266,8 +259,7 @@ t_particiones *dinamica_worst(int pid, int tamanio_proceso, int tamanio_lista)
     return NULL;
 }
 
-void acomodar_particion_siguiente(t_particiones *particion, int index, int tamanio_lista)
-{
+void acomodar_particion_siguiente(t_particiones *particion, int index, int tamanio_lista){
     if (index + 1 == tamanio_lista)
     {
 
@@ -307,8 +299,7 @@ void acomodar_particion_siguiente(t_particiones *particion, int index, int taman
     }
 }
 
-t_particiones *inicializar_proceso(int pid, int tamanio_proceso, t_config *config)
-{
+t_particiones *inicializar_proceso(int pid, int tamanio_proceso, t_config *config){
     int tamanio_lista = list_size(lista_particiones);
     char *esquema = config_get_string_value(config, "ESQUEMA");
     char *algoritmo_busqueda = config_get_string_value(config, "ALGORITMO_BUSQUEDA");
@@ -326,8 +317,7 @@ t_particiones *inicializar_proceso(int pid, int tamanio_proceso, t_config *confi
     return particion;
 }
 
-void liberar_espacio_proceso(int pid)
-{
+void liberar_espacio_proceso(int pid){
     for (int i = 0; i < list_size(lista_particiones); i++)
     {
         t_particiones *particion = list_get(lista_particiones, i);
@@ -411,8 +401,7 @@ void fusionar_particiones_libres(t_list *lista_particiones, t_particiones *parti
     }
 }
 
-void escritura_datos_archivo(int pid, int tid)
-{
+void escritura_datos_archivo(int pid, int tid){
     t_particiones *particion = busqueda_particion(pid);
     char *path = generar_nombre_archivo(pid, tid);
     char *ruta_absoluta = obtener_ruta_absoluta(path);
@@ -430,8 +419,7 @@ void escritura_datos_archivo(int pid, int tid)
     fclose(archivo);
 }
 
-t_particiones *busqueda_particion(int pid)
-{
+t_particiones *busqueda_particion(int pid){
     for (int i = 0; i < list_size(lista_particiones); i++)
     {
         t_particiones *particion = list_get(lista_particiones, i);
@@ -443,8 +431,7 @@ t_particiones *busqueda_particion(int pid)
     return NULL;
 }
 
-char *generar_nombre_archivo(int pid, int tid)
-{
+char *generar_nombre_archivo(int pid, int tid){
     // Obtener el tiempo actual
     time_t now = time(NULL);
     struct tm *tm_now = localtime(&now);
@@ -466,8 +453,7 @@ char *generar_nombre_archivo(int pid, int tid)
     return nombre_archivo;
 }
 
-uint32_t leer_Memoria(uint32_t direccionFisica)
-{
+uint32_t leer_Memoria(uint32_t direccionFisica){
 
     uint32_t *valor = (uint32_t *)((char *)memoria + direccionFisica);
 
@@ -479,8 +465,7 @@ uint32_t leer_Memoria(uint32_t direccionFisica)
     return *valor;
 }
 
-int escribir_Memoria(t_write_mem *info)
-{
+int escribir_Memoria(t_write_mem *info){
     // Convertir 'memoria' a uint32_t* y calcular la posición deseada
     uint32_t *direccion = (uint32_t *)((char *)memoria + info->direccionFisica);
 
