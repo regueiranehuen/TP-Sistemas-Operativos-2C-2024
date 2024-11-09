@@ -65,8 +65,13 @@ void atender_conexiones(int socket_cliente)
             send(socket_cliente, &respuesta, sizeof(int), 0);
             break;
         case THREAD_CREATE_AVISO:
+            log_info(logger,"LLEGA THREAD CREATE AVISO A MEMORIA");
             t_args_thread_create_aviso *info_4 = recepcionar_inicializacion_hilo(paquete);
+            log_info(logger,"%d",info_4->pid);
+            log_info(logger,"%d",info_4->tid);
+            log_info(logger,"%s",info_4->arch_pseudo);
             
+
             t_contexto_pid *contexto_pid_4 = obtener_contexto_pid(info_4->pid);
 
             if(contexto_pid_4 == NULL){

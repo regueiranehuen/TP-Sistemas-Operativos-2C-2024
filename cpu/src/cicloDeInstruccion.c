@@ -114,7 +114,6 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
             if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK)
             { // La memoria se encarga de crear el contexto del tid si es que no existe
                 contextos->contexto_tid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid);
-                log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
             }
             else if (paquete_solicitud_contexto_tid->codigo_operacion == CONTEXTO_TID_INEXISTENTE)
             {

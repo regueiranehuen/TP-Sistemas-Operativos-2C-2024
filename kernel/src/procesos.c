@@ -355,11 +355,13 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
     t_tcb* tcb = crear_tcb(pcb);
     tcb->prioridad = prioridad;
     tcb->estado = TCB_READY;
+
+
     tcb->pseudocodigo = malloc(strlen(pseudocodigo) + 1);
     strcpy(tcb->pseudocodigo, pseudocodigo);
     // Solicito a memoria que se inicialice el hilo
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
-    send_inicializacion_hilo(hilo_exec->tid, hilo_exec->pid, pseudocodigo,socket_memoria);
+    send_inicializacion_hilo(tcb->tid, tcb->pid, pseudocodigo,socket_memoria);
     recv(socket_memoria, &resultado, sizeof(int), 0);
     close(socket_memoria);
 
