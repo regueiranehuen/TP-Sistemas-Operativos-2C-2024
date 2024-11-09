@@ -468,8 +468,8 @@ char *generar_nombre_archivo(int pid, int tid)
 
 uint32_t leer_Memoria(uint32_t direccionFisica)
 {
-
-    uint32_t *valor = (uint32_t *)((char *)memoria + direccionFisica);
+    uint32_t * valor = malloc(sizeof(uint32_t));
+    memcpy(valor,memoria+direccionFisica,sizeof(uint32_t));
 
     if (*valor == 0xFFFFFFFF)
     {
@@ -481,10 +481,9 @@ uint32_t leer_Memoria(uint32_t direccionFisica)
 
 int escribir_Memoria(t_write_mem *info)
 {
-    // Convertir 'memoria' a uint32_t* y calcular la posición deseada
-    uint32_t *direccion = (uint32_t *)((char *)memoria + info->direccionFisica);
-
-    *direccion = info->valor;
-
+    uint32_t * valor = malloc(sizeof(uint32_t));
+    *valor = info->valor;
+    memcpy(memoria + info->direccionFisica,valor,sizeof(uint32_t));
+    free(valor);
     return 0;
 }
