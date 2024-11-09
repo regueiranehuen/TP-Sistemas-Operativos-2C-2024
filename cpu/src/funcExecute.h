@@ -8,7 +8,7 @@
 void funcSET(t_contexto_tid*contexto,char* registro, uint32_t valor);
 void funcREAD_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,char* registro_datos, char* registro_direccion) ;
 void funcWRITE_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,char* registro_direccion, char* registro_datos) ;
-void funcSUM(t_contexto_tid*contexto,char* registroOrig, char* registroDest);
+void funcSUM(t_contexto_tid*contexto,char* registroDest, char* registroOrig);
 void funcSUB(t_contexto_tid*contexto,char* registroDest, char* registroOrig);
 void funcJNZ(t_contexto_tid*contexto,char* registro, uint32_t num_instruccion);
 void funcLOG(t_contexto_tid*contexto,char* registro);

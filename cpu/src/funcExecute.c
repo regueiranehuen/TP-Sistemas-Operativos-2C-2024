@@ -5,7 +5,7 @@ void funcSET(t_contexto_tid*contexto,char* registro, uint32_t valor) {
     log_info(log_cpu, "SET: Registro %s = %d", registro, valor);
 }
 
-void funcSUM(t_contexto_tid*contexto,char* registroOrig, char* registroDest) {
+void funcSUM(t_contexto_tid*contexto,char* registroDest, char* registroOrig) {
     uint32_t valor_orig = obtener_valor_registro(contexto,registroOrig);
     uint32_t valor_dest = obtener_valor_registro(contexto,registroDest);
     valor_registro_cpu(contexto,registroDest, valor_orig + valor_dest);
