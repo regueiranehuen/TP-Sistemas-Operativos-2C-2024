@@ -634,11 +634,17 @@ void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_pro
     
 }
 
-void send_dump_memory_filesystem(int pid,int tid,int tamanio_proceso,int socket_cliente){
+void send_dump_memory_filesystem(int pid,int tid,int tamanio_proceso,t_list* lista_datos, int socket_cliente){
     t_buffer* buffer = malloc(sizeof(t_buffer));
     
-    buffer->size = 3*sizeof(int);
+    int cantidad_datos = list_size(lista_datos);
+    
+    // Calcula el tamaño total del buffer: 3 enteros + todos los datos en la lista
+    int buffer_size = 3 * sizeof(int) + cantidad_datos * sizeof(uint32_t);
+
+    buffer->size = buffer_size;
     buffer->stream = malloc(buffer->size);
+
     void* stream = buffer->stream;
 
     memcpy(stream,&pid,sizeof(int));
@@ -647,12 +653,19 @@ void send_dump_memory_filesystem(int pid,int tid,int tamanio_proceso,int socket_
     stream += sizeof(int);
     memcpy(stream,&tamanio_proceso,sizeof(int));
     
+     for (int i = 0; i < cantidad_datos; i++) {
+        uint32_t* dato = list_get(lista_datos, i);
+        memcpy(stream, dato, sizeof(uint32_t));
+        stream += sizeof(uint32_t);
+    }
+
     send_paquete_code_operacion(DUMP_MEMORIA,buffer,socket_cliente);
 
 }
 
 t_args_dump_memory* recepcionar_dump_memory_filesystem(t_paquete_code_operacion* paquete){
-   t_args_dump_memory* info = malloc(sizeof(t_args_dump_memory)); // APLICAR SIEMPRE ASI
+    t_args_dump_memory* info = malloc(sizeof(t_args_dump_memory)); // APLICAR SIEMPRE ASI
+    info->lista_datos = list_create();
 
     void* stream = paquete->buffer->stream;
 
@@ -662,6 +675,16 @@ t_args_dump_memory* recepcionar_dump_memory_filesystem(t_paquete_code_operacion*
     stream+=sizeof(int);
     memcpy(&(info->tamanio_proceso), stream,sizeof(int));
     
+    int cantidad_datos = (paquete->buffer->size - 3 * sizeof(int)) / sizeof(uint32_t);
+    
+    // Recibir cada elemento de la lista y agregarlo a info->datos
+    for (int i = 0; i < cantidad_datos; i++) {
+        uint32_t* dato = malloc(sizeof(uint32_t));  // Reservar espacio para cada dato
+        memcpy(dato, stream, sizeof(uint32_t));
+        list_add(info->lista_datos, dato);  // Agregar el dato a la lista
+        stream += sizeof(uint32_t);
+    }
+
     eliminar_paquete_code_op(paquete);
 
     return info; 

@@ -411,23 +411,39 @@ void fusionar_particiones_libres(t_list *lista_particiones, t_particiones *parti
     }
 }
 
-void escritura_datos_archivo(int pid, int tid)
+t_list* lectura_datos_proceso(int pid)
 {
     t_particiones *particion = busqueda_particion(pid);
-    char *path = generar_nombre_archivo(pid, tid);
-    char *ruta_absoluta = obtener_ruta_absoluta(path);
-    FILE *archivo = fopen(ruta_absoluta, "wb");
-    void *puntero = memoria + particion->base;
+    
+    void *puntero = (uint32_t*)memoria + particion->base;
 
-    size_t tamanio_a_escribir = particion->limite - particion->base;
+    int tamanio_particion = (particion->tamanio)/4; //se leeran por bloques de 4 bytes
 
-    size_t bytes_escritos = fwrite(puntero, 1, tamanio_a_escribir, archivo);
-    if (bytes_escritos != tamanio_a_escribir)
-    {
-        perror("Error al escribir en el archivo");
+    t_list* lista_datos = list_create();
+
+    for(int i = 0; i<tamanio_particion ; i++){
+        uint32_t valor;
+
+        memcpy(&valor, puntero, sizeof(uint32_t));  // Lee 4 bytes en "valor"
+
+        if(valor != 0xFFFFFFFF){//bloque con datos
+
+            uint32_t *dato = malloc(sizeof(uint32_t));
+            *dato = valor;
+            list_add(lista_datos, dato);
+            
+        }
+        
+        puntero += 4;
+
     }
 
-    fclose(archivo);
+    if(list_size(lista_datos) == 0 ){//ningun dato escrito
+        list_destroy(lista_datos);
+        return NULL;
+    }
+
+    return lista_datos;
 }
 
 t_particiones *busqueda_particion(int pid)
@@ -443,6 +459,7 @@ t_particiones *busqueda_particion(int pid)
     return NULL;
 }
 
+/*
 char *generar_nombre_archivo(int pid, int tid)
 {
     // Obtener el tiempo actual
@@ -465,6 +482,7 @@ char *generar_nombre_archivo(int pid, int tid)
 
     return nombre_archivo;
 }
+*/
 
 uint32_t leer_Memoria(uint32_t direccionFisica)
 {

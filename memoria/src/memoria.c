@@ -45,14 +45,20 @@ void atender_conexiones(int socket_cliente)
             log_info(logger,"## Memory Dump solicitado - (PID:TID) - (%d:%d)",info_1->pid,info_1->tid);
             int socket_filesystem = cliente_memoria_filesystem(logger,config);
             t_contexto_pid *contexto_pid_1 = obtener_contexto_pid(info_1->pid);
+            t_list* lista_datos = lectura_datos_proceso(info_1->pid);
+            if(lista_datos == NULL){
+                respuesta = -1;
+                send(socket_cliente,&respuesta,sizeof(int),0);
+                break;
+            }
             int tamanio_proceso = (contexto_pid_1->limite - contexto_pid_1->base);
-            send_dump_memory_filesystem(info_1->pid,info_1->tid,tamanio_proceso,socket_filesystem);
+            send_dump_memory_filesystem(info_1->pid,info_1->tid,tamanio_proceso,lista_datos,socket_filesystem);
             recv(socket_filesystem,&respuesta,sizeof(int),0);
             close(socket_filesystem);
             if(respuesta != OK){
             send(socket_cliente, &respuesta, sizeof(int), 0);
+            break;
             }
-            escritura_datos_archivo(info_1->pid,info_1->tid);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
             break;
