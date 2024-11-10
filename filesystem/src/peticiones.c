@@ -36,6 +36,8 @@ t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(socket_client
         }
 
         send(socket_cliente,&respuesta,sizeof(int),0);
+        log_info(log_filesystem, "## Fin de solicitud - Archivo: %s/%d-%d-%ld.dmp", path, info->pid, info->tid, time(NULL));
+
         break;
 
         default:

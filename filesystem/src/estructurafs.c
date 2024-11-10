@@ -35,18 +35,20 @@ int crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const char*
 
     // 2. reservo los bloques necesarios
     uint32_t* bloque_reservado = malloc((bloques_necesarios + 1) * sizeof(uint32_t));
-    reservar_bloque(bitmap, bloque_reservado, bloques_necesarios + 1);
-
-    // 3. Creo el archivo
     char filepath[256];
     time_t now = time(NULL);
     snprintf(filepath, sizeof(filepath), "%s/%d-%d-%ld.dmp", mount_dir, info->pid, info->tid, now);
+    reservar_bloque(bitmap, bloque_reservado, bloques_necesarios + 1, filepath);
+
+    // 3. Creo el archivo
     if (crear_archivo_metadata(filepath, info, bloque_reservado, bloques_necesarios) != 0) {
         free(bloque_reservado);
         return -1;
     }
 
-    //4. escribo el contenido en los bloques reservados
+    log_info(log_filesystem, "## Archivo Creado: %s - Tamaño: %d", filepath, info->tamanio_proceso);
+
+    // 4. escribo el contenido en los bloques reservados
     if (escribir_bloques(mount_dir, bloque_reservado, bloques_necesarios, info, block_size) != 0) {
         free(bloque_reservado);
         return -1;
@@ -71,13 +73,29 @@ bool hay_espacio_disponible(t_bitarray* bitmap, int bloques_necesarios) {
     return false;
 }
 
-void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t bloques_necesarios) {
+void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t bloques_necesarios, const char* filepath) {
     int contador_reserva = 0;
-    for(int i = 0; i < bitarray_get_max_bit(bitmap) && contador_reserva < bloques_necesarios; i++){
+    int bloques_libres = 0;
+
+    for(int i = 0; i < bitarray_get_max_bit(bitmap); i++) {
+        if(!bitarray_test_bit(bitmap, i)) {
+            bloques_libres++;
+        }
+    }
+
+    for(int i = 0; i < bitarray_get_max_bit(bitmap) && contador_reserva < bloques_necesarios; i++) {
         if(!bitarray_test_bit(bitmap, i)) {
             bitarray_set_bit(bitmap, i);
             bloques_reservados[contador_reserva] = i;
             contador_reserva++;
+            bloques_libres--;
+
+            // Log de asignación de bloque
+            log_info(log_filesystem, "## Bloque asignado: %d - Archivo: %s - Bloques Libres: %d", i, filepath, bloques_libres);
+
+            // Log de acceso a bloque
+            const char* tipo_bloque = (contador_reserva == 1) ? "ÍNDICE" : "DATOS";
+            log_info(log_filesystem, "## Acceso Bloque - Archivo: %s - Tipo Bloque: %s - Bloque File System %d", filepath, tipo_bloque, i);
         }
     }
 }
