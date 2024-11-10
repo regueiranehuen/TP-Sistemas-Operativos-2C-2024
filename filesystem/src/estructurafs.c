@@ -106,6 +106,8 @@ int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, size_t* blo
 }
 
 int escribir_bloques(const char* mount_dir, size_t* bloque_reservados, size_t bloques_necesarios, t_args_dump_memory* info, int block_size) {
+    int retardo = config_get_int_value(config, "RETARDO_ACCESO_BLOQUE");
+
     char bloques_filepath[256];
     snprintf(bloques_filepath, sizeof(bloques_filepath), "%s/bloques.dat", mount_dir);
     int bloques_fd = open(bloques_filepath, O_WRONLY);
@@ -115,7 +117,7 @@ int escribir_bloques(const char* mount_dir, size_t* bloque_reservados, size_t bl
     }
 
     size_t bytes_written = 0;
-    for (size_t i = 1; i < bloques_necesarios; i++) {
+    for (size_t i = 0; i < bloques_necesarios; i++) {
         size_t block_index = bloque_reservados[i];
         off_t offset = block_index * block_size;
         size_t bytes_to_write = (info->tamanio_proceso - bytes_written > block_size) ? block_size : info->tamanio_proceso - bytes_written;
@@ -125,7 +127,7 @@ int escribir_bloques(const char* mount_dir, size_t* bloque_reservados, size_t bl
             return -1;
         }
         bytes_written += bytes_to_write;
-        usleep(15000); // Retardo de acceso al bloque
+        usleep(retardo); // Retardo de acceso al bloque
     }
 
     close(bloques_fd);
