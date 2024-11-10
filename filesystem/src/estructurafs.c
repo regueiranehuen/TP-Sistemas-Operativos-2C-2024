@@ -1,61 +1,30 @@
 #include "includes/estructurafs.h"
 
 t_bitarray* cargar_bitmap(char* mount_dir, size_t block_count) {
-    // Construir la ruta completa del archivo bitmap.dat
     char filepath[256];
     snprintf(filepath, sizeof(filepath), "%s/bitmap.dat", mount_dir);
     log_info(log_filesystem, "Cargando bitmap desde %s", filepath);
 
     FILE* file = fopen(filepath, "rb");
-    if (file == NULL) {
-        log_error(log_filesystem, "Error al abrir el archivo %s", filepath);
-        return NULL;
-    }
-
-    // Obtener el tamaño del archivo
     struct stat st;
-    if (stat(filepath, &st) != 0) {
-        perror("Error al obtener el tamaño del archivo");
-        log_error(log_filesystem, "Error al obtener el tamaño del archivo %s", filepath);
-        fclose(file);
-        return NULL;
-    }
+    stat(filepath, &st);
     size_t expected_size = (size_t)ceil((double)block_count / 8.0);
     if (st.st_size != expected_size) {
-        log_error(log_filesystem, "Error: el tamaño del archivo no coincide con el tamaño esperado (%zu bytes)", expected_size);
+        log_error(log_filesystem, "El tamaño del archivo %s no es el esperado. Esperado: %zu, Actual: %zu", filepath, expected_size, st.st_size);
         fclose(file);
         return NULL;
     }
-
-    // Asignar memoria para el bitarray
     char* bitarray_data = malloc(st.st_size);
-    if (bitarray_data == NULL) {
-        perror("Error al asignar memoria para el bitarray");
-        fclose(file);
-        return NULL;
-    }
 
-    // Leer el contenido del archivo en el bitarray
-    size_t read_size = fread(bitarray_data, 1, st.st_size, file);
-    if (read_size != st.st_size) {
-        perror("Error al leer el archivo");
-        free(bitarray_data);
-        fclose(file);
-        return NULL;
-    }
-
+    
+    fread(bitarray_data, 1, st.st_size, file);
     fclose(file);
 
-    // Crear e inicializar la estructura t_bitarray
     t_bitarray* bitmap = bitarray_create_with_mode(bitarray_data, st.st_size, LSB_FIRST); // o MSB_FIRST según tu necesidad
-    if (bitmap == NULL) {
-        perror("Error al crear el bitarray");
-        free(bitarray_data);
-        return NULL;
-    }
 
     return bitmap;
 }
+
 
 
 //nombre, tamanio, contenido
@@ -120,18 +89,18 @@ void reservar_bloque(t_bitarray* bitmap, size_t* bloques_reservados, size_t bloq
 int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, size_t* bloque_reservados, size_t bloques_necesarios) {
     FILE* archivo_metadata = fopen(filepath, "w");
     if (archivo_metadata == NULL) {
-        perror("Error al crear el archivo de metadata");
+        log_error(log_filesystem, "Error al crear el archivo de metadata");
         return -1;
     }
-    fprintf(archivo_metadata, "TAMANIO=%d\n", info->tamanio_proceso);
-    fprintf(archivo_metadata, "BLOQUES=[");
+    log_info(log_filesystem, "TAMANIO=%d\n", info->tamanio_proceso);
+    log_info(log_filesystem, "BLOQUES=[");
     for (size_t i = 1; i < bloques_necesarios; i++) {
-        fprintf(archivo_metadata, "%zu", bloque_reservados[i]);
+        log_info(log_filesystem, "%zu", bloque_reservados[i]);
         if (i < bloques_necesarios - 1) {
-            fprintf(archivo_metadata, ",");
+            log_info(log_filesystem, ",");
         }
     }
-    fprintf(archivo_metadata, "]\n");
+    log_info(log_filesystem, "]\n");
     fclose(archivo_metadata);
     return 0;
 }
@@ -141,7 +110,7 @@ int escribir_bloques(const char* mount_dir, size_t* bloque_reservados, size_t bl
     snprintf(bloques_filepath, sizeof(bloques_filepath), "%s/bloques.dat", mount_dir);
     int bloques_fd = open(bloques_filepath, O_WRONLY);
     if (bloques_fd == -1) {
-        perror("Error al abrir el archivo bloques.dat");
+        log_error(log_filesystem, "Error al abrir el archivo bloques.dat");
         return -1;
     }
 
@@ -151,7 +120,7 @@ int escribir_bloques(const char* mount_dir, size_t* bloque_reservados, size_t bl
         off_t offset = block_index * block_size;
         size_t bytes_to_write = (info->tamanio_proceso - bytes_written > block_size) ? block_size : info->tamanio_proceso - bytes_written;
         if (pwrite(bloques_fd, info->contenido + bytes_written, bytes_to_write, offset) != bytes_to_write) {
-            perror("Error al escribir en el bloque");
+            log_error(log_filesystem, "Error al escribir en el bloque");
             close(bloques_fd);
             return -1;
         }
