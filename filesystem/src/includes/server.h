@@ -3,6 +3,7 @@
 
 #include "utils/includes/sockets.h"
 #include "utils/includes/serializacion.h"
+#include "utils/includes/estructuras.h"
 #include <semaphore.h>
 #include "main.h"
 

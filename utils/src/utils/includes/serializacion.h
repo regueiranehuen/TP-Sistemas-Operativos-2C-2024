@@ -67,6 +67,8 @@ typedef struct{
     int pid;
     int tid;
     int tamanio_proceso;
+    char* contenido;
+    char* nombre;
 }t_args_dump_memory;
 
 typedef struct{
