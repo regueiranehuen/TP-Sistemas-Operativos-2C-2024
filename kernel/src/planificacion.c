@@ -345,7 +345,7 @@ void *hilo_planificador_corto_plazo(void *arg)
         
         }
 
-        else if (strings_iguales(algoritmo, "MULTINIVEL"))
+        else if (strings_iguales(algoritmo, "CMN"))
         {
             colas_multinivel();
         }

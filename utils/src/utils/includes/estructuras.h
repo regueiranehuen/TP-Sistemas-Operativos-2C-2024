@@ -251,7 +251,6 @@ typedef struct{
     t_contexto_tid*contexto_tid;
 }t_contextos;
 
-
 typedef struct
 {
     op_code codigo_operacion;

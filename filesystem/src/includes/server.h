@@ -3,8 +3,10 @@
 
 #include "utils/includes/sockets.h"
 #include "utils/includes/serializacion.h"
+#include "utils/includes/estructuras.h"
 #include <semaphore.h>
 #include "main.h"
+#include "auxiliares.h"
 
 typedef struct{
     int socket_servidor;
