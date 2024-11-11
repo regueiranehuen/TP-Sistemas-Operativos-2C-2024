@@ -127,7 +127,7 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
     char bloques_filepath[256];
     snprintf(bloques_filepath, sizeof(bloques_filepath), "%s/bloques.dat", mount_dir);
 
-    FILE*arch = fopen(bloques_filepath,"r+b"); // Leemos el archivo y apuntamos al principio
+    FILE*arch = fopen(bloques_filepath,"r+b"); // Abrimos el archivo en modo lectura/escritura y apuntamos al principio
 
 
     if (arch == NULL) {
