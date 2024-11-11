@@ -35,27 +35,27 @@ int crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const char*
     }
     
     // 2. reservo los bloques necesarios
-    uint32_t* bloque_reservado = malloc((bloques_necesarios) * sizeof(uint32_t));
+    uint32_t* bloques_reservados = malloc((bloques_necesarios) * sizeof(uint32_t));
     char filepath[256];
     time_t now = time(NULL);
     snprintf(filepath, sizeof(filepath), "%s/%d-%d-%ld.dmp", mount_dir, info->pid, info->tid, now);
-    reservar_bloque(bitmap, bloque_reservado, bloques_necesarios, filepath);
+    reservar_bloque(bitmap, bloques_reservados, bloques_necesarios, filepath);
 
     // 3. Creo el archivo
-    if (crear_archivo_metadata(filepath, info, bloque_reservado, bloques_necesarios) != 0) {
-        free(bloque_reservado);
+    if (crear_archivo_metadata(filepath, info, bloques_reservados, bloques_necesarios) != 0) {
+        free(bloques_reservados);
         return -1;
     }
     
     log_info(log_filesystem, "## Archivo Creado: %s - Tamaño: %d", filepath, info->tamanio_proceso);
 
     // 4. escribo el contenido en los bloques reservados
-    if (escribir_bloques(mount_dir, bloque_reservado, bloques_necesarios, info, block_size) != 0) {
-        free(bloque_reservado);
+    if (escribir_bloques(mount_dir, bloques_reservados, bloques_necesarios, info, block_size) != 0) {
+        free(bloques_reservados);
         return -1;
     }
 
-    free(bloque_reservado);
+    free(bloques_reservados);
     return 1;
 }
 
@@ -83,9 +83,7 @@ void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t 
             bloques_libres++;
         }
     }
-    uint32_t* bloque_reservado = malloc((bloques_necesarios) * sizeof(uint32_t));
     
-
 
     for(int i = 0; i < bitarray_get_max_bit(bitmap) && contador_reserva < bloques_necesarios; i++) {
         if(!bitarray_test_bit(bitmap, i)) {
@@ -104,7 +102,7 @@ void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t 
     }
 }
 
-int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, uint32_t* bloque_reservados, uint32_t bloques_necesarios) {
+int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, uint32_t* bloques_reservados, uint32_t bloques_necesarios) {
     FILE* archivo_metadata = fopen(filepath, "w");
     if (archivo_metadata == NULL) {
         log_error(log_filesystem, "Error al crear el archivo de metadata");
@@ -113,7 +111,7 @@ int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, uint32_t* b
     log_info(log_filesystem, "TAMANIO=%d\n", info->tamanio_proceso);
     log_info(log_filesystem, "BLOQUES=[");
     for (uint32_t i = 1; i < bloques_necesarios; i++) {
-        log_info(log_filesystem, "%u", bloque_reservados[i]);
+        log_info(log_filesystem, "%u", bloques_reservados[i]);
         if (i < bloques_necesarios - 1) {
             log_info(log_filesystem, ",");
         }
@@ -123,35 +121,51 @@ int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, uint32_t* b
     return 0;
 }
 
-int escribir_bloques(const char* mount_dir, uint32_t* bloque_reservados, uint32_t bloques_necesarios, t_args_dump_memory* info, int block_size) {
+int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32_t bloques_necesarios, t_args_dump_memory* info, int block_size) {
     int retardo = config_get_int_value(config, "RETARDO_ACCESO_BLOQUE");
 
     char bloques_filepath[256];
     snprintf(bloques_filepath, sizeof(bloques_filepath), "%s/bloques.dat", mount_dir);
-    int bloques_fd = open(bloques_filepath, O_WRONLY);
-    if (bloques_fd == -1) {
-        log_error(log_filesystem, "Error al abrir el archivo bloques.dat");
-        return -1;
+
+    FILE*arch = fopen(bloques_filepath,"r+b"); // Leemos el archivo y apuntamos al principio
+
+
+    if (arch == NULL) {
+        log_info(log_filesystem, "No se encontró el archivo bloques.dat, lo creamos");
+        arch = fopen(bloques_filepath,"wb");
     }
 
-    escribir_bloque_de_puntero(bloques_fd, bloque_reservados, bloques_necesarios,block_size);
-
-    //cambiar info->lista_datos --> usar list_get + if para comprobar que el dato entra en el bloque
     uint32_t bytes_written = 0;
+    int indice_lista_datos = 0;
     for (uint32_t i = 0; i < bloques_necesarios; i++) {
-        uint32_t block_index = bloque_reservados[i];
+        uint32_t block_index = bloques_reservados[i];
         off_t offset = block_index * block_size;
-        uint32_t bytes_to_write = (info->tamanio_proceso - bytes_written > block_size) ? block_size : info->tamanio_proceso - bytes_written;
-        if (pwrite(bloques_fd, info->lista_datos + bytes_written, bytes_to_write, offset) != bytes_to_write) {
-            log_error(log_filesystem, "Error al escribir en el bloque");
-            close(bloques_fd);
-            return -1;
+
+        fseek(arch,offset,SEEK_SET);  // Desde el principio del archivo, me desplazo offset
+
+        uint32_t bytes_to_write = (info->tamanio_proceso - bytes_written >= block_size) ? block_size : info->tamanio_proceso - bytes_written;
+
+        uint32_t cant_datos_a_escribir = bytes_to_write / sizeof(uint32_t);  // Si tengo que escribir 16 bytes en un bloque de 16 bytes, meto 4 uints x ejemplo
+
+        // escribir_bloque_de_puntero ????
+
+        for (int j=1; j <= cant_datos_a_escribir; j++){
+            uint32_t* dato = list_get(info->lista_datos,indice_lista_datos);
+            
+            if (fwrite(dato,sizeof(uint32_t),1,arch) != 1){  // fwrite devuelve la cantidad de elementos que escribís
+                log_error(log_filesystem, "Error al escribir en el bloque");
+                fclose(arch);
+                return -1;
+            }
+            bytes_written += bytes_to_write;
+            indice_lista_datos +=1;
+
+            usleep(retardo); // Retardo de acceso al bloque x config
         }
-        bytes_written += bytes_to_write;
-        usleep(retardo); // Retardo de acceso al bloque x config
+
     }
 
-    close(bloques_fd);
+    fclose(arch);
     return 0;
 }
 
@@ -167,4 +181,3 @@ void escribir_bloque_de_puntero(int bloques_fd, uint32_t* bloques_reservados, ui
         offset += sizeof(uint32_t);
     }
 }
-

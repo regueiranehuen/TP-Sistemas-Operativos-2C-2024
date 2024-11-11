@@ -3,12 +3,14 @@
 
 #include "server.h"
 
+
+extern sem_t sem_fin_filesystem;
 extern t_log* log_filesystem;
 extern t_config* config;
 extern t_bitarray* bitmap;
 
 extern char* path;
-extern int block_count; 
 extern int block_size;
+extern int block_count;
 
 #endif

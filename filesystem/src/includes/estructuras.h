@@ -4,7 +4,8 @@
 #include "utils/includes/estructuras.h"
 #include "utils/includes/serializacion.h"
 #include "server.h"
-#include <fcntl.h>
+#include "main.h"
+#include <fcntl.h> // La idea sería dejar de usar esta librería
 
 // void inicializar_bitmap(t_bitarray *bitmap);
 // void cerrar_bitmap(t_bitarray *bitmap);
