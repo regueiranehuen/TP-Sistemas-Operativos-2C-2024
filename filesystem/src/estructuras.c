@@ -135,6 +135,9 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
         arch = fopen(bloques_filepath,"wb");
     }
 
+    //creo que es antes de escribir bloque x bloque --> CHEQUEAR
+    escribir_bloque_de_puntero(arch, bloques_reservados, bloques_necesarios, block_size);
+
     uint32_t bytes_written = 0;
     int indice_lista_datos = 0;
     for (uint32_t i = 0; i < bloques_necesarios; i++) {
@@ -169,14 +172,14 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
     return 0;
 }
 
-void escribir_bloque_de_puntero(int bloques_fd, uint32_t* bloques_reservados, uint32_t bloques_necesarios, int bloque_size){
-
+void escribir_bloque_de_puntero(FILE* arch, uint32_t* bloques_reservados, uint32_t bloques_necesarios, int bloque_size) {
     uint32_t bloque_puntero = bloques_reservados[0];
     off_t offset = bloque_puntero * bloque_size;
 
-    for(uint32_t i = 1; i < bloques_necesarios; i++) {
-    if(pwrite(bloques_fd, &bloques_reservados[i], sizeof(uint32_t), offset) != sizeof(uint32_t)){
-        log_error(log_filesystem, "Error al escribir en el bloque de punteros");
+    for (uint32_t i = 1; i < bloques_necesarios; i++) {
+        fseek(arch, offset, SEEK_SET);
+        if (fwrite(&bloques_reservados[i], sizeof(uint32_t), 1, arch) != 1) {
+            log_error(log_filesystem, "Error al escribir en el bloque de punteros");
         }
         offset += sizeof(uint32_t);
     }

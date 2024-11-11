@@ -15,7 +15,7 @@ bool hay_espacio_disponible(t_bitarray* bitmap, int bloques_necesarios);
 void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t bloques_necesarios, const char* filepath);
 int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, uint32_t* bloque_reservados, uint32_t bloques_necesarios);
 int escribir_bloques(const char* mount_dir, uint32_t* bloque_reservados, uint32_t bloques_necesarios, t_args_dump_memory* info, int block_size);
-void escribir_bloque_de_puntero(int bloques_fd, uint32_t* bloques_reservados, uint32_t bloques_necesarios, int bloque_size);
+void escribir_bloque_de_puntero(FILE* arch, uint32_t* bloques_reservados, uint32_t bloques_necesarios, int bloque_size);
 
 
 
