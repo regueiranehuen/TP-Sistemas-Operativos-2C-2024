@@ -3,6 +3,7 @@
 
 #include "memoria.h"
 #include "memSist.h"
+#include "memUsuario.h"
 #include "utils/includes/sockets.h"
 #include <commons/config.h>
 #include <semaphore.h>

@@ -44,7 +44,7 @@ void atender_conexiones(int socket_cliente)
             t_tid_pid *info_1 = recepcionar_tid_pid_code_op(paquete);
             log_info(logger,"## Memory Dump solicitado - (PID:TID) - (%d:%d)",info_1->pid,info_1->tid);
             int socket_filesystem = cliente_memoria_filesystem(logger,config);
-            t_contexto_pid *contexto_pid_1 = obtener_contexto_pid(info_1->pid);
+
             t_list* lista_datos = lectura_datos_proceso(info_1->pid);
             if(lista_datos == NULL){
                 respuesta = -1;

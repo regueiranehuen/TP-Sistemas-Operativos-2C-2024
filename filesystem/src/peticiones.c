@@ -23,17 +23,20 @@ t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(socket_client
         
         t_args_dump_memory* info = recepcionar_dump_memory_filesystem(paquete);
         
-        respuesta = crear_archivo_dump(info, bitmap, path, block_size);
+        char* aura = crear_archivo_dump(info, bitmap, mount_dir, block_size);
         
-        if(respuesta != -1) { 
+        if(aura != NULL) { 
             respuesta = OK;
         } else {
             respuesta = ERROR;
         }
 
         send(socket_cliente,&respuesta,sizeof(int),0);
-        log_info(log_filesystem, "## Fin de solicitud - Archivo: %s/%d-%d-%ld.dmp", path, info->pid, info->tid, time(NULL));
-
+        
+        if(respuesta == OK){
+            log_info(log_filesystem, "## Fin de solicitud - Archivo: %s", aura);
+        }
+        free(aura);
         break;
 
         default:

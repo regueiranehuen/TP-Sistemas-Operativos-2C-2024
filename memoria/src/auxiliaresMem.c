@@ -51,13 +51,4 @@ void liberar_instruccion(t_instruccion_tid_pid*instruccion){
     free(instruccion);
 }
 
-t_particiones*obtener_particion(int pid){
-    for (int i = 0; i< list_size(lista_particiones);i++){
-        t_particiones*actual=list_get(lista_particiones,i);
 
-        if (actual->pid == pid){
-            return actual;
-        }
-    }
-    return NULL;
-}
