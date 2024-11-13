@@ -129,7 +129,7 @@ int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, uint32_t* b
     
 
     fwrite(&block_size,sizeof(uint32_t),1,archivo_metadata); // Size de los bloques
-    fwrite(index_bloque_indices,sizeof(int),1,archivo_metadata); // Número de bloque que corresponde al bloque de índices
+    fwrite(&index_bloque_indices,sizeof(int),1,archivo_metadata); // Número de bloque que corresponde al bloque de índices
     
     fclose(archivo_metadata);
     return 0;
