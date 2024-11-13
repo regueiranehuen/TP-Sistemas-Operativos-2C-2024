@@ -148,18 +148,18 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
 
         uint32_t bytes_to_write = (info->tamanio_proceso - bytes_written >= block_size) ? block_size : info->tamanio_proceso - bytes_written;
 
-        uint32_t cant_datos_a_escribir = bytes_to_write / sizeof(uint32_t);  // Si tengo que escribir 16 bytes en un bloque de 16 bytes, meto 4 uints x ejemplo
-
-        // escribir_bloque_de_puntero ????
+        // Tanto el size del int (-1 de inicializacion) como el del uint32 es de 4 bytes, entonces la cantidad de datos a escribir en el bloque es: 
+        uint32_t cant_datos_a_escribir = bytes_to_write / 4;  
 
         for (int j=1; j <= cant_datos_a_escribir; j++){
-            uint32_t* dato = list_get(info->lista_datos,indice_lista_datos);
+            void* dato = list_get(info->lista_datos,indice_lista_datos);
             
-            if (fwrite(dato,sizeof(uint32_t),1,arch) != 1){  // fwrite devuelve la cantidad de elementos que escribís
+            if (fwrite(dato, 4, 1, arch) != 1){ // fwrite devuelve la cantidad de elementos que escribís
                 log_error(log_filesystem, "Error al escribir en el bloque");
                 fclose(arch);
                 return -1;
             }
+
             bytes_written += bytes_to_write;
             indice_lista_datos +=1;
 

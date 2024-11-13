@@ -674,15 +674,16 @@ t_args_dump_memory* recepcionar_dump_memory_filesystem(t_paquete_code_operacion*
     memcpy(&(info->tid), stream,sizeof(int));
     stream+=sizeof(int);
     memcpy(&(info->tamanio_proceso), stream,sizeof(int));
-    
-    int cantidad_datos = (paquete->buffer->size - 3 * sizeof(int)) / sizeof(uint32_t);
-    
+    stream += sizeof(int);
+
+    int cantidad_datos = info->tamanio_proceso / 4; // 4 bytes x dato (int o uint32)
+
     // Recibir cada elemento de la lista y agregarlo a info->datos
     for (int i = 0; i < cantidad_datos; i++) {
-        uint32_t* dato = malloc(sizeof(uint32_t));  // Reservar espacio para cada dato
-        memcpy(dato, stream, sizeof(uint32_t));
-        list_add(info->lista_datos, dato);  // Agregar el dato a la lista
-        stream += sizeof(uint32_t);
+        void* dato = malloc(4);  // Reservar espacio para cada dato
+        memcpy(dato,stream,4);
+        list_add(info->lista_datos,dato);
+        stream += 4;
     }
 
     eliminar_paquete_code_op(paquete);
