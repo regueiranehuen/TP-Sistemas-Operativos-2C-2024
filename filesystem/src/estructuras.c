@@ -39,14 +39,23 @@ int crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const char*
     char filepath[256];
     time_t now = time(NULL);
     snprintf(filepath, sizeof(filepath), "%s/%d-%d-%ld.dmp", mount_dir, info->pid, info->tid, now);
-    reservar_bloque(bitmap, bloques_reservados, bloques_necesarios, filepath);
+
+    int*index_bloque_indices=malloc(sizeof(int));
+    *index_bloque_indices=-1;
+    reservar_bloque(bitmap, bloques_reservados, bloques_necesarios, filepath,index_bloque_indices);
+
+    int indice_bloque_indices=*index_bloque_indices;
+    free(index_bloque_indices);
+
+    if (*index_bloque_indices == -1){
+        return -1;
+    }
 
     // 3. Creo el archivo
-    if (crear_archivo_metadata(filepath, info, bloques_reservados, bloques_necesarios) != 0) {
+    if (crear_archivo_metadata(filepath, info, bloques_reservados, bloques_necesarios,indice_bloque_indices) != 0) {
         free(bloques_reservados);
         return -1;
     }
-    
     log_info(log_filesystem, "## Archivo Creado: %s - Tamaño: %d", filepath, info->tamanio_proceso);
 
     // 4. escribo el contenido en los bloques reservados
@@ -74,9 +83,11 @@ bool hay_espacio_disponible(t_bitarray* bitmap, int bloques_necesarios) {
     return false;
 }
 
-void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t bloques_necesarios, const char* filepath) {
+void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t bloques_necesarios, const char* filepath,int* index_bloque_indices) {
     int contador_reserva = 0;
     int bloques_libres = 0;
+
+    bool primero=true;
 
     for(int i = 0; i < bitarray_get_max_bit(bitmap); i++) {
         if(!bitarray_test_bit(bitmap, i)) {
@@ -87,8 +98,15 @@ void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t 
 
     for(int i = 0; i < bitarray_get_max_bit(bitmap) && contador_reserva < bloques_necesarios; i++) {
         if(!bitarray_test_bit(bitmap, i)) {
+            
             bitarray_set_bit(bitmap, i);
             bloques_reservados[contador_reserva] = i; // ?
+
+            if (primero){ // Al primer bloque que encuentro lo vuelvo bloque de indices
+                *index_bloque_indices=i; // Guardo la posicion del bloque de indices en el bitmap. Despues uso esto para crear el archivo de metadata
+                primero=false;
+            }
+
             contador_reserva++;
             bloques_libres--;
 
@@ -102,21 +120,17 @@ void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t 
     }
 }
 
-int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, uint32_t* bloques_reservados, uint32_t bloques_necesarios) {
+int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, uint32_t* bloques_reservados, uint32_t bloques_necesarios,int index_bloque_indices) {
     FILE* archivo_metadata = fopen(filepath, "w");
     if (archivo_metadata == NULL) {
         log_error(log_filesystem, "Error al crear el archivo de metadata");
         return -1;
     }
-    log_info(log_filesystem, "TAMANIO=%d\n", info->tamanio_proceso);
-    log_info(log_filesystem, "BLOQUES=[");
-    for (uint32_t i = 1; i < bloques_necesarios; i++) {
-        log_info(log_filesystem, "%u", bloques_reservados[i]);
-        if (i < bloques_necesarios - 1) {
-            log_info(log_filesystem, ",");
-        }
-    }
-    log_info(log_filesystem, "]\n");
+    
+
+    fwrite(&block_size,sizeof(uint32_t),1,archivo_metadata); // Size de los bloques
+    fwrite(index_bloque_indices,sizeof(int),1,archivo_metadata); // Número de bloque que corresponde al bloque de índices
+    
     fclose(archivo_metadata);
     return 0;
 }

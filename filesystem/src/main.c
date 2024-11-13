@@ -6,7 +6,7 @@ sem_t sem_fin_filesystem;
 t_bitarray *bitmap;
 char *path;
 int block_count;
-int block_size;
+uint32_t block_size;
 
 int main(int argc, char *argv[])
 {

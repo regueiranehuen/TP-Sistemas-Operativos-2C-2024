@@ -10,7 +10,7 @@ extern t_config* config;
 extern t_bitarray* bitmap;
 
 extern char* path;
-extern int block_size;
+extern uint32_t block_size;
 extern int block_count;
 
 #endif
