@@ -51,8 +51,17 @@ void atender_conexiones(int socket_cliente)
                 send(socket_cliente,&respuesta,sizeof(int),0);
                 break;
             }
-            int tamanio_proceso = (contexto_pid_1->limite - contexto_pid_1->base);
-            send_dump_memory_filesystem(info_1->pid,info_1->tid,tamanio_proceso,lista_datos,socket_filesystem);
+            t_particiones* particion_proceso = obtener_particion(info_1->pid);
+            if (particion_proceso == NULL){
+                log_info(logger,"No se encontró la partición del proceso de pid %d",info_1->pid);
+                respuesta=ERROR;
+                send(socket_cliente, &respuesta, sizeof(int), 0);
+                break;
+            }
+
+            void*contenido = memoria + particion_proceso->base;
+
+            send_dump_memory_filesystem(info_1->pid,info_1->tid,particion_proceso->tamanio,contenido,socket_filesystem);
             recv(socket_filesystem,&respuesta,sizeof(int),0);
             close(socket_filesystem);
             if(respuesta != OK){

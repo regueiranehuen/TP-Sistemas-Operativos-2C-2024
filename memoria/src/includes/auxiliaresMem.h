@@ -10,5 +10,6 @@ void inicializar_mutex();
 void destruir_mutex();
 void destruir_semaforos();
 void liberar_instruccion(t_instruccion_tid_pid*instruccion);
+t_particiones*obtener_particion(int pid);
 
 #endif
