@@ -237,7 +237,7 @@ t_contexto_tid*obtener_contexto_tid(int pid, int tid){ // hay que usar mutex cad
         t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
         
         for (int j = 0; j < list_size(cont_actual->contextos_tids); j++){
-            t_contexto_tid*cont_tid_actual=list_get(cont_actual->contextos_tids,i);
+            t_contexto_tid*cont_tid_actual=list_get(cont_actual->contextos_tids,j);
             if (cont_tid_actual->pid==pid && cont_tid_actual->tid==tid){
                 return cont_tid_actual;
             }

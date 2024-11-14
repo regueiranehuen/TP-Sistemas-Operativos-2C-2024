@@ -143,6 +143,8 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
         case ENUM_PROCESS_CREATE:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <PROCESS_CREATE>", hilo_exec->pid, hilo_exec->tid);
             t_process_create* paramProcessCreate= parametros_process_create(paquete);
+            
+            log_info(logger,"pseudocodigo:%s, Tamanio:%d, Prioridad:%d",paramProcessCreate->nombreArchivo,paramProcessCreate->tamProceso,paramProcessCreate->prioridad);
             PROCESS_CREATE(paramProcessCreate->nombreArchivo,paramProcessCreate->tamProceso,paramProcessCreate->prioridad);  
             break;
         case ENUM_PROCESS_EXIT:

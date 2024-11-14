@@ -395,7 +395,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
     }
     case PROCESS_CREATE:
     {
-        log_info(log_cpu, "PROCESS_CREATE - PID: %s, Tamaño: %d, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4));
+        log_info(log_cpu, "PROCESS_CREATE - PSEUDOCODIGO:%s, Tamaño: %d, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)
@@ -414,7 +414,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
     }
     case THREAD_CREATE:
     {
-        log_info(log_cpu, "THREAD_CREATE - TID: %s, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3));
+        log_info(log_cpu, "THREAD_CREATE - PSEUDOCODIGO: %s, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)

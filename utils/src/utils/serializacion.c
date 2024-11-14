@@ -326,12 +326,12 @@ t_process_create* parametros_process_create(t_paquete_syscall *paquete){
 
     void * stream = paquete->buffer->stream;
 
-    int sizeNombreArchivo;
+    int sizeNombreArchivo = 0;
     // Deserializamos los campos que tenemos en el buffer
     memcpy(&sizeNombreArchivo, stream, sizeof(int)); // Recibimos el size del nombre del archivo de pseudocodigo
     stream += sizeof(int);
-
-    memcpy(&(info->nombreArchivo), stream, sizeNombreArchivo); // Primer parámetro para la syscall: nombre del archivo
+    info->nombreArchivo = malloc(sizeNombreArchivo + 1);
+    memcpy(info->nombreArchivo, stream, sizeNombreArchivo); // Primer parámetro para la syscall: nombre del archivo
     stream += sizeNombreArchivo;
     memcpy(&(info->tamProceso), stream, sizeof(int));
     stream += sizeof(int);

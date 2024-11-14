@@ -101,7 +101,7 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
     pcb->tcb_main = tcb;
     pcb->estado = PCB_NEW;
     pthread_mutex_lock(&mutex_log);
-    log_info(logger,"## (<%d>:0) Se crea el proceso - Estado: NEW",pcb->pid);
+    log_info(logger,"## (%d:0) Se crea el proceso - Estado: NEW",pcb->pid);
     pthread_mutex_unlock(&mutex_log);
     pthread_mutex_lock(&mutex_cola_new_procesos);
     queue_push(cola_new_procesos, pcb);
@@ -250,7 +250,7 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
     {
         pcb->tcb_main->estado = TCB_READY;
         pthread_mutex_lock(&mutex_log);
-        log_info(logger,"## (<%d>:<%d>) Se crea el Hilo - Estado: READY",pcb->pid,pcb->tcb_main->tid);
+        log_info(logger,"## (%d:%d) Se crea el Hilo - Estado: READY",pcb->pid,pcb->tcb_main->tid);
         pthread_mutex_unlock(&mutex_log);
         pushear_cola_ready(pcb->tcb_main);
     }
@@ -269,13 +269,14 @@ void PROCESS_CREATE(char *pseudocodigo, int tamanio_proceso, int prioridad)
 
     t_pcb *pcb = crear_pcb();
     t_tcb *tcb = crear_tcb(pcb);
-    tcb->pseudocodigo = pseudocodigo;
+    tcb->pseudocodigo = malloc(strlen(pseudocodigo) + 1);
+    strcpy(tcb->pseudocodigo, pseudocodigo);
     pcb->tamanio_proceso = tamanio_proceso;
     tcb->prioridad = prioridad;
     pcb->tcb_main = tcb;
     pcb->estado = PCB_NEW;
     pthread_mutex_lock(&mutex_log);
-    log_info(logger,"## (<%d>:0) Se crea el proceso - Estado: NEW",pcb->pid);
+    log_info(logger,"## (%d:0) Se crea el proceso - Estado: NEW",pcb->pid);
     pthread_mutex_unlock(&mutex_log);
 
     pthread_mutex_lock(&mutex_lista_pcbs);
@@ -376,7 +377,7 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
     else
     {
         pthread_mutex_lock(&mutex_log);
-        log_info(logger,"## (<%d>:<%d>) Se crea el Hilo - Estado: READY",pcb->pid,tcb->tid);
+        log_info(logger,"## (%d:%d) Se crea el Hilo - Estado: READY",pcb->pid,tcb->tid);
         pthread_mutex_unlock(&mutex_log);
         pushear_cola_ready(tcb);
     }
