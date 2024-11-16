@@ -158,5 +158,4 @@ t_log_level log_level(t_config* config);
 void send_dump_memory_filesystem(int pid,int tid,int tamanio_particion_proceso,void*contenido,int socket_cliente);
 t_args_dump_memory* recepcionar_dump_memory_filesystem(t_paquete_code_operacion* paquete);
 
-
 #endif

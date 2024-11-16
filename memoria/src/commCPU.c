@@ -25,7 +25,7 @@ void* recibir_cpu(void*args) {
                 pthread_mutex_lock(&mutex_lista_contextos_pids);
                 t_contexto_tid*contexto_tid=obtener_contexto_tid(info->pid,info->tid);
                 pthread_mutex_unlock(&mutex_lista_contextos_pids);
-                if (contexto_tid == NULL){
+                /*if (contexto_tid == NULL){
                     log_error(logger, "No se encontro el contexto del tid %d asociado al pid %d. VAMOS A CREARLO!", info->tid,info->pid);
                     t_contexto_pid* cont_pid = obtener_contexto_pid(info->pid);
                     t_contexto_tid* cont_tid_inic = inicializar_contexto_tid(cont_pid,info->tid);
@@ -33,7 +33,11 @@ void* recibir_cpu(void*args) {
                     log_info(logger, "Enviado contexto para PID: %d, TID: %d", info->pid, info->tid);
                     free(info);
                     break;
-                }
+                }*/
+
+               if (contexto_tid==NULL){
+                log_error(logger, "No se encontro el contexto del tid %d asociado al pid %d", info->tid,info->pid);
+               }
                 free(info);
                 send_contexto_tid(sockets_iniciales->socket_cpu,contexto_tid);
                 log_info(logger, "Enviado contexto para PID: %d, TID: %d", contexto_tid->pid, contexto_tid->tid);
@@ -67,6 +71,14 @@ void* recibir_cpu(void*args) {
             case ACTUALIZAR_CONTEXTO_TID:{
                 printf("entrando a actualizar_contexto\n");
                 t_contexto_tid*contexto_tid=recepcionar_contexto_tid(paquete_operacion);
+                log_info(logger, "REGISTROS QUE VOY A METER EN MEMORIA (ACTUALIZO):");
+                log_info(logger, "%d",contexto_tid->registros->AX);
+                log_info(logger, "%d",contexto_tid->registros->BX);
+                log_info(logger, "%d",contexto_tid->registros->CX);
+                log_info(logger, "%d",contexto_tid->registros->DX);
+                log_info(logger, "%d",contexto_tid->registros->EX);
+                log_info(logger, "%d",contexto_tid->registros->HX);
+        
 
                 log_info(logger, "PROGRAM COUNTER ACTUAL: %u", contexto_tid->registros->PC);
                 actualizar_contexto(contexto_tid->pid,contexto_tid->tid,contexto_tid->registros);
@@ -223,7 +235,7 @@ t_contexto_tid*obtener_contexto_tid(int pid, int tid){ // hay que usar mutex cad
     //pthread_mutex_lock(&mutex_lista_contextos_pids);
     for (int i = 0; i < list_size(lista_contextos_pids); i++){
         
-        t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
+        t_contexto_pid*cont_actual=list_get(lista_contextos_pids,i);
         
         for (int j = 0; j < list_size(cont_actual->contextos_tids); j++){
             t_contexto_tid*cont_tid_actual=list_get(cont_actual->contextos_tids,j);

@@ -164,15 +164,11 @@ void hilo_exit()
    
     sem_wait(&semaforo_cola_exit_hilos);
     
-    int socket_memoria = cliente_Memoria_Kernel(logger, config);
-    code_operacion cod_op = THREAD_ELIMINATE_AVISO;
 
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     t_tcb *hilo = queue_pop(cola_exit);
     printf("tid:%d\n",hilo->tid);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
-    send_operacion_tid_pid(cod_op,hilo->tid,hilo->pid,socket_memoria);
-    close(socket_memoria);
     
     int tam_cola = queue_size(hilo->cola_hilos_bloqueados);
     if (tam_cola > 0)
@@ -192,6 +188,10 @@ void hilo_exit()
     log_info(logger,"## (<%d>:<%d>) Finaliza el hilo",hilo->pid,hilo->tid);
     pthread_mutex_unlock(&mutex_log);
     liberar_tcb(hilo);
+
+    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+    send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Interrupt);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 }
 
 
@@ -431,16 +431,18 @@ ya haya finalizado, esta syscall no hace nada. Finalmente, el hilo que la invoc�
 void THREAD_CANCEL(int tid)
 { // suponiendo que el proceso main esta ejecutando
 
+    log_info(logger, "Llega thread cancel para hilo %d", tid);
+
     int respuesta;
     code_operacion cod_op = THREAD_ELIMINATE_AVISO;
 
-    t_tcb *tcb = buscar_tcb_por_tid(lista_tcbs,tid,hilo_exec); // Debido a que solamente hilos vinculados por un mismo proceso se pueden cancelar entre si, el tid a cancelar debe ser del proceso del hilo que llamo a la funcion
+    t_tcb *tcb = buscar_tcb_por_tid(lista_tcbs, tid, hilo_exec); // Debido a que solamente hilos vinculados por un mismo proceso se pueden cancelar entre si, el tid a cancelar debe ser del proceso del hilo que llamo a la funcion
 
     if (tcb == NULL || buscar_tcb(tid, hilo_exec) == NULL)
     {
-        log_info(logger,"El tid %d pasado por parámetro no pertenece al proceso en ejecución/no existe/ya finalizó",tid);
+        log_info(logger, "El tid %d pasado por parámetro no pertenece al proceso en ejecución/no existe/ya finalizó", tid);
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Interrupt);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
         return;
@@ -448,11 +450,10 @@ void THREAD_CANCEL(int tid)
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
 
-    send_operacion_entero(cod_op,tcb->tid, socket_memoria);
-    recv(socket_memoria, &respuesta, sizeof(int), 0);
-
+    send_operacion_tid_pid(cod_op, tcb->tid, tcb->pid, socket_memoria);
+    recv(socket_memoria, &respuesta, sizeof(int), 0); 
     close(socket_memoria);
-
+    log_info(logger, "EN THREAD CANCEL LLEGÓ ESTA RESPUESTA DE MEMORIA: %d", respuesta);
     if (respuesta == -1)
     {
         pthread_mutex_lock(&mutex_log);
@@ -462,39 +463,43 @@ void THREAD_CANCEL(int tid)
     else
     {
 
-    if (tcb->estado == TCB_READY){
-        char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
-        if(strcmp(algoritmo,"FIFO")== 0){
-            pthread_mutex_lock(&mutex_cola_ready);
-            sacar_tcb_de_cola(cola_ready_fifo,tcb);
-            pthread_mutex_unlock(&mutex_cola_ready);
+        if (tcb->estado == TCB_READY)
+        {
+            char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
+            if (strcmp(algoritmo, "FIFO") == 0)
+            {
+                pthread_mutex_lock(&mutex_cola_ready);
+                sacar_tcb_de_cola(cola_ready_fifo, tcb);
+                pthread_mutex_unlock(&mutex_cola_ready);
+            }
+            else if (strcmp(algoritmo, "PRIORIDADES"))
+            {
+                pthread_mutex_lock(&mutex_cola_ready);
+                sacar_tcb_de_lista(lista_ready_prioridad, tcb);
+                pthread_mutex_unlock(&mutex_cola_ready);
+            }
+            else if (strcmp(algoritmo, "CMN"))
+            {
+                pthread_mutex_lock(&mutex_cola_ready);
+                t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, tcb->prioridad);
+                sacar_tcb_de_cola(cola->cola, tcb);
+                pthread_mutex_unlock(&mutex_cola_ready);
+            }
         }
-        else if(strcmp(algoritmo,"PRIORIDADES")){
-            pthread_mutex_lock(&mutex_cola_ready);
-            sacar_tcb_de_lista(lista_ready_prioridad,tcb);
-            pthread_mutex_unlock(&mutex_cola_ready);
+        else
+        {
+            log_info(logger,"VOY A ELIMINAR EL THREAD DE LA COLA BLOCKED");
+            sacar_tcb_de_lista(lista_bloqueados, tcb);
+            log_info(logger,"ELIMINADO!");
         }
-        else if(strcmp(algoritmo,"CMN")){
-            pthread_mutex_lock(&mutex_cola_ready);
-            t_cola_prioridad* cola = cola_prioridad(colas_ready_prioridad,tcb->prioridad);
-            sacar_tcb_de_cola(cola->cola,tcb);
-            pthread_mutex_unlock(&mutex_cola_ready);
-        }
+        tcb->estado = TCB_EXIT;
+        pthread_mutex_lock(&mutex_cola_exit_hilos);
+        queue_push(cola_exit, tcb);
+        pthread_mutex_unlock(&mutex_cola_exit_hilos);
+        sem_post(&semaforo_cola_exit_hilos);
     }
-    else{
-        sacar_tcb_de_lista(lista_bloqueados,tcb);
-    }
-    tcb->estado = TCB_EXIT;
-    pthread_mutex_lock(&mutex_cola_exit_hilos);
-    queue_push(cola_exit,tcb);
-    pthread_mutex_unlock(&mutex_cola_exit_hilos);
-    sem_post(&semaforo_cola_exit_hilos);
-    }
-    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+    
 }
-
 
 /* THREAD_EXIT, esta syscall finaliza al hilo que lo invocó, 
 pasando el mismo al estado EXIT. Se deberá indicar a la Memoria 

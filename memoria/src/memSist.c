@@ -163,7 +163,28 @@ void finalizar_hilo(int tid, int pid) {
     pthread_mutex_unlock(&mutex_lista_instruccion);
     pthread_mutex_lock(&mutex_lista_contextos_pids);
     t_contexto_pid* contexto_pid = obtener_contexto_pid(pid);
+
+    for (int i = 0; i < list_size(lista_contextos_pids);i++){
+        t_contexto_pid*cont_pid_act=list_get(lista_contextos_pids,i);
+        log_info(logger,"%d",cont_pid_act->pid);
+        
+        for (int j = 0; j < list_size(cont_pid_act->contextos_tids); j++){
+            t_contexto_tid*cont_tid_act=list_get(cont_pid_act->contextos_tids,i);
+            log_info(logger,"%d",cont_tid_act->tid);
+        }
+
+    }
+    
+
+    log_info(logger,"VOY A OBTENER EL CONTEXTO DEL TID %d PID %d",tid,contexto_pid->pid);
     t_contexto_tid* contexto_tid = obtener_contexto_tid(pid,tid);
+
+    if (contexto_tid == NULL){
+        log_info(logger,"PINGO");
+    }
+
+    log_info(logger,"OBTENIDO CONTEXTO DE TID %d!",contexto_tid->tid);
+
     eliminar_elemento_por_tid(contexto_tid->tid, contexto_pid->contextos_tids);
     pthread_mutex_unlock(&mutex_lista_contextos_pids);
 }

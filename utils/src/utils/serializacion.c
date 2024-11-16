@@ -407,6 +407,7 @@ void send_operacion_tid_pid(code_operacion code, int tid, int pid, int socket_cl
     
 }
 
+
 void send_operacion_entero(code_operacion code, int entero, int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
 

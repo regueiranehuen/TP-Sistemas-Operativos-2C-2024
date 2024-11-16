@@ -143,6 +143,7 @@ void liberar_tcb(t_tcb* tcb) {
         // Liberar el pseudocódigo si fue asignado
         if (tcb->pseudocodigo != NULL) {
             log_info(logger,"pseudocodigo:%s",tcb->pseudocodigo);
+            // Ojo acá
             free(tcb->pseudocodigo);
             
         }
@@ -241,6 +242,7 @@ t_tcb* buscar_tcb(int tid_buscado, t_tcb* hilo_exec) {
         for (int i = 0; i < queue_size(cola_ready_fifo); i++) {
             t_tcb* hilo = (t_tcb*) list_get(cola_ready_fifo->elements, i);  // Acceso a elementos de la cola FIFO
             if (hilo->tid == tid_buscado && hilo->pid == hilo_exec->pid) {
+                pthread_mutex_unlock(&mutex_cola_ready);
                 return hilo;
             }
         }
@@ -250,6 +252,7 @@ t_tcb* buscar_tcb(int tid_buscado, t_tcb* hilo_exec) {
         for (int i = 0; i < list_size(lista_ready_prioridad); i++) {
             t_tcb* hilo = (t_tcb*) list_get(lista_ready_prioridad, i);
             if (hilo->tid == tid_buscado && hilo->pid == hilo_exec->pid) {
+                pthread_mutex_unlock(&mutex_cola_ready);
                 return hilo;
             }
         }
@@ -267,6 +270,7 @@ t_tcb* buscar_tcb(int tid_buscado, t_tcb* hilo_exec) {
             for (int j = 0; j < queue_size(cola_prioridad->cola); j++) {
                 t_tcb* hilo = (t_tcb*) list_get(cola_prioridad->cola->elements, j);
                 if (hilo->tid == tid_buscado && hilo->pid == hilo_exec->pid) {
+                    pthread_mutex_unlock(&mutex_cola_ready);
                     return hilo;
                 }
             }
@@ -278,6 +282,7 @@ t_tcb* buscar_tcb(int tid_buscado, t_tcb* hilo_exec) {
     for (int i = 0; i < list_size(lista_bloqueados); i++) {
         t_tcb* hilo_bloqueado = (t_tcb*) list_get(lista_bloqueados, i);
         if (hilo_bloqueado->tid == tid_buscado && hilo_bloqueado->pid == hilo_exec->pid) {
+            pthread_mutex_unlock(&mutex_cola_ready);
             return hilo_bloqueado;
         }
     }
@@ -309,6 +314,7 @@ t_pcb* buscar_pcb_por_pid(t_list* lista_pcbs, int pid_buscado) {
 }
 
 t_tcb* sacar_tcb_de_cola(t_queue* cola, t_tcb* tcb_a_sacar) {
+    log_info(logger,"ENTRÉ A SACAR TCB DE COLA");
     if (cola == NULL || queue_is_empty(cola)) {
         return NULL;  // Retorna NULL si la cola es NULL o está vacía
     }

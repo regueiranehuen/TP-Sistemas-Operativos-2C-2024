@@ -8,8 +8,10 @@ t_tcb *fifo_tcb()
     sem_wait(&semaforo_cola_ready);//espera que haya elementos en la cola;
     
     pthread_mutex_lock(&mutex_cola_ready);
+
     t_tcb *tcb = queue_pop(cola_ready_fifo);
     if (tcb == NULL){
+        pthread_mutex_unlock(&mutex_cola_ready);
         return NULL;
     }
     pthread_mutex_unlock(&mutex_cola_ready);
@@ -459,6 +461,7 @@ void pushear_cola_ready(t_tcb* hilo){
         queue_push(cola->cola, hilo);
     }
     sem_post(&semaforo_cola_ready);
+
 }
 
 

@@ -101,6 +101,7 @@ void atender_conexiones(int socket_cliente)
             log_info(logger,"## Hilo Creado - (PID:TID) - (%d:%d)",info_4->pid,info_4->tid);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
+            free(info_4);
             break;
         case THREAD_ELIMINATE_AVISO:
             t_tid_pid * info_thread_eliminate = recepcionar_tid_pid_code_op(paquete);
