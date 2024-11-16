@@ -35,8 +35,8 @@ t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(socket_client
         
         if(respuesta == OK){
             log_info(log_filesystem, "## Fin de solicitud - Archivo: %s", aura);
+            free(aura); // Solo liberamos aura cuando != NULL
         }
-        free(aura);
         break;
 
         default:

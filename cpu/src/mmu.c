@@ -10,7 +10,7 @@ uint32_t* traducir_direccion_logica(t_contexto_tid*contexto_tid,t_contexto_pid_s
     log_info(log_cpu, "Base de la partición: %d", base);
     log_info(log_cpu, "Límite de la partición: %d", limite);
 
-    if (base + direccion_logica >= limite || direccion_logica < 0) {//suponiendo que el limite es el primer byte no valido de la particion
+    if (base + direccion_logica + sizeof(uint32_t) >= limite || direccion_logica < 0) { // Base + desplazamiento + size del registro < límite para no entrar en seg fault
         log_error(log_cpu, "Segmentation Fault: Dirección lógica fuera del límite (%d)", direccion_logica);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria,contexto_tid->registros,contexto_tid->pid,contexto_tid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);

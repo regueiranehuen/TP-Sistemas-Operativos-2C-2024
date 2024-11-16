@@ -191,14 +191,6 @@ t_instruccion *fetch(t_contexto_tid *contexto)
     else if (paquete->codigo_operacion == INSTRUCCION_OBTENIDA)
     {
         instruccion = recepcionar_instruccion(paquete);
-        int str = strlen(instruccion->parametros1);
-        log_info(log_cpu,"strlen:%d",str);
-        str = strlen(instruccion->parametros2);
-        log_info(log_cpu,"strlen:%d",str);
-        str = strlen(instruccion->parametros3);
-        log_info(log_cpu,"strlen:%d",str);
-        str = strlen(instruccion->parametros4);
-        log_info(log_cpu,"strlen:%d",str);
     }
     log_info(log_cpu, "TID: %i - FETCH - Program Counter: %i", contexto->tid, contexto->registros->PC);
     return instruccion;

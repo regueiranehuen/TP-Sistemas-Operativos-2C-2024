@@ -69,15 +69,6 @@ void* recibir_cpu(void*args) {
                 t_contexto_tid*contexto_tid=recepcionar_contexto_tid(paquete_operacion);
 
                 log_info(logger, "PROGRAM COUNTER ACTUAL: %u", contexto_tid->registros->PC);
-                log_info(logger, "AX A ENVIAR: %u", contexto_tid->registros->AX);
-                log_info(logger, "BX A ENVIAR: %u", contexto_tid->registros->BX);
-                log_info(logger, "CX A ENVIAR: %u", contexto_tid->registros->CX);
-                log_info(logger, "DX A ENVIAR: %u", contexto_tid->registros->DX);
-                log_info(logger, "EX A ENVIAR: %u", contexto_tid->registros->EX);
-                log_info(logger, "FX A ENVIAR: %u", contexto_tid->registros->FX);
-                log_info(logger, "GX A ENVIAR: %u", contexto_tid->registros->GX);
-                log_info(logger, "HX A ENVIAR: %u", contexto_tid->registros->HX);
-
                 actualizar_contexto(contexto_tid->pid,contexto_tid->tid,contexto_tid->registros);
                 log_info(logger,"## Contexto Actualizado - (PID:TID) - (%d:%d)",contexto_tid->pid,contexto_tid->tid);
                 send_code_operacion(OK,sockets_iniciales->socket_cpu);
@@ -165,11 +156,10 @@ void actualizar_contexto(int pid, int tid, t_registros_cpu* reg){
     pthread_mutex_lock(&mutex_lista_contextos_pids);
     t_contexto_tid *contexto = obtener_contexto_tid(pid, tid);
     if(contexto == NULL){
-        log_info(logger,"MUY SIGMA DE MI PARTE");
+        log_info(logger,"No se actualizó el contexto (PID:TID) - (%d:%d)",pid,tid);
     }
     if (contexto != NULL)
     {
-        log_info(logger,"FORRO");
         contexto->registros->PC = reg->PC;
         contexto->registros->AX = reg->AX;
         contexto->registros->BX = reg->BX;
@@ -177,7 +167,7 @@ void actualizar_contexto(int pid, int tid, t_registros_cpu* reg){
         contexto->registros->DX = reg->DX;
         contexto->registros->EX = reg->EX;
         contexto->registros->HX = reg->HX;
-        log_info(logger,"Contexto actualizado: Pid:%d, Registro AX:%d,Tid:%d",contexto->pid,contexto->registros->AX,contexto->tid);
+        log_info(logger,"## Contexto Actualizado - (PID:TID) - (%d:%d)",pid,tid);
     }
     
 

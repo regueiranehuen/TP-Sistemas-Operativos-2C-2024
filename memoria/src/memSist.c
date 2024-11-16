@@ -47,31 +47,22 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
                 case 0:
                     instruccion_tid_pid->instrucciones->parametros1 = "";
                     instruccion_tid_pid->instrucciones->parametros1 = strdup(limpiar_token(token));
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros1);
-                    int str = strlen(instruccion_tid_pid->instrucciones->parametros1);
-                    log_info(logger,"strlen:%d",str);
+                    
                     break;
                 case 1:
                     instruccion_tid_pid->instrucciones->parametros2 = "";
                     instruccion_tid_pid->instrucciones->parametros2 = strdup(limpiar_token(token));
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros2);
-                    str = strlen(instruccion_tid_pid->instrucciones->parametros2);
-                    log_info(logger,"strlen:%d",str);
+                    
                     break;
                 case 2:
                     instruccion_tid_pid->instrucciones->parametros3 = "";
                     instruccion_tid_pid->instrucciones->parametros3 = strdup(limpiar_token(token));
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros3);
-                    str = strlen(instruccion_tid_pid->instrucciones->parametros3);
-                    log_info(logger,"strlen:%d",str);
-                    log_info(logger,"hola%shola",instruccion_tid_pid->instrucciones->parametros3);
+
                     break;
                 case 3:
                     instruccion_tid_pid->instrucciones->parametros4 = "";
                     instruccion_tid_pid->instrucciones->parametros4 = strdup(limpiar_token(token));
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros4);
-                    str = strlen(instruccion_tid_pid->instrucciones->parametros4);
-                    log_info(logger,"strlen:%d",str);
+                    
                     break;
                 default:
                     break;
@@ -131,14 +122,6 @@ void enviar_instruccion(int conexion, t_instruccion *instruccion_nueva, op_code 
     l3 = strlen(instruccion_nueva->parametros3) + 1;
     l4 = strlen(instruccion_nueva->parametros4) + 1;
     buffer->size = sizeof(int) * 4 + l1 + l2 + l3 + l4;
-    int str = strlen(instruccion_nueva->parametros1);
-    log_info(logger,"strlen:%d",str);
-    str = strlen(instruccion_nueva->parametros2);
-    log_info(logger,"strlen:%d",str);
-    str = strlen(instruccion_nueva->parametros3);
-    log_info(logger,"strlen:%d",str);
-    str = strlen(instruccion_nueva->parametros4);
-    log_info(logger,"strlen:%d",str);
 
 
     buffer->stream = malloc(buffer->size);

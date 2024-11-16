@@ -185,14 +185,8 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
     escribir_bloque_de_puntero(arch, bloques_reservados, bloques_necesarios, block_size);
 
     uint32_t bytes_written = 0;
-    //[2,4,5,6]
+
     void* puntero = info->contenido;
-
-    // tamanio_particion_proceso = 200 
-
-    // block_size=20
-    
-    // bytes_written = 20
 
     for (int i = 1; i < bloques_necesarios; i++) {
         uint32_t block_index = bloques_reservados[i];
@@ -200,27 +194,17 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
 
         fseek(arch,offset,SEEK_SET);  // Desde el principio del archivo, me desplazo offset
 
-        
         uint32_t bytes_to_write = (info->tamanio_particion_proceso - bytes_written >= block_size) ? block_size : info->tamanio_particion_proceso - bytes_written;
-         
-        // Tanto el size del int (-1 de inicializacion) como el del uint32 es de 4 bytes, entonces la cantidad de datos a escribir en el bloque es: 
-        uint32_t cant_datos_a_escribir = bytes_to_write / sizeof(uint32_t);  
-
-        for (int j=0; j < cant_datos_a_escribir; j++){
-            uint32_t dato = *(uint32_t*)puntero;
-            
-            if (fwrite(&dato, sizeof(uint32_t), 1, arch) != 1){ // fwrite devuelve la cantidad de elementos que escribís
-                log_error(log_filesystem, "Error al escribir en el bloque");
-                fclose(arch);
-                return -1;
-            }
-            
-            bytes_written += bytes_to_write;
-            puntero += sizeof(uint32_t);
-            
-            usleep(retardo);
+        
+        if (fwrite(puntero,bytes_to_write,1,arch)!=1){
+            log_error(log_filesystem, "Error al escribir en el bloque");
+            fclose(arch);
+            return -1;
         }
+        bytes_written += bytes_to_write;
+        puntero += bytes_to_write;
 
+        usleep(retardo);
     }
 
     fclose(arch);
