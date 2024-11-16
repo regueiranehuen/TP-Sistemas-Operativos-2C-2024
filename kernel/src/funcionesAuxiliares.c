@@ -93,7 +93,7 @@ free(pcb);
 void enviar_tcbs_a_cola_exit_por_pid(t_list* lista_tcbs, t_queue* cola_exit, int pid_buscado) {
     for (int i = 0; i < list_size(lista_tcbs); i++) {
         t_tcb* tcb_actual = list_get(lista_tcbs, i);
-        printf("tid:%d\n",tcb_actual->tid);  // Obtener el TCB de la lista
+        //printf("tid:%d\n",tcb_actual->tid);  // Obtener el TCB de la lista
         if (tcb_actual->pid == pid_buscado) {
             // Remover el TCB de la lista y enviarlo a la cola EXIT
             t_tcb* tcb_a_mover = list_remove(lista_tcbs, i);

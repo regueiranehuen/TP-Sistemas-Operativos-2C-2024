@@ -660,8 +660,14 @@ void IO(int milisegundos)
     pthread_mutex_lock(&mutex_log);
     log_info(logger,"## (<%d>:<%d>) - Bloqueado por: <IO>",tcb->pid,tcb->tid);
     pthread_mutex_unlock(&mutex_log);
-    queue_push(cola_IO,tcb);
 
+    t_nodo_cola_IO* nodo_cola_hilo = malloc(sizeof(t_tcb) + sizeof(int));
+    nodo_cola_hilo->hilo=tcb;
+    nodo_cola_hilo->milisegundos=milisegundos;
+    queue_push(cola_IO,nodo_cola_hilo);
+    pthread_mutex_lock(&mutex_log);
+    log_info(logger,"PUSHEÉ EL TCB DEL HILO CON TID %d A LA COLA IO",tcb->tid);
+    pthread_mutex_unlock(&mutex_log);
     sem_post(&sem_cola_IO);
 }
 
@@ -694,9 +700,9 @@ void* hilo_dispositivo_IO(void* args){
 while(estado_kernel != 0){
 
 sem_wait(&sem_cola_IO); //espera que haya elementos en la cola
-
+log_info(logger,"LLEGÓ SIGNAL SEM COLA IO");
 t_nodo_cola_IO* info = queue_pop(cola_IO);
-
+log_info(logger,"MILISEGUNDOS IO: %d",info->milisegundos);
 usleep(info->milisegundos*1000); //operacion IO
 pthread_mutex_lock(&mutex_log);
 log_info(logger,"## (<%d>:<%d>) finalizó IO y pasa a READY",info->hilo->pid,info->hilo->tid);

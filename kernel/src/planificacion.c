@@ -7,12 +7,15 @@ t_tcb *fifo_tcb()
 
     sem_wait(&semaforo_cola_ready);//espera que haya elementos en la cola;
     
-        pthread_mutex_lock(&mutex_cola_ready);
-        t_tcb *tcb = queue_pop(cola_ready_fifo);
-        pthread_mutex_unlock(&mutex_cola_ready);
-        return tcb;
+    pthread_mutex_lock(&mutex_cola_ready);
+    t_tcb *tcb = queue_pop(cola_ready_fifo);
+    if (tcb == NULL){
+        return NULL;
+    }
+    pthread_mutex_unlock(&mutex_cola_ready);
+    return tcb;
 
-    return NULL;
+    
 }
 
 /*
@@ -192,6 +195,7 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
         case ENUM_IO:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <IO>", hilo_exec->pid, hilo_exec->tid);
             int milisegundos = recibir_entero_paquete_syscall(paquete);
+            log_info(logger,"ENTRAMOS A SYSCALL IO, MILISEGUNDOS: %d",milisegundos);
             IO(milisegundos); 
             break;
         case ENUM_DUMP_MEMORY:

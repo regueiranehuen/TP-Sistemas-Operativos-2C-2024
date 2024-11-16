@@ -14,8 +14,10 @@ int main(int argc, char *argv[])
     return -1;
     }
     */
-    char *archivo_pseudocodigo = "pseudocodigo.txt";//argv[1];
-    int tamanio_proceso = 100;//atoi(argv[2]);
+    char* archivo_pseudocodigo = argv[1];
+    int tamanio_proceso = atoi(argv[2]);
+    //char *archivo_pseudocodigo = "pseudocodigo.txt";//argv[1];
+    //int tamanio_proceso = 100;//atoi(argv[2]);
 
     inicializar_estados();
     inicializar_semaforos();

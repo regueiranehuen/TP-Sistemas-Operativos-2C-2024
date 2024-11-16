@@ -104,7 +104,7 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
         }
         else if (paquete_solicitud_contexto_pid->codigo_operacion == OBTENCION_CONTEXTO_PID_OK)
         {
-
+            
             contextos->contexto_pid = recepcionar_contexto_pid(paquete_solicitud_contexto_pid);
             solicitar_contexto_tid(info->pid, info->tid, sockets_cpu->socket_memoria);
             log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
