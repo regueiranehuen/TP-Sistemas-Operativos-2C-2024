@@ -38,6 +38,7 @@ void atender_conexiones(int socket_cliente)
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
             }
+            free(info_0);
             break;
 
         case DUMP_MEMORIA:
@@ -110,6 +111,7 @@ void atender_conexiones(int socket_cliente)
             log_info(logger,"## Hilo Destruido - (PID:TID) - (%d:%d)",info_thread_eliminate->pid,info_thread_eliminate->tid);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
+            free(info_thread_eliminate);
             break;
         default:
             log_info(logger, "Pedido no disponible");

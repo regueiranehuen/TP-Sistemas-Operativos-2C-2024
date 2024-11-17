@@ -44,7 +44,7 @@ void *ciclo_de_instruccion(void *args)
         if (contextos != NULL && contextos->contexto_pid != NULL && contextos->contexto_tid != NULL)
         {
             seguir_ejecutando = true;
-            while (seguir_ejecutando)
+            while (seguir_ejecutando == true)
             {
                 
                 t_instruccion *instruccion = fetch(contextos->contexto_tid);
@@ -144,9 +144,9 @@ void checkInterrupt(t_contexto_tid *contextoTid)
 
     if (hay_interrupcion)
     {
-        
         hay_interrupcion = false;
         seguir_ejecutando = false;
+        log_info(log_cpu, "INTERRUPCION DE KERNEL QUE LEEMOS EN CHECK INTERRUPT: %d",devolucion_kernel);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion respuesta = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (respuesta != OK)
@@ -154,9 +154,10 @@ void checkInterrupt(t_contexto_tid *contextoTid)
             log_info(log_cpu, "Memoria no pudo actualizar los registros, muy poco sigma");
             return;
         }
-        printf("code:%d\n",respuesta);
+        //printf("code:%d\n",respuesta);
         if (devolucion_kernel == FIN_QUANTUM_RR)
         {
+            log_info(log_cpu,"MANDANDO FIN QUANTUM A KERNEL\n");
             send_fin_quantum_rr(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         }
         else if (devolucion_kernel == DESALOJAR)
@@ -164,16 +165,11 @@ void checkInterrupt(t_contexto_tid *contextoTid)
             log_info(log_cpu,"Mandando desalojo a kernel\n");
             send_desalojo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         }
-        else if (devolucion_kernel == PROCESO_FINALIZADO){
-            log_info(log_cpu,"Mandando desalojo a kernel\n");
-            send_desalojo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-            seguir_ejecutando = false;
-        }
         pthread_mutex_unlock(&mutex_interrupt);
     }
     else
     {
-        
+        log_info(log_cpu,"NO HAY INTERRUPCIONES PARA EL TID %d PID %d PROGRAM COUNTER %d, seguimos",contextoTid->tid,contextoTid->pid,contextoTid->registros->PC);
         pthread_mutex_unlock(&mutex_interrupt);
     }
 }
@@ -191,11 +187,12 @@ t_instruccion *fetch(t_contexto_tid *contexto)
     {
         log_error(log_cpu, "Error al recibir la instrucción");
         seguir_ejecutando = false;
+        eliminar_paquete(paquete);
         return NULL;
     }
     else if (paquete->codigo_operacion == INSTRUCCION_OBTENIDA)
     {
-        instruccion = recepcionar_instruccion(paquete);
+        instruccion = recepcionar_instruccion(paquete); 
     }
     log_info(log_cpu, "TID: %i - FETCH - Program Counter: %i", contexto->tid, contexto->registros->PC);
     return instruccion;
@@ -558,8 +555,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         
 
         sem_wait(&sem_ok_o_interrupcion);
-
-        contextoTid->registros->PC++;
 
         break;
     }

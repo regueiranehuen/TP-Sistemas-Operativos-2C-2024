@@ -1,6 +1,5 @@
 #include "includes/funcionesAuxiliares.h"
 
-pthread_mutex_t mutex_lista_blocked;
 
 void inicializar_estados() {
     // Inicialización de colas
@@ -80,6 +79,7 @@ void destruir_mutex() {
     pthread_mutex_destroy(&mutex_conexion_kernel_a_dispatch);
     pthread_mutex_destroy(&mutex_conexion_kernel_a_interrupt);
     pthread_mutex_destroy(&mutex_log);
+    pthread_mutex_destroy(&mutex_cola_blocked);
 }
 
 void liberar_proceso (t_pcb * pcb){
@@ -225,9 +225,9 @@ void buscar_y_eliminar_tcb(t_list* lista_tcbs, t_tcb* tcb) {
         t_tcb* tcb_actual = list_get(lista_tcbs, i);  // Obtener el TCB en la posición 'i'
         if (tcb_actual->tid == tcb->tid) {
             // Eliminar el TCB encontrado y retornarlo
-            pthread_mutex_lock(&mutex_lista_blocked);
+            pthread_mutex_lock(&mutex_cola_blocked);
             list_remove(lista_tcbs, i);
-            pthread_mutex_unlock(&mutex_lista_blocked);
+            pthread_mutex_unlock(&mutex_cola_blocked);
             // Desbloquear el mutex antes de retornar
         }
     }    

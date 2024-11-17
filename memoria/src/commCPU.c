@@ -89,8 +89,11 @@ void* recibir_cpu(void*args) {
             }
 
             case OBTENER_INSTRUCCION: {
-
+                log_info(logger,"Entramos a obtener instruccion, los parámetros que llegaron de solicitud son estos:");  
                 t_instruccion_memoria* solicitud_instruccion = recepcionar_solicitud_instruccion_memoria(paquete_operacion);
+                log_info(logger,"%d",solicitud_instruccion->pid);
+                log_info(logger,"%d",solicitud_instruccion->tid);
+                log_info(logger,"%d",solicitud_instruccion->pc);
                 t_instruccion *instruccion = obtener_instruccion(solicitud_instruccion->tid, solicitud_instruccion->pid,solicitud_instruccion->pc);
                 if (instruccion==NULL){
                     log_info(logger,"instruccion no encontrada");
@@ -112,7 +115,7 @@ void* recibir_cpu(void*args) {
                 else{
                 log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s>",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4);
                 }
-                
+                free(solicitud_instruccion);
                 break;
             }
 
