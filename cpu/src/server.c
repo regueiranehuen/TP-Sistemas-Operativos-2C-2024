@@ -274,6 +274,13 @@ void* recibir_kernel_interrupt(void*args){
             pthread_mutex_unlock(&mutex_interrupt);
             sem_post(&sem_ok_o_interrupcion);
             break;
+        case PROCESO_FINALIZADO:
+            log_info(log_cpu,"## Llega interrupción al puerto Interrupt");
+            pthread_mutex_lock(&mutex_interrupt);
+            hay_interrupcion = true;
+            devolucion_kernel=PROCESO_FINALIZADO;
+            pthread_mutex_unlock(&mutex_interrupt);
+            sem_post(&sem_ok_o_interrupcion);
         case OK:
             log_info(log_cpu,"## Terminó una syscall");
             sem_post(&sem_ok_o_interrupcion);

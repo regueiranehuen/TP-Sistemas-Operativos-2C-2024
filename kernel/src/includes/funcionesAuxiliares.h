@@ -30,5 +30,6 @@ t_tcb* sacar_tcb_de_cola(t_queue* cola, t_tcb* tcb_a_sacar);//saca un tcb de una
 t_tcb* sacar_tcb_de_lista(t_list* lista, t_tcb* tcb_a_sacar);//saca un tcb de una lista
 t_tcb* buscar_tcb(int tid_buscado, t_tcb* hilo_exec);
 void inicializar_mutex_compartido_entre_procesos(pthread_mutex_t* mutex);
+bool esta_en_lista_blocked(t_tcb*tcb_actual);
 
 #endif

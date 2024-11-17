@@ -42,9 +42,11 @@ pthread_mutex_t mutex_lista_pcbs;
 pthread_mutex_t mutex_cola_new_procesos;
 pthread_mutex_t mutex_cola_exit_procesos;
 pthread_mutex_t mutex_cola_exit_hilos;
+pthread_mutex_t mutex_cola_blocked;
 pthread_mutex_t mutex_cola_ready;
 pthread_mutex_t mutex_conexion_kernel_a_dispatch;
 pthread_mutex_t mutex_conexion_kernel_a_interrupt;
+
 
 bool desalojado;
 
@@ -326,7 +328,7 @@ void PROCESS_EXIT()
         desalojado = true;
         log_info(logger,"ESTOY POR ENVIAR EL CODIGO DESALOJAR");
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(DESALOJAR,sockets->sockets_cliente_cpu->socket_Interrupt);
+        send_code_operacion(PROCESO_FINALIZADO,sockets->sockets_cliente_cpu->socket_Interrupt);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         
 }
@@ -409,7 +411,9 @@ void THREAD_JOIN(int tid)
 
     hilo_exec = NULL;
     tcb_aux->estado = TCB_BLOCKED;
+    // CUIDADO VARIABLE GLOBAL
     list_add(lista_bloqueados, tcb_aux);
+    //
     pthread_mutex_lock(&mutex_log);
     log_info(logger,"## (<%d>:<%d>) - Bloqueado por: <PTHREAD_JOIN>",tcb_aux->pid,tcb_aux->tid);
     pthread_mutex_unlock(&mutex_log);
@@ -488,9 +492,9 @@ void THREAD_CANCEL(int tid)
         }
         else
         {
-            log_info(logger,"VOY A ELIMINAR EL THREAD DE LA COLA BLOCKED");
+            pthread_mutex_lock(&mutex_cola_blocked);
             sacar_tcb_de_lista(lista_bloqueados, tcb);
-            log_info(logger,"ELIMINADO!");
+            pthread_mutex_lock(&mutex_cola_blocked);
         }
         tcb->estado = TCB_EXIT;
         pthread_mutex_lock(&mutex_cola_exit_hilos);
@@ -586,7 +590,11 @@ void MUTEX_LOCK(char* recurso)
     {
         hilo_aux->estado = TCB_BLOCKED_MUTEX;
         hilo_exec = NULL;
+
+        //pthread_mutex_lock(&mutex_cola_blocked);
         list_add(lista_bloqueados,hilo_aux);
+        //pthread_mutex_lock(&mutex_cola_blocked);
+        
         pthread_mutex_lock(&mutex_log);
         log_info(logger,"## (<%d>:<%d>) - Bloqueado por: <%s>",hilo_aux->pid,hilo_aux->tid,recurso);
         pthread_mutex_unlock(&mutex_log);
@@ -702,24 +710,35 @@ int resultado = pthread_create(&hilo_IO, NULL, hilo_dispositivo_IO, NULL);
 
 void* hilo_dispositivo_IO(void* args){
 
-while(estado_kernel != 0){
+    while(estado_kernel != 0){
 
-sem_wait(&sem_cola_IO); //espera que haya elementos en la cola
-log_info(logger,"LLEGÓ SIGNAL SEM COLA IO");
-t_nodo_cola_IO* info = queue_pop(cola_IO);
-log_info(logger,"MILISEGUNDOS IO: %d",info->milisegundos);
-usleep(info->milisegundos*1000); //operacion IO
-pthread_mutex_lock(&mutex_log);
-log_info(logger,"## (<%d>:<%d>) finalizó IO y pasa a READY",info->hilo->pid,info->hilo->tid);
-pthread_mutex_unlock(&mutex_log);
-sacar_tcb_de_lista(lista_bloqueados,info->hilo);
+        sem_wait(&sem_cola_IO); //espera que haya elementos en la cola
+        log_info(logger,"LLEGÓ SIGNAL SEM COLA IO");
+        t_nodo_cola_IO* info = queue_pop(cola_IO);
+        log_info(logger,"MILISEGUNDOS IO: %d",info->milisegundos);
+        usleep(info->milisegundos*1000); //operacion IO
 
-info->hilo->estado = TCB_READY;
+        pthread_mutex_lock(&mutex_cola_blocked);
+        bool listado = esta_en_lista_blocked(info->hilo);
+        pthread_mutex_unlock(&mutex_cola_blocked);
 
-pushear_cola_ready(info->hilo);
+        if (listado){
+            pthread_mutex_lock(&mutex_log);
+            log_info(logger, "## (<%d>:<%d>) finalizó IO y pasa a READY", info->hilo->pid, info->hilo->tid);
+            pthread_mutex_unlock(&mutex_log);
+            sacar_tcb_de_lista(lista_bloqueados, info->hilo);
 
-}
-return NULL;
+            info->hilo->estado = TCB_READY;
+
+            pushear_cola_ready(info->hilo);
+        }
+        else{
+            log_info(logger, "El hilo no está bloqueado");
+        }
+ 
+
+    }
+    return NULL;
 }
 
 void DUMP_MEMORY()

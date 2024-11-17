@@ -164,6 +164,11 @@ void checkInterrupt(t_contexto_tid *contextoTid)
             log_info(log_cpu,"Mandando desalojo a kernel\n");
             send_desalojo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         }
+        else if (devolucion_kernel == PROCESO_FINALIZADO){
+            log_info(log_cpu,"Mandando desalojo a kernel\n");
+            send_desalojo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+            seguir_ejecutando = false;
+        }
         pthread_mutex_unlock(&mutex_interrupt);
     }
     else
@@ -554,7 +559,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
 
         sem_wait(&sem_ok_o_interrupcion);
 
-        // No hay que incrementar el program counter
+        contextoTid->registros->PC++;
 
         break;
     }

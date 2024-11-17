@@ -68,6 +68,7 @@ void inicializar_mutex() {
     pthread_mutex_init(&mutex_conexion_kernel_a_dispatch,NULL);
     pthread_mutex_init(&mutex_conexion_kernel_a_interrupt,NULL);
     pthread_mutex_init(&mutex_log,NULL);
+    pthread_mutex_init(&mutex_cola_blocked,NULL);
 }
 
 void destruir_mutex() {
@@ -361,4 +362,17 @@ t_tcb* sacar_tcb_de_lista(t_list* lista, t_tcb* tcb_a_sacar) {
     }
 
     return tcb_encontrado;  // Retorna el TCB extraído, o NULL si no se encontró
+}
+
+bool esta_en_lista_blocked(t_tcb*tcb){
+    for (int i = 0; i < list_size(lista_bloqueados); i++)
+    {
+        t_tcb *tcb_actual = list_get(lista_bloqueados, i);
+
+        if (tcb_actual->tid == tcb->tid && tcb_actual->pid == tcb->pid)
+        {
+            return true;
+        }
+    }
+    return false;
 }

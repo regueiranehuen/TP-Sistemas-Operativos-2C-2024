@@ -21,7 +21,8 @@ typedef enum{
     SEGMENTATION_FAULT,
     OK,
     KERNEL,
-    CPU
+    CPU,
+    PROCESO_FINALIZADO
 }code_operacion;
 
 typedef enum{

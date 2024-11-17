@@ -269,6 +269,8 @@ t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch) {
     // Primero recibimos el codigo de operacion
     int bytes = recv(socket_dispatch, &(paquete->syscall), sizeof(int), 0);
 
+    //if (paquete->syscall == ENUM_DUMP_MEMORY || paquete->syscall == THREAD_EX)
+
     if (bytes <= 0){
         return NULL;
     }
@@ -286,7 +288,6 @@ t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch) {
         return paquete;
     }
 
-    //return paquete;
 }
 
 int recibir_entero_buffer(t_paquete_syscall*paquete){
