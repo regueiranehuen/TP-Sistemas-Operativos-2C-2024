@@ -183,22 +183,26 @@ void hilo_exit()
     pthread_mutex_lock(&hilo->mutex_cola_hilos_bloqueados);
     while (!queue_is_empty(hilo->cola_hilos_bloqueados))
     {
+        
         t_tcb *tcb = queue_pop(hilo->cola_hilos_bloqueados);
+        
+
+        pthread_mutex_lock(&mutex_log);
+        log_info(logger,"TID del tcb bloqueado por el hilo %d::: %d",hilo->tid,tcb->tid);
+        pthread_mutex_unlock(&mutex_log);
         tcb->estado = TCB_READY;
 
         pthread_mutex_lock(&mutex_lista_blocked);
         list_remove_element(lista_bloqueados, tcb);
         pthread_mutex_unlock(&mutex_lista_blocked);
 
-        char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
-        if (strings_iguales(algoritmo, "FIFO")){
-            pthread_mutex_lock(&mutex_cola_ready);
-            queue_push(cola_ready_fifo,tcb);
-            pthread_mutex_unlock(&mutex_cola_ready);
-        }
+        
+        pushear_cola_ready(tcb);
+        
     }
-    
     pthread_mutex_unlock(&hilo->mutex_cola_hilos_bloqueados);
+    
+    
     pthread_mutex_lock(&mutex_log);
     log_info(logger, "## (<%d>:<%d>) Finaliza el hilo", hilo->pid, hilo->tid);
     pthread_mutex_unlock(&mutex_log);
@@ -464,9 +468,28 @@ void THREAD_JOIN(int tid)
     }
     t_tcb* tcb_aux = hilo_exec;
 
+    pthread_mutex_lock(&mutex_lista_tcbs); // Por las dudas cuack cuack. En el if de arriba capaz habria q agregar mutex tmb
+    t_tcb* hilo_a_bancar = buscar_tcb_por_tid_pid(tid,hilo_exec->pid,lista_tcbs);
+    pthread_mutex_unlock(&mutex_lista_tcbs);
+
+    if (hilo_a_bancar ==NULL){
+        pthread_mutex_lock(&mutex_log);
+        log_info(logger,"## (<%d>:<%d>) - El hilo pasado por parámetro no existe/ya finalizó",hilo_exec->pid,hilo_exec->tid);
+        pthread_mutex_unlock(&mutex_log);
+        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+        return;
+    }
+
+    // Cuando se accede a algo del pid/tid en ejecucion tambien habria q poner mutex? 
+    pthread_mutex_lock(&hilo_a_bancar->mutex_cola_hilos_bloqueados);
+    queue_push(hilo_a_bancar->cola_hilos_bloqueados,tcb_aux); // Agregar el hilo a bloquear a la cola de bloqueados del hilo en ejecucion
+    pthread_mutex_unlock(&hilo_a_bancar->mutex_cola_hilos_bloqueados);
+    
     hilo_exec = NULL;
     tcb_aux->estado = TCB_BLOCKED;
-    
+
     pthread_mutex_lock(&mutex_lista_blocked);
     list_add(lista_bloqueados, tcb_aux);
     pthread_mutex_unlock(&mutex_lista_blocked);
@@ -474,8 +497,8 @@ void THREAD_JOIN(int tid)
     pthread_mutex_lock(&mutex_log);
     log_info(logger,"## (<%d>:<%d>) - Bloqueado por: <PTHREAD_JOIN>",tcb_aux->pid,tcb_aux->tid);
     pthread_mutex_unlock(&mutex_log);
-    t_tcb* tcb_bloqueante = buscar_tcb_por_tid(lista_tcbs, tid,tcb_aux);
-    queue_push(tcb_bloqueante->cola_hilos_bloqueados, tcb_aux);
+    /*t_tcb* tcb_bloqueante = buscar_tcb_por_tid(lista_tcbs, tid,tcb_aux);
+    queue_push(tcb_bloqueante->cola_hilos_bloqueados, tcb_aux);*/
     desalojado = true;
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
     send_code_operacion(DESALOJAR,sockets->sockets_cliente_cpu->socket_Interrupt);

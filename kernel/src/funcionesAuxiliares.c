@@ -481,3 +481,13 @@ bool esta_en_lista_blocked(t_tcb*tcb){
     }
     return false;
 }
+
+t_tcb* buscar_tcb_por_tid_pid(int tid, int pid,t_list* lista_tcbs){
+    for (int i = 0; i < list_size(lista_tcbs); i++){
+        t_tcb*tcb_actual=list_get(lista_tcbs,i);
+        if(tcb_actual->tid == tid && tcb_actual->pid == pid){
+            return tcb_actual;
+        }
+    }
+    return NULL;
+}
