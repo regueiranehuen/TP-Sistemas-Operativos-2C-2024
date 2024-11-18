@@ -1,6 +1,7 @@
 THREAD_CREATE codiguin.txt 1
-THREAD_CREATE pseu2.txt 1
-THREAD_JOIN 1
-SET CX 1
+MUTEX_CREATE supermutex
+MUTEX_LOCK supermutex
+IO 5000
+MUTEX_UNLOCK supermutex
 LOG CX
 PROCESS_EXIT

@@ -59,8 +59,10 @@ t_pcb *crear_pcb()
     static int pid = 0;
     t_pcb *pcb = malloc(sizeof(t_pcb));
     t_list *lista_tids = list_create();
+    t_list* lista_mutex = list_create();
     pcb->pid = pid;
     pcb->tids = lista_tids;
+    pcb->lista_mutex=lista_mutex;
     pid += 1;
     pcb ->contador_tid = 0;
     pcb ->contador_mutex = 0;
@@ -631,9 +633,11 @@ void MUTEX_CREATE(char* recurso)//supongo que el recurso es el nombre del mutex
     t_mutex *mutex = malloc(sizeof(t_mutex));
     mutex->estado = UNLOCKED;
     mutex->cola_tcbs = queue_create();
-    mutex->nombre = recurso;
+    mutex->nombre = malloc(strlen(recurso) + 1);
+    strcpy(mutex->nombre, recurso);
 
     list_add(lista_mutex, mutex);
+
     list_add(proceso_asociado->lista_mutex, mutex);
 
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
@@ -648,19 +652,25 @@ void MUTEX_LOCK(char* recurso)
     t_tcb* hilo_aux = hilo_exec;
     if (mutex_asociado == NULL)
     {
+        pthread_mutex_lock(&mutex_log);
+        log_info(logger,"NO SE ENCONTRÓ EL MUTEX %s",recurso);
+        pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_cola_exit_hilos);
         queue_push(cola_exit,hilo_aux);
         pthread_mutex_unlock(&mutex_cola_exit_hilos);
+
+        sem_post(&semaforo_cola_exit_hilos);
+
         desalojado = true;
-        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(DESALOJAR,sockets->sockets_cliente_cpu->socket_Interrupt);
-        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         hilo_exec = NULL;
         return;
     }
 
     if (mutex_asociado->estado == UNLOCKED)
     {
+        pthread_mutex_lock(&mutex_log);
+        log_info(logger,"SE ENCONTRÓ EL MUTEX %s y está libre, lo tomamos",recurso);
+        pthread_mutex_unlock(&mutex_log);
         mutex_asociado->hilo = hilo_aux;
         mutex_asociado->estado = LOCKED;
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
@@ -669,6 +679,9 @@ void MUTEX_LOCK(char* recurso)
     }
     else
     {
+        pthread_mutex_lock(&mutex_log);
+        log_info(logger,"SE ENCONTRÓ EL MUTEX %s y está ocupado, bloqueamos el hilo",recurso);
+        pthread_mutex_unlock(&mutex_log);
         hilo_aux->estado = TCB_BLOCKED_MUTEX;
         hilo_exec = NULL;
 
@@ -696,11 +709,11 @@ void MUTEX_UNLOCK(char* recurso)
         pthread_mutex_lock(&mutex_cola_exit_hilos);
         queue_push(cola_exit,hilo_aux);
         pthread_mutex_unlock(&mutex_cola_exit_hilos);
+
+        sem_post(&semaforo_cola_exit_hilos);
+
         hilo_exec = NULL;
         desalojado = true;
-        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(DESALOJAR,sockets->sockets_cliente_cpu->socket_Interrupt);
-        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         return;
     }
 
@@ -715,7 +728,11 @@ void MUTEX_UNLOCK(char* recurso)
     if (!queue_is_empty(mutex_asociado->cola_tcbs))
     {
         mutex_asociado->hilo = queue_pop(mutex_asociado->cola_tcbs);
+        
+        pthread_mutex_lock(&mutex_lista_blocked);
         sacar_tcb_de_lista(lista_bloqueados,mutex_asociado->hilo);
+        pthread_mutex_unlock(&mutex_lista_blocked);
+
         mutex_asociado->hilo->estado = TCB_READY;
         pushear_cola_ready(mutex_asociado->hilo);
 

@@ -86,13 +86,14 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 
 void send_mutex_create(char* recurso, int socket_cliente){
     t_buffer* buffer = malloc(sizeof(t_buffer));
+int lenght_recurso = strlen(recurso) + 1;
 
-buffer->size = sizeof(int);
+buffer->size = sizeof(int) + lenght_recurso;
 
 buffer->offset = 0;
 buffer->stream = malloc(buffer->size);
 
-int lenght_recurso = strlen(recurso);
+
 
 memcpy(buffer->stream + buffer->offset, &lenght_recurso, sizeof(int));
 buffer->offset += sizeof(int);
@@ -105,13 +106,13 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 
 void send_mutex_lock(char* recurso, int socket_cliente){
  t_buffer* buffer = malloc(sizeof(t_buffer));
-
-buffer->size = sizeof(int);
+int lenght_recurso = strlen(recurso)+1;
+buffer->size = sizeof(int)+lenght_recurso;
 
 buffer->offset = 0;
 buffer->stream = malloc(buffer->size);
 
-int lenght_recurso = strlen(recurso);
+
 
 memcpy(buffer->stream + buffer->offset, &lenght_recurso, sizeof(int));
 buffer->offset += sizeof(int);
@@ -125,13 +126,12 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 
 void send_mutex_unlock(char* recurso, int socket_cliente){
  t_buffer* buffer = malloc(sizeof(t_buffer));
-
-buffer->size = sizeof(int);
+int lenght_recurso = strlen(recurso) + 1;
+buffer->size = sizeof(int)+lenght_recurso;
 
 buffer->offset = 0;
 buffer->stream = malloc(buffer->size);
 
-int lenght_recurso = strlen(recurso);
 
 memcpy(buffer->stream + buffer->offset, &lenght_recurso, sizeof(int));
 buffer->offset += sizeof(int);

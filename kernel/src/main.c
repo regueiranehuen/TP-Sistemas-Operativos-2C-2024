@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
     */
     //char* archivo_pseudocodigo = argv[1];
     //int tamanio_proceso = atoi(argv[2]);
-    char *archivo_pseudocodigo = "PLANI_PROC.txt";//argv[1];
+    char *archivo_pseudocodigo = "pseudocodigo.txt";//argv[1];
     int tamanio_proceso = 512;//atoi(argv[2]);
 
     inicializar_estados();
