@@ -155,7 +155,8 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
         case ENUM_PROCESS_EXIT:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <PROCESS_EXIT>", hilo_exec->pid, hilo_exec->tid);
             PROCESS_EXIT();
-            eliminar_paquete_syscall(paquete);
+            free(paquete->buffer);
+            free(paquete);
             break;
         case ENUM_THREAD_CREATE:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_CREATE>", hilo_exec->pid, hilo_exec->tid);
@@ -163,7 +164,7 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
             log_info(logger,"NOMBRE PSEUDOCODIGO RECIBIDO THREAD CREATE: %s",paramThreadCreate->nombreArchivo);
             log_info(logger,"VOY A ENTRAR A THREAD CREATE");
             THREAD_CREATE(paramThreadCreate->nombreArchivo,paramThreadCreate->prioridad);
-            free(paramThreadCreate); 
+            //free(paramThreadCreate); 
             break;
         case ENUM_THREAD_JOIN:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_JOIN>", hilo_exec->pid, hilo_exec->tid);
@@ -178,6 +179,8 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
         case ENUM_THREAD_EXIT:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_EXIT>", hilo_exec->pid, hilo_exec->tid);
             THREAD_EXIT();
+            free(paquete->buffer);
+            free(paquete);
             break;
         case ENUM_MUTEX_CREATE:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <MUTEX_CREATE>", hilo_exec->pid, hilo_exec->tid);
@@ -203,6 +206,8 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
         case ENUM_DUMP_MEMORY:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <DUMP_MEMORY>", hilo_exec->pid, hilo_exec->tid);
             DUMP_MEMORY();
+            free(paquete->buffer);
+            free(paquete);
             break;
         case ENUM_SEGMENTATION_FAULT: 
             t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
@@ -213,19 +218,27 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
             pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
             send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
             pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
+            free(paquete->buffer);
+            free(paquete);
             break;
         case ENUM_FIN_QUANTUM_RR:
         log_info(logger,"SE RECIBIÓ EL CÓDIGO ENUM_FIN_QUANTUM_RR");
         sem_post(&sem_desalojado);
+        free(paquete->buffer);
+            free(paquete);
             break;
         case ENUM_DESALOJAR:
         log_info(logger,"SE RECIBIÓ EL CÓDIGO ENUM_DESALOJAR");
         sem_post(&sem_desalojado);
+        free(paquete->buffer);
+            free(paquete);
             break;
         default:
             log_info(logger,"se recibio el codigo %d no valido",paquete->syscall);
             log_info(logger,"Syscall no válida.\n");
             //send_code_operacion(TERMINAR,sockets->sockets_cliente_cpu->socket_Interrupt);
+            free(paquete->buffer);
+            free(paquete);
             break;
         }
         }
@@ -432,6 +445,7 @@ void espera_con_quantum(int quantum) {
         t_tcb* hilo = hilo_exec;
         hilo->estado = TCB_READY;
         pushear_cola_ready(hilo);
+
         desalojado = true;
     }
     }
@@ -439,6 +453,9 @@ void espera_con_quantum(int quantum) {
 
 
 void pushear_cola_ready(t_tcb* hilo){
+
+    log_info(logger, "FUNCION PUSHEAR COLA READY LLEGA HILO CON TID %d",hilo->tid);
+
     char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
     
     if (strcmp(planificacion, "FIFO") == 0){
@@ -468,9 +485,6 @@ void pushear_cola_ready(t_tcb* hilo){
 // Una vez seleccionado el siguiente hilo a ejecutar, se lo transicionará al estado EXEC y se enviará al módulo CPU el TID y su PID asociado a ejecutar a través del puerto de dispatch, quedando a la espera de recibir dicho TID después de la ejecución junto con un motivo por el cual fue devuelto.
 // En caso que el algoritmo requiera desalojar al hilo en ejecución, se enviará una interrupción a través de la conexión de interrupt para forzar el desalojo del mismo.
 // Al recibir el TID del hilo en ejecución, en caso de que el motivo de devolución implique replanificar, se seleccionará el siguiente hilo a ejecutar según indique el algoritmo. Durante este período la CPU se quedará esperando.
-
-
-
 
 void ejecucion()
 {

@@ -144,7 +144,6 @@ void liberar_tcb(t_tcb* tcb) {
         // Liberar el pseudocódigo si fue asignado
         if (tcb->pseudocodigo != NULL) {
             log_info(logger,"pseudocodigo:%s",tcb->pseudocodigo);
-            // Ojo acá
             free(tcb->pseudocodigo);
             
         }
@@ -225,9 +224,12 @@ void buscar_y_eliminar_tcb(t_list* lista_tcbs, t_tcb* tcb) {
         t_tcb* tcb_actual = list_get(lista_tcbs, i);  // Obtener el TCB en la posición 'i'
         if (tcb_actual->tid == tcb->tid) {
             // Eliminar el TCB encontrado y retornarlo
-            pthread_mutex_lock(&mutex_cola_blocked);
-            list_remove(lista_tcbs, i);
-            pthread_mutex_unlock(&mutex_cola_blocked);
+            
+            /*list_remove(lista_tcbs, i);
+            queue_destroy(tcb_actual->cola_hilos_bloqueados);
+            free(tcb->pseudocodigo);
+            free(tcb);*/
+            liberar_tcb(tcb_actual);
             // Desbloquear el mutex antes de retornar
         }
     }    
