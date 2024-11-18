@@ -486,7 +486,7 @@ void THREAD_JOIN(int tid)
     pthread_mutex_lock(&hilo_a_bancar->mutex_cola_hilos_bloqueados);
     queue_push(hilo_a_bancar->cola_hilos_bloqueados,tcb_aux); // Agregar el hilo a bloquear a la cola de bloqueados del hilo en ejecucion
     pthread_mutex_unlock(&hilo_a_bancar->mutex_cola_hilos_bloqueados);
-    
+
     hilo_exec = NULL;
     tcb_aux->estado = TCB_BLOCKED;
 
@@ -549,6 +549,7 @@ void THREAD_CANCEL(int tid)
 
         if (tcb->estado == TCB_READY)
         {
+        
             char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
             if (strcmp(algoritmo, "FIFO") == 0)
             {
@@ -569,6 +570,7 @@ void THREAD_CANCEL(int tid)
                 sacar_tcb_de_cola(cola->cola, tcb);
                 pthread_mutex_unlock(&mutex_cola_ready);
             }
+            sem_wait(&semaforo_cola_ready); // Descontar semáforo cola ready
         }
         else
         {
