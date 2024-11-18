@@ -54,7 +54,8 @@ void* recibir_cpu(void*args) {
                 pthread_mutex_unlock(&mutex_lista_contextos_pids);
                 if (contextoPid == NULL){
                     log_error(logger, "No se encontro el contexto del pid %d", pid_obtencion);
-                    send_paquete_op_code(sockets_iniciales->socket_cpu,NULL,CONTEXTO_PID_INEXISTENTE);
+                    int rta = ERROR;
+                    send(sockets_iniciales->socket_cpu,&rta,sizeof(int),0);
                     break;
                 }
                 t_contexto_pid_send* contexto_a_enviar = malloc(sizeof(contexto_a_enviar));

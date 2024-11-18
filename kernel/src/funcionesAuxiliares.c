@@ -44,6 +44,8 @@ void inicializar_semaforos() {
     sem_init(&sem_desalojado, 0, 1);                // Inicializa en 1
     sem_init(&semaforo_cola_exit_hilos, 0, 0);      // Inicializa en 0
     sem_init(&sem_lista_prioridades, 0, 0);         // Inicializa en 0
+    sem_init(&semaforo_cola_exit_hilo_exec_process_exit, 0, 0);
+    sem_init(&semaforo_cola_exit_hilos_process_exit, 0, 0);
 }
 
 void destruir_semaforos() {
@@ -56,10 +58,13 @@ void destruir_semaforos() {
     sem_destroy(&sem_desalojado);
     sem_destroy(&semaforo_cola_exit_hilos);
     sem_destroy(&sem_lista_prioridades);
+    sem_destroy(&semaforo_cola_exit_hilo_exec_process_exit);
+    sem_destroy(&semaforo_cola_exit_hilos_process_exit);
 }
 
 void inicializar_mutex() {
     pthread_mutex_init(&mutex_lista_pcbs, NULL);
+    pthread_mutex_init(&mutex_lista_tcbs,NULL);
     pthread_mutex_init(&mutex_cola_new_procesos, NULL);
     pthread_mutex_init(&mutex_cola_exit_procesos, NULL);
     pthread_mutex_init(&mutex_cola_exit_hilos, NULL);
@@ -67,11 +72,12 @@ void inicializar_mutex() {
     pthread_mutex_init(&mutex_conexion_kernel_a_dispatch,NULL);
     pthread_mutex_init(&mutex_conexion_kernel_a_interrupt,NULL);
     pthread_mutex_init(&mutex_log,NULL);
-    pthread_mutex_init(&mutex_cola_blocked,NULL);
+    pthread_mutex_init(&mutex_lista_blocked,NULL);
 }
 
 void destruir_mutex() {
     pthread_mutex_destroy(&mutex_lista_pcbs);
+    pthread_mutex_destroy(&mutex_lista_tcbs);
     pthread_mutex_destroy(&mutex_cola_new_procesos);
     pthread_mutex_destroy(&mutex_cola_exit_procesos);
     pthread_mutex_destroy(&mutex_cola_exit_hilos);
@@ -79,33 +85,125 @@ void destruir_mutex() {
     pthread_mutex_destroy(&mutex_conexion_kernel_a_dispatch);
     pthread_mutex_destroy(&mutex_conexion_kernel_a_interrupt);
     pthread_mutex_destroy(&mutex_log);
-    pthread_mutex_destroy(&mutex_cola_blocked);
+    pthread_mutex_destroy(&mutex_lista_blocked);
 }
 
-void liberar_proceso (t_pcb * pcb){
+void liberar_proceso(t_pcb *pcb)
+{
+    char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
+    if (strings_iguales(algoritmo, "FIFO"))
+    {   
+        pthread_mutex_lock(&mutex_log);
+        log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d de la cola ready", pcb->pid);
+        pthread_mutex_unlock(&mutex_log);
+        pthread_mutex_lock(&mutex_cola_ready);
+        sacar_tcbs_de_cola_ready_fifo(lista_tcbs, cola_ready_fifo, pcb->pid);
+        pthread_mutex_unlock(&mutex_cola_ready);
+    }
 
-enviar_tcbs_a_cola_exit_por_pid(lista_tcbs, cola_exit, pcb->pid);
-list_destroy(pcb->tids);//falta liberar lista de mutexes
-pthread_mutex_destroy(&pcb->mutex_lista_mutex);
-pthread_mutex_destroy(&pcb->mutex_tids);
-free(pcb);
+    // Hay que hacer funciones similares para el resto de los algoritmos
+    pthread_mutex_lock(&mutex_log);
+    log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d de la lista de blocked", pcb->pid);
+    pthread_mutex_unlock(&mutex_log);
+
+    pthread_mutex_lock(&mutex_lista_blocked);
+    sacar_tcbs_lista_blocked(lista_tcbs, lista_bloqueados, pcb->pid);
+    pthread_mutex_unlock(&mutex_lista_blocked);
+
+    pthread_mutex_lock(&mutex_log);
+    log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d a la cola exit", pcb->pid);
+    pthread_mutex_unlock(&mutex_log);
+    
+    pthread_mutex_lock(&mutex_cola_exit_hilos);
+    enviar_tcbs_a_cola_exit_por_pid(lista_tcbs, cola_exit, pcb->pid);
+    pthread_mutex_unlock(&mutex_cola_exit_hilos);
+    
+    pthread_mutex_lock(&mutex_lista_pcbs);
+    list_remove_element(lista_pcbs,pcb);
+    pthread_mutex_unlock(&mutex_lista_pcbs);
+
+    list_destroy(pcb->tids); // falta liberar lista de mutexes
+    pthread_mutex_destroy(&pcb->mutex_lista_mutex);
+    pthread_mutex_destroy(&pcb->mutex_tids);
+    free(pcb);
+
+    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+    send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 }
 
-void enviar_tcbs_a_cola_exit_por_pid(t_list* lista_tcbs, t_queue* cola_exit, int pid_buscado) {
+void sacar_tcbs_de_cola_ready_fifo(t_list* lista_tcbs,t_queue* cola_ready_fifo,int pid_buscado){
     for (int i = 0; i < list_size(lista_tcbs); i++) {
         t_tcb* tcb_actual = list_get(lista_tcbs, i);
-        //printf("tid:%d\n",tcb_actual->tid);  // Obtener el TCB de la lista
-        if (tcb_actual->pid == pid_buscado) {
-            // Remover el TCB de la lista y enviarlo a la cola EXIT
-            t_tcb* tcb_a_mover = list_remove(lista_tcbs, i);
-            pthread_mutex_lock(&mutex_cola_exit_hilos);
-            queue_push(cola_exit, tcb_a_mover);  // Enviar a la cola EXIT
-            pthread_mutex_unlock(&mutex_cola_exit_hilos);
-            sem_post(&semaforo_cola_exit_hilos);
-            i--;  // Ajustar el índice ya que la lista se reduce
+        if (tcb_actual->pid == pid_buscado && tcb_actual->estado == TCB_READY) {
+            // Remover el TCB de la cola ready de fifo
+           sacar_tcb_de_cola(cola_ready_fifo,tcb_actual);
         }
     }
 }
+
+
+void sacar_tcbs_lista_blocked(t_list* lista_tcbs,t_list*lista_bloqueados,int pid_buscado){
+    for (int i = 0; i < list_size(lista_tcbs); i++) {
+        t_tcb* tcb_actual = list_get(lista_tcbs, i);
+        if (tcb_actual->pid == pid_buscado && tcb_actual->estado == TCB_BLOCKED) {
+            // Remover el TCB de la cola de bloqueados
+            list_remove_element(lista_bloqueados,tcb_actual);
+        }
+    }
+}
+
+
+
+
+void enviar_tcbs_a_cola_exit_por_pid(t_list* lista_tcbs, t_queue* cola_exit, int pid_buscado) {
+    int i = 0;
+
+    while (!list_is_empty(lista_tcbs) && i < list_size(lista_tcbs)) {  // Condición doble: lista no vacía y índice válido
+        t_tcb* tcb_actual = list_get(lista_tcbs, i);  // Obtener el TCB en el índice actual
+
+        if (tcb_actual == NULL) {
+            log_error(logger, "Error: TCB nulo en índice %d. Abortando.", i);
+            break;
+        }
+
+        log_info(logger, "INDICE: %d", i);
+        log_info(logger, "tid actual: %d", tcb_actual->tid);
+
+        if (tcb_actual->pid == pid_buscado) {
+            t_tcb* tcb_a_mover = list_remove(lista_tcbs, i);
+            if (tcb_a_mover == NULL) {
+                log_error(logger, "Error: No se pudo remover el TCB del índice %d. Abortando.", i);
+                break;
+            }
+
+            log_info(logger, "tcb_a_mover tid: %d", tcb_a_mover->tid);
+            queue_push(cola_exit, tcb_a_mover);  // Enviar a la cola EXIT
+
+            if (hilo_exec != NULL && tcb_a_mover->tid == hilo_exec->tid) {
+                log_info(logger, "Enviando a EXIT al hilo en EXEC del proceso en ejecución");
+                hilo_exec_exit_tras_process_exit();
+                hilo_exec = NULL;
+            } else {
+                log_info(logger, "Enviando a EXIT un hilo del proceso en ejecución");
+                liberar_tcb(tcb_a_mover);
+            }
+
+            // No incrementar el índice porque la lista se reduce
+        } else {
+            i++;  // Solo avanzar si no se eliminó un elemento
+        }
+    }
+
+    if (list_is_empty(lista_tcbs)) {
+        log_info(logger, "PUDE ELIMINAR TODOS LOS HILOS ASOCIADOS AL PROCESO!");
+    } else {
+        log_error(logger, "Error: No se eliminaron todos los hilos asociados al proceso.");
+    }
+}
+
+
+
 
 t_cola_prioridad* cola_prioridad(t_list* lista_colas_prioridad, int prioridad){ //Busca la cola con la prioridad del parametro en la lista de colas, si la encuentra devuelve la info de la posición de dicha lista, si no crea una y la devuelve
 
@@ -147,6 +245,7 @@ void liberar_tcb(t_tcb* tcb) {
             free(tcb->pseudocodigo);
             
         }
+        
 
         // Liberar el propio tcb
         pthread_mutex_destroy(&tcb->mutex_cola_hilos_bloqueados);
@@ -231,6 +330,7 @@ void buscar_y_eliminar_tcb(t_list* lista_tcbs, t_tcb* tcb) {
             free(tcb);*/
             liberar_tcb(tcb_actual);
             // Desbloquear el mutex antes de retornar
+            return;
         }
     }    
 }

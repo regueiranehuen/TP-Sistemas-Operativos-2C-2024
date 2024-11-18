@@ -27,6 +27,7 @@ extern t_log* logger;
 extern sockets_kernel *sockets;
 
 extern pthread_mutex_t mutex_lista_pcbs;
+extern pthread_mutex_t mutex_lista_tcbs;
 extern pthread_mutex_t mutex_cola_new_procesos;
 extern pthread_mutex_t mutex_cola_exit_procesos;
 extern pthread_mutex_t mutex_cola_exit_hilos;
@@ -34,7 +35,8 @@ extern pthread_mutex_t mutex_cola_ready;
 extern pthread_mutex_t mutex_conexion_kernel_a_dispatch;
 extern pthread_mutex_t mutex_conexion_kernel_a_interrupt;
 extern pthread_mutex_t mutex_log;
-extern pthread_mutex_t mutex_cola_blocked;
+extern pthread_mutex_t mutex_lista_blocked;
+
 
 extern sem_t semaforo_new_ready_procesos;
 extern sem_t semaforo_cola_new_procesos;
@@ -45,7 +47,10 @@ extern sem_t semaforo_cola_ready;
 
 extern sem_t sem_cola_IO;
 
+extern sem_t semaforo_cola_exit_hilo_exec_process_exit;
+extern sem_t semaforo_cola_exit_hilos_process_exit;
 extern sem_t semaforo_cola_exit_hilos;
+
 extern sem_t sem_lista_prioridades;
 
 extern sem_t sem_fin_kernel;
@@ -141,6 +146,7 @@ void THREAD_EXIT();
 void new_a_ready_procesos();
 void proceso_exit();
 void hilo_exit();
+void hilo_exec_exit_tras_process_exit();
 
 void iniciar_kernel (char* archivo_pseudocodigo, int tamanio_proceso);
 
@@ -154,6 +160,8 @@ void DUMP_MEMORY();
 
 void dispositivo_IO();
 void* hilo_dispositivo_IO();
+
+
 
 
 

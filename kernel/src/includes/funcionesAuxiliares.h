@@ -6,9 +6,6 @@
 #include "commons/string.h"
 
 
-
-extern pthread_mutex_t mutex_lista_blocked;
-
 void inicializar_estados();
 void destruir_estados();
 void inicializar_semaforos();
@@ -31,5 +28,7 @@ t_tcb* sacar_tcb_de_lista(t_list* lista, t_tcb* tcb_a_sacar);//saca un tcb de un
 t_tcb* buscar_tcb(int tid_buscado, t_tcb* hilo_exec);
 void inicializar_mutex_compartido_entre_procesos(pthread_mutex_t* mutex);
 bool esta_en_lista_blocked(t_tcb*tcb_actual);
+void sacar_tcbs_de_cola_ready_fifo(t_list* lista_tcbs,t_queue* cola_ready_fifo,int pid_buscado);
+void sacar_tcbs_lista_blocked(t_list* lista_tcbs,t_list*lista_bloqueados,int pid_buscado);
 
 #endif

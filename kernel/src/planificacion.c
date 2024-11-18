@@ -492,6 +492,7 @@ void ejecucion()
 code_operacion cod_op = THREAD_EXECUTE_AVISO;
 
 log_info(logger,"ENVIANDO TID %d Y PID %d",hilo_exec->tid,hilo_exec->pid);
+
 pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
 send_operacion_tid_pid(cod_op, hilo_exec->tid, hilo_exec->pid, sockets->sockets_cliente_cpu->socket_Dispatch);
 pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);

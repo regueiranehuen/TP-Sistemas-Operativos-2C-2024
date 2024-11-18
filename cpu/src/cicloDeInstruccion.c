@@ -176,8 +176,7 @@ void checkInterrupt(t_contexto_tid *contextoTid)
 
 t_instruccion *fetch(t_contexto_tid *contexto)
 {
-
-    
+    log_info(log_cpu,"ENTRAMOS A FETCH CON PID %d TID %d PC %d",contexto->pid,contexto->tid,contexto->registros->PC);
 
     send_solicitud_instruccion_memoria(contexto->tid, contexto->pid, contexto->registros->PC);
 
