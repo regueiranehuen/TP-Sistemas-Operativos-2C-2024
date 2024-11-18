@@ -181,32 +181,23 @@ void hilo_exit()
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
 
     pthread_mutex_lock(&hilo->mutex_cola_hilos_bloqueados);
-    int tam_cola = queue_size(hilo->cola_hilos_bloqueados);
-    if (tam_cola > 0)
+    while (!queue_is_empty(hilo->cola_hilos_bloqueados))
     {
+        t_tcb *tcb = queue_pop(hilo->cola_hilos_bloqueados);
+        tcb->estado = TCB_READY;
 
-        for (int i = 0; i < tam_cola; i++)
-        {
+        pthread_mutex_lock(&mutex_lista_blocked);
+        list_remove_element(lista_bloqueados, tcb);
+        pthread_mutex_unlock(&mutex_lista_blocked);
 
-            t_tcb *tcb = queue_pop(hilo->cola_hilos_bloqueados);
-
-            pthread_mutex_lock(&mutex_lista_blocked);
-            list_remove_element(lista_bloqueados,tcb);
-            pthread_mutex_unlock(&mutex_lista_blocked);
-
-            tcb->estado = TCB_READY;
-
-            char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
-            if (strings_iguales(algoritmo, "FIFO"))
-            {
-                pthread_mutex_lock(&mutex_cola_ready);
-                queue_push(cola_ready_fifo,tcb);
-                pthread_mutex_unlock(&mutex_cola_ready);
-            }
-
-            i -= 1; // Porque voy eliminando elementos de la cola
+        char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
+        if (strings_iguales(algoritmo, "FIFO")){
+            pthread_mutex_lock(&mutex_cola_ready);
+            queue_push(cola_ready_fifo,tcb);
+            pthread_mutex_unlock(&mutex_cola_ready);
         }
     }
+    
     pthread_mutex_unlock(&hilo->mutex_cola_hilos_bloqueados);
     pthread_mutex_lock(&mutex_log);
     log_info(logger, "## (<%d>:<%d>) Finaliza el hilo", hilo->pid, hilo->tid);

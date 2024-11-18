@@ -138,6 +138,7 @@ void sacar_tcbs_de_cola_ready_fifo(t_list* lista_tcbs,t_queue* cola_ready_fifo,i
         if (tcb_actual->pid == pid_buscado && tcb_actual->estado == TCB_READY) {
             // Remover el TCB de la cola ready de fifo
            sacar_tcb_de_cola(cola_ready_fifo,tcb_actual);
+           sem_wait(&semaforo_cola_ready); // Hay que restar los signal hechos por cada hilo asociado al proceso así no entra a FIFO después
         }
     }
 }
@@ -260,7 +261,9 @@ bool strings_iguales(char*c1,char*c2){
 
 t_cola_prioridad* obtener_cola_con_mayor_prioridad(t_list* colas_hilos_prioridad_ready) {
     if (list_is_empty(colas_hilos_prioridad_ready)) {
-        sem_wait(&semaforo_cola_ready);  // Espera hasta que haya elementos en alguna cola
+        sem_wait(&semaforo_cola_ready);
+        log_info(logger, "Se tomó el semáforo (cola_ready)");
+
     }
 
     t_cola_prioridad* cola_con_mayor_prioridad = NULL;

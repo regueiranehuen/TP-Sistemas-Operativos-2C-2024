@@ -5,7 +5,9 @@
 t_tcb *fifo_tcb()
 {
 
-    sem_wait(&semaforo_cola_ready);//espera que haya elementos en la cola;
+    sem_wait(&semaforo_cola_ready);
+    log_info(logger, "Se tomó el semáforo (cola_ready)");
+
     
     pthread_mutex_lock(&mutex_cola_ready);
 
@@ -249,6 +251,8 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
 t_tcb* prioridades (){
 
 sem_wait(&semaforo_cola_ready);
+log_info(logger, "Se tomó el semáforo (cola_ready)");
+
 
 pthread_mutex_lock(&mutex_cola_ready);
 t_tcb* tcb_prioritario = list_remove(lista_ready_prioridad,0);
@@ -306,6 +310,8 @@ Se elegirá al siguiente hilo a ejecutar según el siguiente esquema de colas mu
 void colas_multinivel(){
 
     sem_wait(&semaforo_cola_ready);
+    log_info(logger, "Se tomó el semáforo (cola_ready)");
+
 
     pthread_mutex_lock(&mutex_cola_ready);
     t_cola_prioridad* cola_prioritaria = obtener_cola_con_mayor_prioridad(colas_ready_prioridad);
@@ -477,7 +483,9 @@ void pushear_cola_ready(t_tcb* hilo){
         pthread_mutex_unlock(&mutex_cola_ready);
         queue_push(cola->cola, hilo);
     }
+    log_info(logger, "Signal enviado al semáforo (cola_ready)");
     sem_post(&semaforo_cola_ready);
+
 
 }
 
