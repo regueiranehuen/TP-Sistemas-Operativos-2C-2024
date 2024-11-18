@@ -311,7 +311,8 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
     case SET:
         log_info(log_cpu, "SET - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
         funcSET(contextoTid, instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
-        contextoTid->registros->PC++;
+        if (strcmp(instruccion->parametros2, "PC") != 0)
+            contextoTid->registros->PC++;
         break;
     case SUM:
         log_info(log_cpu, "SUM - Registro: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
@@ -326,7 +327,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
     case JNZ:
         log_info(log_cpu, "JNZ - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
         funcJNZ(contextoTid, instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
-        // No se incrementa el program counter
+        // El valor del program counter se evalúa dentro de la instrucción
         break;
     case READ_MEM:
         log_info(log_cpu, "READ_MEM - Dirección: %s", instruccion->parametros2);

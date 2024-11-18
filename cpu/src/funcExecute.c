@@ -21,7 +21,10 @@ void funcSUB(t_contexto_tid*contexto,char* registroDest, char* registroOrig) {
 
 void funcJNZ(t_contexto_tid*contexto,char* registro, uint32_t num_instruccion) {
     uint32_t reg_value = obtener_valor_registro(contexto,registro);
-    if (reg_value != 0) contexto->registros->PC = num_instruccion;
+    if (reg_value != 0) 
+        contexto->registros->PC = num_instruccion;
+    else
+        contexto->registros->PC++;
 }
 
 void funcLOG(t_contexto_tid*contexto,char* registro) {
