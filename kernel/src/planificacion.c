@@ -422,6 +422,7 @@ el algoritmo. Durante este período la CPU se quedará esperando.
 */
 
 void espera_con_quantum(int quantum) {
+    desalojado = false;
     fd_set read_fds;
     struct timeval timeout;
 
