@@ -31,5 +31,6 @@ bool esta_en_lista_blocked(t_tcb*tcb_actual);
 void sacar_tcbs_de_cola_ready_fifo(t_list* lista_tcbs,t_queue* cola_ready_fifo,int pid_buscado);
 void sacar_tcbs_lista_blocked(t_list* lista_tcbs,t_list*lista_bloqueados,int pid_buscado);
 t_tcb* buscar_tcb_por_tid_pid(int tid, int pid,t_list* lista_tcbs);
+void sacar_tcbs_de_lista_ready_prioridades(t_list* lista_tcbs,t_list* lista_prioridades,int pid_buscado);
 
 #endif
