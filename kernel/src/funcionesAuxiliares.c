@@ -94,7 +94,7 @@ void liberar_proceso(t_pcb *pcb)
     if (strings_iguales(algoritmo, "FIFO"))
     {   
         pthread_mutex_lock(&mutex_log);
-        log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d de la cola ready", pcb->pid);
+        log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d de la cola ready de fifo", pcb->pid);
         pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_cola_ready);
         sacar_tcbs_de_cola_ready_fifo(lista_tcbs, cola_ready_fifo, pcb->pid);
@@ -102,10 +102,18 @@ void liberar_proceso(t_pcb *pcb)
     }
     else if (strings_iguales(algoritmo, "PRIORIDADES")){
         pthread_mutex_lock(&mutex_log);
-        log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d de la cola ready", pcb->pid);
+        log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d de la cola ready de prioridades", pcb->pid);
         pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_cola_ready);
         sacar_tcbs_de_lista_ready_prioridades(lista_tcbs,lista_ready_prioridad,pcb->pid);
+        pthread_mutex_unlock(&mutex_cola_ready);
+    }
+    else if (strings_iguales(algoritmo, "CMN")){
+        pthread_mutex_lock(&mutex_log);
+        log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d de las colas multinivel de ready", pcb->pid);
+        pthread_mutex_unlock(&mutex_log);
+        pthread_mutex_lock(&mutex_cola_ready);
+        sacar_tcbs_de_colas_ready_multinivel(lista_tcbs,colas_ready_prioridad,pcb->pid);
         pthread_mutex_unlock(&mutex_cola_ready);
     }
     
@@ -159,7 +167,38 @@ void sacar_tcbs_de_lista_ready_prioridades(t_list* lista_tcbs,t_list* lista_prio
         if (tcb_actual->pid == pid_buscado && tcb_actual->estado == TCB_READY) {
             // Remover el TCB de la cola ready de prioridades
            list_remove_element(lista_prioridades,tcb_actual);
-           sem_wait(&semaforo_cola_ready); // Hay que restar los signal hechos por cada hilo asociado al proceso así no entra a FIFO después
+           sem_wait(&semaforo_cola_ready); // Hay que restar los signal hechos por cada hilo asociado al proceso
+        }
+    }
+}
+
+void sacar_tcbs_de_colas_ready_multinivel(t_list *lista_tcbs, t_list *lista_prioridades, int pid_buscado)
+{
+    for (int i = 0; i < list_size(lista_tcbs); i++)
+    {
+        t_tcb *tcb_actual = list_get(lista_tcbs, i);
+        if (tcb_actual->pid == pid_buscado && tcb_actual->estado == TCB_READY)
+        {
+            // Remover el TCB de la cola ready de prioridades
+
+            for (int j = 0; j < list_size(colas_ready_prioridad); j++)
+            {
+                t_cola_prioridad *cola_prioridad = list_get(colas_ready_prioridad, j);
+
+                // Iterar en la cola de esa prioridad
+                for (int j = 0; j < queue_size(cola_prioridad->cola); j++)
+                {
+                    t_tcb *hilo = list_get(cola_prioridad->cola->elements, j);
+                    if (hilo->tid == tcb_actual->tid && hilo->pid == pid_buscado)
+                    {
+                        sacar_tcb_de_cola(cola_prioridad->cola,hilo);
+                        sem_wait(&semaforo_cola_ready); // Hay que restar los signal hechos por cada hilo asociado al proceso
+                    }
+                }
+            }
+
+            
+            
         }
     }
 }
