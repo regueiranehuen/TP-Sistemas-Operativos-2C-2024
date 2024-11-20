@@ -220,6 +220,7 @@ void hilo_exit()
     list_remove_element(lista_tcbs,hilo);
     pthread_mutex_unlock(&mutex_lista_tcbs);
 
+
     liberar_tcb(hilo);
 
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);

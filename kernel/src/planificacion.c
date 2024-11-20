@@ -238,6 +238,7 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
         case ENUM_FIN_QUANTUM_RR:
         log_info(logger,"SE RECIBIÓ EL CÓDIGO ENUM_FIN_QUANTUM_RR");
         sem_post(&sem_desalojado);
+        
         free(paquete->buffer);
             free(paquete);
             break;
@@ -301,14 +302,17 @@ t_thread_create* parametros_thread_create(t_paquete_syscall*paquete){
 
 void round_robin(t_queue *cola_ready_prioridad)
 {
+    pthread_mutex_lock(&mutex_cola_ready);
     if (!queue_is_empty(cola_ready_prioridad))
     {
-        pthread_mutex_lock(&mutex_cola_ready);
         t_tcb *tcb = queue_pop(cola_ready_prioridad); // Sacar el primer hilo de la cola
         pthread_mutex_unlock(&mutex_cola_ready);
         tcb->estado = TCB_EXECUTE;
         hilo_exec = tcb;
         ejecucion();
+    }
+    else{
+        pthread_mutex_unlock(&mutex_cola_ready);
     }
 }
 /*
@@ -320,9 +324,10 @@ Se elegirá al siguiente hilo a ejecutar según el siguiente esquema de colas mu
 - Al llegar un hilo a ready se posiciona siempre al final de la cola que le corresponda.
 */
 void colas_multinivel(){
-
+    //log_info(logger, "Entro a colas multinivel");
+    
     sem_wait(&semaforo_cola_ready);
-    log_info(logger, "Se tomó el semáforo (cola_ready)");
+    //log_info(logger, "Se tomó el semáforo (cola_ready)");
 
 
     pthread_mutex_lock(&mutex_cola_ready);
@@ -388,7 +393,9 @@ void *hilo_planificador_corto_plazo(void *arg)
         {
             if (hilo_exec !=NULL)
                 log_info(logger,"HILO A CAMBIAR: %d",hilo_exec->tid);
-            sem_init(&sem_fin_syscall,0,0);
+            if(sem_init(&sem_fin_syscall,0,0)==0){
+                log_debug(logger,"se inicializó bien el semáforo");
+            }
             colas_multinivel();
         }
     }
@@ -508,9 +515,9 @@ void espera_con_quantum(int quantum) {
                     send_code_operacion(cod_op, sockets->sockets_cliente_cpu->socket_Interrupt);
                     log_info(logger, "Enviado fin quantum!");
                     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-                    /*t_tcb *hilo = hilo_exec;
+                    t_tcb *hilo = hilo_exec;
                     hilo->estado = TCB_READY;
-                    pushear_cola_ready(hilo);*/
+                    pushear_cola_ready(hilo);
 
                     desalojado = true;
                 }
@@ -527,13 +534,17 @@ void espera_con_quantum(int quantum) {
                 log_info(logger, "Enviado fin quantum!");
                 pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
-                /*t_tcb *hilo = hilo_exec;
+                t_tcb *hilo = hilo_exec;
                 hilo->estado = TCB_READY;
-                pushear_cola_ready(hilo);*/
+                pushear_cola_ready(hilo);
 
                 desalojado = true;
             }
+            //sem_destroy(&sem_fin_syscall);
             sem_destroy(&sem_fin_syscall);
+            int valor_semaforo_cola_ready;
+            log_debug(logger,"Valor semaforo cola ready: %d",sem_getvalue(&semaforo_cola_ready,&valor_semaforo_cola_ready));
+
             return;
         }
 
@@ -569,8 +580,8 @@ void pushear_cola_ready(t_tcb* hilo){
     {
         pthread_mutex_lock(&mutex_cola_ready);
         t_cola_prioridad *cola = cola_prioridad(colas_ready_prioridad, hilo->prioridad);
-        pthread_mutex_unlock(&mutex_cola_ready);
         queue_push(cola->cola, hilo);
+        pthread_mutex_unlock(&mutex_cola_ready);
     }
     log_info(logger, "Signal enviado al semáforo (cola_ready)");
     sem_post(&semaforo_cola_ready);

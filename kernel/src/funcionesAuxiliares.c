@@ -48,7 +48,7 @@ void inicializar_semaforos() {
     sem_init(&sem_lista_prioridades, 0, 0);         // Inicializa en 0
     sem_init(&semaforo_cola_exit_hilo_exec_process_exit, 0, 0);
     sem_init(&semaforo_cola_exit_hilos_process_exit, 0, 0);
-    sem_init(&sem_fin_syscall,0,0);
+    //sem_init(&sem_fin_syscall,0,0);
 }
 
 void destruir_semaforos() {
@@ -63,7 +63,7 @@ void destruir_semaforos() {
     sem_destroy(&sem_lista_prioridades);
     sem_destroy(&semaforo_cola_exit_hilo_exec_process_exit);
     sem_destroy(&semaforo_cola_exit_hilos_process_exit);
-    sem_destroy(&sem_fin_syscall);
+    //sem_destroy(&sem_fin_syscall);
 }
 
 void inicializar_mutex() {
@@ -252,7 +252,7 @@ void enviar_tcbs_a_cola_exit_por_pid(t_list* lista_tcbs, t_queue* cola_exit, int
             if (hilo_exec != NULL && tcb_a_mover->tid == hilo_exec->tid) {
                 log_info(logger, "Enviando a EXIT al hilo en EXEC del proceso en ejecución");
                 hilo_exec_exit_tras_process_exit();
-                hilo_exec = NULL;
+                //hilo_exec = NULL;
             } else {
                 log_info(logger, "Enviando a EXIT un hilo del proceso en ejecución");
                 liberar_tcb(tcb_a_mover);
