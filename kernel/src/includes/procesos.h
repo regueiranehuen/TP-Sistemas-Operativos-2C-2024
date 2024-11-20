@@ -36,6 +36,7 @@ extern pthread_mutex_t mutex_conexion_kernel_a_dispatch;
 extern pthread_mutex_t mutex_conexion_kernel_a_interrupt;
 extern pthread_mutex_t mutex_log;
 extern pthread_mutex_t mutex_lista_blocked;
+extern pthread_mutex_t mutex_syscall_ejecutando;
 
 
 extern sem_t semaforo_new_ready_procesos;
@@ -55,7 +56,12 @@ extern sem_t sem_lista_prioridades;
 
 extern sem_t sem_fin_kernel;
 
+extern sem_t sem_fin_syscall;
+
 extern bool desalojado;
+extern bool syscallEjecutando;
+
+extern int pipe_fds[2]; // pipe_fds[0] para leer, pipe_fds[1] para escribir
 
 
 

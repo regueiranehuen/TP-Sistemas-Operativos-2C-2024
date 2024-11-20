@@ -19,6 +19,7 @@ sem_t sem_fin_kernel;
 
 sem_t semaforo_cola_exit_hilos_process_exit;
 sem_t semaforo_cola_exit_hilo_exec_process_exit;
+sem_t sem_fin_syscall;
 
 t_queue *cola_new_procesos;
 t_queue *cola_exit_procesos;
@@ -50,9 +51,15 @@ pthread_mutex_t mutex_lista_blocked;
 pthread_mutex_t mutex_cola_ready;
 pthread_mutex_t mutex_conexion_kernel_a_dispatch;
 pthread_mutex_t mutex_conexion_kernel_a_interrupt;
+pthread_mutex_t mutex_syscall_ejecutando;
 
 
-bool desalojado;
+bool desalojado = false;
+
+bool syscallEjecutando=false;
+
+
+int pipe_fds[2];
 
 t_pcb *crear_pcb()
 {
@@ -218,6 +225,12 @@ void hilo_exit()
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
     send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+    desalojado = true;
+    write(pipe_fds[1], "x", 1);
+    pthread_mutex_lock(&mutex_syscall_ejecutando);
+    syscallEjecutando=false;
+    pthread_mutex_unlock(&mutex_syscall_ejecutando);
+    sem_post(&sem_fin_syscall);
 }
 
 void hilo_exec_exit_tras_process_exit() // El hilo que estaba en exec y ahora esta en cola exit se lo elimina, al igual que a los hilos bloqueados por el mismo
@@ -247,17 +260,6 @@ void hilo_exec_exit_tras_process_exit() // El hilo que estaba en exec y ahora es
     liberar_tcb(hilo);
 }
 
-/*void hilos_exit_tras_process_exit(){ // Pasamos los hilos que estaban en ready/blocked del proceso que estaba en ejecucion y ahora está en cola exit a eliminarse
-    sem_wait(&semaforo_cola_exit_hilos_process_exit);
-
-    pthread_mutex_lock(&mutex_cola_exit_hilos);
-    t_tcb *hilo = queue_pop(cola_exit);
-    printf("tid:%d\n", hilo->tid);
-    pthread_mutex_unlock(&mutex_cola_exit_hilos);
-
-
-    buscar_y_eliminar_tcb(lista_tcbs,hilo);
-}*/
 
 /*
 Creación de procesos
@@ -388,7 +390,6 @@ void PROCESS_EXIT()
         pthread_mutex_unlock(&mutex_cola_exit_procesos);
 
         sem_post(&semaforo_cola_exit_procesos);
-        desalojado = true;
         
         
 }
@@ -447,6 +448,10 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
     send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+    pthread_mutex_lock(&mutex_syscall_ejecutando);
+    syscallEjecutando=false;
+    pthread_mutex_unlock(&mutex_syscall_ejecutando);
+    sem_post(&sem_fin_syscall);
 }
 
 /*
@@ -489,7 +494,7 @@ void THREAD_JOIN(int tid)
     queue_push(hilo_a_bancar->cola_hilos_bloqueados,tcb_aux); // Agregar el hilo a bloquear a la cola de bloqueados del hilo en ejecucion
     pthread_mutex_unlock(&hilo_a_bancar->mutex_cola_hilos_bloqueados);
 
-    hilo_exec = NULL;
+    //hilo_exec = NULL;
     tcb_aux->estado = TCB_BLOCKED;
 
     pthread_mutex_lock(&mutex_lista_blocked);
@@ -505,6 +510,8 @@ void THREAD_JOIN(int tid)
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
     send_code_operacion(DESALOJAR,sockets->sockets_cliente_cpu->socket_Interrupt);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt); 
+
+    
 
 }
 
@@ -604,9 +611,8 @@ void THREAD_EXIT() // AVISO A MEMORIA
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     queue_push(cola_exit,hilo);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
-
+    
     sem_post(&semaforo_cola_exit_hilos);
-    desalojado = true;
 }
 
 /*
@@ -662,7 +668,7 @@ void MUTEX_LOCK(char* recurso)
         sem_post(&semaforo_cola_exit_hilos);
 
         desalojado = true;
-        hilo_exec = NULL;
+        //hilo_exec = NULL;
         return;
     }
 
@@ -683,7 +689,7 @@ void MUTEX_LOCK(char* recurso)
         log_info(logger,"SE ENCONTRÓ EL MUTEX %s y está ocupado, bloqueamos el hilo",recurso);
         pthread_mutex_unlock(&mutex_log);
         hilo_aux->estado = TCB_BLOCKED_MUTEX;
-        hilo_exec = NULL;
+        //hilo_exec = NULL;
 
         pthread_mutex_lock(&mutex_lista_blocked);
         list_add(lista_bloqueados,hilo_aux);
@@ -712,7 +718,7 @@ void MUTEX_UNLOCK(char* recurso)
 
         sem_post(&semaforo_cola_exit_hilos);
 
-        hilo_exec = NULL;
+        //hilo_exec = NULL;
         desalojado = true;
         return;
     }
@@ -761,7 +767,7 @@ void IO(int milisegundos)
 
     // Cambiar el estado del hilo a BLOCKED
     tcb->estado = TCB_BLOCKED;
-    hilo_exec = NULL;
+    //hilo_exec = NULL;
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
     send_code_operacion(DESALOJAR,sockets->sockets_cliente_cpu->socket_Interrupt);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
@@ -849,7 +855,7 @@ void DUMP_MEMORY()
 
     code_operacion cod_op = DUMP_MEMORIA;
 
-    hilo_exec = NULL;
+    //hilo_exec = NULL;
     tcb->estado = TCB_BLOCKED;
     desalojado=true;
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);

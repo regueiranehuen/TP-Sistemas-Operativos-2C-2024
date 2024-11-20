@@ -16,6 +16,8 @@ void inicializar_estados() {
     lista_tcbs = list_create();
     lista_pcbs = list_create();
     lista_mutex = list_create();
+
+    pipe(pipe_fds);  // Crear el pipe
 }
 
 void destruir_estados() {
@@ -46,6 +48,7 @@ void inicializar_semaforos() {
     sem_init(&sem_lista_prioridades, 0, 0);         // Inicializa en 0
     sem_init(&semaforo_cola_exit_hilo_exec_process_exit, 0, 0);
     sem_init(&semaforo_cola_exit_hilos_process_exit, 0, 0);
+    sem_init(&sem_fin_syscall,0,0);
 }
 
 void destruir_semaforos() {
@@ -60,6 +63,7 @@ void destruir_semaforos() {
     sem_destroy(&sem_lista_prioridades);
     sem_destroy(&semaforo_cola_exit_hilo_exec_process_exit);
     sem_destroy(&semaforo_cola_exit_hilos_process_exit);
+    sem_destroy(&sem_fin_syscall);
 }
 
 void inicializar_mutex() {
@@ -73,6 +77,7 @@ void inicializar_mutex() {
     pthread_mutex_init(&mutex_conexion_kernel_a_interrupt,NULL);
     pthread_mutex_init(&mutex_log,NULL);
     pthread_mutex_init(&mutex_lista_blocked,NULL);
+    pthread_mutex_init(&mutex_syscall_ejecutando,NULL);
 }
 
 void destruir_mutex() {
@@ -86,6 +91,7 @@ void destruir_mutex() {
     pthread_mutex_destroy(&mutex_conexion_kernel_a_interrupt);
     pthread_mutex_destroy(&mutex_log);
     pthread_mutex_destroy(&mutex_lista_blocked);
+    pthread_mutex_destroy(&mutex_syscall_ejecutando);
 }
 
 void liberar_proceso(t_pcb *pcb)
@@ -148,6 +154,9 @@ void liberar_proceso(t_pcb *pcb)
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
     send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+
+    desalojado = true;
+    sem_post(&sem_fin_syscall);
 }
 
 void sacar_tcbs_de_cola_ready_fifo(t_list* lista_tcbs,t_queue* cola_ready_fifo,int pid_buscado){
