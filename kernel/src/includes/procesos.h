@@ -8,6 +8,7 @@
 #include "../includes/cliente.h"
 #include <semaphore.h>
 
+
 extern t_queue* cola_new_procesos;
 extern t_queue* cola_exit_procesos;
 
@@ -63,7 +64,13 @@ extern bool syscallEjecutando;
 
 extern int pipe_fds[2]; // pipe_fds[0] para leer, pipe_fds[1] para escribir
 
+extern pthread_mutex_t mutex_desalojo;
+typedef struct{
+bool desalojar;
+bool finQuantum;
+}t_aviso_cpu;
 
+extern t_aviso_cpu* aviso_cpu;
 
 typedef enum {
     TCB_NEW,

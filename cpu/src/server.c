@@ -264,7 +264,6 @@ void* recibir_kernel_interrupt(void*args){
             hay_interrupcion = true;
             devolucion_kernel=FIN_QUANTUM_RR;
             pthread_mutex_unlock(&mutex_interrupt);
-            sem_post(&sem_ok_o_interrupcion);
             break;
         case DESALOJAR:
             log_info(log_cpu,"## Llega interrupción al puerto Interrupt");
@@ -272,11 +271,6 @@ void* recibir_kernel_interrupt(void*args){
             hay_interrupcion = true;
             devolucion_kernel=DESALOJAR;
             pthread_mutex_unlock(&mutex_interrupt);
-            sem_post(&sem_ok_o_interrupcion);
-            break;
-        case OK:
-            log_info(log_cpu,"## Terminó una syscall");
-            sem_post(&sem_ok_o_interrupcion);
             break;
         default:
         log_info(log_cpu,"codigo no valido recibido: %d",code);

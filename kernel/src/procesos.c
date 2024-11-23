@@ -2,6 +2,10 @@
 #include "includes/funcionesAuxiliares.h"
 #include "includes/planificacion.h"
 
+t_aviso_cpu* aviso_cpu;
+
+pthread_mutex_t mutex_desalojo;
+
 sem_t semaforo_new_ready_procesos;
 sem_t semaforo_cola_new_procesos;
 sem_t semaforo_cola_exit_procesos;
@@ -224,14 +228,22 @@ void hilo_exit()
     liberar_tcb(hilo);
 
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+    pthread_mutex_lock(&mutex_desalojo);
+    if(!aviso_cpu->finQuantum){
     send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
+    aviso_cpu->desalojar = true;
+    }
+    else if(aviso_cpu->finQuantum){
+    aviso_cpu->finQuantum = false;
+    }
+    pthread_mutex_unlock(&mutex_desalojo);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
     desalojado = true;
     write(pipe_fds[1], "x", 1);
     pthread_mutex_lock(&mutex_syscall_ejecutando);
     syscallEjecutando=false;
     pthread_mutex_unlock(&mutex_syscall_ejecutando);
-    sem_post(&sem_fin_syscall);
 }
 
 void hilo_exec_exit_tras_process_exit() // El hilo que estaba en exec y ahora esta en cola exit se lo elimina, al igual que a los hilos bloqueados por el mismo
@@ -357,7 +369,7 @@ void PROCESS_CREATE(char *pseudocodigo, int tamanio_proceso, int prioridad)
     sem_post(&semaforo_cola_new_procesos);
 
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
     
 }
@@ -376,7 +388,7 @@ void PROCESS_EXIT()
         log_info(logger,"Error, se intento ejecutar la syscall PROCESS_EXIT con un TID que no era el TID 0");
         pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
     return;
     }
@@ -447,12 +459,11 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
 
     }
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
     pthread_mutex_lock(&mutex_syscall_ejecutando);
     syscallEjecutando=false;
     pthread_mutex_unlock(&mutex_syscall_ejecutando);
-    sem_post(&sem_fin_syscall);
 }
 
 /*
@@ -470,7 +481,7 @@ void THREAD_JOIN(int tid)
         log_info(logger,"## (<%d>:<%d>) - El hilo pasado por parámetro no existe/ya finalizó",hilo_exec->pid,hilo_exec->tid);
         pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         return;
     }
@@ -485,7 +496,7 @@ void THREAD_JOIN(int tid)
         log_info(logger,"## (<%d>:<%d>) - El hilo pasado por parámetro no existe/ya finalizó",hilo_exec->pid,hilo_exec->tid);
         pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         return;
     }
@@ -509,7 +520,16 @@ void THREAD_JOIN(int tid)
     queue_push(tcb_bloqueante->cola_hilos_bloqueados, tcb_aux);*/
     desalojado = true;
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    send_code_operacion(DESALOJAR,sockets->sockets_cliente_cpu->socket_Interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+    pthread_mutex_lock(&mutex_desalojo);
+    if(!aviso_cpu->finQuantum){
+    send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
+    aviso_cpu->desalojar = true;
+    }
+    else if(aviso_cpu->finQuantum){
+    aviso_cpu->finQuantum = false;
+    }
+    pthread_mutex_unlock(&mutex_desalojo);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt); 
 
     
@@ -536,7 +556,7 @@ void THREAD_CANCEL(int tid)
     {
         log_info(logger, "El tid %d pasado por parámetro no pertenece al proceso en ejecución/no existe/ya finalizó", tid);
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Interrupt);
+        send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
         return;
@@ -648,7 +668,7 @@ void MUTEX_CREATE(char* recurso)//supongo que el recurso es el nombre del mutex
     list_add(proceso_asociado->lista_mutex, mutex);
 
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
 }
@@ -681,7 +701,7 @@ void MUTEX_LOCK(char* recurso)
         mutex_asociado->hilo = hilo_aux;
         mutex_asociado->estado = LOCKED;
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
     }
     else
@@ -702,7 +722,14 @@ void MUTEX_LOCK(char* recurso)
         queue_push(mutex_asociado->cola_tcbs, hilo_aux);
         desalojado = true;
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(DESALOJAR,sockets->sockets_cliente_cpu->socket_Interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+        if(!aviso_cpu->finQuantum){
+        send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
+        aviso_cpu->desalojar = true;
+        }
+        else if(aviso_cpu->finQuantum){
+        aviso_cpu->finQuantum = false;
+        }
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
     }
 }
@@ -728,7 +755,7 @@ void MUTEX_UNLOCK(char* recurso)
     {
         log_info(logger, "El hilo que realizó la syscall no es el que tiene tomado el recurso");
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         return;
     }
@@ -750,7 +777,7 @@ void MUTEX_UNLOCK(char* recurso)
         mutex_asociado->hilo = NULL;
     }
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 }
 
@@ -770,7 +797,16 @@ void IO(int milisegundos)
     tcb->estado = TCB_BLOCKED;
     //hilo_exec = NULL;
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    send_code_operacion(DESALOJAR,sockets->sockets_cliente_cpu->socket_Interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+    pthread_mutex_lock(&mutex_desalojo);
+    if(!aviso_cpu->finQuantum){
+    send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
+    aviso_cpu->desalojar = true;
+    }
+    else if(aviso_cpu->finQuantum){
+    aviso_cpu->finQuantum = false;
+    }
+    pthread_mutex_unlock(&mutex_desalojo);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
     desalojado=true;
 
@@ -860,7 +896,16 @@ void DUMP_MEMORY()
     tcb->estado = TCB_BLOCKED;
     desalojado=true;
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    send_code_operacion(DESALOJAR,sockets->sockets_cliente_cpu->socket_Interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+    pthread_mutex_lock(&mutex_desalojo);
+    if(!aviso_cpu->finQuantum){
+    send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
+    aviso_cpu->desalojar = true;
+    }
+    else if(aviso_cpu->finQuantum){
+    aviso_cpu->finQuantum = false;
+    }
+    pthread_mutex_unlock(&mutex_desalojo);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
     list_add(lista_bloqueados, tcb);

@@ -361,8 +361,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
 
         log_info(log_cpu, "DUMP_MEMORY ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
-
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
         
         contextoTid->registros->PC++;
 
@@ -381,7 +384,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_IO(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "IO ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
 
         contextoTid->registros->PC++;
 
@@ -400,7 +407,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_process_create(instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "PROCESS_CREATE ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
 
         contextoTid->registros->PC++;
 
@@ -419,7 +430,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_thread_create(instruccion->parametros2, atoi(instruccion->parametros3), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "THREAD_CREATE ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
 
         contextoTid->registros->PC++;
 
@@ -438,7 +453,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_thread_join(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "THREAD_JOIN ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
         contextoTid->registros->PC++;
 
         break;
@@ -456,7 +475,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_thread_cancel(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "THREAD_CANCEL ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
         contextoTid->registros->PC++;
 
         break;
@@ -474,7 +497,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_mutex_create(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "MUTEX_CREATE ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
         contextoTid->registros->PC++;
 
         break;
@@ -492,7 +519,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_mutex_lock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "MUTEX_LOCK ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
         contextoTid->registros->PC++;
 
         break;
@@ -512,7 +543,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_mutex_unlock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "MUTEX_UNLOCK ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
 
         contextoTid->registros->PC++;
 
@@ -533,7 +568,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
 
         log_info(log_cpu, "THREAD_EXIT ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
 
         contextoTid->registros->PC++;
         break;
@@ -554,8 +593,12 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_process_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
 
-        sem_wait(&sem_ok_o_interrupcion);
-
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
+        
         break;
     }
     default:

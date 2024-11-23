@@ -78,6 +78,7 @@ void inicializar_mutex() {
     pthread_mutex_init(&mutex_log,NULL);
     pthread_mutex_init(&mutex_lista_blocked,NULL);
     pthread_mutex_init(&mutex_syscall_ejecutando,NULL);
+    pthread_mutex_init(&mutex_desalojo,NULL);
 }
 
 void destruir_mutex() {
@@ -92,6 +93,7 @@ void destruir_mutex() {
     pthread_mutex_destroy(&mutex_log);
     pthread_mutex_destroy(&mutex_lista_blocked);
     pthread_mutex_destroy(&mutex_syscall_ejecutando);
+    pthread_mutex_destroy(&mutex_desalojo);
 }
 
 void liberar_proceso(t_pcb *pcb)
