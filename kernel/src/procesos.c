@@ -228,17 +228,21 @@ void hilo_exit()
     liberar_tcb(hilo);
 
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_lock(&mutex_desalojo);
     if(!aviso_cpu->finQuantum){
     send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
     aviso_cpu->desalojar = true;
+    code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt);//confirmar que cpu recibio la interrupción antes de continuar 
+    if(codigo != OK){
+        log_info(logger,"CPU no proceso la interrupción correctamente");
+    }
     }
     else if(aviso_cpu->finQuantum){
     aviso_cpu->finQuantum = false;
     }
     pthread_mutex_unlock(&mutex_desalojo);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt); 
     desalojado = true;
     write(pipe_fds[1], "x", 1);
     pthread_mutex_lock(&mutex_syscall_ejecutando);
@@ -520,19 +524,21 @@ void THREAD_JOIN(int tid)
     queue_push(tcb_bloqueante->cola_hilos_bloqueados, tcb_aux);*/
     desalojado = true;
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_lock(&mutex_desalojo);
     if(!aviso_cpu->finQuantum){
     send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
     aviso_cpu->desalojar = true;
+    code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt);//confirmar que cpu recibio la interrupción antes de continuar 
+    if(codigo != OK){
+        log_info(logger,"CPU no proceso la interrupción correctamente");
+    }
     }
     else if(aviso_cpu->finQuantum){
     aviso_cpu->finQuantum = false;
     }
     pthread_mutex_unlock(&mutex_desalojo);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt); 
-
-    
 
 }
 
@@ -628,7 +634,7 @@ void THREAD_EXIT() // AVISO A MEMORIA
     hilo->estado = TCB_EXIT;
     
     // Hilo exec lo establezco en NULL despues
-
+    sacar_tcb_ready(colas_ready_prioridad,hilo->prioridad,hilo->tid);
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     queue_push(cola_exit,hilo);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
@@ -722,15 +728,21 @@ void MUTEX_LOCK(char* recurso)
         queue_push(mutex_asociado->cola_tcbs, hilo_aux);
         desalojado = true;
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
-        if(!aviso_cpu->finQuantum){
-        send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
-        aviso_cpu->desalojar = true;
-        }
-        else if(aviso_cpu->finQuantum){
-        aviso_cpu->finQuantum = false;
-        }
-        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+    pthread_mutex_lock(&mutex_desalojo);
+    if(!aviso_cpu->finQuantum){
+    send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
+    aviso_cpu->desalojar = true;
+    code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt);//confirmar que cpu recibio la interrupción antes de continuar 
+    if(codigo != OK){
+        log_info(logger,"CPU no proceso la interrupción correctamente");
+    }
+    }
+    else if(aviso_cpu->finQuantum){
+    aviso_cpu->finQuantum = false;
+    }
+    pthread_mutex_unlock(&mutex_desalojo);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt); 
     }
 }
 
@@ -797,17 +809,21 @@ void IO(int milisegundos)
     tcb->estado = TCB_BLOCKED;
     //hilo_exec = NULL;
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_lock(&mutex_desalojo);
     if(!aviso_cpu->finQuantum){
     send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
     aviso_cpu->desalojar = true;
+    code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt);//confirmar que cpu recibio la interrupción antes de continuar 
+    if(codigo != OK){
+        log_info(logger,"CPU no proceso la interrupción correctamente");
+    }
     }
     else if(aviso_cpu->finQuantum){
     aviso_cpu->finQuantum = false;
     }
     pthread_mutex_unlock(&mutex_desalojo);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt); 
     desalojado=true;
 
     // Agregar el hilo a la lista de hilos bloqueados
@@ -896,17 +912,21 @@ void DUMP_MEMORY()
     tcb->estado = TCB_BLOCKED;
     desalojado=true;
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_lock(&mutex_desalojo);
     if(!aviso_cpu->finQuantum){
     send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
     aviso_cpu->desalojar = true;
+    code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt);//confirmar que cpu recibio la interrupción antes de continuar 
+    if(codigo != OK){
+        log_info(logger,"CPU no proceso la interrupción correctamente");
+    }
     }
     else if(aviso_cpu->finQuantum){
     aviso_cpu->finQuantum = false;
     }
     pthread_mutex_unlock(&mutex_desalojo);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt); 
 
     list_add(lista_bloqueados, tcb);
 

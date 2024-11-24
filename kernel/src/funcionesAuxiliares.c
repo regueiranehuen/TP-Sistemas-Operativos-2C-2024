@@ -154,7 +154,23 @@ void liberar_proceso(t_pcb *pcb)
     free(pcb);
 
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+    pthread_mutex_lock(&mutex_desalojo);
+    if(!aviso_cpu->finQuantum){
     send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
+    aviso_cpu->desalojar = true;
+    log_info(logger,"envio desalojar");
+    code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt);//confirmar que cpu recibio la interrupción antes de continuar 
+    if(codigo != OK){
+        log_info(logger,"CPU no proceso la interrupción correctamente");
+    }
+    log_info(logger,"recibi la confirmacion");
+    }
+    else if(aviso_cpu->finQuantum){
+    aviso_cpu->finQuantum = false;
+    }
+    pthread_mutex_unlock(&mutex_desalojo);
+    log_info(logger,"le mando a cpu el OK nashei");
+    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
     desalojado = true;
@@ -294,6 +310,27 @@ list_add(lista_colas_prioridad,cola);
 return cola;
 }
 
+t_tcb* sacar_tcb_ready(t_list* lista_colas_prioridad, int prioridad, int tcb_id) {
+    // Busca la cola correspondiente por prioridad
+    int tamanio = list_size(lista_colas_prioridad);
+    for (int i = 0; i < tamanio; i++) {
+        t_cola_prioridad* cola = list_get(lista_colas_prioridad, i);
+        if (cola->prioridad == prioridad) {
+            // Itera sobre la cola para buscar el TCB con el ID dado
+            t_list* elementos_cola = cola->cola->elements;
+            for (int j = 0; j < list_size(elementos_cola); j++) {
+                t_tcb* tcb = list_get(elementos_cola, j);
+                if (tcb->tid == tcb_id) {
+                    // Eliminar el TCB de la cola
+                    list_remove(elementos_cola, j); // Lo quita de la lista interna
+                    sem_wait(&semaforo_cola_ready);
+                    return tcb; // Devuelve el TCB encontrado
+                }
+            }
+        }
+    }
+    return NULL; // Si no encuentra la cola o el TCB, devuelve NULL
+}
 
 t_mutex* busqueda_mutex(t_list* lista_mutex, char* recurso){
 

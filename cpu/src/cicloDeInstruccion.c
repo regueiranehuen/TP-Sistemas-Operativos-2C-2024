@@ -594,7 +594,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         
 
         code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        
+        log_info(log_cpu,"me llego el ok");
         if(codigo != OK){
             log_info(log_cpu,"skibidi toilet");
         }

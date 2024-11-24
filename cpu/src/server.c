@@ -271,6 +271,7 @@ void* recibir_kernel_interrupt(void*args){
             hay_interrupcion = true;
             devolucion_kernel=DESALOJAR;
             pthread_mutex_unlock(&mutex_interrupt);
+            send_code_operacion(OK,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
             break;
         default:
         log_info(log_cpu,"codigo no valido recibido: %d",code);
