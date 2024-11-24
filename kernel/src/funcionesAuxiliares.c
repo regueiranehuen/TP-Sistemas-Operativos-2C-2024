@@ -17,7 +17,7 @@ void inicializar_estados() {
     lista_pcbs = list_create();
     lista_mutex = list_create();
 
-    pipe(pipe_fds);  // Crear el pipe
+    pipe(pipe_fds);  // Crear el pipe que espera fin de syscall terminante
 }
 
 void destruir_estados() {

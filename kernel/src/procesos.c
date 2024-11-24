@@ -408,7 +408,10 @@ void PROCESS_EXIT()
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
     desalojado = true;
-    sem_post(&sem_fin_syscall);
+    write(pipe_fds[1], "x", 1);
+    pthread_mutex_lock(&mutex_syscall_ejecutando);
+    syscallEjecutando=false;
+    pthread_mutex_unlock(&mutex_syscall_ejecutando);
         
 }
 

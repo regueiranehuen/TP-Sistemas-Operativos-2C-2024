@@ -165,7 +165,7 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
             PROCESS_EXIT();
             free(paquete->buffer);
             free(paquete);
-            sem_post(&sem_fin_syscall);
+            //sem_post(&sem_fin_syscall);
             break;
         case ENUM_THREAD_CREATE:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_CREATE>", hilo_exec->pid, hilo_exec->tid);
@@ -425,8 +425,6 @@ void *hilo_planificador_corto_plazo(void *arg)
 
         else if (strings_iguales(algoritmo, "CMN"))
         {
-            if (hilo_exec !=NULL)
-                log_info(logger,"HILO A CAMBIAR: %d",hilo_exec->tid);
             if(sem_init(&sem_fin_syscall,0,0)==0){
                 log_debug(logger,"se inicializó bien el semáforo");
             }
@@ -480,9 +478,14 @@ el algoritmo. Durante este período la CPU se quedará esperando.
 
 void espera_con_quantum(int quantum) {
     
-    
+    // Cerramos el pipe y lo creamos de nuevo, ya que puede pasar que una syscall anterior lo haya llenado 
+    close(pipe_fds[0]); 
+    close(pipe_fds[1]);
+    pipe(pipe_fds);
+
     fd_set read_fds;
     struct timeval timeout;
+    
     // Establecer el tiempo de espera
     /*timeout.tv_sec = quantum / 1000;           // Convertir a segundos
     timeout.tv_usec = (quantum % 1000) * 1000; // Convertir a microsegundos
@@ -490,18 +493,16 @@ void espera_con_quantum(int quantum) {
     
     desalojado = false;
     while (1) {
-        
         timeout.tv_sec = quantum / 1000; // Convertir a segundos
         timeout.tv_usec = (quantum % 1000) * 1000; // Convertir a microsegundos
 
-        // Inicializar el conjunto de descriptores
+        // Configurar conjuntos de descriptores
         FD_ZERO(&read_fds);
-        FD_SET(sockets->sockets_cliente_cpu->socket_Dispatch, &read_fds); // Socket de la CPU
-        FD_SET(pipe_fds[0], &read_fds); // Añadir el pipe de interrupción
+        FD_SET(pipe_fds[0], &read_fds); // Pipe de syscall terminante
 
-        int max_fd = sockets->sockets_cliente_cpu->socket_Dispatch > pipe_fds[0] 
-                     ? sockets->sockets_cliente_cpu->socket_Dispatch 
-                     : pipe_fds[0];
+        // Determinar el descriptor máximo
+        int max_fd = pipe_fds[0] + 1; // Determinar descriptor máximo
+
         log_debug(logger, "Esperando en select con timeout");
         if (sockets->sockets_cliente_cpu->socket_Dispatch <= 0 || pipe_fds[0] <= 0)
         {
@@ -510,7 +511,7 @@ void espera_con_quantum(int quantum) {
             return;
         }
         
-        int resultado = select(max_fd + 1, &read_fds, NULL, NULL, &timeout);
+        int resultado = select(max_fd, &read_fds, NULL, NULL, &timeout);
 
         if (resultado == -1) {
             log_error(logger, "Error en select");
@@ -531,7 +532,10 @@ void espera_con_quantum(int quantum) {
             {
                 log_error(logger, "Error leyendo del pipe: %s", strerror(errno));
             }
+            desalojado=true;
             sem_destroy(&sem_fin_syscall);
+
+            
             return;
         }
 
@@ -572,6 +576,9 @@ void espera_con_quantum(int quantum) {
                 if(!aviso_cpu->desalojar){
                 log_info(logger,"NO HAY NINGUNA SYSCALL EJECUTANDO");
                 pthread_mutex_unlock(&mutex_syscall_ejecutando);
+
+                
+
                 code_operacion cod_op = FIN_QUANTUM_RR;
                 log_info(logger, "## (<%d>:<%d>) - Desalojado por fin de Quantum", hilo_exec->pid, hilo_exec->tid);
                 pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
