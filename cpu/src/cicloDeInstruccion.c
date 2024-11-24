@@ -66,6 +66,10 @@ void *ciclo_de_instruccion(void *args)
             free(contextos->contexto_tid);
             free(contextos->contexto_pid);
         }
+        else if(contextos == NULL){
+            log_info(log_cpu,"Cierre de conexion con kernel");
+            break; 
+        }
     }
     return NULL;
 }

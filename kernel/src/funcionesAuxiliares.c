@@ -153,28 +153,6 @@ void liberar_proceso(t_pcb *pcb)
     pthread_mutex_destroy(&pcb->mutex_tids);
     free(pcb);
 
-    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    pthread_mutex_lock(&mutex_desalojo);
-    if(!aviso_cpu->finQuantum){
-    send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
-    aviso_cpu->desalojar = true;
-    log_info(logger,"envio desalojar");
-    code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt);//confirmar que cpu recibio la interrupción antes de continuar 
-    if(codigo != OK){
-        log_info(logger,"CPU no proceso la interrupción correctamente");
-    }
-    log_info(logger,"recibi la confirmacion");
-    }
-    else if(aviso_cpu->finQuantum){
-    aviso_cpu->finQuantum = false;
-    }
-    pthread_mutex_unlock(&mutex_desalojo);
-    log_info(logger,"le mando a cpu el OK nashei");
-    send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-
-    desalojado = true;
-    sem_post(&sem_fin_syscall);
 }
 
 void sacar_tcbs_de_cola_ready_fifo(t_list* lista_tcbs,t_queue* cola_ready_fifo,int pid_buscado){
