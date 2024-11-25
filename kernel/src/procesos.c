@@ -841,7 +841,6 @@ void IO(int milisegundos)
     pthread_mutex_unlock(&mutex_desalojo);
     send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt); 
-    desalojado=true;
 
     // Agregar el hilo a la lista de hilos bloqueados
     list_add(lista_bloqueados, tcb);
@@ -857,6 +856,7 @@ void IO(int milisegundos)
     log_info(logger,"PUSHEÉ EL TCB DEL HILO CON TID %d A LA COLA IO",tcb->tid);
     pthread_mutex_unlock(&mutex_log);
     sem_post(&sem_cola_IO);
+    fin_syscall_desalojo_cmn();
 }
 
 /* En este apartado solamente se tendrá la instrucción DUMP_MEMORY. Esta syscall le solicita a la memoria,

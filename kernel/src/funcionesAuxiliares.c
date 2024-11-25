@@ -101,9 +101,6 @@ void fin_syscall_desalojo_cmn(){
     if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")){
         desalojado = true;
         write(pipe_fds[1], "x", 1);
-        pthread_mutex_lock(&mutex_syscall_ejecutando);
-        syscallEjecutando=false;
-        pthread_mutex_unlock(&mutex_syscall_ejecutando);
     }
 }
 
@@ -493,6 +490,62 @@ t_tcb* buscar_tcb(int tid_buscado, t_tcb* hilo_exec) {
     // Si no se encontrÃ³ en ninguna parte
     return NULL;
 }
+
+bool tcb_metido_en_estructura(t_tcb*tcb){
+    char* algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
+
+    // Si es FIFO
+    if (strings_iguales(algoritmo, "FIFO")) {
+        for (int i = 0; i < queue_size(cola_ready_fifo); i++) {
+            t_tcb* hilo = (t_tcb*) list_get(cola_ready_fifo->elements, i);  // Acceso a elementos de la cola FIFO
+            if (hilo->tid == tcb->tid && hilo->pid == tcb->pid) {
+                return true;
+            }
+        }
+    }
+    // Si es PRIORIDADES
+    if (strings_iguales(algoritmo, "PRIORIDADES")) {
+        for (int i = 0; i < list_size(lista_ready_prioridad); i++) {
+            t_tcb* hilo = (t_tcb*) list_get(lista_ready_prioridad, i);
+            if (hilo->tid == tcb->tid && hilo->pid == tcb->pid) {
+                pthread_mutex_unlock(&mutex_cola_ready);
+                return true;
+            }
+        }
+    }
+
+    // Si es MULTINIVEL
+    if (strings_iguales(algoritmo, "CMN")) {
+        
+
+        // Iterar en las colas_ready_procesos
+        for (int i = 0; i < list_size(colas_ready_prioridad); i++) {
+            t_cola_prioridad* cola_prioridad = (t_cola_prioridad*) list_get(colas_ready_prioridad, i);
+
+            // Iterar en la cola de esa prioridad
+            for (int j = 0; j < queue_size(cola_prioridad->cola); j++) {
+                t_tcb* hilo = (t_tcb*) list_get(cola_prioridad->cola->elements, j);
+                if (hilo->tid == tcb->tid && hilo->pid == tcb->pid) {
+                    pthread_mutex_unlock(&mutex_cola_ready);
+                    return true;
+                }
+            }
+        }
+
+    }
+    // Buscar en la lista de bloqueados
+  
+    for (int i = 0; i < list_size(lista_bloqueados); i++) {
+        t_tcb* hilo_bloqueado = (t_tcb*) list_get(lista_bloqueados, i);
+        if (hilo_bloqueado->tid == tcb->tid && hilo_bloqueado->pid == tcb->pid) {
+            return true;
+        }
+    }
+ 
+    // Si no se encontrÃ³ en ninguna parte
+    return false;
+}
+
 
 t_tcb* buscar_tcb_por_tid(t_list* lista_tcbs, int tid_buscado, t_tcb* hilo_exec) {
     for (int i = 0; i < list_size(lista_tcbs); i++) {
