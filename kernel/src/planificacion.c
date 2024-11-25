@@ -391,15 +391,17 @@ Se elegirá al siguiente hilo a ejecutar según el siguiente esquema de colas mu
 - Al llegar un hilo a ready se posiciona siempre al final de la cola que le corresponda.
 */
 void colas_multinivel(){
-    //log_info(logger, "Entro a colas multinivel");
     
     sem_wait(&semaforo_cola_ready);
-    //log_info(logger, "Se tomó el semáforo (cola_ready)");
 
+    print_lista_prioridades(colas_ready_prioridad);
+    printf("Lista bloqueados:\n");
+    print_lista(lista_bloqueados);
 
     pthread_mutex_lock(&mutex_cola_ready);
     t_cola_prioridad* cola_prioritaria = obtener_cola_con_mayor_prioridad(colas_ready_prioridad);
     pthread_mutex_unlock(&mutex_cola_ready);
+
     round_robin(cola_prioritaria->cola);
         
 }
@@ -598,7 +600,7 @@ void espera_con_quantum(int quantum)
                     {
                         log_info(logger, "Terminó la syscall y no desalojó al proceso");
                         code_operacion cod_op = FIN_QUANTUM_RR;
-                        log_info(logger, "## (<%d>:<%d>) - Desalojado por fin de Quantum", hilo_exec->pid, hilo_exec->tid);
+                        log_info(logger, "## (%d:%d) - Desalojado por fin de Quantum", hilo_exec->pid, hilo_exec->tid);
                         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
                         log_info(logger, "Voy a mandar el código correspondiente a fin quantum (%d)", FIN_QUANTUM_RR);
                         send_code_operacion(cod_op, sockets->sockets_cliente_cpu->socket_Interrupt);
@@ -608,7 +610,7 @@ void espera_con_quantum(int quantum)
 
                         pthread_mutex_lock(&mutex_cola_ready);
                         pthread_mutex_lock(&mutex_lista_blocked);
-                        if (!tcb_metido_en_estructura(hilo))
+                        if (!tcb_metido_en_estructura(hilo) && !hilo_esta_en_lista(lista_bloqueados,hilo->tid,hilo->pid))
                         {
                             pthread_mutex_unlock(&mutex_cola_ready);
                             pthread_mutex_unlock(&mutex_lista_blocked);
@@ -651,7 +653,7 @@ void espera_con_quantum(int quantum)
                     t_tcb *hilo = hilo_exec;
                     pthread_mutex_lock(&mutex_cola_ready);
                     pthread_mutex_lock(&mutex_lista_blocked);
-                    if (!tcb_metido_en_estructura(hilo))
+                    if (!tcb_metido_en_estructura(hilo)&& !hilo_esta_en_lista(lista_bloqueados,hilo->tid,hilo->pid))
                     {
                         pthread_mutex_unlock(&mutex_cola_ready);
                         pthread_mutex_unlock(&mutex_lista_blocked);

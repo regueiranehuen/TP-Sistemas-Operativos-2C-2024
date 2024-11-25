@@ -163,15 +163,13 @@ void proceso_exit()
         t_pcb *proceso = queue_pop(cola_exit_procesos);
         pthread_mutex_unlock(&mutex_cola_exit_procesos);
         pthread_mutex_lock(&mutex_log);
-        log_info(logger,"## Finaliza el proceso <%d>",proceso->pid);
+        log_info(logger,"## Finaliza el proceso %d",proceso->pid);
         pthread_mutex_unlock(&mutex_log);
         
         liberar_proceso(proceso);
         
         sem_post(&semaforo_new_ready_procesos);
 
-        
-        
     }
 }
 /*
@@ -201,23 +199,24 @@ void hilo_exit()
         
 
         pthread_mutex_lock(&mutex_log);
-        log_info(logger,"TID del tcb bloqueado por el hilo %d::: %d",hilo->tid,tcb->tid);
+        log_info(logger,"TID del tcb bloqueado por el hilo %d: %d",hilo->tid,tcb->tid);
         pthread_mutex_unlock(&mutex_log);
-        tcb->estado = TCB_READY;
 
         pthread_mutex_lock(&mutex_lista_blocked);
         list_remove_element(lista_bloqueados, tcb);
         pthread_mutex_unlock(&mutex_lista_blocked);
 
+        if(!hilo_esta_en_cola(cola_exit,tcb->tid,tcb->pid)){
+        tcb->estado = TCB_READY;
         
         pushear_cola_ready(tcb);
-        
+        }
     }
     pthread_mutex_unlock(&hilo->mutex_cola_hilos_bloqueados);
     
     
     pthread_mutex_lock(&mutex_log);
-    log_info(logger, "## (<%d>:<%d>) Finaliza el hilo", hilo->pid, hilo->tid);
+    log_info(logger, "## (%d:%d) Finaliza el hilo", hilo->pid, hilo->tid);
     pthread_mutex_unlock(&mutex_log);
 
     pthread_mutex_lock(&mutex_lista_tcbs);
@@ -226,7 +225,6 @@ void hilo_exit()
 
 
     liberar_tcb(hilo);
-
 }
 
 void hilo_exec_exit_tras_process_exit() // El hilo que estaba en exec y ahora esta en cola exit se lo elimina, al igual que a los hilos bloqueados por el mismo
@@ -251,7 +249,7 @@ void hilo_exec_exit_tras_process_exit() // El hilo que estaba en exec y ahora es
 
     pthread_mutex_unlock(&hilo->mutex_cola_hilos_bloqueados);
     pthread_mutex_lock(&mutex_log);
-    log_info(logger, "## (<%d>:<%d>) Finaliza el hilo", hilo->pid, hilo->tid);
+    log_info(logger, "## (%d:%d) Finaliza el hilo", hilo->pid, hilo->tid);
     pthread_mutex_unlock(&mutex_log);
     liberar_tcb(hilo);
 }
@@ -518,8 +516,11 @@ void THREAD_JOIN(int tid)
     pthread_mutex_unlock(&mutex_lista_blocked);
 
     pthread_mutex_lock(&mutex_log);
-    log_info(logger,"## (<%d>:<%d>) - Bloqueado por: <PTHREAD_JOIN>",tcb_aux->pid,tcb_aux->tid);
+    log_info(logger,"## (<%d>:<%d>) - Bloqueado por: PTHREAD_JOIN",tcb_aux->pid,tcb_aux->tid);
     pthread_mutex_unlock(&mutex_log);
+
+    sacar_tcb_ready(colas_ready_prioridad,tcb_aux);
+
     /*t_tcb* tcb_bloqueante = buscar_tcb_por_tid(lista_tcbs, tid,tcb_aux);
     queue_push(tcb_bloqueante->cola_hilos_bloqueados, tcb_aux);*/
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
@@ -635,7 +636,7 @@ void THREAD_EXIT() // AVISO A MEMORIA
     hilo->estado = TCB_EXIT;
     
     // Hilo exec lo establezco en NULL despues
-    sacar_tcb_ready(colas_ready_prioridad,hilo->prioridad,hilo->tid);
+    sacar_tcb_ready(colas_ready_prioridad, hilo);
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     queue_push(cola_exit,hilo);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
@@ -822,6 +823,8 @@ void IO(int milisegundos)
 
     t_tcb *tcb = hilo_exec;
 
+    sacar_tcb_ready(colas_ready_prioridad,tcb);
+
     // Cambiar el estado del hilo a BLOCKED
     tcb->estado = TCB_BLOCKED;
     //hilo_exec = NULL;
@@ -845,7 +848,7 @@ void IO(int milisegundos)
     // Agregar el hilo a la lista de hilos bloqueados
     list_add(lista_bloqueados, tcb);
     pthread_mutex_lock(&mutex_log);
-    log_info(logger,"## (<%d>:<%d>) - Bloqueado por: <IO>",tcb->pid,tcb->tid);
+    log_info(logger,"## (%d:%d) - Bloqueado por: IO",tcb->pid,tcb->tid);
     pthread_mutex_unlock(&mutex_log);
 
     t_nodo_cola_IO* nodo_cola_hilo = malloc(sizeof(t_nodo_cola_IO));
@@ -899,7 +902,7 @@ void* hilo_dispositivo_IO(void* args){
 
         if (listado){
             pthread_mutex_lock(&mutex_log);
-            log_info(logger, "## (<%d>:<%d>) finalizó IO y pasa a READY", info->hilo->pid, info->hilo->tid);
+            log_info(logger, "## (%d:%d) finalizó IO y pasa a READY", info->hilo->pid, info->hilo->tid);
             pthread_mutex_unlock(&mutex_log);
 
             sacar_tcb_de_lista(lista_bloqueados, info->hilo);

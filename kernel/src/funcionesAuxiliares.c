@@ -156,7 +156,7 @@ void liberar_proceso(t_pcb *pcb)
     list_remove_element(lista_pcbs,pcb);
     pthread_mutex_unlock(&mutex_lista_pcbs);
 
-    list_destroy(pcb->tids); // falta liberar lista de mutexes
+    list_destroy(pcb->tids); // falta liberar lista de mutexes // paja
     pthread_mutex_destroy(&pcb->mutex_lista_mutex);
     pthread_mutex_destroy(&pcb->mutex_tids);
     free(pcb);
@@ -252,15 +252,7 @@ void enviar_tcbs_a_cola_exit_por_pid(t_list* lista_tcbs, t_queue* cola_exit, int
 
             log_info(logger, "tcb_a_mover tid: %d", tcb_a_mover->tid);
             queue_push(cola_exit, tcb_a_mover);  // Enviar a la cola EXIT
-
-            if (hilo_exec != NULL && tcb_a_mover->tid == hilo_exec->tid) {
-                log_info(logger, "Enviando a EXIT al hilo en EXEC del proceso en ejecución");
-                hilo_exec_exit_tras_process_exit();
-                //hilo_exec = NULL;
-            } else {
-                log_info(logger, "Enviando a EXIT un hilo del proceso en ejecución");
-                liberar_tcb(tcb_a_mover);
-            }
+            sem_post(&semaforo_cola_exit_hilos);
 
             // No incrementar el índice porque la lista se reduce
         } else {
@@ -269,7 +261,7 @@ void enviar_tcbs_a_cola_exit_por_pid(t_list* lista_tcbs, t_queue* cola_exit, int
     }
 
     if (list_is_empty(lista_tcbs)) {
-        log_info(logger, "PUDE ELIMINAR TODOS LOS HILOS ASOCIADOS AL PROCESO!");
+        log_info(logger, "Envie todos los hilos asociados al proceso a exit");
     } else {
         log_error(logger, "Error: No se eliminaron todos los hilos asociados al proceso.");
     }
@@ -296,21 +288,21 @@ list_add(lista_colas_prioridad,cola);
 return cola;
 }
 
-t_tcb* sacar_tcb_ready(t_list* lista_colas_prioridad, int prioridad, int tcb_id) {
+t_tcb* sacar_tcb_ready(t_list* lista_colas_prioridad, t_tcb* tcb) {
     // Busca la cola correspondiente por prioridad
     int tamanio = list_size(lista_colas_prioridad);
     for (int i = 0; i < tamanio; i++) {
         t_cola_prioridad* cola = list_get(lista_colas_prioridad, i);
-        if (cola->prioridad == prioridad) {
+        if (cola->prioridad == tcb->prioridad) {
             // Itera sobre la cola para buscar el TCB con el ID dado
             t_list* elementos_cola = cola->cola->elements;
             for (int j = 0; j < list_size(elementos_cola); j++) {
-                t_tcb* tcb = list_get(elementos_cola, j);
-                if (tcb->tid == tcb_id) {
+                t_tcb* tcb_aux = list_get(elementos_cola, j);
+                if (tcb_aux->tid == tcb->tid && tcb_aux->pid == tcb->pid) {
                     // Eliminar el TCB de la cola
                     list_remove(elementos_cola, j); // Lo quita de la lista interna
                     sem_wait(&semaforo_cola_ready);
-                    return tcb; // Devuelve el TCB encontrado
+                    return tcb_aux; // Devuelve el TCB encontrado
                 }
             }
         }
@@ -339,7 +331,6 @@ void liberar_tcb(t_tcb* tcb) {
             free(tcb->pseudocodigo);
             
         }
-        
 
         // Liberar el propio tcb
         pthread_mutex_destroy(&tcb->mutex_cola_hilos_bloqueados);
@@ -583,6 +574,7 @@ t_tcb* sacar_tcb_de_cola(t_queue* cola, t_tcb* tcb_a_sacar) {
 
         if (tcb_actual == tcb_a_sacar) {
             tcb_encontrado = tcb_actual;  // Encontramos el TCB que queremos sacar
+            break;
         } else {
             queue_push(cola_temporal, tcb_actual);  // Lo metemos en la cola temporal si no es el TCB que buscamos
         }
@@ -639,4 +631,83 @@ t_tcb* buscar_tcb_por_tid_pid(int tid, int pid,t_list* lista_tcbs){
         }
     }
     return NULL;
+}
+
+void print_queue(t_queue* queue) {
+    if (queue == NULL || queue_size(queue) == 0) {
+        printf("La cola está vacía.\n");
+        return;
+    }
+
+    // Iteramos sobre los elementos de la cola sin modificarlos
+    for (int i = 0; i < list_size(queue->elements); i++) {
+        t_tcb* tcb = list_get(queue->elements, i);  // obtener el elemento
+        // Aquí asumo que el tipo de dato es un entero, puedes modificarlo según tu necesidad
+        printf("Elemento %d: %d\n", i, tcb->tid);
+    }
+}
+
+// Función para imprimir los elementos de una lista de t_cola_prioridad
+void print_lista_prioridades(t_list* lista_prioridades) {
+    if (lista_prioridades == NULL || list_size(lista_prioridades) == 0) {
+        printf("La lista de prioridades está vacía.\n");
+        return;
+    }
+
+    // Iteramos sobre la lista de t_cola_prioridad
+    for (int i = 0; i < list_size(lista_prioridades); i++) {
+        t_cola_prioridad* item = list_get(lista_prioridades, i);
+        printf("Prioridad: %d\n", item->prioridad);
+        printf("Cola asociada:\n");
+        print_queue(item->cola);  // Llamamos a la función para imprimir la cola
+    }
+}
+
+void print_lista(t_list* lista) {
+    if (lista == NULL || list_size(lista) == 0) {
+        printf("La lista está vacía.\n");
+        return;
+    }
+
+    // Iteramos sobre los elementos de la lista
+    for (int i = 0; i < list_size(lista); i++) {
+        t_tcb* tcb = list_get(lista, i);  // Obtenemos el elemento
+        printf("Elemento %d: %d\n", i, tcb->tid);  // Imprimimos el valor del elemento
+    }
+}
+
+bool hilo_esta_en_lista(t_list* lista, int tid, int pid) {
+    if (lista == NULL || list_size(lista) == 0) {
+        return false;  // La lista está vacía o no inicializada
+    }
+
+    // Iteramos sobre la lista de hilos (t_tcb)
+    for (int i = 0; i < list_size(lista); i++) {
+        t_tcb* hilo = list_get(lista, i);  // Obtenemos el elemento de la lista
+
+        // Verificamos si coinciden el tid y el pid
+        if (hilo->tid == tid && hilo->pid == pid) {
+            return true;  // Encontramos un hilo con el tid y pid coincidentes
+        }
+    }
+
+    return false;  // No se encontró ningún hilo con el tid y pid especificados
+}
+
+bool hilo_esta_en_cola(t_queue* cola, int tid, int pid) {
+    if (cola == NULL || queue_size(cola) == 0) {
+        return false;  // La cola está vacía o no inicializada
+    }
+
+    // Iteramos sobre los elementos de la cola (t_queue usa internamente una lista)
+    for (int i = 0; i < queue_size(cola); i++) {
+        t_tcb* hilo = list_get(cola->elements, i);  // Obtenemos el elemento de la cola
+
+        // Verificamos si coinciden el tid y el pid
+        if (hilo->tid == tid && hilo->pid == pid) {
+            return true;  // Encontramos un hilo con el tid y pid coincidentes
+        }
+    }
+
+    return false;  // No se encontró ningún hilo con el tid y pid especificados
 }
