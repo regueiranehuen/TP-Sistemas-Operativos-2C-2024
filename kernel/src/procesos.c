@@ -955,7 +955,7 @@ void DUMP_MEMORY()
     int tid = tcb->tid;
 
     send_operacion_tid_pid(cod_op,tid,pid,socket_memoria);
-
+    log_info(logger, "ENVIO DE OPERACION MEMORIA");
     int rta_memoria;
 
     recv(socket_memoria, &rta_memoria, sizeof(int), 0);

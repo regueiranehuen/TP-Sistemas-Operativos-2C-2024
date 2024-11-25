@@ -11,6 +11,7 @@ void inicializar_estructuras(void)
 
     mount_dir = config_get_string_value(config, "MOUNT_DIR");
     block_count = config_get_int_value(config, "BLOCK_COUNT");
+    block_size = config_get_int_value(config, "BLOCK_SIZE");
 
     bitmap = cargar_bitmap(mount_dir, block_count);
 

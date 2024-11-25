@@ -28,17 +28,18 @@ void *hilo_por_cliente(void *void_args)
     int resultado = servidor_handshake(socket_cliente, args->log);
     
 
-    if (resultado == 0)
-    {
+    if (resultado == 0){
         log_info(args->log, "Handshake filesystem -> cliente_%d realizado correctamente", cliente_n);
     }
-    if (cliente_n <= 1)
-    { // conexion inicial con memoria
-    sem_post(&sem_conexion_hecha);
-    close(socket_cliente);
+
+    if (cliente_n < 1){ // conexion inicial con memoria
+        log_info(args->log, "HOLAAA", socket_cliente);
+        sem_post(&sem_conexion_hecha);
+        close(socket_cliente);
     }
-    else
-    {
+
+    else{
+
         log_info(args->log, "%d_Peticion de Memoria", socket_cliente);
         sem_post(&sem_conexion_hecha);
         atender_conexiones(socket_cliente);

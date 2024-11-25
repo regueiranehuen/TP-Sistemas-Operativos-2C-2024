@@ -15,5 +15,6 @@ extern uint32_t block_size;
 extern int block_count;
 
 extern char* bitmap_path;
+extern char* ruta_completa;
 
 #endif

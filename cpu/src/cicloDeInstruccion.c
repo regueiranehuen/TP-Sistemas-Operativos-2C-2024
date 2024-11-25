@@ -253,7 +253,7 @@ op_code decode(t_instruccion *instruccion)
     }
     else if (strcmp(instruccion->parametros1, "DUMP_MEMORY") == 0)
     {
-        return DUMP_MEMORY;
+        return DUMP_MEMORIA;
     }
     else if (strcmp(instruccion->parametros1, "IO") == 0)
     {
@@ -351,7 +351,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         contextoTid->registros->PC++;
 
         break;
-    case DUMP_MEMORY:
+    case DUMP_MEMORIA:
     {
         log_info(log_cpu, "DUMP_MEMORY");
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);

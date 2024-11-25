@@ -61,7 +61,6 @@ void atender_conexiones(int socket_cliente)
             }
 
             void*contenido = memoria + particion_proceso->base;
-
             send_dump_memory_filesystem(info_1->pid,info_1->tid,particion_proceso->tamanio,contenido,socket_filesystem);
             recv(socket_filesystem,&respuesta,sizeof(int),0);
             close(socket_filesystem);
