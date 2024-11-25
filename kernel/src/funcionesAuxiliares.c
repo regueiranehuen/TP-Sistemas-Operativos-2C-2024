@@ -288,11 +288,20 @@ list_add(lista_colas_prioridad,cola);
 return cola;
 }
 
-t_tcb* sacar_tcb_ready(t_list* lista_colas_prioridad, t_tcb* tcb) {
+t_tcb* sacar_tcb_ready(t_tcb* tcb) {
     // Busca la cola correspondiente por prioridad
-    int tamanio = list_size(lista_colas_prioridad);
+    if(strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"FIFO")==0){
+    sacar_tcb_de_cola(cola_ready_fifo,tcb);
+    return tcb;
+    }
+    else if(strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"PRIORIDADES")==0){
+    sacar_tcb_de_lista(lista_ready_prioridad,tcb);
+    return tcb;
+    }
+    else if(strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")==0){
+    int tamanio = list_size(colas_ready_prioridad);
     for (int i = 0; i < tamanio; i++) {
-        t_cola_prioridad* cola = list_get(lista_colas_prioridad, i);
+        t_cola_prioridad* cola = list_get(colas_ready_prioridad, i);
         if (cola->prioridad == tcb->prioridad) {
             // Itera sobre la cola para buscar el TCB con el ID dado
             t_list* elementos_cola = cola->cola->elements;
@@ -306,6 +315,7 @@ t_tcb* sacar_tcb_ready(t_list* lista_colas_prioridad, t_tcb* tcb) {
                 }
             }
         }
+    }
     }
     return NULL; // Si no encuentra la cola o el TCB, devuelve NULL
 }
