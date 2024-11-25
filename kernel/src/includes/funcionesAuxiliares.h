@@ -34,5 +34,6 @@ t_tcb* buscar_tcb_por_tid_pid(int tid, int pid,t_list* lista_tcbs);
 void sacar_tcbs_de_lista_ready_prioridades(t_list* lista_tcbs,t_list* lista_prioridades,int pid_buscado);
 void sacar_tcbs_de_colas_ready_multinivel(t_list *lista_tcbs, t_list *lista_prioridades, int pid_buscado);
 t_tcb* sacar_tcb_ready(t_list* lista_colas_prioridad, int prioridad, int tcb_id);
+void fin_syscall_desalojo_cmn();
 
 #endif

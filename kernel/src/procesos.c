@@ -407,11 +407,7 @@ void PROCESS_EXIT()
     send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
-    desalojado = true;
-    write(pipe_fds[1], "x", 1);
-    pthread_mutex_lock(&mutex_syscall_ejecutando);
-    syscallEjecutando=false;
-    pthread_mutex_unlock(&mutex_syscall_ejecutando);
+    fin_syscall_desalojo_cmn();
         
 }
 
@@ -526,7 +522,6 @@ void THREAD_JOIN(int tid)
     pthread_mutex_unlock(&mutex_log);
     /*t_tcb* tcb_bloqueante = buscar_tcb_por_tid(lista_tcbs, tid,tcb_aux);
     queue_push(tcb_bloqueante->cola_hilos_bloqueados, tcb_aux);*/
-    desalojado = true;
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
     pthread_mutex_lock(&mutex_desalojo);
     if(!aviso_cpu->finQuantum){
@@ -542,7 +537,9 @@ void THREAD_JOIN(int tid)
     }
     pthread_mutex_unlock(&mutex_desalojo);
     send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt); 
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+
+    fin_syscall_desalojo_cmn(); 
 
 }
 
@@ -661,11 +658,7 @@ void THREAD_EXIT() // AVISO A MEMORIA
     pthread_mutex_unlock(&mutex_desalojo);
     send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt); 
-    desalojado = true;
-    write(pipe_fds[1], "x", 1);
-    pthread_mutex_lock(&mutex_syscall_ejecutando);
-    syscallEjecutando=false;
-    pthread_mutex_unlock(&mutex_syscall_ejecutando);
+    fin_syscall_desalojo_cmn();
 }
 
 /*
@@ -720,8 +713,7 @@ void MUTEX_LOCK(char* recurso)
 
         sem_post(&semaforo_cola_exit_hilos);
 
-        desalojado = true;
-        //hilo_exec = NULL;
+        fin_syscall_desalojo_cmn();
         return;
     }
 
@@ -752,7 +744,6 @@ void MUTEX_LOCK(char* recurso)
         log_info(logger,"## (<%d>:<%d>) - Bloqueado por: <%s>",hilo_aux->pid,hilo_aux->tid,recurso);
         pthread_mutex_unlock(&mutex_log);
         queue_push(mutex_asociado->cola_tcbs, hilo_aux);
-        desalojado = true;
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
     pthread_mutex_lock(&mutex_desalojo);
     if(!aviso_cpu->finQuantum){
@@ -768,7 +759,8 @@ void MUTEX_LOCK(char* recurso)
     }
     pthread_mutex_unlock(&mutex_desalojo);
     send_code_operacion(OK,sockets->sockets_cliente_cpu->socket_Dispatch);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt); 
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+    fin_syscall_desalojo_cmn(); 
     }
 }
 
@@ -784,8 +776,7 @@ void MUTEX_UNLOCK(char* recurso)
 
         sem_post(&semaforo_cola_exit_hilos);
 
-        //hilo_exec = NULL;
-        desalojado = true;
+        fin_syscall_desalojo_cmn();
         return;
     }
 

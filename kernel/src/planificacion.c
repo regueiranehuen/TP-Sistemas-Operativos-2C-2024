@@ -177,7 +177,7 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
             pthread_mutex_unlock(&mutex_syscall_ejecutando);
             THREAD_CREATE(paramThreadCreate->nombreArchivo,paramThreadCreate->prioridad);
             sem_post(&sem_fin_syscall);
-            //free(paramThreadCreate); 
+            free(paramThreadCreate); 
             break;
         case ENUM_THREAD_JOIN:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_JOIN>", hilo_exec->pid, hilo_exec->tid);
@@ -241,21 +241,21 @@ void* atender_syscall(void* args)//recibir un paquete con un codigo de operacion
             log_info(logger, "## (%d:%d) - Solicitó syscall: <IO>", hilo_exec->pid, hilo_exec->tid);
             int milisegundos = recibir_entero_paquete_syscall(paquete);
             log_info(logger,"ENTRAMOS A SYSCALL IO, MILISEGUNDOS: %d",milisegundos);
-            IO(milisegundos);
             pthread_mutex_lock(&mutex_syscall_ejecutando);
             syscallEjecutando=true;
             pthread_mutex_unlock(&mutex_syscall_ejecutando); 
+            IO(milisegundos);
             sem_post(&sem_fin_syscall);
             break;
         case ENUM_DUMP_MEMORY:
             log_info(logger, "## (%d:%d) - Solicitó syscall: <DUMP_MEMORY>", hilo_exec->pid, hilo_exec->tid);
-            DUMP_MEMORY();
-            free(paquete->buffer);
-            free(paquete);
             pthread_mutex_lock(&mutex_syscall_ejecutando);
             syscallEjecutando=true;
             pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            DUMP_MEMORY();
             sem_post(&sem_fin_syscall);
+            free(paquete->buffer);
+            free(paquete);
             break;
         case ENUM_SEGMENTATION_FAULT: 
             t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);

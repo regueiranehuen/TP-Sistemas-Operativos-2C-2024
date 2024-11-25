@@ -17,7 +17,8 @@ void inicializar_estados() {
     lista_pcbs = list_create();
     lista_mutex = list_create();
 
-    pipe(pipe_fds);  // Crear el pipe que espera fin de syscall terminante
+    if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN"))
+        pipe(pipe_fds);  // Crear el pipe que espera fin de syscall terminante
 }
 
 void destruir_estados() {
@@ -94,6 +95,16 @@ void destruir_mutex() {
     pthread_mutex_destroy(&mutex_lista_blocked);
     pthread_mutex_destroy(&mutex_syscall_ejecutando);
     pthread_mutex_destroy(&mutex_desalojo);
+}
+
+void fin_syscall_desalojo_cmn(){
+    if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")){
+        desalojado = true;
+        write(pipe_fds[1], "x", 1);
+        pthread_mutex_lock(&mutex_syscall_ejecutando);
+        syscallEjecutando=false;
+        pthread_mutex_unlock(&mutex_syscall_ejecutando);
+    }
 }
 
 void liberar_proceso(t_pcb *pcb)

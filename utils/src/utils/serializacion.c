@@ -233,6 +233,7 @@ void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){
 
     if(buffer->size == 0){
         send_paquete_syscall_sin_parametros(socket_cliente,syscall);
+        free(buffer);
     } else{
 
     t_paquete_syscall*paquete=malloc(sizeof(t_paquete_syscall));
