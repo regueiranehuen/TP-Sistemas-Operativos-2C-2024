@@ -507,7 +507,10 @@ void THREAD_JOIN(int tid)
     log_info(logger, "## (%d:%d) - Bloqueado por: PTHREAD_JOIN", tcb_aux->pid, tcb_aux->tid);
     pthread_mutex_unlock(&mutex_log);
 
+    
+    pthread_mutex_lock(&mutex_cola_ready);
     sacar_tcb_ready(tcb_aux);
+    pthread_mutex_unlock(&mutex_cola_ready);
 
     /*t_tcb* tcb_bloqueante = buscar_tcb_por_tid(lista_tcbs, tid,tcb_aux);
     queue_push(tcb_bloqueante->cola_hilos_bloqueados, tcb_aux);*/
@@ -576,8 +579,9 @@ void THREAD_CANCEL(int tid)
     {
         if (tcb->estado == TCB_READY)
         {
+            pthread_mutex_lock(&mutex_cola_ready);
             sacar_tcb_ready(tcb);
-            sem_wait(&semaforo_cola_ready); // Descontar semáforo cola ready
+            pthread_mutex_unlock(&mutex_cola_ready);
         }
         else
         {
@@ -603,8 +607,11 @@ void THREAD_EXIT() // AVISO A MEMORIA
     t_tcb *hilo = hilo_exec;
     hilo->estado = TCB_EXIT;
 
-    // Hilo exec lo establezco en NULL despues
+
+    pthread_mutex_lock(&mutex_cola_ready);
     sacar_tcb_ready(hilo);
+    pthread_mutex_unlock(&mutex_cola_ready);
+
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     queue_push(cola_exit, hilo);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
@@ -678,7 +685,11 @@ void MUTEX_LOCK(char *recurso)
         pthread_mutex_lock(&mutex_log);
         log_info(logger, "NO SE ENCONTRÓ EL MUTEX %s", recurso);
         pthread_mutex_unlock(&mutex_log);
+
+        pthread_mutex_lock(&mutex_cola_ready);
         sacar_tcb_ready(hilo_aux);
+        pthread_mutex_unlock(&mutex_cola_ready);
+
         pthread_mutex_lock(&mutex_cola_exit_hilos);
         queue_push(cola_exit, hilo_aux);
         pthread_mutex_unlock(&mutex_cola_exit_hilos);
@@ -725,7 +736,10 @@ void MUTEX_LOCK(char *recurso)
         pthread_mutex_unlock(&mutex_log);
         hilo_aux->estado = TCB_BLOCKED_MUTEX;
         // hilo_exec = NULL;
+        pthread_mutex_lock(&mutex_cola_ready);
         sacar_tcb_ready(hilo_aux);
+        pthread_mutex_unlock(&mutex_cola_ready);
+
         pthread_mutex_lock(&mutex_lista_blocked);
         list_add(lista_bloqueados, hilo_aux);
         pthread_mutex_unlock(&mutex_lista_blocked);
@@ -832,7 +846,9 @@ void IO(int milisegundos)
 
     t_tcb *tcb = hilo_exec;
 
+    pthread_mutex_lock(&mutex_cola_ready);
     sacar_tcb_ready(tcb);
+    pthread_mutex_unlock(&mutex_cola_ready);
 
     // Cambiar el estado del hilo a BLOCKED
     tcb->estado = TCB_BLOCKED;

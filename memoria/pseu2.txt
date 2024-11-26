@@ -1,4 +1,6 @@
+THREAD_CREATE supercodigo.txt 0
 SET DX 0
 LOG DX
-THREAD_CREATE supercodigo.txt 2
+SET AX 5
+LOG AX
 THREAD_EXIT

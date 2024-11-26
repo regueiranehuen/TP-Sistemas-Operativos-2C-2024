@@ -330,10 +330,8 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
 }
 
 void*atender_interrupt(void*args){
-    char*algoritmo=(char*)args;
 
     while (estado_kernel!=0){
-        sem_wait(&sem_espera_interrupcion_cpu);
         code_operacion code = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt);
 
         switch(code){
@@ -538,7 +536,7 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
         return;
     }
 
-    resultado = pthread_create(&hilo_atender_interrupt, NULL, atender_interrupt, algoritmo);
+    resultado = pthread_create(&hilo_atender_interrupt, NULL, atender_interrupt, NULL);
     if (resultado != 0)
     {
         log_error(logger, "Error al crear el hilo para atender interrupt");
@@ -593,13 +591,13 @@ void espera_con_quantum(int quantum)
     else if (resultado > 0) // Si una syscall desaloja al proceso antes que termine el quantum
     {
         
-        
+        log_debug(logger,"Una syscall desaloja al proceso antes que termine el quantum");
         desalojado = true;
         //sem_post(&sem_desalojado);
         
     }
 
-    else if (resultado == 0) // Si se termina el quantum antes de que termine de ejecutar una syscall
+    else if (resultado == 0) // Si se termina el quantum
     {
         log_debug(logger, "Timeout alcanzado en select (terminó el quantum)");
         // Tiempo del quantum agotado, desalojar por quantum
@@ -709,7 +707,6 @@ void espera_con_quantum(int quantum)
     }
     sem_destroy(&sem_fin_syscall);
 
-    return;
 }
 
 void pushear_cola_ready(t_tcb* hilo){
