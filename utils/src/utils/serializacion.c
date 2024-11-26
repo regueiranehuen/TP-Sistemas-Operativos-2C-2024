@@ -181,6 +181,16 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 
 }
 
+void send_ciclo_nuevo(int socket_cliente){
+    t_buffer* buffer = malloc(sizeof(t_buffer));
+
+    buffer-> size = 0;
+
+    syscalls syscall = ENUM_CICLO_NUEVO;
+    printf("Enviando CICLO NUEVO\n");
+    send_paquete_syscall(buffer,socket_cliente,syscall);
+}
+
 void send_syscall(syscalls syscall, int socket_cliente){
     send(socket_cliente,&syscall,sizeof(int),0);
 }
@@ -590,7 +600,10 @@ void send_code_operacion(code_operacion code, int socket_cliente){
 
 code_operacion recibir_code_operacion(int socket_cliente){
     code_operacion code;
-    recv(socket_cliente,&code,sizeof(int),0);
+    int bytes = recv(socket_cliente,&code,sizeof(int),0);
+    if(bytes <= 0){
+    return -1;
+    }
     return code;
 }
 

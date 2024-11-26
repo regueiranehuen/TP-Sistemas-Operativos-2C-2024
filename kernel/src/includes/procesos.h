@@ -39,11 +39,14 @@ extern pthread_mutex_t mutex_log;
 extern pthread_mutex_t mutex_lista_blocked;
 extern pthread_mutex_t mutex_syscall_ejecutando;
 
+extern bool esperando;
 
 extern sem_t semaforo_new_ready_procesos;
 extern sem_t semaforo_cola_new_procesos;
 extern sem_t semaforo_cola_exit_procesos;
 extern sem_t sem_desalojado;
+
+extern sem_t sem_ciclo_nuevo;
 
 extern sem_t semaforo_cola_ready;
 

@@ -9,6 +9,7 @@ pthread_mutex_t mutex_desalojo;
 sem_t semaforo_new_ready_procesos;
 sem_t semaforo_cola_new_procesos;
 sem_t semaforo_cola_exit_procesos;
+sem_t sem_ciclo_nuevo;
 
 sem_t semaforo_cola_ready;
 
@@ -47,6 +48,8 @@ t_list *lista_mutex;
 t_config *config;
 t_log *logger;
 sockets_kernel *sockets;
+
+bool esperando;
 
 pthread_mutex_t mutex_log;
 pthread_mutex_t mutex_lista_pcbs;
@@ -577,7 +580,6 @@ void THREAD_CANCEL(int tid)
         if (tcb->estado == TCB_READY)
         {
             sacar_tcb_ready(tcb);
-            sem_wait(&semaforo_cola_ready); // Descontar semáforo cola ready
         }
         else
         {
@@ -591,6 +593,8 @@ void THREAD_CANCEL(int tid)
         pthread_mutex_unlock(&mutex_cola_exit_hilos);
         sem_post(&semaforo_cola_exit_hilos);
     }
+    log_info(logger,"MANDO OK");
+    send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
 }
 
 /* THREAD_EXIT, esta syscall finaliza al hilo que lo invocó,
@@ -615,6 +619,7 @@ void THREAD_EXIT() // AVISO A MEMORIA
     pthread_mutex_lock(&mutex_desalojo);
     if (!aviso_cpu->finQuantum)
     {
+        log_info(logger,"MANDO DESALOJAR");
         send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
         aviso_cpu->desalojar = true;
         code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
@@ -628,6 +633,7 @@ void THREAD_EXIT() // AVISO A MEMORIA
         aviso_cpu->finQuantum = false;
     }
     pthread_mutex_unlock(&mutex_desalojo);
+    log_info(logger,"MANDO OK");
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
     //fin_syscall_desalojo_cmn();
@@ -841,8 +847,8 @@ void IO(int milisegundos)
     pthread_mutex_lock(&mutex_desalojo);
     if (!aviso_cpu->finQuantum)
     {
-        send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
         aviso_cpu->desalojar = true;
+        send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
         code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
         if (codigo != OK)
         {

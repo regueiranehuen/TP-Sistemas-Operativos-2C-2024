@@ -135,6 +135,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
 
     while (estado_kernel != 0)
     {
+
         printf("esperando syscall\n");
         t_paquete_syscall *paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch);
         printf("recibi syscall\n");
@@ -146,149 +147,99 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             break;
         }
 
+        pthread_mutex_lock(&mutex_syscall_ejecutando);
+        syscallEjecutando = true;
+        pthread_mutex_unlock(&mutex_syscall_ejecutando);
+
         switch (paquete->syscall)
         {
 
         case ENUM_PROCESS_CREATE:
-            log_info(logger, "## (%d:%d) - Solicitó syscall: <PROCESS_CREATE>", hilo_exec->pid, hilo_exec->tid);
+
+            log_info(logger, "## (%d:%d) - Solicitó syscall: PROCESS_CREATE", hilo_exec->pid, hilo_exec->tid);
             t_process_create *paramProcessCreate = parametros_process_create(paquete);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = true;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
             log_info(logger, "pseudocodigo:%s, Tamanio:%d, Prioridad:%d", paramProcessCreate->nombreArchivo, paramProcessCreate->tamProceso, paramProcessCreate->prioridad);
             PROCESS_CREATE(paramProcessCreate->nombreArchivo, paramProcessCreate->tamProceso, paramProcessCreate->prioridad);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = false;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
-            sem_post(&sem_fin_syscall);
+            
             break;
         case ENUM_PROCESS_EXIT:
-            log_info(logger, "## (%d:%d) - Solicitó syscall: <PROCESS_EXIT>", hilo_exec->pid, hilo_exec->tid);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = true;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            log_info(logger, "## (%d:%d) - Solicitó syscall: PROCESS_EXIT", hilo_exec->pid, hilo_exec->tid);
+            
             PROCESS_EXIT();
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = false;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            
             free(paquete->buffer);
             free(paquete);
-            sem_post(&sem_fin_syscall);
+
             break;
         case ENUM_THREAD_CREATE:
-            log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_CREATE>", hilo_exec->pid, hilo_exec->tid);
+            log_info(logger, "## (%d:%d) - Solicitó syscall: THREAD_CREATE", hilo_exec->pid, hilo_exec->tid);
             t_thread_create *paramThreadCreate = parametros_thread_create(paquete);
             log_info(logger, "NOMBRE PSEUDOCODIGO RECIBIDO THREAD CREATE: %s", paramThreadCreate->nombreArchivo);
             log_info(logger, "VOY A ENTRAR A THREAD CREATE");
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = true;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            
             THREAD_CREATE(paramThreadCreate->nombreArchivo, paramThreadCreate->prioridad);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = false;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            
             sem_post(&sem_fin_syscall);
             free(paramThreadCreate);
             break;
         case ENUM_THREAD_JOIN:
-            log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_JOIN>", hilo_exec->pid, hilo_exec->tid);
+            log_info(logger, "## (%d:%d) - Solicitó syscall: THREAD_JOIN", hilo_exec->pid, hilo_exec->tid);
             int tid_thread_join = recibir_entero_paquete_syscall(paquete);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = true;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            
             THREAD_JOIN(tid_thread_join);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = false;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
-            sem_post(&sem_fin_syscall);
+            
             break;
         case ENUM_THREAD_CANCEL:
-            log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_CANCEL>", hilo_exec->pid, hilo_exec->tid);
+            log_info(logger, "## (%d:%d) - Solicitó syscall: THREAD_CANCEL", hilo_exec->pid, hilo_exec->tid);
             int tid_thread_cancel = recibir_entero_paquete_syscall(paquete);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = true;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            
             THREAD_CANCEL(tid_thread_cancel);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = false;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
-            sem_post(&sem_fin_syscall);
             break;
         case ENUM_THREAD_EXIT:
-            log_info(logger, "## (%d:%d) - Solicitó syscall: <THREAD_EXIT>", hilo_exec->pid, hilo_exec->tid);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = true;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            log_info(logger, "## (%d:%d) - Solicitó syscall: THREAD_EXIT", hilo_exec->pid, hilo_exec->tid);
+            
             THREAD_EXIT();
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = false;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
-            sem_post(&sem_fin_syscall);
+            
             free(paquete->buffer);
             free(paquete);
             break;
         case ENUM_MUTEX_CREATE:
-            log_info(logger, "## (%d:%d) - Solicitó syscall: <MUTEX_CREATE>", hilo_exec->pid, hilo_exec->tid);
+            log_info(logger, "## (%d:%d) - Solicitó syscall: MUTEX_CREATE", hilo_exec->pid, hilo_exec->tid);
             char *recurso = recibir_string_paquete_syscall(paquete);
             log_info(logger, "RECURSO MUTEX CREATE: %s", recurso);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = true;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            
             MUTEX_CREATE(recurso);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = false;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
-            sem_post(&sem_fin_syscall);
+           
             break;
         case ENUM_MUTEX_LOCK:
-            log_info(logger, "## (%d:%d) - Solicitó syscall: <MUTEX_LOCK>", hilo_exec->pid, hilo_exec->tid);
+            log_info(logger, "## (%d:%d) - Solicitó syscall: MUTEX_LOCK", hilo_exec->pid, hilo_exec->tid);
             char *recurso_a_bloquear = recibir_string_paquete_syscall(paquete);
             log_info(logger, "RECURSO MUTEX LOCK: %s", recurso);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = true;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            
             MUTEX_LOCK(recurso_a_bloquear);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = false;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
-            sem_post(&sem_fin_syscall);
+            
             break;
         case ENUM_MUTEX_UNLOCK:
-            log_info(logger, "## (%d:%d) - Solicitó syscall: <MUTEX_UNLOCK>", hilo_exec->pid, hilo_exec->tid);
+            log_info(logger, "## (%d:%d) - Solicitó syscall: MUTEX_UNLOCK", hilo_exec->pid, hilo_exec->tid);
             char *recurso_a_desbloquear = recibir_string_paquete_syscall(paquete);
             log_info(logger, "RECURSO MUTEX UNLOCK: %s", recurso);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = true;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+        
             MUTEX_UNLOCK(recurso_a_desbloquear);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = false;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
-            sem_post(&sem_fin_syscall);
+            
             break;
         case ENUM_IO:
-            log_info(logger, "## (%d:%d) - Solicitó syscall: <IO>", hilo_exec->pid, hilo_exec->tid);
+            log_info(logger, "## (%d:%d) - Solicitó syscall: IO", hilo_exec->pid, hilo_exec->tid);
             int milisegundos = recibir_entero_paquete_syscall(paquete);
             log_info(logger, "ENTRAMOS A SYSCALL IO, MILISEGUNDOS: %d", milisegundos);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = true;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            
             IO(milisegundos);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = false;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
-            sem_post(&sem_fin_syscall);
+            
             break;
         case ENUM_DUMP_MEMORY:
-            log_info(logger, "## (%d:%d) - Solicitó syscall: <DUMP_MEMORY>", hilo_exec->pid, hilo_exec->tid);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = true;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            log_info(logger, "## (%d:%d) - Solicitó syscall: DUMP_MEMORY", hilo_exec->pid, hilo_exec->tid);
+            
             DUMP_MEMORY();
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            syscallEjecutando = false;
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
-            sem_post(&sem_fin_syscall);
+            
             free(paquete->buffer);
             free(paquete);
             break;
@@ -298,12 +249,12 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             pthread_mutex_lock(&mutex_cola_exit_procesos);
             queue_push(cola_exit_procesos, pcb);
             pthread_mutex_unlock(&mutex_cola_exit_procesos);
-            pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+        
             send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Interrupt);
-            pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
+            
             free(paquete->buffer);
             free(paquete);
-            break;
+            break;/*
         case ENUM_FIN_QUANTUM_RR:
             log_info(logger, "SE RECIBIÓ EL CÓDIGO ENUM_FIN_QUANTUM_RR");
             sem_post(&sem_desalojado);
@@ -316,6 +267,10 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             sem_post(&sem_desalojado);
             free(paquete->buffer);
             free(paquete);
+            break;*/
+        case ENUM_CICLO_NUEVO:
+            log_info(logger,"Ciclo nuevo por parte de cpu");
+            sem_post(&sem_ciclo_nuevo);
             break;
         default:
             log_info(logger, "se recibio el codigo %d no valido", paquete->syscall);
@@ -325,36 +280,38 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             free(paquete);
             break;
         }
+        pthread_mutex_lock(&mutex_syscall_ejecutando);
+        syscallEjecutando = false;
+        if(esperando){
+        pthread_mutex_unlock(&mutex_syscall_ejecutando);
+        sem_post(&sem_fin_syscall);
+        }
+        else{
+        pthread_mutex_unlock(&mutex_syscall_ejecutando);
+        }
     }
     return NULL;
 }
 
 void*atender_interrupt(void*args){
-    char*algoritmo=(char*)args;
 
     while (estado_kernel!=0){
-        sem_wait(&sem_espera_interrupcion_cpu);
+
         code_operacion code = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt);
+
+        if(code ==-1){
+            log_info(logger,"Conexion cerrada con cpu");
+            break;
+        }
 
         switch(code){
             case ENUM_DESALOJAR:
             log_debug(logger,"LLEGÓ CÓDIGO ENUM_DESALOJAR");
-            sem_post(&sem_desalojado);
-            /*if (strings_iguales(algoritmo,"CMN")){
-                sem_post(&sem_ok_desalojo_cpu);
-                //sem_wait(&sem_termina_cmn);
-                sem_post(&sem_desalojado);
-            }
-            else{
-                sem_post(&sem_desalojado);
-            }*/
-            
-            
+            sem_post(&sem_desalojado);    
             break;
             case ENUM_FIN_QUANTUM_RR:
             log_debug(logger,"LLEGÓ CÓDIGO ENUM_FIN_QUANTUM_RR");
-            //sem_post(&sem_ok_desalojo_cpu);
-            //sem_wait(&sem_termina_cmn);
+
             sem_post(&sem_desalojado);
             break;
             default:
@@ -366,6 +323,7 @@ void*atender_interrupt(void*args){
     }
     return NULL;
 }
+
 
 t_tcb* prioridades (){
 
@@ -432,7 +390,7 @@ Se elegirá al siguiente hilo a ejecutar según el siguiente esquema de colas mu
 void colas_multinivel(){
     
     sem_wait(&semaforo_cola_ready);
-
+    
     print_lista_prioridades(colas_ready_prioridad);
     printf("Lista bloqueados:\n");
     print_lista(lista_bloqueados);
@@ -478,9 +436,12 @@ void *hilo_planificador_corto_plazo(void *arg)
     char*algoritmo=(char*)arg;
 
     while(estado_kernel!=0){
-    log_info(logger,"Esperando a ser desalojado");
-    sem_wait(&sem_desalojado);// tiene que empezar con valor 1 
-    log_info(logger,"Desalojado");
+        log_info(logger,"Esperando a planificar");
+        sem_wait(&sem_ciclo_nuevo);
+        sem_wait(&sem_desalojado);
+        log_info(logger,"Planificando");
+        aviso_cpu->desalojar = false;
+        aviso_cpu->finQuantum = false;
         t_tcb* hilo_a_ejecutar;
         if (strings_iguales(algoritmo, "FIFO")){
         hilo_a_ejecutar = fifo_tcb();
@@ -562,8 +523,6 @@ el algoritmo. Durante este período la CPU se quedará esperando.
 void espera_con_quantum(int quantum)
 {
     
-
-    desalojado = false;
     fd_set read_fds;
     struct timeval timeout;
 
@@ -576,6 +535,7 @@ void espera_con_quantum(int quantum)
     int max_fd = sockets->sockets_cliente_cpu->socket_Interrupt + 1; // Determinar descriptor máximo
 
     log_debug(logger, "Esperando en select con timeout");
+
     if (sockets->sockets_cliente_cpu->socket_Interrupt <= 0)
     {
         log_error(logger, "Descriptores de archivo no válidos");
@@ -589,129 +549,54 @@ void espera_con_quantum(int quantum)
     {
         log_error(logger, "Error en select");
     }
-
-    else if (resultado > 0) // Si una syscall desaloja al proceso antes que termine el quantum
-    {
-        
-        
-        desalojado = true;
-        //sem_post(&sem_desalojado);
-        
-    }
-
     else if (resultado == 0) // Si se termina el quantum antes de que termine de ejecutar una syscall
     {
+    
         log_debug(logger, "Timeout alcanzado en select (terminó el quantum)");
         // Tiempo del quantum agotado, desalojar por quantum
-        pthread_mutex_lock(&mutex_syscall_ejecutando);
-        if (syscallEjecutando)
-        {
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
-            log_info(logger, "HAY UNA SYSCALL EJECUTANDO");
-            sem_wait(&sem_fin_syscall);
-
-            syscallEjecutando = false;
-            if (!desalojado)
-            {
-                pthread_mutex_lock(&mutex_desalojo);
-                if (!aviso_cpu->desalojar)
-                {
-                    log_info(logger, "Terminó la syscall y no desalojó al proceso");
-                    code_operacion cod_op = FIN_QUANTUM_RR;
-                    log_info(logger, "## (%d:%d) - Desalojado por fin de Quantum", hilo_exec->pid, hilo_exec->tid);
-                    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-                    log_info(logger, "Voy a mandar el código correspondiente a fin quantum (%d)", FIN_QUANTUM_RR);
-                    send_code_operacion(cod_op, sockets->sockets_cliente_cpu->socket_Interrupt);
-                    log_info(logger, "Enviado fin quantum!");
-                    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-                    t_tcb *hilo = hilo_exec;
-
-                    pthread_mutex_lock(&mutex_cola_ready);
-                    pthread_mutex_lock(&mutex_lista_blocked);
-                    if (!tcb_metido_en_estructura(hilo) && !hilo_esta_en_lista(lista_bloqueados, hilo->tid, hilo->pid))
-                    {
-                        pthread_mutex_unlock(&mutex_cola_ready);
-                        pthread_mutex_unlock(&mutex_lista_blocked);
-                        hilo->estado = TCB_READY;
-                        pushear_cola_ready(hilo);
-                    }
-
-                    else
-                    {
-                        pthread_mutex_unlock(&mutex_cola_ready);
-                        pthread_mutex_unlock(&mutex_lista_blocked);
-                    }
-
-                    desalojado = true;
-                    aviso_cpu->finQuantum = true;
-                   
-                }
-                else if (aviso_cpu->desalojar)
-                {
-                    aviso_cpu->desalojar = false;
-                    //sem_post(&sem_desalojado);
-                }
-                pthread_mutex_unlock(&mutex_desalojo);
-            }
-        }
-        else if (!syscallEjecutando && !desalojado)
-        {
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
             pthread_mutex_lock(&mutex_desalojo);
-            if (!aviso_cpu->desalojar)
-            {
-                log_info(logger, "NO HAY NINGUNA SYSCALL EJECUTANDO");
-                pthread_mutex_unlock(&mutex_syscall_ejecutando);
-
-                code_operacion cod_op = FIN_QUANTUM_RR;
-                log_info(logger, "## (<%d>:<%d>) - Desalojado por fin de Quantum", hilo_exec->pid, hilo_exec->tid);
-                pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-                log_info(logger, "Voy a mandar el código correspondiente a fin quantum (%d)", FIN_QUANTUM_RR);
-                send_code_operacion(cod_op, sockets->sockets_cliente_cpu->socket_Interrupt);
-                log_info(logger, "Enviado fin quantum!");
-                pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-
-                t_tcb *hilo = hilo_exec;
-                pthread_mutex_lock(&mutex_cola_ready);
-                pthread_mutex_lock(&mutex_lista_blocked);
-                if (!tcb_metido_en_estructura(hilo) && !hilo_esta_en_lista(lista_bloqueados, hilo->tid, hilo->pid))
-                {
-                    pthread_mutex_unlock(&mutex_cola_ready);
-                    pthread_mutex_unlock(&mutex_lista_blocked);
-                    hilo->estado = TCB_READY;
-                    pushear_cola_ready(hilo);
-                }
-
-                else
-                {
-                    pthread_mutex_unlock(&mutex_cola_ready);
-                    pthread_mutex_unlock(&mutex_lista_blocked);
-                }
-
-                desalojado = true;
-                aviso_cpu->finQuantum = true;
-            }
-            else if (aviso_cpu->desalojar)
-            {
-                aviso_cpu->desalojar = false;
-                //sem_post(&sem_desalojado);
-            }
-            pthread_mutex_unlock(&mutex_desalojo);
+            pthread_mutex_lock(&mutex_syscall_ejecutando);
+            if (syscallEjecutando)
+        {
+            esperando = true;
+            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            log_info(logger, "Syscall en curso. Esperando a que finalice antes de mandar fin de quantum.");
+            // Esperamos a que se termine la syscall
+            sem_wait(&sem_fin_syscall);
+            esperando = false;
+            log_info(logger, "Syscall finalizada. Continuando con el desalojo por fin de quantum.");
         }
         else{
             pthread_mutex_unlock(&mutex_syscall_ejecutando);
         }
-        // //sem_destroy(&sem_fin_syscall);
+            if(!aviso_cpu->desalojar){
+            aviso_cpu->finQuantum = true;
+            pthread_mutex_unlock(&mutex_desalojo);
+            code_operacion cod_op = FIN_QUANTUM_RR;
 
-        int valor_semaforo_cola_ready;
-        log_debug(logger, "Valor semaforo cola ready: %d", sem_getvalue(&semaforo_cola_ready, &valor_semaforo_cola_ready));
+            log_info(logger, "## (%d:%d) - Desalojado por fin de Quantum", hilo_exec->pid, hilo_exec->tid);
+            log_info(logger, "Voy a mandar el código correspondiente a fin quantum (%d)", FIN_QUANTUM_RR);
 
-    }
-    sem_destroy(&sem_fin_syscall);
+            pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+            send_code_operacion(cod_op, sockets->sockets_cliente_cpu->socket_Interrupt);
+            pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
-    return;
+            log_info(logger, "Enviado fin quantum!");
+        if(!tcb_metido_en_estructura(hilo_exec)){
+            t_tcb* tcb = hilo_exec;
+            tcb->estado = TCB_READY;
+            pushear_cola_ready(tcb);
+        }
+        }
+        else if(aviso_cpu->desalojar){
+            aviso_cpu->desalojar = false;
+            pthread_mutex_unlock(&mutex_desalojo);
+        }
 }
-
+else if(resultado > 0){
+    log_info(logger,"Llegada de interrupcion, finaliza clock");
+}
+}
 void pushear_cola_ready(t_tcb* hilo){
 
     log_info(logger, "FUNCION PUSHEAR COLA READY LLEGA HILO CON TID %d",hilo->tid);

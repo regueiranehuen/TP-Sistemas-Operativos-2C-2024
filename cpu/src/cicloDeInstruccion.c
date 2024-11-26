@@ -39,6 +39,7 @@ void *ciclo_de_instruccion(void *args)
 
     while (noFinalizar != -1)
     {
+        send_ciclo_nuevo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         t_contextos *contextos = esperar_thread_execute(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
         if (contextos != NULL && contextos->contexto_pid != NULL && contextos->contexto_tid != NULL)

@@ -47,7 +47,7 @@ void inicializar_semaforos() {
     sem_init(&sem_lista_prioridades, 0, 0);         // Inicializa en 0
     sem_init(&semaforo_cola_exit_hilo_exec_process_exit, 0, 0);
     sem_init(&semaforo_cola_exit_hilos_process_exit, 0, 0);
-
+    sem_init(&sem_ciclo_nuevo,0,0);
     sem_init(&sem_espera_interrupcion_cpu,0,0);
     sem_init(&sem_ok_desalojo_cpu,0,0);
     sem_init(&sem_termina_cmn,0,0);
@@ -65,7 +65,7 @@ void destruir_semaforos() {
     sem_destroy(&sem_lista_prioridades);
     sem_destroy(&semaforo_cola_exit_hilo_exec_process_exit);
     sem_destroy(&semaforo_cola_exit_hilos_process_exit);
-
+    sem_destroy(&sem_ciclo_nuevo);
     sem_destroy(&sem_espera_interrupcion_cpu);
     sem_destroy(&sem_ok_desalojo_cpu);
     sem_destroy(&sem_termina_cmn);
@@ -289,14 +289,21 @@ return cola;
 t_tcb* sacar_tcb_ready(t_tcb* tcb) {
     // Busca la cola correspondiente por prioridad
     if(strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"FIFO")==0){
+    pthread_mutex_lock(&mutex_cola_ready);
     sacar_tcb_de_cola(cola_ready_fifo,tcb);
+    pthread_mutex_unlock(&mutex_cola_ready);
+    sem_wait(&semaforo_cola_ready); 
     return tcb;
     }
     else if(strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"PRIORIDADES")==0){
+    pthread_mutex_lock(&mutex_cola_ready);
     sacar_tcb_de_lista(lista_ready_prioridad,tcb);
+    pthread_mutex_unlock(&mutex_cola_ready);
+    sem_wait(&semaforo_cola_ready); 
     return tcb;
     }
     else if(strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")==0){
+    pthread_mutex_lock(&mutex_cola_ready);
     int tamanio = list_size(colas_ready_prioridad);
     for (int i = 0; i < tamanio; i++) {
         t_cola_prioridad* cola = list_get(colas_ready_prioridad, i);
@@ -309,11 +316,13 @@ t_tcb* sacar_tcb_ready(t_tcb* tcb) {
                     // Eliminar el TCB de la cola
                     list_remove(elementos_cola, j); // Lo quita de la lista interna
                     sem_wait(&semaforo_cola_ready); 
+                    pthread_mutex_unlock(&mutex_cola_ready);
                     return tcb_aux; // Devuelve el TCB encontrado
                 }
             }
         }
     }
+    pthread_mutex_unlock(&mutex_cola_ready);
     }
     return NULL; // Si no encuentra la cola o el TCB, devuelve NULL
 }
