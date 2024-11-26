@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
     //char* archivo_pseudocodigo = argv[1];
     //int tamanio_proceso = atoi(argv[2]);
     char *archivo_pseudocodigo = "FIBO_10.txt";//argv[1];
-    int tamanio_proceso = 64;//atoi(argv[2]);
+    int tamanio_proceso = 128;//atoi(argv[2]);
 
     inicializar_estados();
     inicializar_semaforos();

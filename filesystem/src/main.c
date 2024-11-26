@@ -20,11 +20,9 @@ int main(int argc, char *argv[]){
     inicializar_estructuras();
 
     socket_servidor = hilo_filesystem(log_filesystem, config);
-    sem_wait(&sem_fin_filesystem);
+    //sem_wait(&sem_fin_filesystem);
 
-    leer_archivo("/home/utnso/tp-2024-2c-Go-se-fue-C-queda/mount_dir/bitmap.dat"); //Es para probar nomas
-    leer_archivo("/home/utnso/tp-2024-2c-Go-se-fue-C-queda/mount_dir/bloques.dat");
-    leer_archivo("/home/utnso/tp-2024-2c-Go-se-fue-C-queda/mount_dir/files/");
+    sem_wait(&sem_fin_filesystem);
 
     config_destroy(config);
     log_destroy(log_filesystem);
@@ -34,43 +32,4 @@ int main(int argc, char *argv[]){
     //borrar el bloques.dat
 
     return 0;
-}
-
-void leer_archivo(const char *nombre_archivo) {
-    FILE *archivo = fopen(nombre_archivo, "rb"); // Abrir en modo lectura binaria
-    if (archivo == NULL) {
-        perror("Error al abrir el archivo");
-        return;
-    }
-
-    // Obtener tamaño del archivo
-    fseek(archivo, 0, SEEK_END);
-    long tamano = ftell(archivo);
-    rewind(archivo);
-
-    // Leer contenido del archivo
-    char *contenido = (char *)malloc(tamano + 1);
-    if (contenido == NULL) {
-        perror("Error al asignar memoria");
-        fclose(archivo);
-        return;
-    }
-
-    size_t leidos = fread(contenido, 1, tamano, archivo);
-    if (leidos != tamano) {
-        perror("Error al leer el archivo");
-        free(contenido);
-        fclose(archivo);
-        return;
-    }
-
-    contenido[tamano] = '\0'; // Asegurarse de que el contenido esté terminado en NULL para cadenas
-
-    // Imprimir contenido
-    printf("Contenido de '%s':\n", nombre_archivo);
-    printf("%s\n", contenido);
-
-    // Liberar memoria y cerrar archivo
-    free(contenido);
-    fclose(archivo);
 }

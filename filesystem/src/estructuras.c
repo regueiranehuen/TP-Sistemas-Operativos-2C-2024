@@ -25,6 +25,7 @@ t_bitarray* cargar_bitmap(char* mount_dir, uint32_t block_count) {
 
         // Calcular el tamaño del bitmap
         uint32_t bitmap_size = (uint32_t)ceil((double)block_count / 8.0);
+        log_info(log_filesystem, "Tamaño del bitmap: %u bytes", bitmap_size);
         char* empty_bitmap = calloc(bitmap_size, sizeof(char));
         if (!empty_bitmap) {
             log_error(log_filesystem, "Error al asignar memoria para el bitmap vacío");
@@ -91,8 +92,21 @@ t_bitarray* cargar_bitmap(char* mount_dir, uint32_t block_count) {
 
     // Crear el bitarray
     t_bitarray* bitmap = bitarray_create_with_mode(bitarray_data, st.st_size, LSB_FIRST);
+    imprimir_contenido_bitmap(bitmap, block_count);
     //free(bitmap_path);
     return bitmap;
+}
+
+void imprimir_contenido_bitmap(t_bitarray* bitmap, uint32_t block_count) {
+    if (!bitmap) {
+        log_error(log_filesystem, "Bitmap no cargado");
+        return;
+    }
+
+    for (uint32_t i = 0; i < (uint32_t)ceil((double)block_count / 8.0); i++) {
+        int bit = bitarray_test_bit(bitmap, i);
+        printf("Bloque %u: %s\n", i, bit ? "Ocupado" : "Libre");
+    }
 }
 
 char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const char* mount_dir, uint32_t block_size) {
@@ -301,6 +315,8 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
     }
 
     fclose(arch);
+    imprimir_archivo_bloques(mount_dir, block_size);
+    free(path);
     return 0;
 }
 
@@ -313,4 +329,75 @@ void escribir_bloque_de_puntero(FILE* arch, uint32_t* bloques_reservados, uint32
             log_error(log_filesystem, "Error al escribir en el bloque de punteros");
         }
     }
+}
+
+char* leer_archivo_bloques(const char* bloques_path) {
+    struct stat st;
+    if (stat(bloques_path, &st) != 0) {
+        log_error(log_filesystem, "Error al obtener información del archivo bloques.dat");
+        return NULL;
+    }
+
+    FILE* arch = fopen(bloques_path, "rb");
+    if (!arch) {
+        log_error(log_filesystem, "Error al abrir el archivo bloques.dat");
+        return NULL;
+    }
+
+    char* bloques_data = malloc(st.st_size);
+    if (!bloques_data) {
+        log_error(log_filesystem, "Error al asignar memoria para el contenido de bloques");
+        fclose(arch);
+        return NULL;
+    }
+
+    if (fread(bloques_data, 1, st.st_size, arch) != st.st_size) {
+        log_error(log_filesystem, "Error al leer el contenido del archivo bloques.dat");
+        free(bloques_data);
+        fclose(arch);
+        return NULL;
+    }
+    fclose(arch);
+
+    return bloques_data;
+}
+
+void imprimir_archivo_bloques(const char* mount_dir, uint32_t block_size) {
+    char bloques_path[256];
+    snprintf(bloques_path, sizeof(bloques_path), "%s/bloques.dat", mount_dir);
+
+    FILE* arch = fopen(bloques_path, "rb");
+    if (arch == NULL) {
+        printf("Error: No se pudo abrir el archivo %s\n", bloques_path);
+        return;
+    }
+
+    printf("Contenido del archivo bloques.dat:\n");
+
+    uint32_t total_bloques = (uint32_t)ceil((double)block_count / 8.0); // Bloques necesarios según block_count
+    uint32_t bloque_index = 0;
+    uint8_t* buffer = malloc(block_size);
+    if (!buffer) {
+        printf("Error: No se pudo asignar memoria para el buffer\n");
+        fclose(arch);
+        return;
+    }
+
+    // Leer y mostrar bloques hasta total_bloques
+    while (fread(buffer, 1, block_size, arch) == block_size && bloque_index < total_bloques) {
+        printf("Bloque %u:\n", bloque_index);
+        for (uint32_t i = 0; i < block_size; i++) {
+            if (i % 16 == 0) {
+                printf("\n%04X: ", i); // Imprime la dirección de inicio de la línea
+            }
+            printf("%02X ", buffer[i]); // Imprime el byte en formato hexadecimal
+        }
+        printf("\n\n");
+        bloque_index++;
+    }
+
+    free(buffer);
+    fclose(arch);
+
+    printf("Fin del archivo bloques.dat\n");
 }

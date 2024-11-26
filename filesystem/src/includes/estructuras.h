@@ -16,7 +16,8 @@ void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t 
 int crear_archivo_metadata(char* filepath, t_args_dump_memory* info,int index_bloque_indices, char* nombre_arch);
 int escribir_bloques(const char* mount_dir, uint32_t* bloque_reservados, uint32_t bloques_necesarios, t_args_dump_memory* info, int block_size);
 void escribir_bloque_de_puntero(FILE* arch, uint32_t* bloques_reservados, uint32_t bloques_necesarios, int bloque_size);
-
+void imprimir_contenido_bitmap(t_bitarray* bitmap, uint32_t block_count);
+void imprimir_archivo_bloques(const char* mount_dir, uint32_t block_size);
 
 
 
