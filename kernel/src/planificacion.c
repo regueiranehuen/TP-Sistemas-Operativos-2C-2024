@@ -339,20 +339,21 @@ void*atender_interrupt(void*args){
         switch(code){
             case ENUM_DESALOJAR:
             log_debug(logger,"LLEGÓ CÓDIGO ENUM_DESALOJAR");
-            if (strings_iguales(algoritmo,"CMN")){
+            sem_post(&sem_desalojado);
+            /*if (strings_iguales(algoritmo,"CMN")){
                 sem_post(&sem_ok_desalojo_cpu);
                 //sem_wait(&sem_termina_cmn);
                 sem_post(&sem_desalojado);
             }
             else{
                 sem_post(&sem_desalojado);
-            }
+            }*/
             
             
             break;
             case ENUM_FIN_QUANTUM_RR:
             log_debug(logger,"LLEGÓ CÓDIGO ENUM_FIN_QUANTUM_RR");
-            sem_post(&sem_ok_desalojo_cpu);
+            //sem_post(&sem_ok_desalojo_cpu);
             //sem_wait(&sem_termina_cmn);
             sem_post(&sem_desalojado);
             break;
@@ -708,8 +709,6 @@ void espera_con_quantum(int quantum)
     }
     sem_destroy(&sem_fin_syscall);
 
-    sem_wait(&sem_ok_desalojo_cpu);
-    sem_post(&sem_termina_cmn);
     return;
 }
 

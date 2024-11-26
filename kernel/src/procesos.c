@@ -918,8 +918,8 @@ void *hilo_dispositivo_IO(void *args)
             pthread_mutex_lock(&mutex_log);
             log_info(logger, "## (%d:%d) finalizó IO y pasa a READY", info->hilo->pid, info->hilo->tid);
             pthread_mutex_unlock(&mutex_log);
-
-            sacar_tcb_de_lista(lista_bloqueados, info->hilo);
+            list_remove_element(lista_bloqueados,info->hilo);
+            pthread_mutex_unlock(&mutex_lista_blocked);
 
             info->hilo->estado = TCB_READY;
 
@@ -927,9 +927,10 @@ void *hilo_dispositivo_IO(void *args)
         }
         else
         {
+            pthread_mutex_unlock(&mutex_lista_blocked);
             log_info(logger, "El hilo no está bloqueado");
         }
-        pthread_mutex_unlock(&mutex_lista_blocked);
+        
         free(info);
     }
     return NULL;

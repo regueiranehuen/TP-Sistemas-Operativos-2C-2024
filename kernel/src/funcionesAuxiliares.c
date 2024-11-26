@@ -308,7 +308,7 @@ t_tcb* sacar_tcb_ready(t_tcb* tcb) {
                 if (tcb_aux->tid == tcb->tid && tcb_aux->pid == tcb->pid) {
                     // Eliminar el TCB de la cola
                     list_remove(elementos_cola, j); // Lo quita de la lista interna
-                    sem_wait(&semaforo_cola_ready);
+                    sem_wait(&semaforo_cola_ready); 
                     return tcb_aux; // Devuelve el TCB encontrado
                 }
             }
