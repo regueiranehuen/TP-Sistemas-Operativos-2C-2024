@@ -218,6 +218,19 @@ void hilo_exit()
     log_info(logger, "## (%d:%d) Finaliza el hilo", hilo->pid, hilo->tid);
     pthread_mutex_unlock(&mutex_log);
 
+    int socket_memoria = cliente_Memoria_Kernel(logger, config);
+    int respuesta;
+    send_operacion_tid_pid(THREAD_ELIMINATE_AVISO, hilo->tid, hilo->pid, socket_memoria);
+    recv(socket_memoria, &respuesta, sizeof(int), 0);
+    close(socket_memoria);
+    log_info(logger, "EN THREAD CANCEL LLEGÓ ESTA RESPUESTA DE MEMORIA: %d", respuesta);
+    if (respuesta == -1)
+    {
+        pthread_mutex_lock(&mutex_log);
+        log_info(logger, "Error en la liberacion de memoria del hilo");
+        pthread_mutex_unlock(&mutex_log);
+    }
+
     pthread_mutex_lock(&mutex_lista_tcbs);
     list_remove_element(lista_tcbs, hilo);
     pthread_mutex_unlock(&mutex_lista_tcbs);
@@ -548,9 +561,6 @@ void THREAD_CANCEL(int tid)
 
     log_info(logger, "Llega thread cancel para hilo %d", tid);
 
-    int respuesta;
-    code_operacion cod_op = THREAD_ELIMINATE_AVISO;
-
     t_tcb *tcb = buscar_tcb_por_tid(lista_tcbs, tid, hilo_exec); // Debido a que solamente hilos vinculados por un mismo proceso se pueden cancelar entre si, el tid a cancelar debe ser del proceso del hilo que llamo a la funcion
 
     if (tcb == NULL || buscar_tcb(tid, hilo_exec) == NULL)
@@ -563,20 +573,6 @@ void THREAD_CANCEL(int tid)
         return;
     }
 
-    int socket_memoria = cliente_Memoria_Kernel(logger, config);
-
-    send_operacion_tid_pid(cod_op, tcb->tid, tcb->pid, socket_memoria);
-    recv(socket_memoria, &respuesta, sizeof(int), 0);
-    close(socket_memoria);
-    log_info(logger, "EN THREAD CANCEL LLEGÓ ESTA RESPUESTA DE MEMORIA: %d", respuesta);
-    if (respuesta == -1)
-    {
-        pthread_mutex_lock(&mutex_log);
-        log_info(logger, "Error en la liberacion de memoria del hilo");
-        pthread_mutex_unlock(&mutex_log);
-    }
-    else
-    {
         if (tcb->estado == TCB_READY)
         {
             sacar_tcb_ready(tcb);
@@ -592,10 +588,11 @@ void THREAD_CANCEL(int tid)
         queue_push(cola_exit, tcb);
         pthread_mutex_unlock(&mutex_cola_exit_hilos);
         sem_post(&semaforo_cola_exit_hilos);
-    }
+
     log_info(logger,"MANDO OK");
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
 }
+
 
 /* THREAD_EXIT, esta syscall finaliza al hilo que lo invocó,
 pasando el mismo al estado EXIT. Se deberá indicar a la Memoria
