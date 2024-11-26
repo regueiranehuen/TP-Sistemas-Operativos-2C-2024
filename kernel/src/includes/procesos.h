@@ -136,6 +136,8 @@ pthread_mutex_t mutex_tids;
 int contador_tid; 
 int contador_mutex;
 
+sem_t sem_hilos_eliminar;
+
 }t_pcb;
 
 typedef struct {

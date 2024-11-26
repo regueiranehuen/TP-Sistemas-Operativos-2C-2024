@@ -77,6 +77,7 @@ t_pcb *crear_pcb()
     pcb->pid = pid;
     pcb->tids = lista_tids;
     pcb->lista_mutex = lista_mutex;
+    sem_init(&pcb->sem_hilos_eliminar,0,0);
     pid += 1;
     pcb->contador_tid = 0;
     pcb->contador_mutex = 0;
@@ -143,12 +144,20 @@ void proceso_exit()
 
     sem_wait(&semaforo_cola_exit_procesos); // espera que haya elementos en la cola
 
+    pthread_mutex_lock(&mutex_cola_exit_procesos);
+
+    t_pcb *proceso = queue_peek(cola_exit_procesos);
+    pthread_mutex_unlock(&mutex_cola_exit_procesos);
+    liberar_proceso(proceso);
+
+    for (int i = 0; i<list_size(proceso->tids); i++){
+        sem_wait(&proceso->sem_hilos_eliminar);
+    }
+
     int respuesta;
     code_operacion cod_op = PROCESS_EXIT_AVISO;
 
-    pthread_mutex_lock(&mutex_cola_exit_procesos);
-    t_pcb *proceso = queue_peek(cola_exit_procesos);
-    pthread_mutex_unlock(&mutex_cola_exit_procesos);
+    
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
     send_operacion_pid(cod_op, proceso->pid, socket_memoria);
@@ -166,9 +175,6 @@ void proceso_exit()
         pthread_mutex_lock(&mutex_log);
         log_info(logger, "## Finaliza el proceso %d", proceso->pid);
         pthread_mutex_unlock(&mutex_log);
-
-        liberar_proceso(proceso);
-
         sem_post(&semaforo_new_ready_procesos);
     }
 }
@@ -235,7 +241,17 @@ void hilo_exit()
     list_remove_element(lista_tcbs, hilo);
     pthread_mutex_unlock(&mutex_lista_tcbs);
 
+
+    int pid = hilo->pid;
     liberar_tcb(hilo);
+
+    
+    pthread_mutex_lock(&mutex_lista_pcbs);
+    t_pcb* proceso = buscar_pcb_por_pid(lista_pcbs,pid);
+    pthread_mutex_unlock(&mutex_lista_pcbs);
+    
+    sem_post(&proceso->sem_hilos_eliminar);
+
 }
 
 void hilo_exec_exit_tras_process_exit() // El hilo que estaba en exec y ahora esta en cola exit se lo elimina, al igual que a los hilos bloqueados por el mismo
@@ -606,6 +622,7 @@ void THREAD_EXIT() // AVISO A MEMORIA
 
     // Hilo exec lo establezco en NULL despues
     sacar_tcb_ready(hilo);
+    log_info(logger,"TID DEL HILO EN THREAD EXIT: %d",hilo->tid);
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     queue_push(cola_exit, hilo);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
@@ -691,7 +708,7 @@ void MUTEX_LOCK(char *recurso)
         {
             send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
             aviso_cpu->desalojar = true;
-            code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt); // confirmar que cpu recibio la interrupción antes de continuar
+            code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
             if (codigo != OK)
             {
                 log_info(logger, "CPU no proceso la interrupción correctamente");
@@ -743,7 +760,7 @@ void MUTEX_LOCK(char *recurso)
         {
             send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
             aviso_cpu->desalojar = true;
-            code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt); // confirmar que cpu recibio la interrupción antes de continuar
+            code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
             if (codigo != OK)
             {
                 log_info(logger, "CPU no proceso la interrupción correctamente");
@@ -777,7 +794,7 @@ void MUTEX_UNLOCK(char *recurso)
         {
             send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
             aviso_cpu->desalojar = true;
-            code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt); // confirmar que cpu recibio la interrupción antes de continuar
+            code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
             if (codigo != OK)
             {
                 log_info(logger, "CPU no proceso la interrupción correctamente");
@@ -955,7 +972,7 @@ void DUMP_MEMORY()
     {
         send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
         aviso_cpu->desalojar = true;
-        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt); // confirmar que cpu recibio la interrupción antes de continuar
+        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
         if (codigo != OK)
         {
             log_info(logger, "CPU no proceso la interrupción correctamente");

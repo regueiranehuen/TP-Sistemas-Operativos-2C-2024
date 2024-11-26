@@ -257,12 +257,6 @@ void enviar_tcbs_a_cola_exit_por_pid(t_list* lista_tcbs, t_queue* cola_exit, int
             i++;  // Solo avanzar si no se eliminó un elemento
         }
     }
-
-    if (list_is_empty(lista_tcbs)) {
-        log_info(logger, "Envie todos los hilos asociados al proceso a exit");
-    } else {
-        log_error(logger, "Error: No se eliminaron todos los hilos asociados al proceso.");
-    }
 }
 
 
@@ -290,16 +284,22 @@ t_tcb* sacar_tcb_ready(t_tcb* tcb) {
     // Busca la cola correspondiente por prioridad
     if(strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"FIFO")==0){
     pthread_mutex_lock(&mutex_cola_ready);
-    sacar_tcb_de_cola(cola_ready_fifo,tcb);
+    t_tcb* aux = sacar_tcb_de_cola(cola_ready_fifo,tcb);
     pthread_mutex_unlock(&mutex_cola_ready);
-    sem_wait(&semaforo_cola_ready); 
+    if (aux!=NULL)
+        sem_wait(&semaforo_cola_ready);
+    else
+        log_info(logger,"CUACK CUACK NO ESTÁ"); 
     return tcb;
     }
     else if(strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"PRIORIDADES")==0){
     pthread_mutex_lock(&mutex_cola_ready);
-    sacar_tcb_de_lista(lista_ready_prioridad,tcb);
+    t_tcb* aux =sacar_tcb_de_lista(lista_ready_prioridad,tcb);
     pthread_mutex_unlock(&mutex_cola_ready);
-    sem_wait(&semaforo_cola_ready); 
+    if (aux!=NULL)
+        sem_wait(&semaforo_cola_ready);
+    else
+        log_info(logger,"CUACK CUACK NO ESTÁ"); 
     return tcb;
     }
     else if(strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")==0){
@@ -589,7 +589,7 @@ t_tcb* sacar_tcb_de_cola(t_queue* cola, t_tcb* tcb_a_sacar) {
     while (!queue_is_empty(cola)) {
         t_tcb* tcb_actual = queue_pop(cola);  // Sacamos el primer elemento
 
-        if (tcb_actual == tcb_a_sacar) {
+        if (tcb_actual->tid == tcb_a_sacar->tid && tcb_actual->pid == tcb_a_sacar->pid) {
             tcb_encontrado = tcb_actual;  // Encontramos el TCB que queremos sacar
             break;
         } else {
@@ -618,7 +618,7 @@ t_tcb* sacar_tcb_de_lista(t_list* lista, t_tcb* tcb_a_sacar) {
     for (int i = 0; i < list_size(lista); i++) {
         t_tcb* tcb_actual = list_get(lista, i);
 
-        if (tcb_actual == tcb_a_sacar) {
+        if (tcb_actual->tid == tcb_a_sacar->tid && tcb_actual->pid == tcb_a_sacar->pid) {
             tcb_encontrado = list_remove(lista, i);  // Elimina el TCB de la lista y lo guarda
             break;  // Salimos del bucle una vez encontrado
         }
