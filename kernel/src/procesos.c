@@ -24,6 +24,9 @@ sem_t sem_fin_kernel;
 sem_t semaforo_cola_exit_hilos_process_exit;
 sem_t semaforo_cola_exit_hilo_exec_process_exit;
 sem_t sem_fin_syscall;
+sem_t sem_espera_interrupcion_cpu;
+sem_t sem_ok_desalojo_cpu;
+sem_t sem_termina_cmn;
 
 t_queue *cola_new_procesos;
 t_queue *cola_exit_procesos;
@@ -61,7 +64,6 @@ bool desalojado = false;
 
 bool syscallEjecutando = false;
 
-int pipe_fds[2];
 
 t_pcb *crear_pcb()
 {
@@ -381,7 +383,7 @@ void PROCESS_EXIT()
         send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
         aviso_cpu->desalojar = true;
         log_info(logger, "envio desalojar");
-        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt); // confirmar que cpu recibio la interrupción antes de continuar
+        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
         if (codigo != OK)
         {
             log_info(logger, "CPU no proceso la interrupción correctamente");
@@ -397,7 +399,7 @@ void PROCESS_EXIT()
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
-    fin_syscall_desalojo_cmn();
+    //fin_syscall_desalojo_cmn();
 }
 
 /*Creación de hilos
@@ -451,9 +453,6 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-    pthread_mutex_lock(&mutex_syscall_ejecutando);
-    syscallEjecutando = false;
-    pthread_mutex_unlock(&mutex_syscall_ejecutando);
 }
 
 /*
@@ -518,7 +517,7 @@ void THREAD_JOIN(int tid)
     {
         send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
         aviso_cpu->desalojar = true;
-        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt); // confirmar que cpu recibio la interrupción antes de continuar
+        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
         if (codigo != OK)
         {
             log_info(logger, "CPU no proceso la interrupción correctamente");
@@ -532,7 +531,7 @@ void THREAD_JOIN(int tid)
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
-    fin_syscall_desalojo_cmn();
+    //fin_syscall_desalojo_cmn();
 }
 
 /*
@@ -618,7 +617,7 @@ void THREAD_EXIT() // AVISO A MEMORIA
     {
         send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
         aviso_cpu->desalojar = true;
-        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt); // confirmar que cpu recibio la interrupción antes de continuar
+        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
         if (codigo != OK)
         {
             log_info(logger, "CPU no proceso la interrupción correctamente");
@@ -631,7 +630,7 @@ void THREAD_EXIT() // AVISO A MEMORIA
     pthread_mutex_unlock(&mutex_desalojo);
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-    fin_syscall_desalojo_cmn();
+    //fin_syscall_desalojo_cmn();
 }
 
 /*
@@ -704,7 +703,7 @@ void MUTEX_LOCK(char *recurso)
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         sem_post(&semaforo_cola_exit_hilos);
 
-        fin_syscall_desalojo_cmn();
+        //fin_syscall_desalojo_cmn();
         return;
     }
 
@@ -754,7 +753,7 @@ void MUTEX_LOCK(char *recurso)
         pthread_mutex_unlock(&mutex_desalojo);
         send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-        fin_syscall_desalojo_cmn();
+        //fin_syscall_desalojo_cmn();
     }
 }
 
@@ -788,7 +787,7 @@ void MUTEX_UNLOCK(char *recurso)
         pthread_mutex_unlock(&mutex_desalojo);
         send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-        fin_syscall_desalojo_cmn();
+        //fin_syscall_desalojo_cmn();
         return;
     }
 
@@ -844,7 +843,7 @@ void IO(int milisegundos)
     {
         send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
         aviso_cpu->desalojar = true;
-        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt); // confirmar que cpu recibio la interrupción antes de continuar
+        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
         if (codigo != OK)
         {
             log_info(logger, "CPU no proceso la interrupción correctamente");
@@ -872,7 +871,7 @@ void IO(int milisegundos)
     log_info(logger, "PUSHEÉ EL TCB DEL HILO CON TID %d A LA COLA IO", tcb->tid);
     pthread_mutex_unlock(&mutex_log);
     sem_post(&sem_cola_IO);
-    fin_syscall_desalojo_cmn();
+    //fin_syscall_desalojo_cmn();
 }
 
 /* En este apartado solamente se tendrá la instrucción DUMP_MEMORY. Esta syscall le solicita a la memoria,

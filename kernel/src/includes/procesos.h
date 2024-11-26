@@ -58,11 +58,14 @@ extern sem_t sem_lista_prioridades;
 extern sem_t sem_fin_kernel;
 
 extern sem_t sem_fin_syscall;
+extern sem_t sem_espera_interrupcion_cpu;
+extern sem_t sem_ok_desalojo_cpu;
+
+extern sem_t sem_termina_cmn;
 
 extern bool desalojado;
 extern bool syscallEjecutando;
 
-extern int pipe_fds[2]; // pipe_fds[0] para leer, pipe_fds[1] para escribir
 
 extern pthread_mutex_t mutex_desalojo;
 typedef struct{

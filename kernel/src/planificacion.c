@@ -89,6 +89,7 @@ void *hilo_planificador_largo_plazo(void *void_args)
     pthread_t hilo_new_ready_procesos;
     pthread_t hilo_exit_procesos;
     pthread_t hilo_hilos_exit;
+    
 
     int resultado;
 
@@ -328,6 +329,43 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
     return NULL;
 }
 
+void*atender_interrupt(void*args){
+    char*algoritmo=(char*)args;
+
+    while (estado_kernel!=0){
+        sem_wait(&sem_espera_interrupcion_cpu);
+        code_operacion code = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt);
+
+        switch(code){
+            case ENUM_DESALOJAR:
+            log_debug(logger,"LLEGÓ CÓDIGO ENUM_DESALOJAR");
+            if (strings_iguales(algoritmo,"CMN")){
+                sem_post(&sem_ok_desalojo_cpu);
+                //sem_wait(&sem_termina_cmn);
+                sem_post(&sem_desalojado);
+            }
+            else{
+                sem_post(&sem_desalojado);
+            }
+            
+            
+            break;
+            case ENUM_FIN_QUANTUM_RR:
+            log_debug(logger,"LLEGÓ CÓDIGO ENUM_FIN_QUANTUM_RR");
+            sem_post(&sem_ok_desalojo_cpu);
+            //sem_wait(&sem_termina_cmn);
+            sem_post(&sem_desalojado);
+            break;
+            default:
+            log_error(logger,"CODIGO NO ESPERADO EN ATENDER INTERRUPT");
+            break;
+            
+        }
+
+    }
+    return NULL;
+}
+
 t_tcb* prioridades (){
 
 sem_wait(&semaforo_cola_ready);
@@ -439,9 +477,9 @@ void *hilo_planificador_corto_plazo(void *arg)
     char*algoritmo=(char*)arg;
 
     while(estado_kernel!=0){
-    printf("Esperando a ser desalojado\n");
+    log_info(logger,"Esperando a ser desalojado");
     sem_wait(&sem_desalojado);// tiene que empezar con valor 1 
-    printf("Desalojado\n");
+    log_info(logger,"Desalojado");
         t_tcb* hilo_a_ejecutar;
         if (strings_iguales(algoritmo, "FIFO")){
         hilo_a_ejecutar = fifo_tcb();
@@ -460,9 +498,7 @@ void *hilo_planificador_corto_plazo(void *arg)
 
         else if (strings_iguales(algoritmo, "CMN"))
         {
-            if(sem_init(&sem_fin_syscall,0,0)==0){
-                log_debug(logger,"se inicializó bien el semáforo");
-            }
+            sem_init(&sem_fin_syscall,0,0);
             colas_multinivel();
         }
     }
@@ -483,6 +519,7 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
     }
     pthread_t hilo_ready_exec;
     pthread_t hilo_atender_syscall;
+    pthread_t hilo_atender_interrupt;
 
     int resultado = pthread_create(&hilo_ready_exec, NULL, hilo_planificador_corto_plazo, algoritmo);
 
@@ -499,8 +536,18 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
         log_error(logger, "Error al crear el hilo para atender syscalls");
         return;
     }
+
+    resultado = pthread_create(&hilo_atender_interrupt, NULL, atender_interrupt, algoritmo);
+    if (resultado != 0)
+    {
+        log_error(logger, "Error al crear el hilo para atender interrupt");
+        return;
+    }
+
+
     pthread_detach(hilo_atender_syscall);
     pthread_detach(hilo_ready_exec);
+    pthread_detach(hilo_atender_interrupt);
 }
 
 /*Ejecución
@@ -513,147 +560,74 @@ el algoritmo. Durante este período la CPU se quedará esperando.
 
 void espera_con_quantum(int quantum)
 {
+    
 
-    // Cerramos el pipe y lo creamos de nuevo, ya que puede pasar que una syscall anterior lo haya llenado
-
-    close(pipe_fds[0]);
-    close(pipe_fds[1]);
-    pipe(pipe_fds);
-
+    desalojado = false;
     fd_set read_fds;
     struct timeval timeout;
 
-    // Establecer el tiempo de espera
-    /*timeout.tv_sec = quantum / 1000;           // Convertir a segundos
+    timeout.tv_sec = quantum / 1000;           // Convertir a segundos
     timeout.tv_usec = (quantum % 1000) * 1000; // Convertir a microsegundos
-    */
 
-    desalojado = false;
-    while (1)
+    FD_ZERO(&read_fds);
+    FD_SET(sockets->sockets_cliente_cpu->socket_Interrupt, &read_fds); 
+
+    int max_fd = sockets->sockets_cliente_cpu->socket_Interrupt + 1; // Determinar descriptor máximo
+
+    log_debug(logger, "Esperando en select con timeout");
+    if (sockets->sockets_cliente_cpu->socket_Interrupt <= 0)
     {
-        timeout.tv_sec = quantum / 1000;           // Convertir a segundos
-        timeout.tv_usec = (quantum % 1000) * 1000; // Convertir a microsegundos
+        log_error(logger, "Descriptores de archivo no válidos");
+        sem_destroy(&sem_fin_syscall);
+        return;
+    }
 
-        // Configurar conjuntos de descriptores
-        FD_ZERO(&read_fds);
-        FD_SET(pipe_fds[0], &read_fds); // Pipe de syscall terminante
+    int resultado = select(max_fd, &read_fds, NULL, NULL, &timeout);
 
-        // Determinar el descriptor máximo
-        int max_fd = pipe_fds[0] + 1; // Determinar descriptor máximo
+    if (resultado == -1)
+    {
+        log_error(logger, "Error en select");
+    }
 
-        log_debug(logger, "Esperando en select con timeout");
-        if (sockets->sockets_cliente_cpu->socket_Dispatch <= 0 || pipe_fds[0] <= 0)
+    else if (resultado > 0) // Si una syscall desaloja al proceso antes que termine el quantum
+    {
+        
+        
+        desalojado = true;
+        //sem_post(&sem_desalojado);
+        
+    }
+
+    else if (resultado == 0) // Si se termina el quantum antes de que termine de ejecutar una syscall
+    {
+        log_debug(logger, "Timeout alcanzado en select (terminó el quantum)");
+        // Tiempo del quantum agotado, desalojar por quantum
+        pthread_mutex_lock(&mutex_syscall_ejecutando);
+        if (syscallEjecutando)
         {
-            log_error(logger, "Descriptores de archivo no válidos");
-            sem_destroy(&sem_fin_syscall);
-            return;
-        }
+            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            log_info(logger, "HAY UNA SYSCALL EJECUTANDO");
+            sem_wait(&sem_fin_syscall);
 
-        int resultado = select(max_fd, &read_fds, NULL, NULL, &timeout);
-
-        if (resultado == -1)
-        {
-            log_error(logger, "Error en select");
-            sem_destroy(&sem_fin_syscall);
-            return;
-        }
-
-        if (FD_ISSET(pipe_fds[0], &read_fds)) // Si una syscall desaloja al proceso antes que termine el quantum
-        {
-            log_debug(logger, "pipe_fds[0] está listo para lectura");
-            char buf[1];
-            int bytes_read = read(pipe_fds[0], buf, 1);
-            if (bytes_read > 0)
-            {
-                log_debug(logger, "Leídos %d bytes del pipe", bytes_read);
-            }
-            else
-            {
-                log_error(logger, "Error leyendo del pipe: %s", strerror(errno));
-            }
-            desalojado = true;
-            sem_destroy(&sem_fin_syscall);
-
-            close(pipe_fds[0]);
-            close(pipe_fds[1]);
-            pipe(pipe_fds);
-
-            return;
-        }
-
-        else if (resultado == 0)
-        {
-            log_debug(logger, "Timeout alcanzado en select (terminó el quantum)");
-            // Tiempo del quantum agotado, desalojar por quantum
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            if (syscallEjecutando)
-            {
-                pthread_mutex_unlock(&mutex_syscall_ejecutando);
-                log_info(logger, "HAY UNA SYSCALL EJECUTANDO");
-                sem_wait(&sem_fin_syscall);
-
-                syscallEjecutando = false;
-                if (!desalojado)
-                {
-                    pthread_mutex_lock(&mutex_desalojo);
-                    if (!aviso_cpu->desalojar)
-                    {
-                        log_info(logger, "Terminó la syscall y no desalojó al proceso");
-                        code_operacion cod_op = FIN_QUANTUM_RR;
-                        log_info(logger, "## (%d:%d) - Desalojado por fin de Quantum", hilo_exec->pid, hilo_exec->tid);
-                        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-                        log_info(logger, "Voy a mandar el código correspondiente a fin quantum (%d)", FIN_QUANTUM_RR);
-                        send_code_operacion(cod_op, sockets->sockets_cliente_cpu->socket_Interrupt);
-                        log_info(logger, "Enviado fin quantum!");
-                        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-                        t_tcb *hilo = hilo_exec;
-
-                        pthread_mutex_lock(&mutex_cola_ready);
-                        pthread_mutex_lock(&mutex_lista_blocked);
-                        if (!tcb_metido_en_estructura(hilo) && !hilo_esta_en_lista(lista_bloqueados,hilo->tid,hilo->pid))
-                        {
-                            pthread_mutex_unlock(&mutex_cola_ready);
-                            pthread_mutex_unlock(&mutex_lista_blocked);
-                            hilo->estado = TCB_READY;
-                            pushear_cola_ready(hilo);
-                        }
-
-                        else
-                        {
-                            pthread_mutex_unlock(&mutex_cola_ready);
-                            pthread_mutex_unlock(&mutex_lista_blocked);
-                        }
-
-                        desalojado = true;
-                        aviso_cpu->finQuantum = true;
-                    }
-                    else if (aviso_cpu->desalojar)
-                    {
-                        aviso_cpu->desalojar = false;
-                    }
-                    pthread_mutex_unlock(&mutex_desalojo);
-                }
-            }
-            else if (!syscallEjecutando && !desalojado)
+            syscallEjecutando = false;
+            if (!desalojado)
             {
                 pthread_mutex_lock(&mutex_desalojo);
                 if (!aviso_cpu->desalojar)
                 {
-                    log_info(logger, "NO HAY NINGUNA SYSCALL EJECUTANDO");
-                    pthread_mutex_unlock(&mutex_syscall_ejecutando);
-
+                    log_info(logger, "Terminó la syscall y no desalojó al proceso");
                     code_operacion cod_op = FIN_QUANTUM_RR;
-                    log_info(logger, "## (<%d>:<%d>) - Desalojado por fin de Quantum", hilo_exec->pid, hilo_exec->tid);
+                    log_info(logger, "## (%d:%d) - Desalojado por fin de Quantum", hilo_exec->pid, hilo_exec->tid);
                     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
                     log_info(logger, "Voy a mandar el código correspondiente a fin quantum (%d)", FIN_QUANTUM_RR);
                     send_code_operacion(cod_op, sockets->sockets_cliente_cpu->socket_Interrupt);
                     log_info(logger, "Enviado fin quantum!");
                     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-
                     t_tcb *hilo = hilo_exec;
+
                     pthread_mutex_lock(&mutex_cola_ready);
                     pthread_mutex_lock(&mutex_lista_blocked);
-                    if (!tcb_metido_en_estructura(hilo)&& !hilo_esta_en_lista(lista_bloqueados,hilo->tid,hilo->pid))
+                    if (!tcb_metido_en_estructura(hilo) && !hilo_esta_en_lista(lista_bloqueados, hilo->tid, hilo->pid))
                     {
                         pthread_mutex_unlock(&mutex_cola_ready);
                         pthread_mutex_unlock(&mutex_lista_blocked);
@@ -669,27 +643,74 @@ void espera_con_quantum(int quantum)
 
                     desalojado = true;
                     aviso_cpu->finQuantum = true;
+                   
                 }
                 else if (aviso_cpu->desalojar)
                 {
                     aviso_cpu->desalojar = false;
+                    //sem_post(&sem_desalojado);
                 }
                 pthread_mutex_unlock(&mutex_desalojo);
             }
-            // sem_destroy(&sem_fin_syscall);
-            sem_destroy(&sem_fin_syscall);
-            int valor_semaforo_cola_ready;
-            log_debug(logger, "Valor semaforo cola ready: %d", sem_getvalue(&semaforo_cola_ready, &valor_semaforo_cola_ready));
-
-            close(pipe_fds[0]);
-            close(pipe_fds[1]);
-            pipe(pipe_fds);
-
-            return;
         }
+        else if (!syscallEjecutando && !desalojado)
+        {
+            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+            pthread_mutex_lock(&mutex_desalojo);
+            if (!aviso_cpu->desalojar)
+            {
+                log_info(logger, "NO HAY NINGUNA SYSCALL EJECUTANDO");
+                pthread_mutex_unlock(&mutex_syscall_ejecutando);
 
-        return;
+                code_operacion cod_op = FIN_QUANTUM_RR;
+                log_info(logger, "## (<%d>:<%d>) - Desalojado por fin de Quantum", hilo_exec->pid, hilo_exec->tid);
+                pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+                log_info(logger, "Voy a mandar el código correspondiente a fin quantum (%d)", FIN_QUANTUM_RR);
+                send_code_operacion(cod_op, sockets->sockets_cliente_cpu->socket_Interrupt);
+                log_info(logger, "Enviado fin quantum!");
+                pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+
+                t_tcb *hilo = hilo_exec;
+                pthread_mutex_lock(&mutex_cola_ready);
+                pthread_mutex_lock(&mutex_lista_blocked);
+                if (!tcb_metido_en_estructura(hilo) && !hilo_esta_en_lista(lista_bloqueados, hilo->tid, hilo->pid))
+                {
+                    pthread_mutex_unlock(&mutex_cola_ready);
+                    pthread_mutex_unlock(&mutex_lista_blocked);
+                    hilo->estado = TCB_READY;
+                    pushear_cola_ready(hilo);
+                }
+
+                else
+                {
+                    pthread_mutex_unlock(&mutex_cola_ready);
+                    pthread_mutex_unlock(&mutex_lista_blocked);
+                }
+
+                desalojado = true;
+                aviso_cpu->finQuantum = true;
+            }
+            else if (aviso_cpu->desalojar)
+            {
+                aviso_cpu->desalojar = false;
+                //sem_post(&sem_desalojado);
+            }
+            pthread_mutex_unlock(&mutex_desalojo);
+        }
+        else{
+            pthread_mutex_unlock(&mutex_syscall_ejecutando);
+        }
+        // //sem_destroy(&sem_fin_syscall);
+
+        int valor_semaforo_cola_ready;
+        log_debug(logger, "Valor semaforo cola ready: %d", sem_getvalue(&semaforo_cola_ready, &valor_semaforo_cola_ready));
+
     }
+    sem_destroy(&sem_fin_syscall);
+
+    sem_wait(&sem_ok_desalojo_cpu);
+    sem_post(&sem_termina_cmn);
+    return;
 }
 
 void pushear_cola_ready(t_tcb* hilo){
@@ -719,6 +740,9 @@ void pushear_cola_ready(t_tcb* hilo){
     }
     log_info(logger, "Signal enviado al semáforo (cola_ready)");
     sem_post(&semaforo_cola_ready);
+    int valor;
+    sem_getvalue(&semaforo_cola_ready,&valor);
+    log_warning(logger,"supervalor: %d",valor);
 
 
 }

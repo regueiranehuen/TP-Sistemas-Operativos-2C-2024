@@ -181,6 +181,16 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 
 }
 
+void send_syscall(syscalls syscall, int socket_cliente){
+    send(socket_cliente,&syscall,sizeof(int),0);
+}
+
+syscalls recibir_syscall(int socket_cliente){
+    syscalls syscall;
+    recv(socket_cliente,&syscall,sizeof(int),0);
+    return syscall;
+}
+
 void send_fin_quantum_rr(int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
 

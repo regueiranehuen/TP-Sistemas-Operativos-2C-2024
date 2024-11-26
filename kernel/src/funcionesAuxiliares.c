@@ -17,8 +17,6 @@ void inicializar_estados() {
     lista_pcbs = list_create();
     lista_mutex = list_create();
 
-    if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN"))
-        pipe(pipe_fds);  // Crear el pipe que espera fin de syscall terminante
 }
 
 void destruir_estados() {
@@ -49,7 +47,10 @@ void inicializar_semaforos() {
     sem_init(&sem_lista_prioridades, 0, 0);         // Inicializa en 0
     sem_init(&semaforo_cola_exit_hilo_exec_process_exit, 0, 0);
     sem_init(&semaforo_cola_exit_hilos_process_exit, 0, 0);
-    //sem_init(&sem_fin_syscall,0,0);
+
+    sem_init(&sem_espera_interrupcion_cpu,0,0);
+    sem_init(&sem_ok_desalojo_cpu,0,0);
+    sem_init(&sem_termina_cmn,0,0);
 }
 
 void destruir_semaforos() {
@@ -64,7 +65,10 @@ void destruir_semaforos() {
     sem_destroy(&sem_lista_prioridades);
     sem_destroy(&semaforo_cola_exit_hilo_exec_process_exit);
     sem_destroy(&semaforo_cola_exit_hilos_process_exit);
-    //sem_destroy(&sem_fin_syscall);
+
+    sem_destroy(&sem_espera_interrupcion_cpu);
+    sem_destroy(&sem_ok_desalojo_cpu);
+    sem_destroy(&sem_termina_cmn);
 }
 
 void inicializar_mutex() {
@@ -97,12 +101,6 @@ void destruir_mutex() {
     pthread_mutex_destroy(&mutex_desalojo);
 }
 
-void fin_syscall_desalojo_cmn(){
-    if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")){
-        desalojado = true;
-        write(pipe_fds[1], "x", 1);
-    }
-}
 
 void liberar_proceso(t_pcb *pcb)
 {

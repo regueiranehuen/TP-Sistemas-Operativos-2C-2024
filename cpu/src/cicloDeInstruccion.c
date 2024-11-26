@@ -162,12 +162,12 @@ void checkInterrupt(t_contexto_tid *contextoTid)
         if (devolucion_kernel == FIN_QUANTUM_RR)
         {
             log_info(log_cpu,"MANDANDO FIN QUANTUM A KERNEL\n");
-            send_fin_quantum_rr(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+            send_syscall(ENUM_FIN_QUANTUM_RR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         }
         else if (devolucion_kernel == DESALOJAR)
         {
             log_info(log_cpu,"Mandando desalojo a kernel\n");
-            send_desalojo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+            send_syscall(ENUM_DESALOJAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         }
         pthread_mutex_unlock(&mutex_interrupt);
     }
