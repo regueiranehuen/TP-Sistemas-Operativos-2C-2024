@@ -246,7 +246,6 @@ int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, int index_b
 
 int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32_t bloques_necesarios, t_args_dump_memory* info, int block_size) {
 
-    
     int retardo = config_get_int_value(config, "RETARDO_ACCESO_BLOQUE");
 
     int length_path = strlen(mount_dir)+1;
