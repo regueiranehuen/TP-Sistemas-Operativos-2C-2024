@@ -18,8 +18,8 @@ char* limpiar_token(char* token) {
 void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
     
 
-    const char *ruta_relativa = nombre_archivo;
-    char*ruta_absoluta = obtener_ruta_absoluta(ruta_relativa);
+    const char* ruta_relativa = nombre_archivo;
+    char* ruta_absoluta = obtener_ruta_absoluta(ruta_relativa);
 
     FILE* archivo = fopen(ruta_absoluta, "r");
     
@@ -80,6 +80,7 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
         
     }
     fclose(archivo);
+    free(ruta_absoluta);
 }
 
 void inicializar_resto_parametros(int cant_param, t_instruccion_tid_pid *instruccion)

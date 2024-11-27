@@ -141,16 +141,17 @@ void* recibir_cpu(void*args) {
             }
 
             case WRITE_MEM: {
-            t_write_mem* info_0 = recepcionar_write_mem(paquete_operacion);
-            log_info(logger,"direccion Fisica recibida:%d",info_0->direccionFisica);
-            log_info(logger,"valor recibido:%d",info_0->valor);
-            int resultado = escribir_Memoria(info_0);
+                t_write_mem* info_0 = recepcionar_write_mem(paquete_operacion);
+                log_info(logger,"direccion Fisica recibida:%d",info_0->direccionFisica);
+                log_info(logger,"valor recibido:%d",info_0->valor);
+                int resultado = escribir_Memoria(info_0);
 
-            if(resultado == 0){
-            op_code code = OK_OP_CODE;
-            send(sockets_iniciales->socket_cpu,&code,sizeof(op_code),0);
-            }
-            break;  
+                if(resultado == 0){
+                op_code code = OK_OP_CODE;
+                send(sockets_iniciales->socket_cpu,&code,sizeof(op_code),0);
+                }
+                free(info_0);
+                break;  
             }
 
             case 1:

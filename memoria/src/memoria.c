@@ -27,17 +27,17 @@ void atender_conexiones(int socket_cliente)
             pthread_mutex_unlock(&mutex_lista_contextos_pids);
             printf("tamanio proceso:%d\n",info_0->tam_proceso);
             t_particiones* particion = inicializar_proceso(info_0->pid,info_0->tam_proceso,config);
-            if(particion == NULL){
-            log_info(logger,"particion == NULL");
-            respuesta = -1;
-            send(socket_cliente,&respuesta,sizeof(int),0);       
-            }else{
-            log_info(logger,"Particion: Base: %d, Limite: %d, Tamanio: %d, Ocupada: %d, PID: %d",particion->base,particion->limite,particion->tamanio,particion->ocupada,particion->pid);
-            inicializar_contexto_pid(info_0->pid, particion->base,particion->limite,info_0->tam_proceso);
-            log_info(logger,"## Proceso Creado -  PID: %d - Tamaño: %d",info_0->pid,info_0->tam_proceso);
-            respuesta = OK;
-            send(socket_cliente, &respuesta, sizeof(int), 0);
-            }
+                if(particion == NULL){
+                    log_info(logger,"particion == NULL");
+                    respuesta = -1;
+                    send(socket_cliente,&respuesta,sizeof(int),0);       
+                }else{
+                    log_info(logger,"Particion: Base: %d, Limite: %d, Tamanio: %d, Ocupada: %d, PID: %d",particion->base,particion->limite,particion->tamanio,particion->ocupada,particion->pid);
+                    inicializar_contexto_pid(info_0->pid, particion->base,particion->limite,info_0->tam_proceso);
+                    log_info(logger,"## Proceso Creado -  PID: %d - Tamaño: %d",info_0->pid,info_0->tam_proceso);
+                    respuesta = OK;
+                    send(socket_cliente, &respuesta, sizeof(int), 0);
+                }
             free(info_0);
             break;
 

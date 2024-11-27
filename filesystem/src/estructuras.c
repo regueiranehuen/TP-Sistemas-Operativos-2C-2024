@@ -92,7 +92,9 @@ t_bitarray* cargar_bitmap(char* mount_dir, uint32_t block_count) {
 
     // Crear el bitarray
     t_bitarray* bitmap = bitarray_create_with_mode(bitarray_data, st.st_size, LSB_FIRST);
-    imprimir_contenido_bitmap(bitmap, block_count);
+    //imprimir_contenido_bitmap(bitmap, block_count);
+
+    
     //free(bitmap_path);
     return bitmap;
 }
@@ -103,65 +105,97 @@ void imprimir_contenido_bitmap(t_bitarray* bitmap, uint32_t block_count) {
         return;
     }
 
-    for (uint32_t i = 0; i < (uint32_t)ceil((double)block_count / 8.0); i++) {
+    for (uint32_t i = 0; i < block_count; i++) {
         int bit = bitarray_test_bit(bitmap, i);
         printf("Bloque %u: %s\n", i, bit ? "Ocupado" : "Libre");
     }
 }
 
 char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const char* mount_dir, uint32_t block_size) {
-
     int bloques_necesarios = ceil((info->tamanio_particion_proceso / block_size)) + 1;
-    // 1. verifico si hay espacio disponible
+
+    // 1. Verifico si hay espacio disponible
     pthread_mutex_lock(&mutex_bitmap);
-    if(!hay_espacio_disponible(bitmap, bloques_necesarios)){ 
+    if (!hay_espacio_disponible(bitmap, bloques_necesarios)) {
+        pthread_mutex_unlock(&mutex_bitmap);
         return NULL;
     }
-    // 2. reservo los bloques necesarios
-    char*filepath = malloc(256);
+
+    // 2. Reservo los bloques necesarios
+    char* filepath = malloc(256);
     char* files = "files";
     char* nombre_arch = malloc(256);
-    
+    ruta_completa = malloc(256);
+
     time_t now = time(NULL);
     snprintf(nombre_arch, 256, "%i-%i-%ld.dmp", info->pid, info->tid, now);
-    snprintf(filepath, 256, "%s%s", mount_dir, files);
+    snprintf(filepath, 256, "%s", mount_dir);
+    snprintf(ruta_completa, 256, "%s%s/%s", filepath, files, nombre_arch);
+    
     uint32_t* bloques_reservados = malloc((bloques_necesarios) * sizeof(uint32_t));
-    int*index_bloque_indices=malloc(sizeof(int));
-    *index_bloque_indices=-1;
+    int* index_bloque_indices = malloc(sizeof(int));
+    *index_bloque_indices = -1;
     reservar_bloque(bitmap, bloques_reservados, bloques_necesarios, filepath, index_bloque_indices, nombre_arch);
     pthread_mutex_unlock(&mutex_bitmap);
 
-    
-    int indice_bloque_indices=*index_bloque_indices;
+    int indice_bloque_indices = *index_bloque_indices;
     free(index_bloque_indices);
 
-    if (indice_bloque_indices == -1){
+    if (indice_bloque_indices == -1) {
         filepath = NULL;
         return filepath;
     }
-    //Crear el archivo de metadata con los datos requeridos y el siguiente formato: <PID>-<TID>-<TIMESTAMP>.dmp.
-    // 3. Creo el archivo
-    if (crear_archivo_metadata(filepath, info,indice_bloque_indices, nombre_arch) != 0) {
-        free(bloques_reservados);
-        filepath = NULL;
-        return filepath;
-    }
-    log_info(log_filesystem, "## Archivo Creado: %s - Tamaño: %d", filepath, info->tamanio_particion_proceso);
 
-    // 4. escribo el contenido en los bloques reservados
+    // Mostrar el nombre del archivo
+    log_info(log_filesystem, "Nombre del archivo creado: %s", nombre_arch);
+
+    // Crear el archivo de metadata
+    if (crear_archivo_metadata(ruta_completa, info, indice_bloque_indices, nombre_arch) != 0) {
+        free(bloques_reservados);
+        ruta_completa = NULL;
+        return ruta_completa;
+    }
+    log_info(log_filesystem, "Archivo de metadata creado: %s - Tamaño: %d", ruta_completa, info->tamanio_particion_proceso);
+
+    // 4. Escribir el contenido en los bloques reservados
     if (escribir_bloques(mount_dir, bloques_reservados, bloques_necesarios, info, block_size) != 0) {
         free(bloques_reservados);
         filepath = NULL;
         return filepath;
     }
 
-    FILE* archivo_dump = fopen(ruta_completa,"w");
-    fwrite(info->contenido,info->tamanio_particion_proceso,1,archivo_dump);//creación del archivo dump del proceso y grabación del contenido
-    log_info(log_filesystem,"## Archivo Creado: %s - Tamaño: %d",ruta_completa,info->tamanio_particion_proceso);
-    fclose(archivo_dump);
+    // FILE* archivo_dump = fopen(ruta_completa, "w");
+    // fwrite(info->contenido, info->tamanio_particion_proceso, 1, archivo_dump); // Creación del archivo dump del proceso y grabación del contenido
+    // fclose(archivo_dump);
+
     free(bloques_reservados);
+
+    // Mostrar el contenido del archivo metadata
+    
+
+    imprimir_contenido_bitmap(bitmap, block_count);
+    free(nombre_arch);
+    free(filepath);
     return ruta_completa;
 }
+
+void mostrar_contenido_archivo_metadata(const char* filepath) {
+    FILE* archivo = fopen(filepath, "r");
+    if (archivo == NULL) {
+        log_error(log_filesystem, "No se pudo abrir el archivo metadata: %s", filepath);
+        return;
+    }
+
+    log_info(log_filesystem, "Contenido del archivo metadata (%s):", filepath);
+
+    char linea[256];
+    while (fgets(linea, sizeof(linea), archivo) != NULL) {
+        printf("%s", linea); // Imprimir la línea leída
+    }
+
+    fclose(archivo);
+}
+
 
 bool hay_espacio_disponible(t_bitarray* bitmap, int bloques_necesarios) {
     int bloques_libres = 0;
@@ -226,37 +260,37 @@ void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t 
 
 int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, int index_bloque_indices, char* nombre_arch) {
     
-    // Verificar si el directorio existe, si no, crearlo
-    struct stat st = {0};
-    if (stat(filepath, &st) == -1) {
-        if (mkdir(filepath, 0700) == -1) {  // Si no existe, crear el directorio
-            log_error(log_filesystem, "Error al crear el directorio %s", filepath);
-            return -1;
-        }
-    }
-
-    // Crear el nombre del archivo en base al pid, tid y timestamp
-    ruta_completa = malloc(256);
-    
-    
-    snprintf(ruta_completa, 256, "%s/%s", filepath, nombre_arch);
-
     // Crear el archivo de metadata
-    FILE* archivo_metadata = fopen(ruta_completa, "w");
-    log_info(log_filesystem, "Creando archivo de metadata %s", ruta_completa);
+    log_info(log_filesystem, "Creando archivo de metadata %s", filepath);
+    FILE* archivo_metadata = fopen(filepath, "w");
     
     if (archivo_metadata == NULL) {
-        log_error(log_filesystem, "Error al crear el archivo de metadata");
+        log_error(log_filesystem, "Error al crear el archivo de metadata: %s", strerror(errno));
         return -1;
     }
+
+    // Escribir los valores de SIZE y INDEX_BLOCK en el archivo de metadata
+    fprintf(archivo_metadata, "SIZE=%d\n", info->tamanio_particion_proceso);  // Escribir el tamaño del archivo
+    fprintf(archivo_metadata, "INDEX_BLOCK=%d\n", index_bloque_indices);      // Escribir el índice de bloque
+
+    // Asegurarse de que los datos se escriban correctamente al archivo
+    fflush(archivo_metadata);
     
-    // Escribir la metadata en el archivo
-    fwrite(&info->tamanio_particion_proceso, sizeof(int), 1, archivo_metadata);  // Tamaño del archivo a crear
-    fwrite(&index_bloque_indices, sizeof(int), 1, archivo_metadata);  // Número de bloque de índices
+    // Verificar si ocurrió algún error de escritura
+    if (ferror(archivo_metadata)) {
+        log_error(log_filesystem, "Error al escribir en el archivo de metadata");
+        fclose(archivo_metadata);
+        return -1;
+    }
 
     fclose(archivo_metadata);
+
+    // Mostrar el contenido del archivo de metadata para verificar su escritura
+    mostrar_contenido_archivo_metadata(ruta_completa);
+
     return 0;
 }
+
 
 int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32_t bloques_necesarios, t_args_dump_memory* info, int block_size) {
 
@@ -315,7 +349,7 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
     }
 
     fclose(arch);
-    imprimir_archivo_bloques(mount_dir, block_size);
+    //imprimir_archivo_bloques(mount_dir, block_size);
     free(path);
     return 0;
 }
@@ -374,7 +408,7 @@ void imprimir_archivo_bloques(const char* mount_dir, uint32_t block_size) {
 
     printf("Contenido del archivo bloques.dat:\n");
 
-    uint32_t total_bloques = (uint32_t)ceil((double)block_count / 8.0); // Bloques necesarios según block_count
+    uint32_t total_bloques = block_count; // Bloques necesarios según block_count
     uint32_t bloque_index = 0;
     uint8_t* buffer = malloc(block_size);
     if (!buffer) {
