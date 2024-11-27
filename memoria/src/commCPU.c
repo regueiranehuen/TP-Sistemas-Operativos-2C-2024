@@ -269,11 +269,11 @@ t_contexto_pid* obtener_contexto_pid(int pid){ // al usarla hay q meterle mutex 
     //pthread_mutex_lock(&mutex_lista_contextos_pids);
     for (int i = 0; i < list_size(lista_contextos_pids); i++){
         t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
+        log_warning(logger,"PID DEL CONT ACTUAL: %d",cont_actual->pid);
         if (pid == cont_actual->pid){
             //pthread_mutex_unlock(&mutex_lista_contextos_pids);
             return cont_actual;
         }
-            
     }
     //pthread_mutex_unlock(&mutex_lista_contextos_pids);
     return NULL;

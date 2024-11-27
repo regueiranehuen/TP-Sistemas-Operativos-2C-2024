@@ -74,9 +74,15 @@ void atender_conexiones(int socket_cliente)
             break;
         case PROCESS_EXIT_AVISO:
             int pid_1 = recepcionar_int_code_op(paquete);
-            liberar_espacio_proceso(pid_1);
+            log_info(logger,"ME LLEGÓ ESTE PID AMIGAZO: %d",pid_1);
             t_contexto_pid* contexto_pid = obtener_contexto_pid(pid_1);
-            log_info(logger,"## Proceso Destruido -  PID: %d - Tamaño: %d",pid_1,contexto_pid->tamanio_proceso);
+            if(contexto_pid == NULL){
+                log_info(logger,"Soy un cornudo");
+            }
+            int tam_proceso = contexto_pid->tamanio_proceso;
+            eliminar_contexto_pid(contexto_pid);
+            liberar_espacio_proceso(pid_1);
+            log_info(logger,"## Proceso Destruido -  PID: %d - Tamanio: %d",pid_1,tam_proceso);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
             break;

@@ -1,7 +1,7 @@
 #include "includes/auxiliares.h"
 
-void inicializar_estructuras(void)
-{
+void inicializar_estructuras(void){
+    
     sem_init(&sem_fin_filesystem, 0, 0);
     sem_init(&sem_conexion_hecha, 0, 0);
     pthread_mutex_init(&mutex_bitmap,NULL);
@@ -11,9 +11,9 @@ void inicializar_estructuras(void)
 
     mount_dir = config_get_string_value(config, "MOUNT_DIR");
     block_count = config_get_int_value(config, "BLOCK_COUNT");
+    block_size = config_get_double_value(config, "BLOCK_SIZE");
+    
 
     bitmap = cargar_bitmap(mount_dir, block_count);
-
-    
 
 }

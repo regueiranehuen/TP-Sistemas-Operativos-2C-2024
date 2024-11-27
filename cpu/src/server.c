@@ -251,7 +251,7 @@ void* recibir_kernel_interrupt(void*args){
         //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         printf("ME PINTO LA DE RECIBIR ESTA FALOPEADA:%d por interrupt\n",code);
-        if(code > 100){
+        if(code == -1){
             log_info(log_cpu,"Conexion cerrada por Interrupt");
             break;
         }

@@ -38,7 +38,8 @@ ENUM_IO,
 ENUM_DUMP_MEMORY,
 ENUM_SEGMENTATION_FAULT,
 ENUM_FIN_QUANTUM_RR,
-ENUM_DESALOJAR
+ENUM_DESALOJAR,
+ENUM_CICLO_NUEVO
 }syscalls;
 
 typedef struct {
@@ -160,5 +161,6 @@ t_args_dump_memory* recepcionar_dump_memory_filesystem(t_paquete_code_operacion*
 
 void send_syscall(syscalls syscall, int socket_cliente);
 syscalls recibir_syscall(int socket_cliente);
+void send_ciclo_nuevo(int socket_cliente);
 
 #endif

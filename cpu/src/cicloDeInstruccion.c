@@ -39,6 +39,7 @@ void *ciclo_de_instruccion(void *args)
 
     while (noFinalizar != -1)
     {
+        send_ciclo_nuevo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         t_contextos *contextos = esperar_thread_execute(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
         if (contextos != NULL && contextos->contexto_pid != NULL && contextos->contexto_tid != NULL)
@@ -290,10 +291,6 @@ op_code decode(t_instruccion *instruccion)
     else if (strcmp(instruccion->parametros1, "THREAD_EXIT") == 0)
     {
         return THREAD_EXIT;
-    }
-    else if (strcmp(instruccion->parametros1, "IO_FS_READ") == 0)
-    {
-        // return IO_FS_READ;
     }
     else if (strcmp(instruccion->parametros1, "PROCESS_EXIT") == 0)
     {

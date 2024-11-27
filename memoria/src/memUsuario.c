@@ -383,7 +383,7 @@ void fusionar_particiones_libres(t_list *lista_particiones, t_particiones *parti
                 particion_anterior->tamanio = particion_anterior->limite - particion_anterior->base;
 
                 list_remove_and_destroy_element(lista_particiones, indice, free); // Eliminar partición actual
-                list_remove_and_destroy_element(lista_particiones, indice + 1, free); // Eliminar partición siguiente
+                list_remove_and_destroy_element(lista_particiones, indice, free); // Eliminar partición siguiente
                 return;
             } else if (!particion_anterior->ocupada) {
                 // Fusionar con la partición anterior
