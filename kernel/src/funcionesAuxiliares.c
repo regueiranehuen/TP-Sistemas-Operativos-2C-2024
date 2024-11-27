@@ -150,10 +150,15 @@ void liberar_proceso(t_pcb *pcb)
     enviar_tcbs_a_cola_exit_por_pid(lista_tcbs, cola_exit, pcb->pid);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
     
+    for (int i = 0; i<list_size(pcb->tids); i++){
+        sem_wait(&pcb->sem_hilos_eliminar);
+    }
+
     pthread_mutex_lock(&mutex_lista_pcbs);
     list_remove_element(lista_pcbs,pcb);
     pthread_mutex_unlock(&mutex_lista_pcbs);
 
+    sem_destroy(&pcb->sem_hilos_eliminar);
     list_destroy(pcb->tids); // falta liberar lista de mutexes // paja
     pthread_mutex_destroy(&pcb->mutex_lista_mutex);
     pthread_mutex_destroy(&pcb->mutex_tids);

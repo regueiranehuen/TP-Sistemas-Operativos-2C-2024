@@ -164,13 +164,15 @@ void finalizar_hilo(int tid, int pid) {
     pthread_mutex_lock(&mutex_lista_contextos_pids);
     t_contexto_pid* contexto_pid = obtener_contexto_pid(pid);
 
+    log_info(logger,"CONTEXTO PID DEL HILO QUE QUIERO ELIMINAR:%d",contexto_pid->pid);
+
     for (int i = 0; i < list_size(lista_contextos_pids);i++){
         t_contexto_pid*cont_pid_act=list_get(lista_contextos_pids,i);
-        log_info(logger,"%d",cont_pid_act->pid);
-        
+        log_info(logger,"PID:%d",cont_pid_act->pid);
+        log_info(logger,"SIZE CONTEXTO TID:%d",list_size(cont_pid_act->contextos_tids));
         for (int j = 0; j < list_size(cont_pid_act->contextos_tids); j++){
-            t_contexto_tid*cont_tid_act=list_get(cont_pid_act->contextos_tids,i);
-            log_info(logger,"%d",cont_tid_act->tid);
+            t_contexto_tid*cont_tid_act=list_get(cont_pid_act->contextos_tids,j);
+            log_info(logger,"TID:%d",cont_tid_act->tid);
         }
 
     }

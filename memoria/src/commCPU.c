@@ -273,7 +273,6 @@ t_contexto_pid* obtener_contexto_pid(int pid){ // al usarla hay q meterle mutex 
             //pthread_mutex_unlock(&mutex_lista_contextos_pids);
             return cont_actual;
         }
-            
     }
     //pthread_mutex_unlock(&mutex_lista_contextos_pids);
     return NULL;

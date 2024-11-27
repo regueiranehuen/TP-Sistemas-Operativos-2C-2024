@@ -54,7 +54,8 @@ void liberar_instruccion(t_instruccion_tid_pid*instruccion){
 void eliminar_contexto_pid(t_contexto_pid*contexto_pid){
     for (int i = 0; i<list_size(lista_contextos_pids);i++){
         t_contexto_pid*actual=list_get(lista_contextos_pids,i);
-
+        log_info(logger,"PID CONTEXTO_PID:%d",contexto_pid->pid);
+        log_info(logger,"PID CONTEXTO_ACTUAL:%d",actual->pid);
         if (contexto_pid->pid == actual->pid){
             int pid = contexto_pid->pid; // Solo para hacer el log
             list_remove(lista_contextos_pids,i);

@@ -150,14 +150,8 @@ void proceso_exit()
     pthread_mutex_unlock(&mutex_cola_exit_procesos);
     liberar_proceso(proceso);
 
-    for (int i = 0; i<list_size(proceso->tids); i++){
-        sem_wait(&proceso->sem_hilos_eliminar);
-    }
-
     int respuesta;
     code_operacion cod_op = PROCESS_EXIT_AVISO;
-
-    
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
     send_operacion_pid(cod_op, proceso->pid, socket_memoria);
@@ -249,7 +243,7 @@ void hilo_exit()
     pthread_mutex_lock(&mutex_lista_pcbs);
     t_pcb* proceso = buscar_pcb_por_pid(lista_pcbs,pid);
     pthread_mutex_unlock(&mutex_lista_pcbs);
-    
+    log_info(logger,"Proceso:%d Tids:%d",proceso->pid,proceso->contador_tid);
     sem_post(&proceso->sem_hilos_eliminar);
 
 }
