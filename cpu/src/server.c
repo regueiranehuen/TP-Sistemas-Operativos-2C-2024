@@ -9,7 +9,7 @@ char *ip_memoria = NULL;
 int puerto_memoria = 0;
 int puerto_escucha_dispatch = 0;
 int puerto_escucha_interrupt = 0;
-char *log_level = NULL;
+char* log_level_config = NULL;
 
 int socket_servidor_Dispatch = 0, socket_servidor_Interrupt = 0;
 int socket_cliente_Dispatch = 0, socket_cliente_Interrupt = 0;
@@ -52,7 +52,7 @@ void leer_config(char *path)
     puerto_memoria = config_get_int_value(config, "PUERTO_MEMORIA");
     puerto_escucha_dispatch = config_get_int_value(config, "PUERTO_ESCUCHA_DISPATCH");
     puerto_escucha_interrupt = config_get_int_value(config, "PUERTO_ESCUCHA_INTERRUPT");
-    log_level = config_get_string_value(config, "LOG_LEVEL");
+    log_level_config = config_get_string_value(config, "LOG_LEVEL");
     log_info(log_cpu, "Configuración del CPU cargada.");
 }
 
@@ -250,7 +250,8 @@ void* recibir_kernel_interrupt(void*args){
         log_info(log_cpu,"esperando interrupciones\n");
         //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
-        if(code > 100){
+        printf("ME PINTO LA DE RECIBIR ESTA FALOPEADA:%d por interrupt\n",code);
+        if(code == -1){
             log_info(log_cpu,"Conexion cerrada por Interrupt");
             break;
         }
@@ -264,7 +265,6 @@ void* recibir_kernel_interrupt(void*args){
             hay_interrupcion = true;
             devolucion_kernel=FIN_QUANTUM_RR;
             pthread_mutex_unlock(&mutex_interrupt);
-            sem_post(&sem_ok_o_interrupcion);
             break;
         case DESALOJAR:
             log_info(log_cpu,"## Llega interrupción al puerto Interrupt");
@@ -272,11 +272,8 @@ void* recibir_kernel_interrupt(void*args){
             hay_interrupcion = true;
             devolucion_kernel=DESALOJAR;
             pthread_mutex_unlock(&mutex_interrupt);
-            sem_post(&sem_ok_o_interrupcion);
+            send_code_operacion(OK,sockets_cpu->socket_servidor->socket_cliente_Dispatch);
             break;
-        case OK:
-            log_info(log_cpu,"## Terminó una syscall");
-            sem_post(&sem_ok_o_interrupcion);
         default:
         log_info(log_cpu,"codigo no valido recibido: %d",code);
             break;

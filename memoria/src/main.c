@@ -10,9 +10,11 @@ int main(int argc, char *argv[])
     sockets_memoria *sockets = malloc(sizeof(sockets_memoria));
     sockets_iniciales = malloc(sizeof(sockets_memoria));
 
-    logger = log_create("memoria.log", "tp", true, LOG_LEVEL_TRACE);
     config = config_create("memoria.config");
-
+    t_log_level log_level_int = log_level(config);
+    logger = log_create("memoria.log", "tp", true, log_level_int);
+    
+    inicializar_Memoria(config);
     inicializar_mutex();
     inicializar_semaforos();
     inicializar_estructuras();

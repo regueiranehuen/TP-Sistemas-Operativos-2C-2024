@@ -39,12 +39,13 @@ void *ciclo_de_instruccion(void *args)
 
     while (noFinalizar != -1)
     {
+        send_ciclo_nuevo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         t_contextos *contextos = esperar_thread_execute(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
         if (contextos != NULL && contextos->contexto_pid != NULL && contextos->contexto_tid != NULL)
         {
             seguir_ejecutando = true;
-            while (seguir_ejecutando)
+            while (seguir_ejecutando == true)
             {
                 
                 t_instruccion *instruccion = fetch(contextos->contexto_tid);
@@ -61,11 +62,14 @@ void *ciclo_de_instruccion(void *args)
                 if (seguir_ejecutando)
                 {
                     checkInterrupt(contextos->contexto_tid);
-                    
                 }
             }
             free(contextos->contexto_tid);
             free(contextos->contexto_pid);
+        }
+        else if(contextos == NULL){
+            log_info(log_cpu,"Cierre de conexion con kernel");
+            break; 
         }
     }
     return NULL;
@@ -105,7 +109,7 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
         }
         else if (paquete_solicitud_contexto_pid->codigo_operacion == OBTENCION_CONTEXTO_PID_OK)
         {
-
+            
             contextos->contexto_pid = recepcionar_contexto_pid(paquete_solicitud_contexto_pid);
             solicitar_contexto_tid(info->pid, info->tid, sockets_cpu->socket_memoria);
             log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
@@ -115,7 +119,6 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
             if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK)
             { // La memoria se encarga de crear el contexto del tid si es que no existe
                 contextos->contexto_tid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid);
-                log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
             }
             else if (paquete_solicitud_contexto_tid->codigo_operacion == CONTEXTO_TID_INEXISTENTE)
             {
@@ -146,9 +149,9 @@ void checkInterrupt(t_contexto_tid *contextoTid)
 
     if (hay_interrupcion)
     {
-        
         hay_interrupcion = false;
         seguir_ejecutando = false;
+        log_info(log_cpu, "INTERRUPCION DE KERNEL QUE LEEMOS EN CHECK INTERRUPT: %d",devolucion_kernel);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion respuesta = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (respuesta != OK)
@@ -156,29 +159,29 @@ void checkInterrupt(t_contexto_tid *contextoTid)
             log_info(log_cpu, "Memoria no pudo actualizar los registros, muy poco sigma");
             return;
         }
-        printf("code:%d\n",respuesta);
+        //printf("code:%d\n",respuesta);
         if (devolucion_kernel == FIN_QUANTUM_RR)
         {
-            send_fin_quantum_rr(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+            log_info(log_cpu,"MANDANDO FIN QUANTUM A KERNEL\n");
+            send_syscall(ENUM_FIN_QUANTUM_RR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         }
         else if (devolucion_kernel == DESALOJAR)
         {
             log_info(log_cpu,"Mandando desalojo a kernel\n");
-            send_desalojo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+            send_syscall(ENUM_DESALOJAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         }
         pthread_mutex_unlock(&mutex_interrupt);
     }
     else
     {
-        
+        log_info(log_cpu,"NO HAY INTERRUPCIONES PARA EL TID %d PID %d PROGRAM COUNTER %d, seguimos",contextoTid->tid,contextoTid->pid,contextoTid->registros->PC);
         pthread_mutex_unlock(&mutex_interrupt);
     }
 }
 
 t_instruccion *fetch(t_contexto_tid *contexto)
 {
-
-    
+    log_info(log_cpu,"ENTRAMOS A FETCH CON PID %d TID %d PC %d",contexto->pid,contexto->tid,contexto->registros->PC);
 
     send_solicitud_instruccion_memoria(contexto->tid, contexto->pid, contexto->registros->PC);
 
@@ -188,11 +191,12 @@ t_instruccion *fetch(t_contexto_tid *contexto)
     {
         log_error(log_cpu, "Error al recibir la instrucción");
         seguir_ejecutando = false;
+        eliminar_paquete(paquete);
         return NULL;
     }
     else if (paquete->codigo_operacion == INSTRUCCION_OBTENIDA)
     {
-        instruccion = recepcionar_instruccion(paquete);
+        instruccion = recepcionar_instruccion(paquete); 
     }
     log_info(log_cpu, "TID: %i - FETCH - Program Counter: %i", contexto->tid, contexto->registros->PC);
     return instruccion;
@@ -288,10 +292,6 @@ op_code decode(t_instruccion *instruccion)
     {
         return THREAD_EXIT;
     }
-    else if (strcmp(instruccion->parametros1, "IO_FS_READ") == 0)
-    {
-        // return IO_FS_READ;
-    }
     else if (strcmp(instruccion->parametros1, "PROCESS_EXIT") == 0)
     {
         return PROCESS_EXIT;
@@ -312,7 +312,8 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
     case SET:
         log_info(log_cpu, "SET - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
         funcSET(contextoTid, instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
-        contextoTid->registros->PC++;
+        if (strcmp(instruccion->parametros2, "PC") != 0)
+            contextoTid->registros->PC++;
         break;
     case SUM:
         log_info(log_cpu, "SUM - Registro: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
@@ -327,7 +328,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
     case JNZ:
         log_info(log_cpu, "JNZ - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
         funcJNZ(contextoTid, instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
-        // No se incrementa el program counter
+        // El valor del program counter se evalúa dentro de la instrucción
         break;
     case READ_MEM:
         log_info(log_cpu, "READ_MEM - Dirección: %s", instruccion->parametros2);
@@ -361,8 +362,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
 
         log_info(log_cpu, "DUMP_MEMORY ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
-
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
         
         contextoTid->registros->PC++;
 
@@ -381,7 +385,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_IO(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "IO ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
 
         contextoTid->registros->PC++;
 
@@ -389,7 +397,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
     }
     case PROCESS_CREATE:
     {
-        log_info(log_cpu, "PROCESS_CREATE - PID: %s, Tamaño: %d, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4));
+        log_info(log_cpu, "PROCESS_CREATE - PSEUDOCODIGO:%s, Tamaño: %d, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)
@@ -400,7 +408,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_process_create(instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "PROCESS_CREATE ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
 
         contextoTid->registros->PC++;
 
@@ -408,7 +420,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
     }
     case THREAD_CREATE:
     {
-        log_info(log_cpu, "THREAD_CREATE - TID: %s, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3));
+        log_info(log_cpu, "THREAD_CREATE - PSEUDOCODIGO: %s, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3));
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)
@@ -419,7 +431,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_thread_create(instruccion->parametros2, atoi(instruccion->parametros3), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "THREAD_CREATE ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
 
         contextoTid->registros->PC++;
 
@@ -438,7 +454,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_thread_join(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "THREAD_JOIN ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
         contextoTid->registros->PC++;
 
         break;
@@ -456,7 +476,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_thread_cancel(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "THREAD_CANCEL ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
         contextoTid->registros->PC++;
 
         break;
@@ -474,7 +498,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_mutex_create(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "MUTEX_CREATE ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
         contextoTid->registros->PC++;
 
         break;
@@ -492,7 +520,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_mutex_lock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "MUTEX_LOCK ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
         contextoTid->registros->PC++;
 
         break;
@@ -512,7 +544,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_mutex_unlock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         log_info(log_cpu, "MUTEX_UNLOCK ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
 
         contextoTid->registros->PC++;
 
@@ -533,7 +569,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
 
         log_info(log_cpu, "THREAD_EXIT ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
 
         contextoTid->registros->PC++;
         break;
@@ -554,10 +594,12 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         send_process_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
 
-        sem_wait(&sem_ok_o_interrupcion);
-
-        // No hay que incrementar el program counter
-
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        log_info(log_cpu,"me llego el ok");
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
+        
         break;
     }
     default:

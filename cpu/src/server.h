@@ -27,7 +27,7 @@ extern char* ip_memoria;
 extern int puerto_memoria;
 extern int puerto_escucha_dispatch;
 extern int puerto_escucha_interrupt;
-extern char* log_level;
+extern char* log_level_config;
 
 extern int socket_servidor_Dispatch, socket_servidor_Interrupt;
 extern int socket_cliente_Dispatch, socket_cliente_Interrupt;

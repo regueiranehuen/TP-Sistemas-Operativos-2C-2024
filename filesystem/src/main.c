@@ -1,19 +1,35 @@
 #include "includes/main.h"
 
-int main(int argc, char* argv[]) {
+t_log *log_filesystem;
+t_config *config;
+sem_t sem_fin_filesystem;
+pthread_mutex_t mutex_bitmap;
+t_bitarray *bitmap;
+char *mount_dir;
+int block_count;
+uint32_t block_size;
 
-t_log * log;
-t_config * config;
-int socket_servidor;
+char* bitmap_path;
+char* ruta_completa;
 
-log = log_create ("filesystem.log","tp",true,LOG_LEVEL_TRACE);
-config = config_create("filesystem.config");
+int main(int argc, char *argv[]){
 
-socket_servidor = hilo_filesystem(log,config);
+    int socket_servidor;
+    estado_filesystem = 1;
+    
+    inicializar_estructuras();
 
-config_destroy(config);
-log_destroy(log);
-close(socket_servidor);
+    socket_servidor = hilo_filesystem(log_filesystem, config);
+    //sem_wait(&sem_fin_filesystem);
+
+    sem_wait(&sem_fin_filesystem);
+
+    config_destroy(config);
+    log_destroy(log_filesystem);
+    close(socket_servidor);
+    //crear una func que borre el bitmap cada vez que se vuelva a correr
+    //borrar el crear_archivo_dump
+    //borrar el bloques.dat
 
     return 0;
 }

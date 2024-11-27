@@ -3,6 +3,7 @@
 
 #include "memoria.h"
 #include "memSist.h"
+#include "memUsuario.h"
 #include "utils/includes/sockets.h"
 #include <commons/config.h>
 #include <semaphore.h>
@@ -16,7 +17,6 @@ extern t_list*lista_contextos_pids;
 extern pthread_mutex_t mutex_lista_contextos_pids;
 
 extern t_list*lista_instrucciones_tid_pid;
-
 
 
 typedef struct{

@@ -239,10 +239,10 @@ typedef struct{
 void send_contexto_pid(int socket_cliente,t_contexto_pid_send*contexto){
     t_buffer* buffer = malloc(sizeof(t_buffer));
     
-    buffer->size = 2*sizeof(uint32_t) + sizeof(int);
+    buffer->size =2*sizeof(uint32_t) + 2*sizeof(int);
     buffer->stream = malloc(buffer->size);
 
-    char* stream = buffer->stream;
+    void* stream = buffer->stream;
 
     memcpy(stream,&(contexto->pid),sizeof(int));
     stream += sizeof(int);
@@ -250,6 +250,7 @@ void send_contexto_pid(int socket_cliente,t_contexto_pid_send*contexto){
     stream += sizeof(uint32_t);
     memcpy(stream,&(contexto->limite),sizeof(uint32_t));
     stream+=sizeof(uint32_t);
+    memcpy(stream,&(contexto->tamanio_proceso),sizeof(int));
 
     op_code code = OBTENCION_CONTEXTO_PID_OK;
 
@@ -377,6 +378,88 @@ void enviar_codop(int conexion, op_code cod_op)
     enviar_paquete(codigo, conexion);
 
     eliminar_paquete(codigo);
+}
+
+void send_valor_read_mem(uint32_t valor, int socket_cliente, op_code code){
+if(code == OK_OP_CODE){
+t_buffer* buffer = malloc(sizeof(t_buffer));
+
+ buffer->size = sizeof(uint32_t);
+ buffer->stream = malloc(buffer->size);
+ 
+ void* stream = buffer->stream;
+
+ memcpy(stream,&valor,sizeof(uint32_t));
+ stream += sizeof(uint32_t);
+
+    send_paquete_op_code(socket_cliente,buffer,code);
+}
+else{
+    send_paquete_op_code(socket_cliente,NULL,code);
+}
+
+}
+
+void send_read_mem(uint32_t direccionFisica, int socket_memoria){
+ t_buffer* buffer = malloc(sizeof(t_buffer));
+
+ buffer->size = sizeof(uint32_t);
+ buffer->stream = malloc(buffer->size);
+ 
+ void* stream = buffer->stream;
+
+ memcpy(stream,&direccionFisica,sizeof(uint32_t));
+
+ op_code code = READ_MEM;
+
+ send_paquete_op_code(socket_memoria,buffer,code);    
+}
+
+void send_write_mem(uint32_t direccionFisica, uint32_t valor, int socket_memoria){
+t_buffer* buffer = malloc(sizeof(t_buffer));
+
+ buffer->size = 2*sizeof(uint32_t);
+ buffer->stream = malloc(buffer->size);
+ 
+ void* stream = buffer->stream;
+
+ memcpy(stream,&direccionFisica,sizeof(uint32_t));
+ stream += sizeof(uint32_t);
+ memcpy(stream,&valor,sizeof(uint32_t));
+
+ op_code code = WRITE_MEM;
+
+ send_paquete_op_code(socket_memoria,buffer,code); 
+}
+
+t_write_mem* recepcionar_write_mem(t_paquete* paquete){
+void* stream = paquete->buffer->stream;
+
+t_write_mem* info = malloc(sizeof(t_write_mem));
+
+uint32_t direccionFisica;
+uint32_t valor;
+
+memcpy(&(direccionFisica),stream,sizeof(uint32_t));
+stream += sizeof(uint32_t);
+memcpy(&(valor),stream,sizeof(uint32_t));
+
+info->direccionFisica = direccionFisica;
+info->valor = valor;
+
+eliminar_paquete(paquete);
+return info;  
+}
+
+uint32_t recepcionar_read_mem(t_paquete* paquete){
+void* stream = paquete->buffer->stream;
+
+uint32_t direccionFisica;
+
+memcpy(&(direccionFisica),stream,sizeof(uint32_t));
+
+eliminar_paquete(paquete);
+return direccionFisica;
 }
 
 void solicitar_contexto_tid(int pid, int tid,int conexion){
@@ -954,7 +1037,8 @@ t_contexto_pid_send* recepcionar_contexto_pid(t_paquete*paquete){
     memcpy(&(contexto->base),stream,sizeof(uint32_t));
     stream += sizeof(uint32_t);
     memcpy(&(contexto->limite),stream,sizeof(uint32_t));
-
+    stream +=sizeof(uint32_t);
+    memcpy(&(contexto->tamanio_proceso),stream,sizeof(uint32_t));
     eliminar_paquete(paquete);
     return contexto;
 }
@@ -1003,3 +1087,5 @@ t_instruccion_memoria* recepcionar_solicitud_instruccion_memoria(t_paquete* paqu
     eliminar_paquete(paquete);
     return info;
 }
+
+

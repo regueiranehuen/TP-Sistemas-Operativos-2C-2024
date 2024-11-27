@@ -8,6 +8,7 @@
 #include "../includes/cliente.h"
 #include <semaphore.h>
 
+
 extern t_queue* cola_new_procesos;
 extern t_queue* cola_exit_procesos;
 
@@ -27,6 +28,7 @@ extern t_log* logger;
 extern sockets_kernel *sockets;
 
 extern pthread_mutex_t mutex_lista_pcbs;
+extern pthread_mutex_t mutex_lista_tcbs;
 extern pthread_mutex_t mutex_cola_new_procesos;
 extern pthread_mutex_t mutex_cola_exit_procesos;
 extern pthread_mutex_t mutex_cola_exit_hilos;
@@ -34,24 +36,47 @@ extern pthread_mutex_t mutex_cola_ready;
 extern pthread_mutex_t mutex_conexion_kernel_a_dispatch;
 extern pthread_mutex_t mutex_conexion_kernel_a_interrupt;
 extern pthread_mutex_t mutex_log;
+extern pthread_mutex_t mutex_lista_blocked;
+extern pthread_mutex_t mutex_syscall_ejecutando;
+
+extern bool esperando;
 
 extern sem_t semaforo_new_ready_procesos;
 extern sem_t semaforo_cola_new_procesos;
 extern sem_t semaforo_cola_exit_procesos;
 extern sem_t sem_desalojado;
 
+extern sem_t sem_ciclo_nuevo;
+
 extern sem_t semaforo_cola_ready;
 
 extern sem_t sem_cola_IO;
 
+extern sem_t semaforo_cola_exit_hilo_exec_process_exit;
+extern sem_t semaforo_cola_exit_hilos_process_exit;
 extern sem_t semaforo_cola_exit_hilos;
+
 extern sem_t sem_lista_prioridades;
 
 extern sem_t sem_fin_kernel;
 
+extern sem_t sem_fin_syscall;
+extern sem_t sem_espera_interrupcion_cpu;
+extern sem_t sem_ok_desalojo_cpu;
+
+extern sem_t sem_termina_cmn;
+
 extern bool desalojado;
+extern bool syscallEjecutando;
 
 
+extern pthread_mutex_t mutex_desalojo;
+typedef struct{
+bool desalojar;
+bool finQuantum;
+}t_aviso_cpu;
+
+extern t_aviso_cpu* aviso_cpu;
 
 typedef enum {
     TCB_NEW,
@@ -111,6 +136,8 @@ pthread_mutex_t mutex_tids;
 int contador_tid; 
 int contador_mutex;
 
+sem_t sem_hilos_eliminar;
+
 }t_pcb;
 
 typedef struct {
@@ -140,6 +167,7 @@ void THREAD_EXIT();
 void new_a_ready_procesos();
 void proceso_exit();
 void hilo_exit();
+void hilo_exec_exit_tras_process_exit();
 
 void iniciar_kernel (char* archivo_pseudocodigo, int tamanio_proceso);
 
@@ -153,6 +181,8 @@ void DUMP_MEMORY();
 
 void dispositivo_IO();
 void* hilo_dispositivo_IO();
+
+
 
 
 

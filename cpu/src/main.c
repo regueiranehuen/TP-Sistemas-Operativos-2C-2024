@@ -2,12 +2,13 @@
 
 int main(int argc, char** argv) {
 
-    log_cpu = log_create("CPU.log", "tp", true, LOG_LEVEL_TRACE);
-    
     inicializar_estructuras();
     inicializar_mutex();
     inicializar_semaforos();
 
+    t_log_level log_level_int = log_level(config);
+    log_cpu = log_create("CPU.log", "tp", true, log_level_int);
+    
 
     sockets_cpu = hilos_cpu(log_cpu, config);
 

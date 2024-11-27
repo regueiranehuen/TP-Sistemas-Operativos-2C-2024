@@ -6,9 +6,6 @@
 #include "commons/string.h"
 
 
-
-extern pthread_mutex_t mutex_lista_blocked;
-
 void inicializar_estados();
 void destruir_estados();
 void inicializar_semaforos();
@@ -30,5 +27,18 @@ t_tcb* sacar_tcb_de_cola(t_queue* cola, t_tcb* tcb_a_sacar);//saca un tcb de una
 t_tcb* sacar_tcb_de_lista(t_list* lista, t_tcb* tcb_a_sacar);//saca un tcb de una lista
 t_tcb* buscar_tcb(int tid_buscado, t_tcb* hilo_exec);
 void inicializar_mutex_compartido_entre_procesos(pthread_mutex_t* mutex);
+bool esta_en_lista_blocked(t_tcb*tcb_actual);
+void sacar_tcbs_de_cola_ready_fifo(t_list* lista_tcbs,t_queue* cola_ready_fifo,int pid_buscado);
+void sacar_tcbs_lista_blocked(t_list* lista_tcbs,t_list*lista_bloqueados,int pid_buscado);
+t_tcb* buscar_tcb_por_tid_pid(int tid, int pid,t_list* lista_tcbs);
+void sacar_tcbs_de_lista_ready_prioridades(t_list* lista_tcbs,t_list* lista_prioridades,int pid_buscado);
+void sacar_tcbs_de_colas_ready_multinivel(t_list *lista_tcbs, t_list *lista_prioridades, int pid_buscado);
+t_tcb* sacar_tcb_ready(t_tcb* tcb);
+bool tcb_metido_en_estructura(t_tcb*tcb);
+void print_queue(t_queue* queue);
+void print_lista_prioridades(t_list* lista_prioridades);
+void print_lista(t_list* lista);
+bool hilo_esta_en_lista(t_list* lista, int tid, int pid);
+bool hilo_esta_en_cola(t_queue* cola, int tid, int pid);
 
 #endif

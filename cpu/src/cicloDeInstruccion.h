@@ -5,7 +5,6 @@
 #include "utils/includes/estructuras.h"
 
 extern t_instruccion instruccion;
-extern bool seguir_ejecutando;
 
 extern int tid_exec;
 extern int pid_exec;

@@ -1,0 +1,5 @@
+MUTEX_LOCK semaforin
+SET AX 26
+LOG AX 26
+MUTEX_UNLOCK semaforin
+PROCESS_EXIT

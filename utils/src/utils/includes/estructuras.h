@@ -32,13 +32,15 @@ typedef struct{
     int pid;
     t_list*contextos_tids;
     uint32_t base; 
-    uint32_t limite; 
+    uint32_t limite;
+    int tamanio_proceso; 
 }t_contexto_pid;
 
 typedef struct{
     int pid;
     uint32_t base;
     uint32_t limite;
+    int tamanio_proceso;
 }t_contexto_pid_send;
 
 typedef struct{
@@ -58,6 +60,11 @@ int tid;
 int pid;
 uint32_t pc;
 }t_instruccion_memoria;
+
+typedef struct{
+uint32_t direccionFisica;
+uint32_t valor;
+}t_write_mem;
 
 typedef struct{
     int pid;
@@ -89,6 +96,7 @@ typedef struct {
 
 typedef enum // SOLO USARLO CON MEMORIA
 {
+    ERROR=-1,
     Algo, //hay un case -1 que lo cambie a 1
     //ESTADOS
     NEW,
@@ -134,7 +142,6 @@ typedef enum // SOLO USARLO CON MEMORIA
     TERMINO_PROCESO,
     INTERRUPCION,
     INTERRUPCION_USUARIO,
-    ERROR,
     LLAMADA_POR_INSTRUCCION,
     //COMUNICACION MEMORIA CON MODULOS
     CREAR_PROCESO,
@@ -166,7 +173,7 @@ typedef enum // SOLO USARLO CON MEMORIA
     INSTRUCCION_OBTENIDA,
     ESPACIO_USUARIO,
     WRITE_OK,
-
+    OK_OP_CODE
 }op_code; // USARLO SOLAMENTE CON MEMORIA
 
 
@@ -243,7 +250,6 @@ typedef struct{
     t_contexto_pid_send*contexto_pid;
     t_contexto_tid*contexto_tid;
 }t_contextos;
-
 
 typedef struct
 {
@@ -369,5 +375,12 @@ t_instruccion_memoria* recepcionar_solicitud_instruccion_memoria(t_paquete* paqu
 t_contexto_pid_send* recepcionar_contexto_pid(t_paquete*paquete);
 
 uint32_t leer_registros(void*stream);
+
+void send_read_mem(uint32_t direccionFisica, int socket_memoria);
+uint32_t recepcionar_read_mem(t_paquete* paquete);
+void send_valor_read_mem(uint32_t valor, int socket_cliente, op_code code);
+
+void send_write_mem(uint32_t direccionFisica, uint32_t valor, int socket_memoria);
+t_write_mem* recepcionar_write_mem(t_paquete* paquete);
 
 #endif
