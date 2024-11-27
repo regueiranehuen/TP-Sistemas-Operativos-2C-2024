@@ -145,16 +145,17 @@ void proceso_exit()
     sem_wait(&semaforo_cola_exit_procesos); // espera que haya elementos en la cola
 
     pthread_mutex_lock(&mutex_cola_exit_procesos);
-
-    t_pcb *proceso = queue_peek(cola_exit_procesos);
+    t_pcb *proceso = queue_pop(cola_exit_procesos);
     pthread_mutex_unlock(&mutex_cola_exit_procesos);
+
+    int pid = proceso->pid;
     liberar_proceso(proceso);
 
     int respuesta;
     code_operacion cod_op = PROCESS_EXIT_AVISO;
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
-    send_operacion_pid(cod_op, proceso->pid, socket_memoria);
+    send_operacion_pid(cod_op, pid, socket_memoria);
     recv(socket_memoria, &respuesta, sizeof(int), 0);
     close(socket_memoria);
     if (respuesta != OK)
@@ -163,11 +164,8 @@ void proceso_exit()
     }
     else if (respuesta == OK)
     {
-        pthread_mutex_lock(&mutex_cola_exit_procesos);
-        t_pcb *proceso = queue_pop(cola_exit_procesos);
-        pthread_mutex_unlock(&mutex_cola_exit_procesos);
         pthread_mutex_lock(&mutex_log);
-        log_info(logger, "## Finaliza el proceso %d", proceso->pid);
+        log_info(logger, "## Finaliza el proceso %d", pid);
         pthread_mutex_unlock(&mutex_log);
         sem_post(&semaforo_new_ready_procesos);
     }
@@ -394,6 +392,7 @@ void PROCESS_EXIT()
     }
     t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
 
+    log_info(logger,"PID PCB EN PROCESS EXIT: %d",pcb->pid);
     pcb->estado = PCB_EXIT;
 
     pthread_mutex_lock(&mutex_cola_exit_procesos);
