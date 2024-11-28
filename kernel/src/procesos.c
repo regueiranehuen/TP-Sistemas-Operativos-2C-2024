@@ -221,7 +221,6 @@ void hilo_exit()
     send_operacion_tid_pid(THREAD_ELIMINATE_AVISO, hilo->tid, hilo->pid, socket_memoria);
     recv(socket_memoria, &respuesta, sizeof(int), 0);
     close(socket_memoria);
-    log_info(logger, "EN THREAD CANCEL LLEGÓ ESTA RESPUESTA DE MEMORIA: %d", respuesta);
     if (respuesta == -1)
     {
         pthread_mutex_lock(&mutex_log);
@@ -582,21 +581,21 @@ void THREAD_CANCEL(int tid)
         return;
     }
 
-        if (tcb->estado == TCB_READY)
-        {
-            sacar_tcb_ready(tcb);
-        }
-        else
-        {
-            pthread_mutex_lock(&mutex_lista_blocked);
-            sacar_tcb_de_lista(lista_bloqueados, tcb);
-            pthread_mutex_lock(&mutex_lista_blocked);
-        }
-        tcb->estado = TCB_EXIT;
-        pthread_mutex_lock(&mutex_cola_exit_hilos);
-        queue_push(cola_exit, tcb);
-        pthread_mutex_unlock(&mutex_cola_exit_hilos);
-        sem_post(&semaforo_cola_exit_hilos);
+    if (tcb->estado == TCB_READY)
+    {
+        sacar_tcb_ready(tcb);
+    }
+    else
+    {
+        pthread_mutex_lock(&mutex_lista_blocked);
+        sacar_tcb_de_lista(lista_bloqueados, tcb);
+        pthread_mutex_unlock(&mutex_lista_blocked);
+    }
+    tcb->estado = TCB_EXIT;
+    pthread_mutex_lock(&mutex_cola_exit_hilos);
+    queue_push(cola_exit, tcb);
+    pthread_mutex_unlock(&mutex_cola_exit_hilos);
+    sem_post(&semaforo_cola_exit_hilos);
 
     log_info(logger,"MANDO OK");
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
@@ -684,7 +683,10 @@ void MUTEX_CREATE(char *recurso) // supongo que el recurso es el nombre del mute
 
 void MUTEX_LOCK(char *recurso)
 {
-    t_mutex *mutex_asociado = busqueda_mutex(lista_mutex, recurso);
+    pthread_mutex_lock(&mutex_lista_pcbs);
+    t_pcb *proceso_asociado = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
+    pthread_mutex_unlock(&mutex_lista_pcbs);
+    t_mutex *mutex_asociado = busqueda_mutex(proceso_asociado->lista_mutex, recurso);
     t_tcb *hilo_aux = hilo_exec;
     if (mutex_asociado == NULL)
     {
@@ -772,7 +774,10 @@ void MUTEX_LOCK(char *recurso)
 
 void MUTEX_UNLOCK(char *recurso)
 {
-    t_mutex *mutex_asociado = busqueda_mutex(lista_mutex, recurso);
+    pthread_mutex_lock(&mutex_lista_pcbs);
+    t_pcb *proceso_asociado = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
+    pthread_mutex_unlock(&mutex_lista_pcbs);
+    t_mutex *mutex_asociado = busqueda_mutex(proceso_asociado->lista_mutex, recurso);
     t_tcb *hilo_aux = hilo_exec;
     if (mutex_asociado == NULL)
     {
@@ -803,7 +808,7 @@ void MUTEX_UNLOCK(char *recurso)
         //fin_syscall_desalojo_cmn();
         return;
     }
-
+    
     if (mutex_asociado->hilo != hilo_exec)
     {
         log_info(logger, "El hilo que realizó la syscall no es el que tiene tomado el recurso");

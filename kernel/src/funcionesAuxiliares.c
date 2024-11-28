@@ -733,3 +733,28 @@ bool hilo_esta_en_cola(t_queue* cola, int tid, int pid) {
 
     return false;  // No se encontró ningún hilo con el tid y pid especificados
 }
+
+bool hilo_esta_en_colas_multinivel(t_list*colas_ready_prioridad,int tid, int pid, int prioridad){
+    for (int i = 0; i< list_size(colas_ready_prioridad); i++){
+        t_cola_prioridad*cola_actual=list_get(colas_ready_prioridad,i);
+        if (cola_actual->prioridad == prioridad){
+            return hilo_esta_en_cola(cola_actual->cola,tid,pid);
+        }
+    }
+    return false;
+}
+
+bool hilo_esta_en_ready(t_tcb* hilo){
+    char*algoritmo=config_get_string_value(config,"ALGORITMO_PLANIFICACION");
+
+    if (strings_iguales(algoritmo,"FIFO")){
+        return hilo_esta_en_cola(cola_ready_fifo,hilo->tid,hilo->pid);
+    }
+    else if (strings_iguales(algoritmo,"PRIORIDADES")){
+        return hilo_esta_en_lista(lista_ready_prioridad,hilo->tid,hilo->pid);
+    }
+    else if (strings_iguales(algoritmo,"CMN")){
+        return hilo_esta_en_colas_multinivel(colas_ready_prioridad,hilo->tid,hilo->pid,hilo->prioridad);
+    }
+    return false;
+}

@@ -18,11 +18,22 @@ char* limpiar_token(char* token) {
 void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
     
 
-    const char *ruta_relativa = nombre_archivo;
-    char*ruta_absoluta = obtener_ruta_absoluta(ruta_relativa);
-
-    FILE* archivo = fopen(ruta_absoluta, "r");
+    /*const char *ruta_relativa = nombre_archivo;
+    char*ruta_absoluta = obtener_ruta_absoluta(ruta_relativa);*/
+    char* path_instrucciones = config_get_string_value(config,"PATH_INSTRUCCIONES");
+    char* extension = ".txt";
+    char* path_instrucciones_aux = malloc(strlen(path_instrucciones)+strlen(nombre_archivo) + strlen(extension) + 1);
     
+
+    snprintf(path_instrucciones_aux,strlen(path_instrucciones)+strlen(nombre_archivo) + strlen(extension) + 1,"%s%s%s",path_instrucciones,nombre_archivo,extension);
+    
+    log_info(logger,"PATH INSTRUCCIONES AUX: %s",path_instrucciones_aux);
+
+
+    FILE* archivo = fopen(path_instrucciones_aux, "r");
+    
+    free(path_instrucciones_aux);
+
     if (archivo == NULL) {
         perror("Error al abrir el archivo");
         exit(EXIT_FAILURE);
@@ -80,6 +91,7 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
         
     }
     fclose(archivo);
+    
 }
 
 void inicializar_resto_parametros(int cant_param, t_instruccion_tid_pid *instruccion)
