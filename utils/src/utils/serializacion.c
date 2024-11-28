@@ -283,12 +283,14 @@ void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){
 
 
 t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch) {
-    t_paquete_syscall* paquete = malloc(sizeof(t_paquete_syscall));
-
-    paquete->buffer=malloc(sizeof(t_buffer));
-
+    
+    syscalls syscall;
     // Primero recibimos el codigo de operacion
-    int bytes = recv(socket_dispatch, &(paquete->syscall), sizeof(int), 0);
+    int bytes = recv(socket_dispatch, &syscall, sizeof(int), 0);
+
+    t_paquete_syscall* paquete = malloc(sizeof(t_paquete_syscall));
+    paquete->buffer=malloc(sizeof(t_buffer));
+    paquete->syscall = syscall;
 
     //if (paquete->syscall == ENUM_DUMP_MEMORY || paquete->syscall == THREAD_EX)
 
@@ -531,12 +533,15 @@ void send_paquete_code_operacion(code_operacion code, t_buffer* buffer, int sock
 
 
 t_paquete_code_operacion* recibir_paquete_code_operacion(int socket_cliente){
-    t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
+    
 
-    paquete->buffer=malloc(sizeof(t_buffer));
-
+    code_operacion code;
     // Primero recibimos el codigo de operacion
-    int bytes = recv(socket_cliente, &(paquete->code), sizeof(int), 0);
+    int bytes = recv(socket_cliente, &code, sizeof(int), 0);
+
+    t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
+    paquete->buffer=malloc(sizeof(t_buffer));
+    paquete->code = code;
 
     if (bytes <= 0){
         return NULL;

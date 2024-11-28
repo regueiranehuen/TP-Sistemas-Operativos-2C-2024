@@ -389,7 +389,9 @@ void PROCESS_EXIT()
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         return;
     }
+    pthread_mutex_lock(&mutex_lista_pcbs);
     t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
+    pthread_mutex_unlock(&mutex_lista_pcbs);
 
     log_info(logger,"PID PCB EN PROCESS EXIT: %d",pcb->pid);
     pcb->estado = PCB_EXIT;
@@ -1044,4 +1046,39 @@ void DUMP_MEMORY()
         tcb->estado = TCB_READY;
         pushear_cola_ready(tcb);
     }
+}
+
+void atender_segmentation_fault(){
+    pthread_mutex_lock(&mutex_lista_pcbs);
+    t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
+    pthread_mutex_unlock(&mutex_lista_pcbs);
+    pcb->estado = PCB_EXIT;
+    pthread_mutex_lock(&mutex_cola_exit_procesos);
+    queue_push(cola_exit_procesos, pcb);
+    pthread_mutex_unlock(&mutex_cola_exit_procesos);
+
+    sem_post(&semaforo_cola_exit_procesos);
+
+    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+    pthread_mutex_lock(&mutex_desalojo);
+    if (!aviso_cpu->finQuantum)
+    {
+        send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
+        aviso_cpu->desalojar = true;
+        log_info(logger, "envio desalojar");
+        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
+        if (codigo != OK)
+        {
+            log_info(logger, "CPU no proceso la interrupción correctamente");
+        }
+        log_info(logger, "recibi la confirmacion");
+    }
+    else if (aviso_cpu->finQuantum)
+    {
+        aviso_cpu->finQuantum = false;
+    }
+    pthread_mutex_unlock(&mutex_desalojo);
+    log_info(logger, "le mando a cpu el OK nashei");
+    send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 }

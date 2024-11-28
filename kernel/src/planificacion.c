@@ -160,7 +160,8 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             t_process_create *paramProcessCreate = parametros_process_create(paquete);
             log_info(logger, "pseudocodigo:%s, Tamanio:%d, Prioridad:%d", paramProcessCreate->nombreArchivo, paramProcessCreate->tamProceso, paramProcessCreate->prioridad);
             PROCESS_CREATE(paramProcessCreate->nombreArchivo, paramProcessCreate->tamProceso, paramProcessCreate->prioridad);
-            
+            free(paramProcessCreate->nombreArchivo);
+            free(paramProcessCreate);
             break;
         case ENUM_PROCESS_EXIT:
             log_info(logger, "## (%d:%d) - Solicitó syscall: PROCESS_EXIT", hilo_exec->pid, hilo_exec->tid);
@@ -180,6 +181,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             THREAD_CREATE(paramThreadCreate->nombreArchivo, paramThreadCreate->prioridad);
             
             sem_post(&sem_fin_syscall);
+            free(paramThreadCreate->nombreArchivo);
             free(paramThreadCreate);
             break;
         case ENUM_THREAD_JOIN:
@@ -209,7 +211,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             log_info(logger, "RECURSO MUTEX CREATE: %s", recurso);
             
             MUTEX_CREATE(recurso);
-           
+
             break;
         case ENUM_MUTEX_LOCK:
             log_info(logger, "## (%d:%d) - Solicitó syscall: MUTEX_LOCK", hilo_exec->pid, hilo_exec->tid);
@@ -217,7 +219,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             log_info(logger, "RECURSO MUTEX LOCK: %s", recurso);
             
             MUTEX_LOCK(recurso_a_bloquear);
-            
+
             break;
         case ENUM_MUTEX_UNLOCK:
             log_info(logger, "## (%d:%d) - Solicitó syscall: MUTEX_UNLOCK", hilo_exec->pid, hilo_exec->tid);
@@ -225,7 +227,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             log_info(logger, "RECURSO MUTEX UNLOCK: %s", recurso);
         
             MUTEX_UNLOCK(recurso_a_desbloquear);
-            
+
             break;
         case ENUM_IO:
             log_info(logger, "## (%d:%d) - Solicitó syscall: IO", hilo_exec->pid, hilo_exec->tid);
@@ -244,38 +246,20 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             free(paquete);
             break;
         case ENUM_SEGMENTATION_FAULT:
-            t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
-            pcb->estado = PCB_EXIT;
-            pthread_mutex_lock(&mutex_cola_exit_procesos);
-            queue_push(cola_exit_procesos, pcb);
-            pthread_mutex_unlock(&mutex_cola_exit_procesos);
-        
-            send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Interrupt);
+            atender_segmentation_fault();
             
             free(paquete->buffer);
             free(paquete);
-            break;/*
-        case ENUM_FIN_QUANTUM_RR:
-            log_info(logger, "SE RECIBIÓ EL CÓDIGO ENUM_FIN_QUANTUM_RR");
-            sem_post(&sem_desalojado);
-
-            free(paquete->buffer);
-            free(paquete);
             break;
-        case ENUM_DESALOJAR:
-            log_info(logger, "SE RECIBIÓ EL CÓDIGO ENUM_DESALOJAR");
-            sem_post(&sem_desalojado);
-            free(paquete->buffer);
-            free(paquete);
-            break;*/
         case ENUM_CICLO_NUEVO:
             log_info(logger,"Ciclo nuevo por parte de cpu");
             sem_post(&sem_ciclo_nuevo);
+            free(paquete->buffer);
+            free(paquete);
             break;
         default:
             log_info(logger, "se recibio el codigo %d no valido", paquete->syscall);
             log_info(logger, "Syscall no válida.\n");
-            // send_code_operacion(TERMINAR,sockets->sockets_cliente_cpu->socket_Interrupt);
             free(paquete->buffer);
             free(paquete);
             break;

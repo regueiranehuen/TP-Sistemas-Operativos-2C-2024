@@ -1,168 +1,179 @@
 #include "includes/commCpu.h"
 
-void* recibir_cpu(void*args) {
+void *recibir_cpu(void *args)
+{
 
-    
-    int retardo_respuesta = config_get_int_value(config,"RETARDO_RESPUESTA");
+    int retardo_respuesta = config_get_int_value(config, "RETARDO_RESPUESTA");
     int codigoOperacion = 0;
-    while (codigoOperacion != -1) {
-        
-        t_paquete*paquete_operacion = recibir_paquete_op_code(sockets_iniciales->socket_cpu);
+    while (codigoOperacion != -1)
+    {
 
-        if(paquete_operacion==NULL){
+        t_paquete *paquete_operacion = recibir_paquete_op_code(sockets_iniciales->socket_cpu);
+
+        if (paquete_operacion == NULL)
+        {
             printf("Memoria recibio un paquete == NULL de cpu");
             break;
         }
-            log_info(logger,"Memoria recibio el siguiente codigo operacion de CPU: %d",paquete_operacion->codigo_operacion);
+        log_info(logger, "Memoria recibio el siguiente codigo operacion de CPU: %d", paquete_operacion->codigo_operacion);
 
-        usleep(retardo_respuesta * 1000);  // Aplicar retardo configurado
+        usleep(retardo_respuesta * 1000); // Aplicar retardo configurado
 
-        switch (paquete_operacion->codigo_operacion) {
-            case OBTENER_CONTEXTO_TID: {
-                t_tid_pid *info = recepcionar_solicitud_contexto_tid(paquete_operacion);  // Recibe PID y TID
+        switch (paquete_operacion->codigo_operacion)
+        {
+        case OBTENER_CONTEXTO_TID:
+        {
+            t_tid_pid *info = recepcionar_solicitud_contexto_tid(paquete_operacion); // Recibe PID y TID
 
-                log_info(logger, "## Contexto solicitado - (PID:TID) - (%d:%d)",info->pid,info->tid);
-                pthread_mutex_lock(&mutex_lista_contextos_pids);
-                t_contexto_tid*contexto_tid=obtener_contexto_tid(info->pid,info->tid);
-                pthread_mutex_unlock(&mutex_lista_contextos_pids);
-                /*if (contexto_tid == NULL){
-                    log_error(logger, "No se encontro el contexto del tid %d asociado al pid %d. VAMOS A CREARLO!", info->tid,info->pid);
-                    t_contexto_pid* cont_pid = obtener_contexto_pid(info->pid);
-                    t_contexto_tid* cont_tid_inic = inicializar_contexto_tid(cont_pid,info->tid);
-                    send_contexto_tid(sockets_iniciales->socket_cpu,cont_tid_inic);
-                    log_info(logger, "Enviado contexto para PID: %d, TID: %d", info->pid, info->tid);
-                    free(info);
-                    break;
-                }*/
+            log_info(logger, "## Contexto solicitado - (PID:TID) - (%d:%d)", info->pid, info->tid);
+            pthread_mutex_lock(&mutex_lista_contextos_pids);
+            t_contexto_tid *contexto_tid = obtener_contexto_tid(info->pid, info->tid);
+            pthread_mutex_unlock(&mutex_lista_contextos_pids);
 
-               if (contexto_tid==NULL){
-                log_error(logger, "No se encontro el contexto del tid %d asociado al pid %d", info->tid,info->pid);
-               }
-                free(info);
-                send_contexto_tid(sockets_iniciales->socket_cpu,contexto_tid);
-                log_info(logger, "Enviado contexto para PID: %d, TID: %d", contexto_tid->pid, contexto_tid->tid);
-                
+            if (contexto_tid == NULL)
+            {
+                log_error(logger, "No se encontro el contexto del tid %d asociado al pid %d", info->tid, info->pid);
+            }
+            free(info);
+            send_contexto_tid(sockets_iniciales->socket_cpu, contexto_tid);
+            log_info(logger, "Enviado contexto para PID: %d, TID: %d", contexto_tid->pid, contexto_tid->tid);
 
+            break;
+        }
+
+        case OBTENER_CONTEXTO_PID:
+        {
+            int pid_obtencion = recepcionar_solicitud_contexto_pid(paquete_operacion);
+
+            pthread_mutex_lock(&mutex_lista_contextos_pids);
+            t_contexto_pid *contextoPid = obtener_contexto_pid(pid_obtencion);
+            pthread_mutex_unlock(&mutex_lista_contextos_pids);
+            if (contextoPid == NULL)
+            {
+                log_error(logger, "No se encontro el contexto del pid %d", pid_obtencion);
+                int rta = ERROR;
+                send(sockets_iniciales->socket_cpu, &rta, sizeof(int), 0);
                 break;
             }
+            t_contexto_pid_send *contexto_a_enviar = malloc(sizeof(contexto_a_enviar));
+            contexto_a_enviar->pid = contextoPid->pid;
+            contexto_a_enviar->base = contextoPid->base;
+            contexto_a_enviar->limite = contextoPid->limite;
+            contexto_a_enviar->tamanio_proceso = contextoPid->tamanio_proceso;
 
-            case OBTENER_CONTEXTO_PID:{ 
-                int pid_obtencion = recepcionar_solicitud_contexto_pid(paquete_operacion);
+            send_contexto_pid(sockets_iniciales->socket_cpu, contexto_a_enviar);
+            break;
+        }
 
-                pthread_mutex_lock(&mutex_lista_contextos_pids);
-                t_contexto_pid* contextoPid = obtener_contexto_pid(pid_obtencion);
-                pthread_mutex_unlock(&mutex_lista_contextos_pids);
-                if (contextoPid == NULL){
-                    log_error(logger, "No se encontro el contexto del pid %d", pid_obtencion);
-                    int rta = ERROR;
-                    send(sockets_iniciales->socket_cpu,&rta,sizeof(int),0);
-                    break;
-                }
-                t_contexto_pid_send* contexto_a_enviar = malloc(sizeof(contexto_a_enviar));
-                contexto_a_enviar->pid = contextoPid->pid;
-                contexto_a_enviar->base = contextoPid->base;
-                contexto_a_enviar->limite=contextoPid->limite;
-                contexto_a_enviar->tamanio_proceso = contextoPid->tamanio_proceso;
-                
-                send_contexto_pid(sockets_iniciales->socket_cpu,contexto_a_enviar);
-                break;
-            }
+        case ACTUALIZAR_CONTEXTO_TID:
+        {
+            printf("entrando a actualizar_contexto\n");
+            t_contexto_tid *contexto_tid = recepcionar_contexto_tid(paquete_operacion);
+            log_info(logger, "REGISTROS QUE VOY A METER EN MEMORIA (ACTUALIZO):");
+            log_info(logger, "%d", contexto_tid->registros->AX);
+            log_info(logger, "%d", contexto_tid->registros->BX);
+            log_info(logger, "%d", contexto_tid->registros->CX);
+            log_info(logger, "%d", contexto_tid->registros->DX);
+            log_info(logger, "%d", contexto_tid->registros->EX);
+            log_info(logger, "%d", contexto_tid->registros->HX);
 
+            log_info(logger, "PROGRAM COUNTER ACTUAL: %u", contexto_tid->registros->PC);
+            actualizar_contexto(contexto_tid->pid, contexto_tid->tid, contexto_tid->registros);
+            send_code_operacion(OK, sockets_iniciales->socket_cpu);
 
-            case ACTUALIZAR_CONTEXTO_TID:{
-                printf("entrando a actualizar_contexto\n");
-                t_contexto_tid*contexto_tid=recepcionar_contexto_tid(paquete_operacion);
-                log_info(logger, "REGISTROS QUE VOY A METER EN MEMORIA (ACTUALIZO):");
-                log_info(logger, "%d",contexto_tid->registros->AX);
-                log_info(logger, "%d",contexto_tid->registros->BX);
-                log_info(logger, "%d",contexto_tid->registros->CX);
-                log_info(logger, "%d",contexto_tid->registros->DX);
-                log_info(logger, "%d",contexto_tid->registros->EX);
-                log_info(logger, "%d",contexto_tid->registros->HX);
-        
+            free(contexto_tid->registros); // Ya se actualizó el contexto que está en la lista de contextos tids correspondiente al pid enviado
+            free(contexto_tid);
+            break;
+        }
 
-                log_info(logger, "PROGRAM COUNTER ACTUAL: %u", contexto_tid->registros->PC);
-                actualizar_contexto(contexto_tid->pid,contexto_tid->tid,contexto_tid->registros);
-                send_code_operacion(OK,sockets_iniciales->socket_cpu);
-                
-                //free(contexto_tid);
-                break;
-            }
-
-            case OBTENER_INSTRUCCION: {
-                log_info(logger,"Entramos a obtener instruccion, los parámetros que llegaron de solicitud son estos:");  
-                t_instruccion_memoria* solicitud_instruccion = recepcionar_solicitud_instruccion_memoria(paquete_operacion);
-                log_info(logger,"%d",solicitud_instruccion->pid);
-                log_info(logger,"%d",solicitud_instruccion->tid);
-                log_info(logger,"%d",solicitud_instruccion->pc);
-                t_instruccion *instruccion = obtener_instruccion(solicitud_instruccion->tid, solicitud_instruccion->pid,solicitud_instruccion->pc);
-                if (instruccion==NULL){
-                    log_info(logger,"instruccion no encontrada");
-                    break;
-                }
-                else{
-                    log_info(logger,"super instruccion a enviar: %s %s %s ",instruccion->parametros1,instruccion->parametros2,instruccion->parametros3);
-                }
-                enviar_instruccion(sockets_iniciales->socket_cpu, instruccion, INSTRUCCION_OBTENIDA);
-                if(strcmp(instruccion->parametros2,"") == 0){
-                log_info(logger,"## Obtener instruccion - (PID:TID) - (%d:%d) - Instruccion: <%s>",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1);
-                }
-                else if(strcmp(instruccion->parametros3,"")== 0){
-                log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s>",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1,instruccion->parametros2);
-                }
-                else if(strcmp(instruccion->parametros4,"")== 0){
-                log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s>",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3);    
-                } 
-                else{
-                log_info(logger,"## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s>",solicitud_instruccion->pid,solicitud_instruccion->tid,instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4);
-                }
+        case OBTENER_INSTRUCCION:
+        {
+            log_info(logger, "Entramos a obtener instruccion, los parámetros que llegaron de solicitud son estos:");
+            t_instruccion_memoria *solicitud_instruccion = recepcionar_solicitud_instruccion_memoria(paquete_operacion);
+            log_info(logger, "%d", solicitud_instruccion->pid);
+            log_info(logger, "%d", solicitud_instruccion->tid);
+            log_info(logger, "%d", solicitud_instruccion->pc);
+            t_instruccion *instruccion = obtener_instruccion(solicitud_instruccion->tid, solicitud_instruccion->pid, solicitud_instruccion->pc);
+            if (instruccion == NULL)
+            {
+                log_info(logger, "instruccion no encontrada");
                 free(solicitud_instruccion);
                 break;
             }
+            else
+            {
+                log_info(logger, "super instruccion a enviar: %s %s %s ", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
+            }
+            enviar_instruccion(sockets_iniciales->socket_cpu, instruccion, INSTRUCCION_OBTENIDA);
+            if (strcmp(instruccion->parametros2, "") == 0)
+            {
+                log_info(logger, "## Obtener instruccion - (PID:TID) - (%d:%d) - Instruccion: <%s>", solicitud_instruccion->pid, solicitud_instruccion->tid, instruccion->parametros1);
+            }
+            else if (strcmp(instruccion->parametros3, "") == 0)
+            {
+                log_info(logger, "## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s>", solicitud_instruccion->pid, solicitud_instruccion->tid, instruccion->parametros1, instruccion->parametros2);
+            }
+            else if (strcmp(instruccion->parametros4, "") == 0)
+            {
+                log_info(logger, "## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s>", solicitud_instruccion->pid, solicitud_instruccion->tid, instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
+            }
+            else
+            {
+                log_info(logger, "## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: <%s> <%s> <%s> <%s>", solicitud_instruccion->pid, solicitud_instruccion->tid, instruccion->parametros1, instruccion->parametros2, instruccion->parametros3, instruccion->parametros4);
+            }
+            free(solicitud_instruccion);
+            break;
+        }
 
-            case READ_MEM: {
-                log_info(logger,"VOY A RECEPCIONAR EL READ MEM");
-                uint32_t direccionFisica = recepcionar_read_mem(paquete_operacion);
-                log_info(logger,"direccionFisica recibida:%d",direccionFisica);
-                uint32_t valor = leer_Memoria(direccionFisica);
-                log_info(logger,"valor leido de memoria:%d",valor);
-                op_code code;
-                if(valor == 0xFFFFFFFF){
+        case READ_MEM:
+        {
+            log_info(logger, "VOY A RECEPCIONAR EL READ MEM");
+            uint32_t direccionFisica = recepcionar_read_mem(paquete_operacion);
+            log_info(logger, "direccionFisica recibida:%d", direccionFisica);
+            uint32_t valor = leer_Memoria(direccionFisica);
+            log_info(logger, "valor leido de memoria:%d", valor);
+            op_code code;
+            if (valor == 0xFFFFFFFF)
+            {
                 code = ERROR;
-                send_valor_read_mem(valor,sockets_iniciales->socket_cpu,code);
-                log_info(logger,"entre a error");
-                }
-                else{
+                send_valor_read_mem(valor, sockets_iniciales->socket_cpu, code);
+                log_info(logger, "entre a error");
+            }
+            else
+            {
                 code = OK_OP_CODE;
-                send_valor_read_mem(valor,sockets_iniciales->socket_cpu,code);
-                log_info(logger,"entre a ok");
-                }
-            break;    
+                send_valor_read_mem(valor, sockets_iniciales->socket_cpu, code);
+                log_info(logger, "entre a ok");
             }
+            break;
+        }
 
-            case WRITE_MEM: {
-                t_write_mem *info_0 = recepcionar_write_mem(paquete_operacion);
-                log_info(logger, "direccion Fisica recibida:%d", info_0->direccionFisica);
-                log_info(logger, "valor recibido:%d", info_0->valor);
-                int resultado = escribir_Memoria(info_0);
-                if (resultado == 0)
-                {
-                    op_code code = OK_OP_CODE;
-                    send(sockets_iniciales->socket_cpu, &code, sizeof(op_code), 0);
-                }
-                free(info_0);
-                break; 
+        case WRITE_MEM:
+        {
+            t_write_mem *info_0 = recepcionar_write_mem(paquete_operacion);
+            log_info(logger, "direccion Fisica recibida:%d", info_0->direccionFisica);
+            log_info(logger, "valor recibido:%d", info_0->valor);
+            int resultado = escribir_Memoria(info_0);
+            if (resultado == 0)
+            {
+                op_code code = OK_OP_CODE;
+                send(sockets_iniciales->socket_cpu, &code, sizeof(op_code), 0);
             }
-             
-            
+            free(info_0);
+            break;
+        }
 
-            case 1:
-                codigoOperacion = paquete_operacion->codigo_operacion;
-                break;
+        case 1:
+            codigoOperacion = paquete_operacion->codigo_operacion;
+            free(paquete_operacion->buffer);
+            free(paquete_operacion);
+            break;
 
-            default:
-                log_warning(logger, "Operación desconocida recibida: %d", paquete_operacion->codigo_operacion);
-                break;
+        default:
+            free(paquete_operacion->buffer);
+            free(paquete_operacion);
+            log_warning(logger, "Operación desconocida recibida: %d", paquete_operacion->codigo_operacion);
+            break;
         }
     }
     sem_post(&sem_fin_memoria);

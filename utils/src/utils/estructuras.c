@@ -77,12 +77,15 @@ t_list *recibir_paquete(int socket_cliente)
 }
 
 t_paquete* recibir_paquete_op_code(int socket_cliente){
-    t_paquete* paquete = malloc(sizeof(t_paquete));
+    
 
-    paquete->buffer = malloc(sizeof(t_buffer));
-
+    op_code codigo_operacion;
     // Primero recibimos el codigo de operacion
-    int bytes = recv(socket_cliente, &(paquete->codigo_operacion), sizeof(paquete->codigo_operacion), 0);
+    int bytes = recv(socket_cliente, &codigo_operacion, sizeof(int), 0);
+
+    t_paquete* paquete = malloc(sizeof(t_paquete));
+    paquete->buffer = malloc(sizeof(t_buffer));
+    paquete->codigo_operacion=codigo_operacion;
 
     if (bytes <= 0){
         return NULL;
@@ -254,6 +257,8 @@ void send_contexto_pid(int socket_cliente,t_contexto_pid_send*contexto){
 
     op_code code = OBTENCION_CONTEXTO_PID_OK;
 
+    free(contexto);
+
     send_paquete_op_code(socket_cliente,buffer,code);
 }
 
@@ -288,6 +293,7 @@ void send_contexto_tid(int socket_cliente,t_contexto_tid*contexto){
     memcpy(stream,&(contexto->registros->PC),sizeof(uint32_t));
     
     op_code code = OBTENCION_CONTEXTO_TID_OK;
+
 
     send_paquete_op_code(socket_cliente,buffer,code);
 }

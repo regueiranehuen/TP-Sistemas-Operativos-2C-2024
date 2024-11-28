@@ -27,27 +27,22 @@ void destruir_semaforos(){
     sem_destroy(&sem_fin_memoria);
 }
 
-void liberar_instruccion(t_instruccion_tid_pid*instruccion){
-    
+void liberar_instruccion(t_instruccion_tid_pid* instruccion) {
+    // Liberar siempre el nombre de la instrucción
     free(instruccion->instrucciones->parametros1);
 
-    if(strcmp(instruccion->instrucciones->parametros2,"")==0){
-        goto fin;
-    }
-    else if(strcmp(instruccion->instrucciones->parametros3,"")==0){
+    if (strcmp(instruccion->instrucciones->parametros2, "") != 0) {
         free(instruccion->instrucciones->parametros2);
     }
-    else if(strcmp(instruccion->instrucciones->parametros4,"")==0){
-        free(instruccion->instrucciones->parametros2);
+
+    if (strcmp(instruccion->instrucciones->parametros3, "") != 0) {
         free(instruccion->instrucciones->parametros3);
-        
     }
-    else{
-        free(instruccion->instrucciones->parametros2);
-        free(instruccion->instrucciones->parametros3);
+
+    if (strcmp(instruccion->instrucciones->parametros4, "") != 0) {
         free(instruccion->instrucciones->parametros4);
     }
-    fin:
+
     free(instruccion);
 }
 
@@ -59,6 +54,7 @@ void eliminar_contexto_pid(t_contexto_pid*contexto_pid){
         if (contexto_pid->pid == actual->pid){
             int pid = contexto_pid->pid; // Solo para hacer el log
             list_remove(lista_contextos_pids,i);
+
             free(contexto_pid->contextos_tids);
             free(contexto_pid);
             log_info(logger,"Contexto del pid %d eliminado",pid);
