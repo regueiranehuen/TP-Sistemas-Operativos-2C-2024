@@ -87,7 +87,15 @@ t_pcb *crear_pcb()
     pcb->contador_mutex = 0;
     pthread_mutex_lock(&mutex_lista_pcbs);
     list_add(lista_pcbs, pcb);
+    log_info(logger,"pids en crear_pcb, lista_pcbs");
+    for (int i = 0; i<list_size(lista_pcbs);i++){
+        t_pcb*act=list_get(lista_pcbs,i);
+        log_info(logger,"pid guardado: %d",act->pid);
+    }
+
     pthread_mutex_unlock(&mutex_lista_pcbs);
+
+    
 
     pthread_mutex_init(&pcb->mutex_lista_mutex, NULL);
     pthread_mutex_init(&pcb->mutex_tids, NULL);
@@ -367,10 +375,6 @@ void PROCESS_CREATE(char *pseudocodigo, int tamanio_proceso, int prioridad)
     log_info(logger, "## (%d:0) Se crea el proceso - Estado: NEW", pcb->pid);
     pthread_mutex_unlock(&mutex_log);
 
-    pthread_mutex_lock(&mutex_lista_pcbs);
-    list_add(lista_pcbs, pcb);
-    pthread_mutex_unlock(&mutex_lista_pcbs);
-
     pthread_mutex_lock(&mutex_cola_new_procesos);
     queue_push(cola_new_procesos, pcb);
     pthread_mutex_unlock(&mutex_cola_new_procesos);
@@ -458,7 +462,9 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
 
     int resultado = 0;
 
+    pthread_mutex_lock(&mutex_lista_pcbs);
     t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
+    pthread_mutex_unlock(&mutex_lista_pcbs);
 
     // Creo la estructura del tcb
     t_tcb *tcb = crear_tcb(pcb);
@@ -679,7 +685,9 @@ la syscall no tenga asignado el mutex, no realizará ningún desbloqueo.
 
 void MUTEX_CREATE(char *recurso) // supongo que el recurso es el nombre del mutex
 {
+    pthread_mutex_lock(&mutex_lista_pcbs);
     t_pcb *proceso_asociado = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
+    pthread_mutex_unlock(&mutex_lista_pcbs);
     t_mutex *mutex = malloc(sizeof(t_mutex));
     mutex->estado = UNLOCKED;
     mutex->cola_tcbs = queue_create();
@@ -1048,7 +1056,9 @@ void DUMP_MEMORY()
         pthread_mutex_lock(&mutex_log);
         log_info(logger, "Error en el dump de memoria ");
         pthread_mutex_unlock(&mutex_log);
+        pthread_mutex_lock(&mutex_lista_pcbs);
         t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, tcb->pid);
+        pthread_mutex_unlock(&mutex_lista_pcbs);
         pcb->estado = PCB_EXIT;
         pthread_mutex_lock(&mutex_cola_exit_procesos);
         queue_push(cola_exit_procesos, pcb);

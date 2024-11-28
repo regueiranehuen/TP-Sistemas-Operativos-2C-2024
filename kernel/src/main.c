@@ -39,7 +39,11 @@ void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
     char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
 
     send_terminar_ejecucion(sockets->sockets_cliente_cpu->socket_Interrupt);
-    sem_wait(&sem_modulo_terminado);    
+    sem_wait(&sem_modulo_terminado);
+
+    close(sockets->socket_cliente_memoria);
+    close(sockets->sockets_cliente_cpu->socket_Dispatch);
+    close(sockets->sockets_cliente_cpu->socket_Interrupt);    
 
     sem_post(&semaforo_cola_new_procesos);
     sem_post(&semaforo_cola_exit_procesos);
@@ -54,15 +58,12 @@ void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
     if (strings_iguales(algoritmo,"PRIORIDADES")){
         cantHilos +=1;
     }
+    
 
-    for (int i = 1; i <=cantHilos; i++){
+    for (int i = 1; i < cantHilos; i++){
+        log_info(logger,"cant hilos que terminaron: %d",i);
         sem_wait(&sem_termina_hilo);
     }
-
-
-    close(sockets->socket_cliente_memoria);
-    close(sockets->sockets_cliente_cpu->socket_Dispatch);
-    close(sockets->sockets_cliente_cpu->socket_Interrupt);
 
 
     destruir_estados(); 

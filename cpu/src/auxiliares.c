@@ -67,9 +67,6 @@ void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
 
 void terminar_programa() {
     
-    sem_wait(&sem_termina_hilo);
-    sem_wait(&sem_termina_hilo);
-
     close(sockets_cpu->socket_memoria);
     close(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
     close(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
@@ -80,12 +77,18 @@ void terminar_programa() {
     close(sockets->socket_servidor_Dispatch);
     close(sockets->socket_servidor_Interrupt);
 
+    sem_wait(&sem_termina_hilo);
+    sem_wait(&sem_termina_hilo);
+
+    
 
     destruir_mutex();
     destruir_semaforos();
     free(sockets);
     free(sockets_cpu);
     log_debug(log_cpu, "Estructuras liberadas. CPU TERMINADO");
+    config_destroy(config);
+    log_destroy(log_cpu);
 }
 
 

@@ -42,5 +42,6 @@ bool hilo_esta_en_lista(t_list* lista, int tid, int pid);
 bool hilo_esta_en_cola(t_queue* cola, int tid, int pid);
 bool hilo_esta_en_ready(t_tcb* hilo);
 bool hilo_esta_en_colas_multinivel(t_list*colas_ready_prioridad,int tid, int pid, int prioridad);
+void eliminar_pcb_lista(t_pcb*pcb,t_list*lista);
 
 #endif

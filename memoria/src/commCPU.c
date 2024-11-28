@@ -181,6 +181,7 @@ void *recibir_cpu(void *args)
             else{
                 log_info(logger,"SOY UN ESTORBO");
             }
+            break;
         }
 
         case 1:

@@ -1094,8 +1094,4 @@ t_instruccion_memoria* recepcionar_solicitud_instruccion_memoria(t_paquete* paqu
     return info;
 }
 
-void send_termina_ejecucion_op_code(int socket_cliente){
-    op_code code = TERMINAR_EJECUCION_MODULO_OP_CODE;
-    send(socket_cliente,&code,sizeof(int),0);
-}
 

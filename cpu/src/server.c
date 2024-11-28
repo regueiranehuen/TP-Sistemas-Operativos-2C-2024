@@ -280,9 +280,10 @@ void* recibir_kernel_interrupt(void*args){
             break;
         case TERMINAR_EJECUCION_MODULO:
             log_info(log_cpu, "## Llega TERMINAR_EJECUCION_MODULO");
-            
             send_code_operacion(OK_TERMINAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
 
+            //send_code_operacion(OK_TERMINAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+            
             send_termina_ejecucion_op_code(sockets_cpu->socket_memoria);
             op_code code = recibir_code_operacion(sockets_cpu->socket_memoria);
             if (code == OK_TERMINAR_OP_CODE){
@@ -303,24 +304,4 @@ void* recibir_kernel_interrupt(void*args){
     }
 
     return NULL;
-}
-
-void terminar_cpu(){
-
-    close(sockets->socket_cliente_Dispatch);
-    close(sockets->socket_cliente_Interrupt);
-    close(sockets->socket_servidor_Dispatch);
-    close(sockets->socket_servidor_Interrupt);
-
-    close(sockets_cpu->socket_memoria);
-    close(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-    close(sockets_cpu->socket_servidor->socket_cliente_Interrupt); 
-    close(sockets_cpu->socket_servidor->socket_servidor_Dispatch); 
-    close(sockets_cpu->socket_servidor->socket_servidor_Interrupt);   
-
-    
-
-    destruir_semaforos();
-    destruir_mutex();
-    
 }
