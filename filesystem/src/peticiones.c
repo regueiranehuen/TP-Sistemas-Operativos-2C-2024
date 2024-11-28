@@ -40,13 +40,14 @@ void atender_conexiones(int socket_cliente){
                     }
                     free(info->contenido);
                     free(info);
+                    
+                    
                     break;
 
                 default:
                     log_info(log_filesystem,"Pedido no disponible");
-                    free(paquete->buffer->stream);
-                    free(paquete->buffer);
-                    free(paquete);
+                    
+                    
                     break;
 
             }

@@ -118,6 +118,7 @@ char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const cha
     pthread_mutex_lock(&mutex_bitmap);
     if (!hay_espacio_disponible(bitmap, bloques_necesarios)) {
         pthread_mutex_unlock(&mutex_bitmap);
+        log_error(log_filesystem, "No hay espacio suficiente para el archivo dump");
         return NULL;
     }
 
@@ -200,14 +201,19 @@ void mostrar_contenido_archivo_metadata(const char* filepath) {
 bool hay_espacio_disponible(t_bitarray* bitmap, int bloques_necesarios) {
     int bloques_libres = 0;
 
-    for(int i = 0; i < bitarray_get_max_bit(bitmap); i++) {
+    
+    for(int i = 0; i < block_count; i++) {
+        
         if(!bitarray_test_bit(bitmap, i)) {
             bloques_libres++;
         }
+        
         if(bloques_libres >= bloques_necesarios) {
             return true;
         }
     }
+
+    log_warning(log_filesystem, "BLOQUES LIBRES: %d, : BLOQUES NECESARIOS: %d", bloques_libres, bloques_necesarios);
 
     return false;
 }
