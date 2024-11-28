@@ -291,12 +291,17 @@ void*atender_interrupt(void*args){
         switch(code){
             case ENUM_DESALOJAR:
             log_debug(logger,"LLEGÓ CÓDIGO ENUM_DESALOJAR");
+            sem_post(&sem_seguir_o_frenar);
             sem_post(&sem_desalojado);    
             break;
             case ENUM_FIN_QUANTUM_RR:
             log_debug(logger,"LLEGÓ CÓDIGO ENUM_FIN_QUANTUM_RR");
-
+            sem_post(&sem_seguir_o_frenar);
             sem_post(&sem_desalojado);
+            break;
+            case OK_TERMINAR: // Se espera un OK solo cuando CPU nos avisa que le llegó el mensaje para que corte
+            log_debug(logger,"LLEGÓ OK A INTERRUPT");
+            sem_post(&sem_modulo_terminado);
             break;
             default:
             log_error(logger,"CODIGO NO ESPERADO EN ATENDER INTERRUPT");
@@ -304,6 +309,23 @@ void*atender_interrupt(void*args){
             
         }
 
+    }
+    return NULL;
+}
+
+void* cortar_ejecucion_modulos(void*args){
+
+    while (estado_kernel != 0){
+        sem_wait(&sem_seguir_o_frenar); 
+        pthread_mutex_lock(&mutex_lista_pcbs);
+        if (!list_is_empty(lista_pcbs)){
+            pthread_mutex_unlock(&mutex_lista_pcbs);
+            sem_post(&sem_seguir);
+        }
+        else{
+            pthread_mutex_unlock(&mutex_lista_pcbs);
+            sem_post(&sem_fin_kernel);
+        }
     }
     return NULL;
 }
@@ -447,6 +469,7 @@ void *hilo_planificador_corto_plazo(void *arg)
             sem_init(&sem_fin_syscall,0,0);
             colas_multinivel();
         }
+        sem_wait(&sem_seguir);
     }
     return NULL;
 }
@@ -466,6 +489,7 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
     pthread_t hilo_ready_exec;
     pthread_t hilo_atender_syscall;
     pthread_t hilo_atender_interrupt;
+    pthread_t hilo_cortar_modulos;
 
     int resultado = pthread_create(&hilo_ready_exec, NULL, hilo_planificador_corto_plazo, algoritmo);
 
@@ -487,6 +511,13 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
     if (resultado != 0)
     {
         log_error(logger, "Error al crear el hilo para atender interrupt");
+        return;
+    }
+
+    resultado = pthread_create(&hilo_cortar_modulos,NULL,cortar_ejecucion_modulos,NULL);
+    if (resultado != 0)
+    {
+        log_error(logger, "Error al crear el hilo para cortar la ejecución de los módulos");
         return;
     }
 
@@ -623,21 +654,20 @@ void pushear_cola_ready(t_tcb* hilo){
 void ejecucion()
 {
 
-code_operacion cod_op = THREAD_EXECUTE_AVISO;
+    code_operacion cod_op = THREAD_EXECUTE_AVISO;
 
-log_info(logger,"ENVIANDO TID %d Y PID %d",hilo_exec->tid,hilo_exec->pid);
+    log_info(logger, "ENVIANDO TID %d Y PID %d", hilo_exec->tid, hilo_exec->pid);
 
-pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
-send_operacion_tid_pid(cod_op, hilo_exec->tid, hilo_exec->pid, sockets->sockets_cliente_cpu->socket_Dispatch);
-pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
+    pthread_mutex_lock(&mutex_conexion_kernel_a_dispatch);
+    send_operacion_tid_pid(cod_op, hilo_exec->tid, hilo_exec->pid, sockets->sockets_cliente_cpu->socket_Dispatch);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_dispatch);
 
-    char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
+    char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
 
-if(strcmp(algoritmo,"CMN")==0){
-    char* quantum_char = config_get_string_value(config,"QUANTUM");
-    int quantum = atoi(quantum_char);
-    espera_con_quantum(quantum);
+    if (strcmp(algoritmo, "CMN") == 0)
+    {
+        char *quantum_char = config_get_string_value(config, "QUANTUM");
+        int quantum = atoi(quantum_char);
+        espera_con_quantum(quantum);
+    }
 }
-
-}
-

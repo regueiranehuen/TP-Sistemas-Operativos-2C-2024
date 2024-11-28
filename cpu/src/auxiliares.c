@@ -13,7 +13,7 @@ void inicializar_estructuras() {
     
     sockets_cpu = malloc(sizeof(t_sockets_cpu));
 
-
+    
     log_info(log_cpu, "Estructuras inicializadas");
 }
 
@@ -64,7 +64,10 @@ void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
 }
 
 void terminar_programa() {
-    liberarMemoria(sockets_cpu, log_cpu, config); 
+    
+    close(sockets_cpu->socket_memoria);
+
+
     destruir_mutex();
     destruir_semaforos();
     log_info(log_cpu, "Estructuras liberadas");

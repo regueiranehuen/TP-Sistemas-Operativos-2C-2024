@@ -21,7 +21,9 @@ typedef enum{
     SEGMENTATION_FAULT,
     OK,
     KERNEL,
-    CPU
+    CPU,
+    TERMINAR_EJECUCION_MODULO,
+    OK_TERMINAR
 }code_operacion;
 
 typedef enum{
@@ -162,5 +164,6 @@ t_args_dump_memory* recepcionar_dump_memory_filesystem(t_paquete_code_operacion*
 void send_syscall(syscalls syscall, int socket_cliente);
 syscalls recibir_syscall(int socket_cliente);
 void send_ciclo_nuevo(int socket_cliente);
+void send_terminar_ejecucion(int socket_cliente);
 
 #endif

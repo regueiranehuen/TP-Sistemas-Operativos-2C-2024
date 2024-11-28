@@ -785,3 +785,7 @@ t_log_level log_level(t_config* config){
     }
     return -1;
 }
+
+void send_terminar_ejecucion(int socket_cliente){
+    send_code_operacion(TERMINAR_EJECUCION_MODULO,socket_cliente);
+}

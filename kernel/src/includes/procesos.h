@@ -65,12 +65,18 @@ extern sem_t sem_espera_interrupcion_cpu;
 extern sem_t sem_ok_desalojo_cpu;
 
 extern sem_t sem_termina_cmn;
+extern sem_t sem_seguir_o_frenar;
+extern sem_t sem_seguir;
+
+extern sem_t sem_modulo_terminado;
 
 extern bool desalojado;
 extern bool syscallEjecutando;
 
 
 extern pthread_mutex_t mutex_desalojo;
+
+
 typedef struct{
 bool desalojar;
 bool finQuantum;

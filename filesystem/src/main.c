@@ -27,9 +27,14 @@ int main(int argc, char *argv[]){
     config_destroy(config);
     log_destroy(log_filesystem);
     close(socket_servidor);
+    pthread_mutex_destroy(&mutex_bitmap);
+    
+    
     //crear una func que borre el bitmap cada vez que se vuelva a correr
     //borrar el crear_archivo_dump
     //borrar el bloques.dat
+
+    
 
     return 0;
 }

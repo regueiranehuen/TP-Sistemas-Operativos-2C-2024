@@ -274,6 +274,21 @@ void* recibir_kernel_interrupt(void*args){
             pthread_mutex_unlock(&mutex_interrupt);
             send_code_operacion(OK,sockets_cpu->socket_servidor->socket_cliente_Dispatch);
             break;
+        case TERMINAR_EJECUCION_MODULO:
+            log_info(log_cpu, "## Llega interrupción al puerto Interrupt");
+            
+            send_code_operacion(OK_TERMINAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+
+            send_terminar_ejecucion(sockets_cpu->socket_memoria);
+            code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
+            if (code == OK){
+                log_info(log_cpu, "Se termina la ejecución del módulo CPU");
+                terminar_cpu();
+            }
+            else{
+                log_info(log_cpu,"SOY UN ESTORBO");
+            }
+
         default:
         log_info(log_cpu,"codigo no valido recibido: %d",code);
             break;
@@ -282,4 +297,12 @@ void* recibir_kernel_interrupt(void*args){
     }
 
     return NULL;
+}
+
+void terminar_cpu(){
+
+    
+    destruir_semaforos();
+    destruir_mutex();
+    
 }

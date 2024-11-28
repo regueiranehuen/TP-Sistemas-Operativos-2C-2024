@@ -3,6 +3,7 @@
 
 #include "utils/includes/sockets.h"
 #include "utils/includes/estructuras.h"
+#include "auxiliares.h"
 #include <pthread.h>
 #include <stdint.h>
 
@@ -75,6 +76,7 @@ void inicializar_semaforos();
 void destruir_semaforos();
 void* recibir_kernel_dispatch(void*args);
 void* recibir_kernel_interrupt(void*args);
+void terminar_cpu();
 
 
 #endif  // SERVER_H

@@ -28,6 +28,9 @@ sem_t sem_fin_syscall;
 sem_t sem_espera_interrupcion_cpu;
 sem_t sem_ok_desalojo_cpu;
 sem_t sem_termina_cmn;
+sem_t sem_seguir_o_frenar;
+sem_t sem_seguir;
+sem_t sem_modulo_terminado;
 
 t_queue *cola_new_procesos;
 t_queue *cola_exit_procesos;

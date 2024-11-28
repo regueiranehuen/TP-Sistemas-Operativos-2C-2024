@@ -26,7 +26,8 @@ int main(int argc, char *argv[])
     sockets = hilos_kernel(logger, config);
     iniciar_kernel(archivo_pseudocodigo, tamanio_proceso);
     sem_wait(&sem_fin_kernel);
-    estado_kernel = 0;
+    //estado_kernel = 0;
+
     liberar_espacio(logger, config, sockets);
     return 0;
 }
@@ -34,12 +35,20 @@ int main(int argc, char *argv[])
 void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
 {
     config_destroy(config);
-    log_destroy(logger);
+    
+
+    send_terminar_ejecucion(sockets->sockets_cliente_cpu->socket_Interrupt);
+    sem_wait(&sem_modulo_terminado);    
+
+
+    
     close(sockets->socket_cliente_memoria);
     close(sockets->sockets_cliente_cpu->socket_Dispatch);
     close(sockets->sockets_cliente_cpu->socket_Interrupt);
-    destruir_estados();
+
+    destruir_estados(); 
     destruir_semaforos();
     destruir_mutex();
     free(sockets);
+    log_destroy(logger);
 }

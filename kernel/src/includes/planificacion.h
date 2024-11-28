@@ -31,5 +31,6 @@ void *funcion_manejo_procesos(void *arg);
 void espera_con_quantum(int quantum);
 void ejecucion();
 void pushear_cola_ready(t_tcb* hilo);
+void* cortar_ejecucion_modulos(void*args);
 
 #endif
