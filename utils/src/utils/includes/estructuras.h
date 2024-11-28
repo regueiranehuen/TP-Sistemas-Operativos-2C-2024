@@ -173,7 +173,9 @@ typedef enum // SOLO USARLO CON MEMORIA
     INSTRUCCION_OBTENIDA,
     ESPACIO_USUARIO,
     WRITE_OK,
-    OK_OP_CODE
+    OK_OP_CODE,
+    OK_TERMINAR_OP_CODE,
+    TERMINAR_EJECUCION_MODULO_OP_CODE
 }op_code; // USARLO SOLAMENTE CON MEMORIA
 
 
@@ -382,5 +384,6 @@ void send_valor_read_mem(uint32_t valor, int socket_cliente, op_code code);
 
 void send_write_mem(uint32_t direccionFisica, uint32_t valor, int socket_memoria);
 t_write_mem* recepcionar_write_mem(t_paquete* paquete);
+void send_termina_ejecucion_op_code(int socket_cliente);
 
 #endif

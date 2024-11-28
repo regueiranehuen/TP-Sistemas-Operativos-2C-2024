@@ -43,6 +43,7 @@ void *hilo_por_cliente(void *void_args){
         log_info(args->log, "%d_Peticion de Memoria", socket_cliente);
         sem_post(&sem_conexion_hecha);
         atender_conexiones(socket_cliente);
+
     }
 
     free(args);

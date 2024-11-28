@@ -26,7 +26,8 @@ int main(int argc, char *argv[])
     sockets = hilos_kernel(logger, config);
     iniciar_kernel(archivo_pseudocodigo, tamanio_proceso);
     sem_wait(&sem_fin_kernel);
-    //estado_kernel = 0;
+
+    estado_kernel = 0;
 
     liberar_espacio(logger, config, sockets);
     return 0;
@@ -34,21 +35,41 @@ int main(int argc, char *argv[])
 
 void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
 {
-    config_destroy(config);
     
+    char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
 
     send_terminar_ejecucion(sockets->sockets_cliente_cpu->socket_Interrupt);
     sem_wait(&sem_modulo_terminado);    
 
-
+    sem_post(&semaforo_cola_new_procesos);
+    sem_post(&semaforo_cola_exit_procesos);
+    sem_post(&semaforo_cola_exit_hilos);
+    sem_post(&sem_seguir_o_frenar);
+    sem_post(&sem_cola_IO);
+    if (strings_iguales(algoritmo,"PRIORIDADES")){
+        sem_post(&sem_lista_prioridades);
+    }
     
+    int cantHilos = 7;
+    if (strings_iguales(algoritmo,"PRIORIDADES")){
+        cantHilos +=1;
+    }
+
+    for (int i = 1; i <=cantHilos; i++){
+        sem_wait(&sem_termina_hilo);
+    }
+
+
     close(sockets->socket_cliente_memoria);
     close(sockets->sockets_cliente_cpu->socket_Dispatch);
     close(sockets->sockets_cliente_cpu->socket_Interrupt);
+
 
     destruir_estados(); 
     destruir_semaforos();
     destruir_mutex();
     free(sockets);
+    log_debug(logger, "Estructuras liberadas. KERNEL TERMINADO");
     log_destroy(logger);
+    config_destroy(config);
 }

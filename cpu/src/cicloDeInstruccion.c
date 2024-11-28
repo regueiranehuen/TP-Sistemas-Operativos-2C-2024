@@ -69,7 +69,8 @@ void *ciclo_de_instruccion(void *args)
         }
         else if(contextos == NULL){
             log_info(log_cpu,"Cierre de conexion con kernel");
-            break; 
+            sem_post(&sem_termina_hilo);
+            return NULL; 
         }
     }
     return NULL;

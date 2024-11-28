@@ -31,6 +31,7 @@ sem_t sem_termina_cmn;
 sem_t sem_seguir_o_frenar;
 sem_t sem_seguir;
 sem_t sem_modulo_terminado;
+sem_t sem_termina_hilo;
 
 t_queue *cola_new_procesos;
 t_queue *cola_exit_procesos;
@@ -146,7 +147,9 @@ void proceso_exit()
 { // elimina los procesos que estan en la cola exit
 
     sem_wait(&semaforo_cola_exit_procesos); // espera que haya elementos en la cola
-
+    if (estado_kernel == 0){
+        return;
+    }
     pthread_mutex_lock(&mutex_cola_exit_procesos);
     t_pcb *proceso = queue_pop(cola_exit_procesos);
     pthread_mutex_unlock(&mutex_cola_exit_procesos);
@@ -186,6 +189,9 @@ void hilo_exit()
 {
 
     sem_wait(&semaforo_cola_exit_hilos);
+    if (estado_kernel == 0){
+        return;
+    }
 
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     t_tcb *hilo = queue_pop(cola_exit);
@@ -290,6 +296,9 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
     int respuesta = 1;
 
     sem_wait(&semaforo_cola_new_procesos);
+    if (estado_kernel == 0){
+        return;
+    }
 
     pthread_mutex_lock(&mutex_cola_new_procesos);
     t_pcb *pcb = queue_peek(cola_new_procesos);
@@ -952,6 +961,10 @@ void *hilo_dispositivo_IO(void *args)
     {
 
         sem_wait(&sem_cola_IO); // espera que haya elementos en la cola
+        if (estado_kernel == 0){
+            sem_post(&sem_termina_hilo);
+            return NULL;
+        }
         log_info(logger, "LLEGÓ SIGNAL SEM COLA IO");
         t_nodo_cola_IO *info = queue_pop(cola_IO);
         log_info(logger, "MILISEGUNDOS IO: %d", info->milisegundos);
