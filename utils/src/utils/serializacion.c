@@ -687,8 +687,7 @@ void send_dump_memory_filesystem(int pid,int tid,int tamanio_particion_proceso, 
     memcpy(stream,contenido,tamanio_particion_proceso);
     
     send_paquete_code_operacion(DUMP_MEMORIA,buffer,socket_cliente);
-    free(buffer->stream);
-    free(buffer);
+    
 
 }
 

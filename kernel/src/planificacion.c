@@ -4,7 +4,7 @@
 
 t_tcb *fifo_tcb()
 {
-
+    log_info(logger, "ANTES XD Se tomó el semáforo (cola_ready)");
     sem_wait(&semaforo_cola_ready);
     log_info(logger, "Se tomó el semáforo (cola_ready)");
 

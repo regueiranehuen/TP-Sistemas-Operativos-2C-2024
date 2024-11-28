@@ -102,6 +102,7 @@ t_tcb *crear_tcb(t_pcb *pcb)
     *tid = tcb->tid;
     tcb->estado = TCB_NEW;
     tcb->pid = pcb->pid;
+    log_error(logger, "PID: %d", tcb->pid);
     pthread_mutex_lock(&pcb->mutex_tids);
     list_add(pcb->tids, tid);
     pthread_mutex_unlock(&pcb->mutex_tids);
