@@ -17,3 +17,13 @@ void inicializar_estructuras(void){
     bitmap = cargar_bitmap(mount_dir, block_count);
 
 }
+uint32_t bytes_a_escribir(t_args_dump_memory* info,uint32_t bytes_escritos){
+    
+    if (info->tamanio_particion_proceso - bytes_escritos >= block_size){
+        return block_size;
+    }
+    else{
+
+        return info->tamanio_particion_proceso - bytes_escritos;
+    }
+}

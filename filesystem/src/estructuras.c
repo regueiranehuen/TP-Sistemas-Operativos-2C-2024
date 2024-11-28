@@ -334,8 +334,8 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
         off_t offset = block_index * block_size;
 
         fseek(arch,offset,SEEK_SET);  // Desde el principio del archivo, me desplazo offset
-
-        uint32_t bytes_to_write = (info->tamanio_particion_proceso - bytes_written >= block_size) ? block_size : info->tamanio_particion_proceso - bytes_written;
+        
+        uint32_t bytes_to_write = bytes_a_escribir(info,bytes_written);
         
         if (fwrite(puntero,bytes_to_write,1,arch)!=1){
             log_error(log_filesystem, "Error al escribir en el bloque");

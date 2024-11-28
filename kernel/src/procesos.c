@@ -695,7 +695,23 @@ void MUTEX_LOCK(char *recurso)
         pthread_mutex_unlock(&mutex_log);
         sacar_tcb_ready(hilo_aux);
         pthread_mutex_lock(&mutex_cola_exit_hilos);
-        queue_push(cola_exit, hilo_aux);
+
+        if (hilo_aux->tid != 0){
+            pthread_mutex_lock(&mutex_cola_exit_hilos);
+            queue_push(cola_exit, hilo_aux);
+            pthread_mutex_unlock(&mutex_cola_exit_hilos);
+            sem_post(&semaforo_cola_exit_hilos);
+        }
+        else{
+            pthread_mutex_lock(&mutex_cola_exit_procesos);
+            queue_push(cola_exit_procesos,proceso_asociado);
+            pthread_mutex_unlock(&mutex_cola_exit_procesos);
+            sem_post(&semaforo_cola_exit_procesos);
+        }
+
+            
+        
+
         pthread_mutex_unlock(&mutex_cola_exit_hilos);
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
         pthread_mutex_lock(&mutex_desalojo);
@@ -716,7 +732,6 @@ void MUTEX_LOCK(char *recurso)
         pthread_mutex_unlock(&mutex_desalojo);
         send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-        sem_post(&semaforo_cola_exit_hilos);
 
         //fin_syscall_desalojo_cmn();
         return;
@@ -781,11 +796,20 @@ void MUTEX_UNLOCK(char *recurso)
     t_tcb *hilo_aux = hilo_exec;
     if (mutex_asociado == NULL)
     {
-        pthread_mutex_lock(&mutex_cola_exit_hilos);
-        queue_push(cola_exit, hilo_aux);
-        pthread_mutex_unlock(&mutex_cola_exit_hilos);
+        if (hilo_aux->tid != 0){
+            pthread_mutex_lock(&mutex_cola_exit_hilos);
+            queue_push(cola_exit, hilo_aux);
+            pthread_mutex_unlock(&mutex_cola_exit_hilos);
+            sem_post(&semaforo_cola_exit_hilos);
+        }
+        else{
+            pthread_mutex_lock(&mutex_cola_exit_procesos);
+            queue_push(cola_exit_procesos,proceso_asociado);
+            pthread_mutex_unlock(&mutex_cola_exit_procesos);
+            sem_post(&semaforo_cola_exit_procesos);
+        }
 
-        sem_post(&semaforo_cola_exit_hilos);
+        
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
         pthread_mutex_lock(&mutex_desalojo);
         if (!aviso_cpu->finQuantum)
