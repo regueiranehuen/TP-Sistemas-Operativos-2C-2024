@@ -525,6 +525,7 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
     pthread_detach(hilo_atender_syscall);
     pthread_detach(hilo_ready_exec);
     pthread_detach(hilo_atender_interrupt);
+    pthread_detach(hilo_cortar_modulos);
 }
 
 /*Ejecución

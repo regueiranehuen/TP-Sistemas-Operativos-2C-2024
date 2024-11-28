@@ -281,7 +281,7 @@ void* recibir_kernel_interrupt(void*args){
 
             send_terminar_ejecucion(sockets_cpu->socket_memoria);
             code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
-            if (code == OK){
+            if (code == OK_TERMINAR){
                 log_info(log_cpu, "Se termina la ejecución del módulo CPU");
                 terminar_cpu();
             }
@@ -301,7 +301,10 @@ void* recibir_kernel_interrupt(void*args){
 
 void terminar_cpu(){
 
-    
+    close(sockets->socket_cliente_Dispatch);
+    close(sockets->socket_cliente_Interrupt);
+    close(sockets->socket_servidor_Dispatch);
+    close(sockets->socket_servidor_Interrupt);
     destruir_semaforos();
     destruir_mutex();
     
