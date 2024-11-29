@@ -11,6 +11,7 @@ uint32_t block_size;
 
 char* bitmap_path;
 char* ruta_completa;
+pthread_t hilo_gestor;
 
 int main(int argc, char *argv[]){
 
@@ -24,9 +25,11 @@ int main(int argc, char *argv[]){
 
     sem_wait(&sem_fin_filesystem);
 
+    pthread_cancel(hilo_gestor);
+    pthread_join(hilo_gestor,NULL);
 
     config_destroy(config);
-    log_destroy(log_filesystem);
+    
     close(socket_servidor);
     pthread_mutex_destroy(&mutex_bitmap);
     sem_destroy(&sem_conexion_hecha);
@@ -37,7 +40,7 @@ int main(int argc, char *argv[]){
     //borrar el crear_archivo_dump
     //borrar el bloques.dat
 
-    
-
+    log_debug(log_filesystem,"Estructuras liberadas. FILESYSTEM TERMINADO");
+    log_destroy(log_filesystem);
     return 0;
 }

@@ -3,6 +3,8 @@
 int estado_memoria = 1;
 t_log *logger;
 t_config *config;
+pthread_t hilo_cliente_cpu;
+pthread_t hilo_gestor;
 
 int main(int argc, char *argv[])
 {
@@ -37,31 +39,36 @@ int main(int argc, char *argv[])
     sem_wait(&sem_fin_memoria);
     //sem_wait para terminar la ejecucion de memoria
     estado_memoria = 0;
-    sem_post(&sem_conexion_hecha);
-    sem_wait(&sem_termina_hilo);
+    pthread_cancel(hilo_cliente_cpu);
+    pthread_join(hilo_cliente_cpu,NULL);
+    pthread_cancel(hilo_gestor);
+    pthread_join(hilo_gestor,NULL);
+
     destruir_mutex();
     destruir_semaforos();
 
     config_destroy(config);
-    log_destroy(logger);
+    
     close(sockets->socket_servidor);
     close(sockets->socket_cliente);
     close(sockets_iniciales->socket_cpu);
     close(sockets_iniciales->socket_kernel);
     free(sockets_iniciales);
     free(sockets);
+    log_debug(logger,"Estructuras liberadas. MEMORIA TERMINADO");
+    log_destroy(logger);
 
     return 0;
 }
 
 void hilo_recibe_cpu()
 {
-    pthread_t hilo_cliente_cpu;
+    
     int resultado = pthread_create(&hilo_cliente_cpu, NULL, recibir_cpu, NULL);
 
     if (resultado != 0)
     {
         log_error(logger, "Error al crear el hilo que recibe a cpu desde memoria");
     }
-    pthread_detach(hilo_cliente_cpu);
+    
 }

@@ -31,7 +31,7 @@ sem_t sem_termina_cmn;
 sem_t sem_seguir_o_frenar;
 sem_t sem_seguir;
 sem_t sem_modulo_terminado;
-sem_t sem_termina_hilo;
+
 
 t_queue *cola_new_procesos;
 t_queue *cola_exit_procesos;
@@ -948,8 +948,6 @@ en caso de error, el proceso se enviará a EXIT. Caso contrario, el hilo se desb
 void dispositivo_IO()
 {
 
-    pthread_t hilo_IO;
-
     int resultado = pthread_create(&hilo_IO, NULL, hilo_dispositivo_IO, NULL);
 
     if (resultado != 0)
@@ -960,18 +958,18 @@ void dispositivo_IO()
         return;
     }
 
-    pthread_detach(hilo_IO);
+    
 }
 
 void *hilo_dispositivo_IO(void *args)
 {
 
-    while (estado_kernel != 0)
+    while (1)
     {
 
         sem_wait(&sem_cola_IO); // espera que haya elementos en la cola
         if (estado_kernel == 0){
-            sem_post(&sem_termina_hilo);
+
             return NULL;
         }
         log_info(logger, "LLEGÓ SIGNAL SEM COLA IO");

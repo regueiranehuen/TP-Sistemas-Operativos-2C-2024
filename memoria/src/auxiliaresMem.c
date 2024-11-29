@@ -4,7 +4,7 @@ void inicializar_semaforos(){
     sem_init(&sem_conexion_iniciales,0,0);
     sem_init(&sem_conexion_hecha,0,0);
     sem_init(&sem_fin_memoria,0,0);
-    sem_init(&sem_termina_hilo,0,0);
+
 }
 
 
@@ -26,7 +26,7 @@ void destruir_semaforos(){
     sem_destroy(&sem_conexion_iniciales);
     sem_destroy(&sem_conexion_hecha);
     sem_destroy(&sem_fin_memoria);
-    sem_destroy(&sem_termina_hilo);
+
 }
 
 void liberar_instruccion(t_instruccion_tid_pid* instruccion) {

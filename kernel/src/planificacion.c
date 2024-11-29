@@ -1,6 +1,22 @@
 #include "includes/planificacion.h"
 
+// Hilos planificador largo plazo
+pthread_t hilo_plani_largo_plazo;
+pthread_t hilo_new_ready_procesos;
+pthread_t hilo_exit_procesos;
+pthread_t hilo_hilos_exit;
 
+// Hilos planificador corto plazo
+pthread_t hilo_ready_exec;
+pthread_t hilo_atender_syscall;
+pthread_t hilo_atender_interrupt;
+pthread_t hilo_cortar_modulos;
+
+// Hilo para ordenar cola prioridades
+pthread_t hilo_prioridades;
+
+// Hilo IO
+pthread_t hilo_IO;
 
 t_tcb *fifo_tcb()
 {
@@ -45,7 +61,7 @@ void *funcion_new_ready_procesos(void *void_args)
     {
         new_a_ready_procesos();
     }
-    sem_post(&sem_termina_hilo);
+
     return NULL;
 }
 
@@ -55,7 +71,7 @@ void *funcion_procesos_exit(void *void_args)
     {
         proceso_exit();
     }
-    sem_post(&sem_termina_hilo);
+
     return NULL;
 }
 
@@ -66,13 +82,13 @@ void *funcion_hilos_exit(void *void_args)
     {
         hilo_exit();
     }
-    sem_post(&sem_termina_hilo);
+
     return NULL;
 }
 
 void planificador_largo_plazo()
 {
-    pthread_t hilo_plani_largo_plazo;
+
     int resultado;
 
     resultado = pthread_create(&hilo_plani_largo_plazo, NULL, hilo_planificador_largo_plazo, NULL);
@@ -83,14 +99,12 @@ void planificador_largo_plazo()
         pthread_mutex_unlock(&mutex_log);
         return;
     }
-    pthread_detach(hilo_plani_largo_plazo);
+    
 }
 
 void *hilo_planificador_largo_plazo(void *void_args)
 {
-    pthread_t hilo_new_ready_procesos;
-    pthread_t hilo_exit_procesos;
-    pthread_t hilo_hilos_exit;
+
     
 
     int resultado;
@@ -125,9 +139,9 @@ void *hilo_planificador_largo_plazo(void *void_args)
         return NULL;
     }
 
-    pthread_detach(hilo_hilos_exit);
-    pthread_detach(hilo_new_ready_procesos);
-    pthread_detach(hilo_exit_procesos);
+    
+    
+    
 
     return NULL;
 }
@@ -146,7 +160,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             pthread_mutex_lock(&mutex_log);
             log_info(logger, "Paquete == NULL --> Conexion cerrada");
             pthread_mutex_unlock(&mutex_log);
-            sem_post(&sem_termina_hilo);
+
             return NULL;
         }
 
@@ -288,7 +302,7 @@ void*atender_interrupt(void*args){
 
         if(code ==-1){
             log_info(logger,"Conexion cerrada con cpu");
-            sem_post(&sem_termina_hilo);
+
             return NULL;
         }
 
@@ -323,7 +337,7 @@ void* cortar_ejecucion_modulos(void*args){
         sem_wait(&sem_seguir_o_frenar);
         log_info(logger,"jijodebuuu");
         if (estado_kernel == 0){
-            sem_post(&sem_termina_hilo);
+
             return NULL;
         } 
         pthread_mutex_lock(&mutex_lista_pcbs);
@@ -427,7 +441,6 @@ void colas_multinivel(){
 
 void hilo_ordena_lista_prioridades()
 {
-    pthread_t hilo_prioridades;
 
     int resultado = pthread_create(&hilo_prioridades, NULL, ordenamiento_continuo, lista_ready_prioridad);
     
@@ -436,7 +449,7 @@ void hilo_ordena_lista_prioridades()
         log_error(logger, "Error al crear el hilo_prioridades");
         return;
     }
-    pthread_detach(hilo_prioridades);
+    
 }
 
 void* ordenamiento_continuo (void* void_args){
@@ -447,7 +460,7 @@ while(1){
 
     sem_wait(&sem_lista_prioridades);
     if (estado_kernel == 0){
-        sem_post(&sem_termina_hilo);
+
         return NULL;
     }
     pthread_mutex_lock(&mutex_cola_ready);
@@ -506,10 +519,7 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
     if (strings_iguales(algoritmo, "PRIORIDADES")){
         hilo_ordena_lista_prioridades();
     }
-    pthread_t hilo_ready_exec;
-    pthread_t hilo_atender_syscall;
-    pthread_t hilo_atender_interrupt;
-    pthread_t hilo_cortar_modulos;
+
 
     int resultado = pthread_create(&hilo_ready_exec, NULL, hilo_planificador_corto_plazo, algoritmo);
 
@@ -542,10 +552,10 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
     }
 
 
-    pthread_detach(hilo_atender_syscall);
-    pthread_detach(hilo_ready_exec);
-    pthread_detach(hilo_atender_interrupt);
-    pthread_detach(hilo_cortar_modulos);
+    
+    
+    
+    
 }
 
 /*Ejecución

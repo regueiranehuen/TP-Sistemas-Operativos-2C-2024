@@ -7,6 +7,8 @@
 extern int estado_memoria;
 extern t_log* logger;
 extern t_config* config;
+extern pthread_t hilo_cliente_cpu;
+extern pthread_t hilo_gestor;
 
 void hilo_recibe_cpu();
 

@@ -4,7 +4,7 @@ void inicializar_semaforos(){
     sem_init(&sem_ok_o_interrupcion,0,0);
     sem_init(&sem_finalizacion_cpu,0,0);
     sem_init(&sem_ciclo_instruccion,0,0);
-    sem_init(&sem_termina_hilo,0,0);
+
 }
 
 void inicializar_estructuras() {
@@ -35,7 +35,7 @@ void destruir_semaforos(){
     sem_destroy(&sem_finalizacion_cpu);
     sem_destroy(&sem_finalizacion_cpu);
     sem_destroy(&sem_ciclo_instruccion);
-    sem_destroy(&sem_termina_hilo);
+
 }
 
 void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
@@ -67,20 +67,18 @@ void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
 
 void terminar_programa() {
     
-    close(sockets_cpu->socket_memoria);
-    close(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-    close(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-    close(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-    close(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-    close(sockets->socket_cliente_Dispatch);
-    close(sockets->socket_cliente_Interrupt);
-    close(sockets->socket_servidor_Dispatch);
-    close(sockets->socket_servidor_Interrupt);
+    pthread_cancel(hilo_ciclo_instruccion);
+    pthread_join(hilo_ciclo_instruccion,NULL);
+    pthread_cancel(hilo_atiende_interrupt);
+    pthread_join(hilo_atiende_interrupt,NULL);
 
-    sem_wait(&sem_termina_hilo);
-    sem_wait(&sem_termina_hilo);
-
+    close(sockets_cpu->socket_servidor->socket_servidor_Dispatch);
+    close(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
     
+    close(sockets_cpu->socket_servidor->socket_servidor_Interrupt);
+    close(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+    
+    close(sockets_cpu->socket_memoria);
 
     destruir_mutex();
     destruir_semaforos();

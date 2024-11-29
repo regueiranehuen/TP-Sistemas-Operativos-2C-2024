@@ -38,7 +38,7 @@ t_contexto_pid*contexto_pid_actual;
 sem_t sem_ciclo_instruccion;
 sem_t sem_ok_o_interrupcion;
 sem_t sem_finalizacion_cpu;
-sem_t sem_termina_hilo;
+
 
 
 code_operacion devolucion_kernel;
@@ -256,7 +256,7 @@ void* recibir_kernel_interrupt(void*args){
         log_info(log_cpu,"llega el código %d a interrupt",code);
         if(code == -1){
             log_info(log_cpu,"Conexion cerrada por Interrupt");
-            sem_post(&sem_termina_hilo);
+
             return NULL;
         }
         
@@ -280,16 +280,14 @@ void* recibir_kernel_interrupt(void*args){
             break;
         case TERMINAR_EJECUCION_MODULO:
             log_info(log_cpu, "## Llega TERMINAR_EJECUCION_MODULO");
-            send_code_operacion(OK_TERMINAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
-
-            //send_code_operacion(OK_TERMINAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
-            
-            send_termina_ejecucion_op_code(sockets_cpu->socket_memoria);
+            send_code_operacion(OK_TERMINAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);   
+                     
+            send_terminar_ejecucion_op_code(sockets_cpu->socket_memoria);
             op_code code = recibir_code_operacion(sockets_cpu->socket_memoria);
             if (code == OK_TERMINAR_OP_CODE){
                 log_info(log_cpu, "Se termina la ejecución del módulo CPU");
                 sem_post(&sem_finalizacion_cpu);
-                sem_post(&sem_termina_hilo);
+
                 return NULL;
             }
             else{

@@ -5,6 +5,8 @@
 #include "utils/includes/estructuras.h"
 
 extern t_instruccion instruccion;
+extern pthread_t hilo_ciclo_instruccion;
+extern pthread_t hilo_atiende_interrupt;
 
 extern int tid_exec;
 extern int pid_exec;

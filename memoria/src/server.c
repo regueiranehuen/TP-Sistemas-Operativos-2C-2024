@@ -6,7 +6,7 @@ static int client_count = 0; // numero incremental del numero del cliente
 sem_t sem_conexion_hecha;
 sem_t sem_fin_memoria;
 sem_t sem_conexion_iniciales;
-sem_t sem_termina_hilo;
+
 
 t_list *lista_contextos_pids;
 t_list *lista_instrucciones_tid_pid;
@@ -99,12 +99,13 @@ void *gestor_clientes(void *void_args)
             free(args_hilo);
             continue;
         }
-        pthread_detach(hilo_cliente);
-        sem_wait(&sem_conexion_hecha); // esperar a que un cliente se conecte para esperar otro
+        
+        /*sem_wait(&sem_conexion_hecha); // esperar a que un cliente se conecte para esperar otro
         if (estado_memoria == 0){
-            sem_post(&sem_termina_hilo);
+
             return NULL;
-        }
+        }*/
+        sem_wait(&sem_conexion_hecha);
         i++;
     }
     return NULL;
@@ -118,7 +119,7 @@ int servidor_memoria(t_log *log, t_config *config)
     char *puerto;
     int socket_servidor, respuesta;
 
-    pthread_t hilo_gestor;
+    
 
     puerto = config_get_string_value(config, "PUERTO_ESCUCHA");
 
@@ -144,7 +145,7 @@ int servidor_memoria(t_log *log, t_config *config)
         return -1;
     }
 
-    pthread_detach(hilo_gestor);
+    
     return socket_servidor;
 }
 
