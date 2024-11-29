@@ -64,10 +64,28 @@ void *ciclo_de_instruccion(void *args)
                 {
                     checkInterrupt(contextos->contexto_tid);
                 }
+                free(instruccion->parametros1);
+
+                if (strcmp(instruccion->parametros2, "") != 0)
+                {
+                    free(instruccion->parametros2);
+                }
+
+                if (strcmp(instruccion->parametros3, "") != 0)
+                {
+                    free(instruccion->parametros3);
+                }
+
+                if (strcmp(instruccion->parametros4, "") != 0)
+                {
+                    free(instruccion->parametros4);
+                }
+
                 free(instruccion);
             }
             free(contextos->contexto_tid);
             free(contextos->contexto_pid);
+            free(contextos);
         }
         else if(contextos == NULL){
             log_info(log_cpu,"Cierre de conexion con kernel");
@@ -134,6 +152,8 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
         }
 
         log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
+
+        free(info);
     }
 
     return contextos;

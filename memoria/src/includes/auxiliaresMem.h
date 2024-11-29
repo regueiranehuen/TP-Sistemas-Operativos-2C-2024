@@ -12,5 +12,6 @@ void destruir_mutex();
 void destruir_semaforos();
 void liberar_instruccion(t_instruccion_tid_pid*instruccion);
 void eliminar_contexto_pid(t_contexto_pid*contexto_pid);
+void eliminar_estructuras();
 
 #endif

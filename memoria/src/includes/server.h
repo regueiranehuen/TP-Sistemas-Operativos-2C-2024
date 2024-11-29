@@ -13,6 +13,7 @@
 extern sem_t sem_conexion_iniciales;
 extern sem_t sem_conexion_hecha;
 extern sem_t sem_fin_memoria;
+extern sem_t sem_termina_hilo;
 
 extern t_list*lista_contextos_pids;
 

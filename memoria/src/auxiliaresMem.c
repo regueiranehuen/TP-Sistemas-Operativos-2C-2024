@@ -4,9 +4,39 @@ void inicializar_semaforos(){
     sem_init(&sem_conexion_iniciales,0,0);
     sem_init(&sem_conexion_hecha,0,0);
     sem_init(&sem_fin_memoria,0,0);
-
+    sem_init(&sem_termina_hilo,0,0);
 }
 
+void eliminar_estructuras(){
+    pthread_mutex_lock(&mutex_lista_contextos_pids);
+    for (int i = 0; i < list_size(lista_contextos_pids); i++){
+        t_contexto_pid*contexto_pid = list_get(lista_contextos_pids,i);
+        list_remove_element(lista_contextos_pids,contexto_pid);
+        for (int j = 0; j < list_size(contexto_pid->contextos_tids); j++){
+            t_contexto_tid*contexto_tid = list_get(contexto_pid->contextos_tids,j);
+            list_remove_element(contexto_pid->contextos_tids,contexto_tid);
+            free(contexto_tid->registros);
+            free(contexto_tid);
+            j--;
+        }
+        free(contexto_pid->contextos_tids);
+        free(contexto_pid);
+        i--;
+    }
+    free(lista_contextos_pids);
+    pthread_mutex_unlock(&mutex_lista_contextos_pids);
+
+    pthread_mutex_lock(&mutex_lista_instruccion);
+    for (int i = 0; i < list_size(lista_instrucciones_tid_pid); i++){
+        t_instruccion_tid_pid *actual = list_get(lista_instrucciones_tid_pid, i);
+
+        list_remove(lista_instrucciones_tid_pid, i);
+        liberar_instruccion(actual);
+
+        i--; // Decrementa i para no saltar el siguiente elemento
+    }
+    pthread_mutex_unlock(&mutex_lista_instruccion);
+}
 
 void inicializar_estructuras(){
     lista_contextos_pids=list_create();
@@ -26,7 +56,7 @@ void destruir_semaforos(){
     sem_destroy(&sem_conexion_iniciales);
     sem_destroy(&sem_conexion_hecha);
     sem_destroy(&sem_fin_memoria);
-
+    sem_destroy(&sem_termina_hilo);
 }
 
 void liberar_instruccion(t_instruccion_tid_pid* instruccion) {

@@ -6,6 +6,7 @@ static int client_count = 0; // numero incremental del numero del cliente
 sem_t sem_conexion_hecha;
 sem_t sem_fin_memoria;
 sem_t sem_conexion_iniciales;
+sem_t sem_termina_hilo;
 
 
 t_list *lista_contextos_pids;
@@ -100,12 +101,11 @@ void *gestor_clientes(void *void_args)
             continue;
         }
         
-        /*sem_wait(&sem_conexion_hecha); // esperar a que un cliente se conecte para esperar otro
+        sem_wait(&sem_conexion_hecha); // esperar a que un cliente se conecte para esperar otro
         if (estado_memoria == 0){
-
+            sem_post(&sem_termina_hilo);
             return NULL;
-        }*/
-        sem_wait(&sem_conexion_hecha);
+        }
         i++;
     }
     return NULL;

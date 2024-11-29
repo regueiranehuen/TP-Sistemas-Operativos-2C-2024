@@ -39,6 +39,9 @@ int main(int argc, char *argv[])
     estado_memoria = 0;
     sem_post(&sem_conexion_hecha);
 
+
+    eliminar_estructuras();
+
     destruir_mutex();
     destruir_semaforos();
     
