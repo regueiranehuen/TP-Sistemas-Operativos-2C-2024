@@ -45,6 +45,7 @@ void *funcion_new_ready_procesos(void *void_args)
     {
         new_a_ready_procesos();
     }
+    sem_post(&sem_termina_hilo);
     return NULL;
 }
 
@@ -54,6 +55,7 @@ void *funcion_procesos_exit(void *void_args)
     {
         proceso_exit();
     }
+    sem_post(&sem_termina_hilo);
     return NULL;
 }
 
@@ -62,9 +64,9 @@ void *funcion_hilos_exit(void *void_args)
 
     while (estado_kernel != 0)
     {
-        
         hilo_exit();
     }
+    sem_post(&sem_termina_hilo);
     return NULL;
 }
 
@@ -133,7 +135,7 @@ void *hilo_planificador_largo_plazo(void *void_args)
 void *atender_syscall(void *args) // recibir un paquete con un codigo de operacion, entrar al switch con dicho codigo de operacion y luego serializar el paquete
 {
 
-    while (estado_kernel != 0)
+    while (1)
     {
 
         printf("esperando syscall\n");
@@ -144,7 +146,8 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             pthread_mutex_lock(&mutex_log);
             log_info(logger, "Paquete == NULL --> Conexion cerrada");
             pthread_mutex_unlock(&mutex_log);
-            break;
+            sem_post(&sem_termina_hilo);
+            return NULL;
         }
 
         pthread_mutex_lock(&mutex_syscall_ejecutando);
@@ -279,13 +282,14 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
 
 void*atender_interrupt(void*args){
 
-    while (estado_kernel!=0){
+    while (1){
 
         code_operacion code = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt);
 
         if(code ==-1){
             log_info(logger,"Conexion cerrada con cpu");
-            break;
+            sem_post(&sem_termina_hilo);
+            return NULL;
         }
 
         switch(code){
@@ -316,9 +320,21 @@ void*atender_interrupt(void*args){
 void* cortar_ejecucion_modulos(void*args){
 
     while (estado_kernel != 0){
-        sem_wait(&sem_seguir_o_frenar); 
+        sem_wait(&sem_seguir_o_frenar);
+        log_info(logger,"jijodebuuu");
+        if (estado_kernel == 0){
+            sem_post(&sem_termina_hilo);
+            return NULL;
+        } 
         pthread_mutex_lock(&mutex_lista_pcbs);
+        log_info(logger,"LISTA PIDS EN CORTAR EJECUCION MODULOS");
+        for (int i = 0; i< list_size(lista_pcbs); i++){
+            t_pcb*act=list_get(lista_pcbs,i);
+            log_info(logger,"pid %d",act->pid);
+        }
+
         if (!list_is_empty(lista_pcbs)){
+            log_info(logger,"POST A SEM SEGUIR");
             pthread_mutex_unlock(&mutex_lista_pcbs);
             sem_post(&sem_seguir);
         }
@@ -427,9 +443,13 @@ void* ordenamiento_continuo (void* void_args){
 
 t_list* lista_prioridades = (t_list*)void_args;
 
-while(estado_kernel!=0){
+while(1){
 
     sem_wait(&sem_lista_prioridades);
+    if (estado_kernel == 0){
+        sem_post(&sem_termina_hilo);
+        return NULL;
+    }
     pthread_mutex_lock(&mutex_cola_ready);
     ordenar_por_prioridad(lista_prioridades);
     pthread_mutex_unlock(&mutex_cola_ready);
@@ -441,7 +461,7 @@ void *hilo_planificador_corto_plazo(void *arg)
 {
     char*algoritmo=(char*)arg;
 
-    while(estado_kernel!=0){
+    while(1){
         log_info(logger,"Esperando a planificar");
         sem_wait(&sem_ciclo_nuevo);
         sem_wait(&sem_desalojado);

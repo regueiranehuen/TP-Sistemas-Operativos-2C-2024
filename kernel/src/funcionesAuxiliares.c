@@ -54,6 +54,7 @@ void inicializar_semaforos() {
     sem_init(&sem_seguir_o_frenar,0,0);
     sem_init(&sem_seguir,0,0);
     sem_init(&sem_modulo_terminado,0,0);
+    sem_init(&sem_termina_hilo,0,0);
 }
 
 void destruir_semaforos() {
@@ -75,6 +76,7 @@ void destruir_semaforos() {
     sem_destroy(&sem_seguir_o_frenar);
     sem_destroy(&sem_seguir);
     sem_destroy(&sem_modulo_terminado);
+    sem_destroy(&sem_termina_hilo);
 }
 
 void inicializar_mutex() {
@@ -193,6 +195,17 @@ void sacar_tcbs_de_lista_ready_prioridades(t_list* lista_tcbs,t_list* lista_prio
         }
     }
 }
+
+void eliminar_pcb_lista(t_pcb*pcb,t_list*lista){
+    for (int i = 0; i< list_size(lista); i++){
+        t_pcb*actual=list_get(lista,i);
+        if (actual->pid == pcb->pid){
+            list_remove(lista,i);
+            return;
+        }
+    }
+}
+
 
 void sacar_tcbs_de_colas_ready_multinivel(t_list *lista_tcbs, t_list *lista_prioridades, int pid_buscado)
 {

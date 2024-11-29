@@ -24,10 +24,13 @@ int main(int argc, char *argv[]){
 
     sem_wait(&sem_fin_filesystem);
 
+
     config_destroy(config);
     log_destroy(log_filesystem);
     close(socket_servidor);
     pthread_mutex_destroy(&mutex_bitmap);
+    sem_destroy(&sem_conexion_hecha);
+    sem_destroy(&sem_fin_filesystem);
     
     
     //crear una func que borre el bitmap cada vez que se vuelva a correr

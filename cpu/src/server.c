@@ -38,6 +38,7 @@ t_contexto_pid*contexto_pid_actual;
 sem_t sem_ciclo_instruccion;
 sem_t sem_ok_o_interrupcion;
 sem_t sem_finalizacion_cpu;
+sem_t sem_termina_hilo;
 
 
 code_operacion devolucion_kernel;
@@ -250,12 +251,15 @@ void* recibir_kernel_interrupt(void*args){
         log_info(log_cpu,"esperando interrupciones\n");
         //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
-        printf("ME PINTO LA DE RECIBIR ESTA FALOPEADA:%d por interrupt\n",code);
+
+
+        log_info(log_cpu,"llega el código %d a interrupt",code);
         if(code == -1){
             log_info(log_cpu,"Conexion cerrada por Interrupt");
-            break;
+            sem_post(&sem_termina_hilo);
+            return NULL;
         }
-        log_info(log_cpu,"llega el código %d a interrupt",code);
+        
 
         switch (code)
         {
@@ -275,15 +279,18 @@ void* recibir_kernel_interrupt(void*args){
             send_code_operacion(OK,sockets_cpu->socket_servidor->socket_cliente_Dispatch);
             break;
         case TERMINAR_EJECUCION_MODULO:
-            log_info(log_cpu, "## Llega interrupción al puerto Interrupt");
-            
+            log_info(log_cpu, "## Llega TERMINAR_EJECUCION_MODULO");
             send_code_operacion(OK_TERMINAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
 
-            send_terminar_ejecucion(sockets_cpu->socket_memoria);
-            code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
-            if (code == OK_TERMINAR){
+            //send_code_operacion(OK_TERMINAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+            
+            send_termina_ejecucion_op_code(sockets_cpu->socket_memoria);
+            op_code code = recibir_code_operacion(sockets_cpu->socket_memoria);
+            if (code == OK_TERMINAR_OP_CODE){
                 log_info(log_cpu, "Se termina la ejecución del módulo CPU");
-                terminar_cpu();
+                sem_post(&sem_finalizacion_cpu);
+                sem_post(&sem_termina_hilo);
+                return NULL;
             }
             else{
                 log_info(log_cpu,"SOY UN ESTORBO");
@@ -297,15 +304,4 @@ void* recibir_kernel_interrupt(void*args){
     }
 
     return NULL;
-}
-
-void terminar_cpu(){
-
-    close(sockets->socket_cliente_Dispatch);
-    close(sockets->socket_cliente_Interrupt);
-    close(sockets->socket_servidor_Dispatch);
-    close(sockets->socket_servidor_Interrupt);
-    destruir_semaforos();
-    destruir_mutex();
-    
 }

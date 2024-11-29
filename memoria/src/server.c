@@ -6,6 +6,7 @@ static int client_count = 0; // numero incremental del numero del cliente
 sem_t sem_conexion_hecha;
 sem_t sem_fin_memoria;
 sem_t sem_conexion_iniciales;
+sem_t sem_termina_hilo;
 
 t_list *lista_contextos_pids;
 t_list *lista_instrucciones_tid_pid;
@@ -81,7 +82,7 @@ void *gestor_clientes(void *void_args)
 
     int respuesta;
     int i = 0;
-    while (estado_cpu != 0)
+    while (estado_memoria != 0)
     { // mientras el servidor este abierto
         
         hilo_clientes *args_hilo = malloc(sizeof(hilo_clientes));
@@ -100,6 +101,10 @@ void *gestor_clientes(void *void_args)
         }
         pthread_detach(hilo_cliente);
         sem_wait(&sem_conexion_hecha); // esperar a que un cliente se conecte para esperar otro
+        if (estado_memoria == 0){
+            sem_post(&sem_termina_hilo);
+            return NULL;
+        }
         i++;
     }
     return NULL;
