@@ -47,8 +47,10 @@ void atender_conexiones(int socket_cliente){
                     free(paquete->buffer);
                     free(paquete);
                     send_code_operacion(OK_TERMINAR,socket_cliente);
+
                     sem_post(&sem_fin_filesystem);
-                    //return;
+
+                    return;
                     break;
                 default:
                     log_info(log_filesystem,"Pedido no disponible");

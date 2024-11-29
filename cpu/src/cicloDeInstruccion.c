@@ -64,6 +64,7 @@ void *ciclo_de_instruccion(void *args)
                 {
                     checkInterrupt(contextos->contexto_tid);
                 }
+                free(instruccion);
             }
             free(contextos->contexto_tid);
             free(contextos->contexto_pid);

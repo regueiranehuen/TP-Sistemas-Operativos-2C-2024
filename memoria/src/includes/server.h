@@ -8,6 +8,7 @@
 #include <commons/config.h>
 #include <semaphore.h>
 #include "utils/includes/serializacion.h"
+#include "main.h"
 
 extern sem_t sem_conexion_iniciales;
 extern sem_t sem_conexion_hecha;

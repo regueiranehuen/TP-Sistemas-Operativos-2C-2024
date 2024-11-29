@@ -44,5 +44,6 @@ int escribir_Memoria(t_write_mem* info);
 void acomodar_particion_siguiente(t_particiones *particion, int index, int tamanio_lista);
 
 t_particiones*obtener_particion(int pid);
+void liberar_lista_particiones(t_list*lista);
 
 #endif

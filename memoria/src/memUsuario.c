@@ -516,3 +516,12 @@ t_particiones*obtener_particion(int pid){
     }
     return NULL;
 }
+
+void liberar_lista_particiones(t_list*lista){
+    for (int i = 0; i < list_size(lista); i++){
+        t_particiones*actual=list_get(lista,i);
+        list_remove(lista,i);
+        free(actual);
+    }
+    free(lista);
+}

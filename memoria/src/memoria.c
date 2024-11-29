@@ -38,6 +38,7 @@ void atender_conexiones(int socket_cliente)
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
             }
+            free(info_0->arch_pseudocodigo);
             free(info_0);
             break;
 
@@ -108,6 +109,7 @@ void atender_conexiones(int socket_cliente)
             log_info(logger,"## Hilo Creado - (PID:TID) - (%d:%d)",info_4->pid,info_4->tid);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
+            free(info_4->arch_pseudo);
             free(info_4);
             break;
         case THREAD_ELIMINATE_AVISO:

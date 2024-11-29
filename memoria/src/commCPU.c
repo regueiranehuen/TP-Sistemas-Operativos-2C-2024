@@ -168,7 +168,7 @@ void *recibir_cpu(void *args)
             log_info(logger, "## Llega TERMINAR_EJECUCION_MODULO_OP_CODE");
             free(paquete_operacion->buffer);
             free(paquete_operacion);
-
+            
             enviar_codop(sockets_iniciales->socket_cpu,OK_TERMINAR_OP_CODE);
             
             int socket_filesystem = cliente_memoria_filesystem(logger,config);
@@ -178,6 +178,8 @@ void *recibir_cpu(void *args)
             
             if (code == OK_TERMINAR){
                 log_info(logger, "Se termina la ejecución del módulo memoria");
+                free(memoria);
+                liberar_lista_particiones(lista_particiones);
                 sem_post(&sem_fin_memoria);
                 return NULL;
             }

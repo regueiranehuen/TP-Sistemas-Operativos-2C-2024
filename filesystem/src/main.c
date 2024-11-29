@@ -25,8 +25,8 @@ int main(int argc, char *argv[]){
 
     sem_wait(&sem_fin_filesystem);
 
-    pthread_cancel(hilo_gestor);
-    pthread_join(hilo_gestor,NULL);
+    /*pthread_cancel(hilo_gestor);
+    pthread_join(hilo_gestor,NULL);*/
 
     config_destroy(config);
     

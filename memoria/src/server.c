@@ -119,7 +119,7 @@ int servidor_memoria(t_log *log, t_config *config)
     char *puerto;
     int socket_servidor, respuesta;
 
-    
+    pthread_t hilo_gestor;
 
     puerto = config_get_string_value(config, "PUERTO_ESCUCHA");
 
@@ -145,6 +145,7 @@ int servidor_memoria(t_log *log, t_config *config)
         return -1;
     }
 
+    pthread_detach(hilo_gestor);
     
     return socket_servidor;
 }
