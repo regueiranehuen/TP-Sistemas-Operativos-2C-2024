@@ -45,12 +45,7 @@ void inicializar_semaforos() {
     sem_init(&sem_desalojado, 0, 1);                // Inicializa en 1
     sem_init(&semaforo_cola_exit_hilos, 0, 0);      // Inicializa en 0
     sem_init(&sem_lista_prioridades, 0, 0);         // Inicializa en 0
-    sem_init(&semaforo_cola_exit_hilo_exec_process_exit, 0, 0);
-    sem_init(&semaforo_cola_exit_hilos_process_exit, 0, 0);
     sem_init(&sem_ciclo_nuevo,0,0);
-    sem_init(&sem_espera_interrupcion_cpu,0,0);
-    sem_init(&sem_ok_desalojo_cpu,0,0);
-    sem_init(&sem_termina_cmn,0,0);
     sem_init(&sem_seguir_o_frenar,0,0);
     sem_init(&sem_seguir,0,0);
     sem_init(&sem_modulo_terminado,0,0);
@@ -67,12 +62,7 @@ void destruir_semaforos() {
     sem_destroy(&sem_desalojado);
     sem_destroy(&semaforo_cola_exit_hilos);
     sem_destroy(&sem_lista_prioridades);
-    sem_destroy(&semaforo_cola_exit_hilo_exec_process_exit);
-    sem_destroy(&semaforo_cola_exit_hilos_process_exit);
     sem_destroy(&sem_ciclo_nuevo);
-    sem_destroy(&sem_espera_interrupcion_cpu);
-    sem_destroy(&sem_ok_desalojo_cpu);
-    sem_destroy(&sem_termina_cmn);
     sem_destroy(&sem_seguir_o_frenar);
     sem_destroy(&sem_seguir);
     sem_destroy(&sem_modulo_terminado);

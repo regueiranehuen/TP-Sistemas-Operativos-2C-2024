@@ -186,7 +186,6 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             
             THREAD_CREATE(paramThreadCreate->nombreArchivo, paramThreadCreate->prioridad);
             
-            sem_post(&sem_fin_syscall);
             free(paramThreadCreate->nombreArchivo);
             free(paramThreadCreate);
             break;

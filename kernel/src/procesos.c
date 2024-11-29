@@ -22,12 +22,7 @@ sem_t sem_lista_prioridades;
 
 sem_t sem_fin_kernel;
 
-sem_t semaforo_cola_exit_hilos_process_exit;
-sem_t semaforo_cola_exit_hilo_exec_process_exit;
 sem_t sem_fin_syscall;
-sem_t sem_espera_interrupcion_cpu;
-sem_t sem_ok_desalojo_cpu;
-sem_t sem_termina_cmn;
 sem_t sem_seguir_o_frenar;
 sem_t sem_seguir;
 sem_t sem_modulo_terminado;
@@ -68,8 +63,6 @@ pthread_mutex_t mutex_conexion_kernel_a_dispatch;
 pthread_mutex_t mutex_conexion_kernel_a_interrupt;
 pthread_mutex_t mutex_syscall_ejecutando;
 
-bool desalojado = false;
-
 bool syscallEjecutando = false;
 
 
@@ -78,10 +71,10 @@ t_pcb *crear_pcb()
     static int pid = 0;
     t_pcb *pcb = malloc(sizeof(t_pcb));
     t_list *lista_tids = list_create();
-    t_list *lista_mutex = list_create();
+    t_list *lista_mutex_proceso = list_create();
     pcb->pid = pid;
     pcb->tids = lista_tids;
-    pcb->lista_mutex = lista_mutex;
+    pcb->lista_mutex = lista_mutex_proceso;
     sem_init(&pcb->sem_hilos_eliminar,0,0);
     pid += 1;
     pcb->contador_tid = 0;
@@ -263,33 +256,6 @@ void hilo_exit()
 
 }
 
-void hilo_exec_exit_tras_process_exit() // El hilo que estaba en exec y ahora esta en cola exit se lo elimina, al igual que a los hilos bloqueados por el mismo
-{
-    // sem_wait(&semaforo_cola_exit_hilo_exec_process_exit);
-
-    // pthread_mutex_lock(&mutex_cola_exit_hilos);
-    t_tcb *hilo = queue_pop(cola_exit);
-    printf("tid:%d\n", hilo->tid);
-    // pthread_mutex_unlock(&mutex_cola_exit_hilos);
-
-    pthread_mutex_lock(&hilo->mutex_cola_hilos_bloqueados);
-    while (!queue_is_empty(hilo->cola_hilos_bloqueados))
-    {
-        t_tcb *tcb = queue_pop(hilo->cola_hilos_bloqueados);
-        tcb->estado = TCB_EXIT;
-
-        pthread_mutex_lock(&mutex_lista_blocked);
-        buscar_y_eliminar_tcb(lista_bloqueados, tcb);
-        pthread_mutex_unlock(&mutex_lista_blocked);
-    }
-
-    pthread_mutex_unlock(&hilo->mutex_cola_hilos_bloqueados);
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger, "## (%d:%d) Finaliza el hilo", hilo->pid, hilo->tid);
-    pthread_mutex_unlock(&mutex_log);
-    liberar_tcb(hilo);
-}
-
 /*
 Creación de procesos
 Se tendrá una cola NEW que será administrada estrictamente por FIFO para la creación de procesos.
@@ -320,6 +286,7 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
     close(socket_memoria);
     if (respuesta == -1)
     {
+        log_info(logger,"No hay espacio para inicializar un proceso, se espera a la finalizacion de alguno");
         sem_wait(&semaforo_new_ready_procesos); // espera a que se libere un proceso
     }
     else
@@ -1014,7 +981,6 @@ void DUMP_MEMORY()
 
     // hilo_exec = NULL;
     tcb->estado = TCB_BLOCKED;
-    desalojado = true;
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
     pthread_mutex_lock(&mutex_desalojo);
     if (!aviso_cpu->finQuantum)

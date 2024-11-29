@@ -29,6 +29,7 @@ void atender_conexiones(int socket_cliente)
             t_particiones* particion = inicializar_proceso(info_0->pid,info_0->tam_proceso,config);
             if(particion == NULL){
             log_info(logger,"particion == NULL");
+            log_info(logger,"No hay espacio para inicializar el proceso:%d",info_0->pid);
             respuesta = -1;
             send(socket_cliente,&respuesta,sizeof(int),0);       
             }else{
