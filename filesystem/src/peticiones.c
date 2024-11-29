@@ -40,7 +40,9 @@ void atender_conexiones(int socket_cliente){
                     }
                     free(info->contenido);
                     free(info);
-                    eliminar_paquete_code_op(paquete);
+
+                    eliminar_paquete_code_op(paquete);      
+                    
                     break;
                 case TERMINAR_EJECUCION_MODULO:
                     log_info(log_filesystem,"LLEGA TERMINAR_EJECUCION_MODULO");
@@ -52,9 +54,8 @@ void atender_conexiones(int socket_cliente){
                     break;
                 default:
                     log_info(log_filesystem,"Pedido no disponible");
-                    free(paquete->buffer->stream);
-                    free(paquete->buffer);
-                    free(paquete);
+                    
+                    
                     break;
 
             }

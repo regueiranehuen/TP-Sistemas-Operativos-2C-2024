@@ -71,6 +71,7 @@ void atender_conexiones(int socket_cliente)
             }
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);
+            free(info_1);
             break;
         case PROCESS_EXIT_AVISO:
             int pid_1 = recepcionar_int_code_op(paquete);

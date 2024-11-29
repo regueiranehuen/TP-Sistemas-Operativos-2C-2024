@@ -540,7 +540,7 @@ t_paquete_code_operacion* recibir_paquete_code_operacion(int socket_cliente){
     // Primero recibimos el codigo de operacion
     int bytes = recv(socket_cliente, &code, sizeof(int), 0);
 
-    t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
+    t_paquete_code_operacion* paquete = malloc(sizeof(t_paquete_code_operacion));
     paquete->buffer=malloc(sizeof(t_buffer));
     paquete->code = code;
 
@@ -557,6 +557,7 @@ t_paquete_code_operacion* recibir_paquete_code_operacion(int socket_cliente){
         return paquete;
     }
 }
+
 
 
 t_tid_pid* recepcionar_tid_pid_code_op(t_paquete_code_operacion* paquete){
@@ -688,6 +689,7 @@ void send_dump_memory_filesystem(int pid,int tid,int tamanio_particion_proceso, 
     memcpy(stream,contenido,tamanio_particion_proceso);
     
     send_paquete_code_operacion(DUMP_MEMORIA,buffer,socket_cliente);
+    
 
 }
 

@@ -451,7 +451,12 @@ t_particiones *busqueda_particion(int pid)
     for (int i = 0; i < list_size(lista_particiones); i++)
     {
         t_particiones *particion = list_get(lista_particiones, i);
-        if (particion->pid)
+        
+        if (particion == NULL) {
+            continue; // Salta al siguiente elemento
+        }
+
+        if (particion->pid == pid)
         {
             return particion;
         }

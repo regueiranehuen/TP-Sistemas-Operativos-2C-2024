@@ -107,7 +107,7 @@ void imprimir_contenido_bitmap(t_bitarray* bitmap, uint32_t block_count) {
 
     for (uint32_t i = 0; i < block_count; i++) {
         int bit = bitarray_test_bit(bitmap, i);
-        printf("Bloque %u: %s\n", i, bit ? "Ocupado" : "Libre");
+        log_info(log_filesystem,"Bloque %u: %s\n", i, bit ? "Ocupado" : "Libre");
     }
 }
 
@@ -118,6 +118,7 @@ char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const cha
     pthread_mutex_lock(&mutex_bitmap);
     if (!hay_espacio_disponible(bitmap, bloques_necesarios)) {
         pthread_mutex_unlock(&mutex_bitmap);
+        log_error(log_filesystem, "No hay espacio suficiente para el archivo dump");
         return NULL;
     }
 
@@ -200,14 +201,19 @@ void mostrar_contenido_archivo_metadata(const char* filepath) {
 bool hay_espacio_disponible(t_bitarray* bitmap, int bloques_necesarios) {
     int bloques_libres = 0;
 
-    for(int i = 0; i < bitarray_get_max_bit(bitmap); i++) {
+    
+    for(int i = 0; i < block_count; i++) {
+        
         if(!bitarray_test_bit(bitmap, i)) {
             bloques_libres++;
         }
+        
         if(bloques_libres >= bloques_necesarios) {
             return true;
         }
     }
+
+    log_warning(log_filesystem, "BLOQUES LIBRES: %d, : BLOQUES NECESARIOS: %d", bloques_libres, bloques_necesarios);
 
     return false;
 }
@@ -349,7 +355,7 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
     }
 
     fclose(arch);
-    //imprimir_archivo_bloques(mount_dir, block_size);
+    imprimir_archivo_bloques(mount_dir);
     free(path);
     return 0;
 }
@@ -365,48 +371,16 @@ void escribir_bloque_de_puntero(FILE* arch, uint32_t* bloques_reservados, uint32
     }
 }
 
-char* leer_archivo_bloques(const char* bloques_path) {
-    struct stat st;
-    if (stat(bloques_path, &st) != 0) {
-        log_error(log_filesystem, "Error al obtener información del archivo bloques.dat");
-        return NULL;
-    }
 
-    FILE* arch = fopen(bloques_path, "rb");
-    if (!arch) {
-        log_error(log_filesystem, "Error al abrir el archivo bloques.dat");
-        return NULL;
-    }
-
-    char* bloques_data = malloc(st.st_size);
-    if (!bloques_data) {
-        log_error(log_filesystem, "Error al asignar memoria para el contenido de bloques");
-        fclose(arch);
-        return NULL;
-    }
-
-    if (fread(bloques_data, 1, st.st_size, arch) != st.st_size) {
-        log_error(log_filesystem, "Error al leer el contenido del archivo bloques.dat");
-        free(bloques_data);
-        fclose(arch);
-        return NULL;
-    }
-    fclose(arch);
-
-    return bloques_data;
-}
-
-void imprimir_archivo_bloques(const char* mount_dir, uint32_t block_size) {
-    char bloques_path[256];
-    snprintf(bloques_path, sizeof(bloques_path), "%s/bloques.dat", mount_dir);
-
-    FILE* arch = fopen(bloques_path, "rb");
+void imprimir_archivo_bloques(const char* filepath) {
+    
+    FILE* arch = fopen(filepath, "rb");
     if (arch == NULL) {
-        printf("Error: No se pudo abrir el archivo %s\n", bloques_path);
+        printf("Error: No se pudo abrir el archivo %s\n", filepath);
         return;
     }
 
-    printf("Contenido del archivo bloques.dat:\n");
+    log_info(log_filesystem,"Contenido del archivo bloques.dat:\n");
 
     uint32_t total_bloques = block_count; // Bloques necesarios según block_count
     uint32_t bloque_index = 0;
@@ -419,14 +393,14 @@ void imprimir_archivo_bloques(const char* mount_dir, uint32_t block_size) {
 
     // Leer y mostrar bloques hasta total_bloques
     while (fread(buffer, 1, block_size, arch) == block_size && bloque_index < total_bloques) {
-        printf("Bloque %u:\n", bloque_index);
+        log_info(log_filesystem,"Bloque %u:\n", bloque_index);
         for (uint32_t i = 0; i < block_size; i++) {
             if (i % 16 == 0) {
-                printf("\n%04X: ", i); // Imprime la dirección de inicio de la línea
+            log_info(log_filesystem,"\n%04X: ", i); // Imprime la dirección de inicio de la línea
             }
-            printf("%02X ", buffer[i]); // Imprime el byte en formato hexadecimal
+            log_info(log_filesystem,"%02X ", buffer[i]); // Imprime el byte en formato hexadecimal
         }
-        printf("\n\n");
+        //printf("\n\n");
         bloque_index++;
     }
 

@@ -7,17 +7,17 @@ int main(int argc, char *argv[])
     config = config_create("kernel.config");
     t_log_level log_level_int = log_level(config);
     logger = log_create("kernel.log", "tp", true, log_level_int);
-    /*
+    
     if(argc <=1 || argc >3){
     log_info(logger,"Ingrese ./bin/kernel <archivo_pseudocodigo> <tamaño proceso>");
     log_destroy(logger);
     return -1;
     }
-    */
-    //char* archivo_pseudocodigo = argv[1];
-    //int tamanio_proceso = atoi(argv[2]);
-    char *archivo_pseudocodigo = "pseudocodigo";//argv[1];
-    int tamanio_proceso = 64;//atoi(argv[2]);
+
+    char* archivo_pseudocodigo = argv[1];
+    int tamanio_proceso = atoi(argv[2]);
+    //char *archivo_pseudocodigo = "pseudocodigo";//argv[1];
+    //int tamanio_proceso = 64;//atoi(argv[2]);
 
     inicializar_estados();
     inicializar_semaforos();

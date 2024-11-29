@@ -365,7 +365,7 @@ void send_paquete_op_code(int socket, t_buffer* buffer, op_code code){
     send(socket, a_enviar, total_size, 0);
     free(a_enviar);
     }
-
+    
     eliminar_paquete(paquete);
 }
 
