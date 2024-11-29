@@ -71,7 +71,7 @@ void *ciclo_de_instruccion(void *args)
         }
         else if(contextos == NULL){
             log_info(log_cpu,"Cierre de conexion con kernel");
-
+            sem_post(&sem_socket_cerrado);
             return NULL; 
         }
     }

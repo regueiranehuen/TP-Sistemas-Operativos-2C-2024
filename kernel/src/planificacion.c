@@ -61,7 +61,7 @@ void *funcion_new_ready_procesos(void *void_args)
     {
         new_a_ready_procesos();
     }
-
+    sem_post(&sem_termina_hilo);
     return NULL;
 }
 
@@ -71,7 +71,7 @@ void *funcion_procesos_exit(void *void_args)
     {
         proceso_exit();
     }
-
+    sem_post(&sem_termina_hilo);
     return NULL;
 }
 
@@ -82,7 +82,7 @@ void *funcion_hilos_exit(void *void_args)
     {
         hilo_exit();
     }
-
+    sem_post(&sem_termina_hilo);
     return NULL;
 }
 
@@ -160,7 +160,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             pthread_mutex_lock(&mutex_log);
             log_info(logger, "Paquete == NULL --> Conexion cerrada");
             pthread_mutex_unlock(&mutex_log);
-
+            sem_post(&sem_termina_hilo);
             return NULL;
         }
 
@@ -320,6 +320,8 @@ void*atender_interrupt(void*args){
             case OK_TERMINAR: // Se espera un OK solo cuando CPU nos avisa que le llegó el mensaje para que corte
             log_debug(logger,"LLEGÓ OK A INTERRUPT");
             sem_post(&sem_modulo_terminado);
+            sem_post(&sem_termina_hilo);
+            return NULL;
             break;
             default:
             log_error(logger,"CODIGO NO ESPERADO EN ATENDER INTERRUPT");
@@ -337,7 +339,7 @@ void* cortar_ejecucion_modulos(void*args){
         sem_wait(&sem_seguir_o_frenar);
         log_info(logger,"jijodebuuu");
         if (estado_kernel == 0){
-
+            sem_post(&sem_termina_hilo);
             return NULL;
         } 
         pthread_mutex_lock(&mutex_lista_pcbs);
@@ -503,6 +505,10 @@ void *hilo_planificador_corto_plazo(void *arg)
             colas_multinivel();
         }
         sem_wait(&sem_seguir);
+        if (estado_kernel == 0){
+            sem_post(&sem_termina_hilo);
+            return NULL;
+        }
     }
     return NULL;
 }

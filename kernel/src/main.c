@@ -36,12 +36,33 @@ int main(int argc, char *argv[])
 void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
 {
     
-
+    char*algoritmo=config_get_string_value(config,"ALGORITMO_PLANIFICACION");
     send_terminar_ejecucion(sockets->sockets_cliente_cpu->socket_Interrupt);
     
     sem_wait(&sem_modulo_terminado);
 
-    pthread_cancel(hilo_exit_procesos);
+    close(sockets->sockets_cliente_cpu->socket_Dispatch);
+
+    sem_post(&semaforo_cola_new_procesos);
+    sem_post(&semaforo_cola_exit_procesos);
+    sem_post(&semaforo_cola_exit_hilos);
+    sem_post(&sem_seguir_o_frenar);
+    sem_post(&sem_seguir);
+    sem_post(&sem_cola_IO);
+
+    int cant_hilos=7;
+
+    if (strings_iguales(algoritmo,"PRIORIDADES")){
+        sem_post(&sem_lista_prioridades);
+        cant_hilos+=1;
+    }
+    for (int i = 0; i<cant_hilos;i++){
+        sem_wait(&sem_termina_hilo);
+        log_info(logger,"Hilos contados: %d",i+1);
+    }
+    
+
+    /*pthread_cancel(hilo_exit_procesos);
     pthread_join(hilo_exit_procesos,NULL);
     pthread_cancel(hilo_hilos_exit);
     pthread_join(hilo_hilos_exit,NULL);
@@ -56,9 +77,9 @@ void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
     pthread_cancel(hilo_atender_syscall);
     pthread_join(hilo_atender_syscall,NULL);
     pthread_cancel(hilo_ready_exec);
-    pthread_join(hilo_ready_exec,NULL);
+    pthread_join(hilo_ready_exec,NULL);*/
     
-    close(sockets->sockets_cliente_cpu->socket_Dispatch);
+    
     close(sockets->sockets_cliente_cpu->socket_Interrupt);  
     close(sockets->socket_cliente_memoria);
     

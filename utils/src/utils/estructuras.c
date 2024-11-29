@@ -83,16 +83,16 @@ t_paquete* recibir_paquete_op_code(int socket_cliente){
     // Primero recibimos el codigo de operacion
     int bytes = recv(socket_cliente, &codigo_operacion, sizeof(int), 0);
 
-    t_paquete* paquete = malloc(sizeof(t_paquete));
-    paquete->buffer = malloc(sizeof(t_buffer));
-    paquete->codigo_operacion=codigo_operacion;
+    
 
     if (bytes <= 0){
         return NULL;
     }
     else{
         // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
-        
+        t_paquete* paquete = malloc(sizeof(t_paquete));
+        paquete->buffer = malloc(sizeof(t_buffer));
+        paquete->codigo_operacion=codigo_operacion; 
         recv(socket_cliente, &(paquete->buffer->size), sizeof(uint32_t), 0);
         paquete->buffer->stream = malloc(paquete->buffer->size);
         if (paquete->buffer->size > 0)

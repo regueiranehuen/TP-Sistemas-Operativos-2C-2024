@@ -4,6 +4,7 @@ void inicializar_semaforos(){
     sem_init(&sem_ok_o_interrupcion,0,0);
     sem_init(&sem_finalizacion_cpu,0,0);
     sem_init(&sem_ciclo_instruccion,0,0);
+    sem_init(&sem_socket_cerrado,0,0);
 
 }
 
@@ -35,6 +36,7 @@ void destruir_semaforos(){
     sem_destroy(&sem_finalizacion_cpu);
     sem_destroy(&sem_finalizacion_cpu);
     sem_destroy(&sem_ciclo_instruccion);
+    sem_destroy(&sem_socket_cerrado);
 
 }
 
@@ -66,11 +68,27 @@ void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
 }
 
 void terminar_programa() {
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(sockets_cpu->socket_servidor->socket_cliente_Dispatch,&readfds);
+
+    int actividad = select(sockets_cpu->socket_servidor->socket_cliente_Dispatch + 1,&readfds,NULL,NULL,NULL);
+
+    if (actividad < 0)
+    {
+        log_error(log_cpu,"Error en select (socket dispatch)");
+        exit(EXIT_FAILURE);
+    }
+
+    // Si se detecta actividad en el socket de dispatch
+    if (FD_ISSET(sockets_cpu->socket_servidor->socket_cliente_Dispatch, &readfds))
+    {
+        log_info(log_cpu,"Se detectó actividad en el socket de dispatch");
+        sem_wait(&sem_socket_cerrado);
+    }
+
     
-    pthread_cancel(hilo_ciclo_instruccion);
-    pthread_join(hilo_ciclo_instruccion,NULL);
-    pthread_cancel(hilo_atiende_interrupt);
-    pthread_join(hilo_atiende_interrupt,NULL);
+
 
     close(sockets_cpu->socket_servidor->socket_servidor_Dispatch);
     close(sockets_cpu->socket_servidor->socket_cliente_Dispatch);

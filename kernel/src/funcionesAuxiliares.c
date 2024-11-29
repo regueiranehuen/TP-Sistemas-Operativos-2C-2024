@@ -54,7 +54,7 @@ void inicializar_semaforos() {
     sem_init(&sem_seguir_o_frenar,0,0);
     sem_init(&sem_seguir,0,0);
     sem_init(&sem_modulo_terminado,0,0);
-
+    sem_init(&sem_termina_hilo,0,0);
 }
 
 void destruir_semaforos() {
@@ -76,7 +76,7 @@ void destruir_semaforos() {
     sem_destroy(&sem_seguir_o_frenar);
     sem_destroy(&sem_seguir);
     sem_destroy(&sem_modulo_terminado);
-
+    sem_destroy(&sem_termina_hilo);
 }
 
 void inicializar_mutex() {

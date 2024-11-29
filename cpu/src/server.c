@@ -38,6 +38,7 @@ t_contexto_pid*contexto_pid_actual;
 sem_t sem_ciclo_instruccion;
 sem_t sem_ok_o_interrupcion;
 sem_t sem_finalizacion_cpu;
+sem_t sem_socket_cerrado;
 
 
 
@@ -285,7 +286,7 @@ void* recibir_kernel_interrupt(void*args){
             send_terminar_ejecucion_op_code(sockets_cpu->socket_memoria);
             op_code code = recibir_code_operacion(sockets_cpu->socket_memoria);
             if (code == OK_TERMINAR_OP_CODE){
-                log_info(log_cpu, "Se termina la ejecución del módulo CPU");
+                log_info(log_cpu, "Se va a terminar la ejecución del módulo CPU");
                 sem_post(&sem_finalizacion_cpu);
 
                 return NULL;

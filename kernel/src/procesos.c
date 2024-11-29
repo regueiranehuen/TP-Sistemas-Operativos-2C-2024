@@ -31,6 +31,7 @@ sem_t sem_termina_cmn;
 sem_t sem_seguir_o_frenar;
 sem_t sem_seguir;
 sem_t sem_modulo_terminado;
+sem_t sem_termina_hilo;
 
 
 t_queue *cola_new_procesos;
@@ -968,7 +969,7 @@ void *hilo_dispositivo_IO(void *args)
 
         sem_wait(&sem_cola_IO); // espera que haya elementos en la cola
         if (estado_kernel == 0){
-
+            sem_post(&sem_termina_hilo);
             return NULL;
         }
         log_info(logger, "LLEGÓ SIGNAL SEM COLA IO");

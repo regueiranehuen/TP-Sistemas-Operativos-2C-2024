@@ -41,16 +41,17 @@ int main(int argc, char *argv[])
 
     destruir_mutex();
     destruir_semaforos();
-
+    
     config_destroy(config);
-    log_destroy(logger);
+    
     close(sockets->socket_servidor);
     close(sockets->socket_cliente);
     close(sockets_iniciales->socket_cpu);
     close(sockets_iniciales->socket_kernel);
     free(sockets_iniciales);
     free(sockets);
-
+    log_debug(logger, "Estructuras liberadas. MEMORIA TERMINADO");
+    log_destroy(logger);
     return 0;
 }
 
