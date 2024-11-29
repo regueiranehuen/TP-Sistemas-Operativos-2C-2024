@@ -47,9 +47,8 @@ void atender_conexiones(int socket_cliente){
                     free(paquete->buffer);
                     free(paquete);
                     send_code_operacion(OK_TERMINAR,socket_cliente);
-
+                    detectar_cierre(socket_cliente);
                     sem_post(&sem_fin_filesystem);
-
                     conexion = false;
                     break;
                 default:

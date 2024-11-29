@@ -102,4 +102,41 @@ void eliminar_contexto_pid(t_contexto_pid*contexto_pid){
     }
 }
 
+void detectar_cierres(int socket_cpu,int socket_kernel){
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(socket_cpu,&readfds);
 
+    int actividad = select(socket_cpu + 1,&readfds,NULL,NULL,NULL);
+
+    if (actividad < 0)
+    {
+        log_error(logger,"Error en select (socket conexion cpu)");
+        exit(EXIT_FAILURE);
+    }
+
+    // Si se detecta actividad en el socket de conexion con cpu
+    if (FD_ISSET(socket_cpu, &readfds))
+    {
+        log_info(logger,"Se detectó actividad en el socket de conexion con cpu");
+    }
+
+    fd_set readfds2;
+
+    FD_ZERO(&readfds2);
+    FD_SET(socket_kernel,&readfds2);
+
+    actividad = select(socket_kernel + 1,&readfds2,NULL,NULL,NULL);
+
+    if (actividad < 0)
+    {
+        log_error(logger,"Error en select (socket conexion kernel)");
+        exit(EXIT_FAILURE);
+    }
+
+    // Si se detecta actividad en el socket de conexion con cpu
+    if (FD_ISSET(socket_kernel, &readfds2))
+    {
+        log_info(logger,"Se detectó actividad en el socket de conexion con kernel");
+    }
+}

@@ -170,6 +170,8 @@ void *recibir_cpu(void *args)
             free(paquete_operacion);
             
             enviar_codop(sockets_iniciales->socket_cpu,OK_TERMINAR_OP_CODE);
+
+            detectar_cierres(sockets_iniciales->socket_cpu,sockets_iniciales->socket_kernel);
             
             int socket_filesystem = cliente_memoria_filesystem(logger,config);
             send_terminar_ejecucion(socket_filesystem);

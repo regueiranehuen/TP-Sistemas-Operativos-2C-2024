@@ -29,3 +29,23 @@ uint32_t bytes_a_escribir(t_args_dump_memory* info,uint32_t bytes_escritos){
         return info->tamanio_particion_proceso - bytes_escritos;
     }
 }
+
+void detectar_cierre(int socket_cliente){
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(socket_cliente,&readfds);
+
+    int actividad = select(socket_cliente + 1,&readfds,NULL,NULL,NULL);
+
+    if (actividad < 0)
+    {
+        log_error(log_filesystem,"Error en select (socket conexion memoria)");
+        exit(EXIT_FAILURE);
+    }
+
+    // Si se detecta actividad en el socket de memoria
+    if (FD_ISSET(socket_cliente, &readfds))
+    {
+        log_info(log_filesystem,"Se detectó actividad en el socket de conexion con memoria");
+    }
+}
