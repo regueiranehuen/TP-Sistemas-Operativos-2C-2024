@@ -1,22 +1,5 @@
 #include "includes/planificacion.h"
 
-// Hilos planificador largo plazo
-pthread_t hilo_plani_largo_plazo;
-pthread_t hilo_new_ready_procesos;
-pthread_t hilo_exit_procesos;
-pthread_t hilo_hilos_exit;
-
-// Hilos planificador corto plazo
-pthread_t hilo_ready_exec;
-pthread_t hilo_atender_syscall;
-pthread_t hilo_atender_interrupt;
-pthread_t hilo_cortar_modulos;
-
-// Hilo para ordenar cola prioridades
-pthread_t hilo_prioridades;
-
-// Hilo IO
-pthread_t hilo_IO;
 
 t_tcb *fifo_tcb()
 {
@@ -91,6 +74,7 @@ void planificador_largo_plazo()
 
     int resultado;
 
+    pthread_t hilo_plani_largo_plazo;
     resultado = pthread_create(&hilo_plani_largo_plazo, NULL, hilo_planificador_largo_plazo, NULL);
     if (resultado != 0)
     {
@@ -99,13 +83,16 @@ void planificador_largo_plazo()
         pthread_mutex_unlock(&mutex_log);
         return;
     }
+    pthread_detach(hilo_plani_largo_plazo);
     
 }
 
 void *hilo_planificador_largo_plazo(void *void_args)
 {
+    pthread_t hilo_new_ready_procesos;
+    pthread_t hilo_hilos_exit;
+    pthread_t hilo_exit_procesos;
 
-    
 
     int resultado;
 
@@ -140,7 +127,9 @@ void *hilo_planificador_largo_plazo(void *void_args)
     }
 
     
-    
+    pthread_detach(hilo_new_ready_procesos);
+    pthread_detach(hilo_hilos_exit);
+    pthread_detach(hilo_exit_procesos);
     
 
     return NULL;
@@ -443,7 +432,7 @@ void colas_multinivel(){
 
 void hilo_ordena_lista_prioridades()
 {
-
+    pthread_t hilo_prioridades;
     int resultado = pthread_create(&hilo_prioridades, NULL, ordenamiento_continuo, lista_ready_prioridad);
     
     if (resultado != 0)
@@ -451,7 +440,7 @@ void hilo_ordena_lista_prioridades()
         log_error(logger, "Error al crear el hilo_prioridades");
         return;
     }
-    
+    pthread_detach(hilo_prioridades);
 }
 
 void* ordenamiento_continuo (void* void_args){
@@ -526,7 +515,10 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
         hilo_ordena_lista_prioridades();
     }
 
-
+    pthread_t hilo_ready_exec;
+    pthread_t hilo_atender_syscall;
+    pthread_t hilo_atender_interrupt;
+    pthread_t hilo_cortar_modulos;
     int resultado = pthread_create(&hilo_ready_exec, NULL, hilo_planificador_corto_plazo, algoritmo);
 
     if (resultado != 0)
@@ -556,8 +548,10 @@ void planificador_corto_plazo() // Si llega un pcb nuevo a la cola ready y estoy
         log_error(logger, "Error al crear el hilo para cortar la ejecución de los módulos");
         return;
     }
-
-
+    pthread_detach(hilo_atender_syscall);
+    pthread_detach(hilo_ready_exec);
+    pthread_detach(hilo_atender_interrupt);
+    pthread_detach(hilo_cortar_modulos);
     
     
     

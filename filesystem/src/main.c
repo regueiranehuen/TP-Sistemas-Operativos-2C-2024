@@ -28,13 +28,18 @@ int main(int argc, char *argv[]){
     /*pthread_cancel(hilo_gestor);
     pthread_join(hilo_gestor,NULL);*/
 
+    estado_filesystem = 0;
+
+    sem_post(&sem_conexion_hecha);
+    sem_wait(&sem_termina_hilo);
+
     config_destroy(config);
     
     close(socket_servidor);
     pthread_mutex_destroy(&mutex_bitmap);
     sem_destroy(&sem_conexion_hecha);
     sem_destroy(&sem_fin_filesystem);
-    
+    sem_destroy(&sem_termina_hilo);
     
     //crear una func que borre el bitmap cada vez que se vuelva a correr
     //borrar el crear_archivo_dump

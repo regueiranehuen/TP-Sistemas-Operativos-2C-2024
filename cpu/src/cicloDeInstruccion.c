@@ -5,8 +5,8 @@
 
 t_instruccion instruccion;
 bool seguir_ejecutando;
-pthread_t hilo_ciclo_instruccion;
-pthread_t hilo_atiende_interrupt;
+
+
 
 void iniciar_cpu()
 {
@@ -14,7 +14,8 @@ void iniciar_cpu()
     
 
     int resultado;
-
+    pthread_t hilo_ciclo_instruccion;
+    pthread_t hilo_atiende_interrupt;
     resultado = pthread_create(&hilo_ciclo_instruccion, NULL, ciclo_de_instruccion, NULL);
 
     if (resultado != 0)
@@ -29,7 +30,8 @@ void iniciar_cpu()
         log_error(log_cpu, "Error al crear el hilo que atiende interrupt en cpu");
     }
 
-    
+    pthread_detach(hilo_ciclo_instruccion);
+    pthread_detach(hilo_atiende_interrupt);
     
 }
 
@@ -83,6 +85,7 @@ void *ciclo_de_instruccion(void *args)
 
                 free(instruccion);
             }
+            free(contextos->contexto_tid->registros);
             free(contextos->contexto_tid);
             free(contextos->contexto_pid);
             free(contextos);

@@ -947,7 +947,7 @@ en caso de error, el proceso se enviará a EXIT. Caso contrario, el hilo se desb
 
 void dispositivo_IO()
 {
-
+    pthread_t hilo_IO;
     int resultado = pthread_create(&hilo_IO, NULL, hilo_dispositivo_IO, NULL);
 
     if (resultado != 0)
@@ -957,6 +957,8 @@ void dispositivo_IO()
         pthread_mutex_unlock(&mutex_log);
         return;
     }
+
+    pthread_detach(hilo_IO);
 
     
 }

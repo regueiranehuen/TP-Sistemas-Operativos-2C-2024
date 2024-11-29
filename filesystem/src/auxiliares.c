@@ -4,6 +4,7 @@ void inicializar_estructuras(void){
     
     sem_init(&sem_fin_filesystem, 0, 0);
     sem_init(&sem_conexion_hecha, 0, 0);
+    sem_init(&sem_termina_hilo,0,0);
     pthread_mutex_init(&mutex_bitmap,NULL);
     config = config_create("filesystem.config");
     t_log_level log_level_int = log_level(config);

@@ -3,6 +3,7 @@
 
 int estado_filesystem;
 sem_t sem_conexion_hecha;
+sem_t sem_termina_hilo;
 static int client_count = 0;
 static pthread_mutex_t cliente_count_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -74,8 +75,13 @@ void *gestor_clientes(void *void_args){ // Crear un hilo que crea hilos que crea
             free(args_hilo);
             continue;
         }
-        
+        pthread_detach(hilo_cliente);
         sem_wait(&sem_conexion_hecha); // esperar a que un cliente se conecte para esperar otro
+        if (estado_filesystem == 0){
+            sem_post(&sem_termina_hilo);
+            return NULL;
+        }
+
         i++;
     }
     return NULL;

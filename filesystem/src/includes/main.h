@@ -5,6 +5,7 @@
 
 
 extern sem_t sem_fin_filesystem;
+extern sem_t sem_termina_hilo;
 extern pthread_mutex_t mutex_bitmap;
 extern t_log* log_filesystem;
 extern t_config* config;

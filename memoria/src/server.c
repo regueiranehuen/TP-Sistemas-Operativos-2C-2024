@@ -100,12 +100,15 @@ void *gestor_clientes(void *void_args)
             free(args_hilo);
             continue;
         }
-        
+        pthread_detach(hilo_cliente);
         sem_wait(&sem_conexion_hecha); // esperar a que un cliente se conecte para esperar otro
         if (estado_memoria == 0){
             sem_post(&sem_termina_hilo);
             return NULL;
         }
+
+        
+
         i++;
     }
     return NULL;

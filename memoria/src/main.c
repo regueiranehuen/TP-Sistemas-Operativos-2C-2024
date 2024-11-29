@@ -67,5 +67,5 @@ void hilo_recibe_cpu()
     {
         log_error(logger, "Error al crear el hilo que recibe a cpu desde memoria");
     }
-    
+    pthread_detach(hilo_cliente_cpu);
 }
