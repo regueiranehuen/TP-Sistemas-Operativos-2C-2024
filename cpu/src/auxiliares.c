@@ -87,8 +87,6 @@ void terminar_programa() {
         sem_wait(&sem_socket_cerrado);
     }
 
-    
-
 
     close(sockets_cpu->socket_servidor->socket_servidor_Dispatch);
     close(sockets_cpu->socket_servidor->socket_cliente_Dispatch);

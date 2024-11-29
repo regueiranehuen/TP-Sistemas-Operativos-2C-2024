@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     //sem_wait para terminar la ejecucion de memoria
     estado_memoria = 0;
     sem_post(&sem_conexion_hecha);
-
+    sem_wait(&sem_termina_hilo);
 
     eliminar_estructuras();
 

@@ -66,8 +66,8 @@ void *ciclo_de_instruccion(void *args)
                 {
                     checkInterrupt(contextos->contexto_tid);
                 }
+                
                 free(instruccion->parametros1);
-
                 if (strcmp(instruccion->parametros2, "") != 0)
                 {
                     free(instruccion->parametros2);

@@ -294,9 +294,12 @@ void* recibir_kernel_interrupt(void*args){
             else{
                 log_info(log_cpu,"SOY UN ESTORBO");
             }
+            sem_post(&sem_finalizacion_cpu);
+            return NULL;
+            break;
 
         default:
-        log_info(log_cpu,"codigo no valido recibido: %d",code);
+            log_info(log_cpu,"codigo no valido recibido");
             break;
         }
         

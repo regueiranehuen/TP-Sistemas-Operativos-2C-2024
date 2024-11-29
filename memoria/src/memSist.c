@@ -115,6 +115,7 @@ void inicializar_resto_parametros(int cant_param, t_instruccion_tid_pid *instruc
     }
 }
 
+
 void enviar_instruccion(int conexion, t_instruccion *instruccion_nueva, op_code codop)
 {
     // no olvidar el codigo de operacion

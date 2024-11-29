@@ -32,7 +32,7 @@ int main(int argc, char *argv[]){
 
     sem_post(&sem_conexion_hecha);
     sem_wait(&sem_termina_hilo);
-
+    
     config_destroy(config);
     
     close(socket_servidor);

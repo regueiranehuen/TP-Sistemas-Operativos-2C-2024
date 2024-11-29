@@ -173,6 +173,7 @@ void *recibir_cpu(void *args)
             
             int socket_filesystem = cliente_memoria_filesystem(logger,config);
             send_terminar_ejecucion(socket_filesystem);
+
             code_operacion code = recibir_code_operacion(socket_filesystem);
             close(socket_filesystem);
             
