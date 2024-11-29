@@ -451,7 +451,12 @@ t_particiones *busqueda_particion(int pid)
     for (int i = 0; i < list_size(lista_particiones); i++)
     {
         t_particiones *particion = list_get(lista_particiones, i);
-        if (particion->pid)
+        
+        if (particion == NULL) {
+            continue; // Salta al siguiente elemento
+        }
+
+        if (particion->pid == pid)
         {
             return particion;
         }
@@ -459,30 +464,6 @@ t_particiones *busqueda_particion(int pid)
     return NULL;
 }
 
-/*
-char *generar_nombre_archivo(int pid, int tid)
-{
-    // Obtener el tiempo actual
-    time_t now = time(NULL);
-    struct tm *tm_now = localtime(&now);
-    // Crear un buffer para el timestamp en formato YYYYMMDD-HHMMSS
-    char timestamp[20];
-    strftime(timestamp, sizeof(timestamp), "%Y%m%d-%H%M%S", tm_now);
-
-    // Asignar memoria para el nombre del archivo
-    char *nombre_archivo = malloc(256); // Asegúrate de que el tamaño sea suficiente
-    if (nombre_archivo == NULL)
-    {
-        perror("Error al asignar memoria");
-        return NULL; // Manejar error de memoria
-    }
-
-    // Formatear el nombre del archivo
-    sprintf(nombre_archivo, "%d-%d-%s.dmp", pid, tid, timestamp);
-
-    return nombre_archivo;
-}
-*/
 
 uint32_t leer_Memoria(uint32_t direccionFisica)
 {

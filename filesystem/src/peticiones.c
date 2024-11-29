@@ -50,7 +50,7 @@ void atender_conexiones(int socket_cliente){
 
                     sem_post(&sem_fin_filesystem);
 
-                    return;
+                    conexion = false;
                     break;
                 default:
                     log_info(log_filesystem,"Pedido no disponible");

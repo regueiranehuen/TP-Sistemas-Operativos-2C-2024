@@ -5,7 +5,6 @@
 #include "utils/includes/serializacion.h"
 #include "server.h"
 #include "main.h"
-#include <fcntl.h> // La idea sería dejar de usar esta librería
 
 // void inicializar_bitmap(t_bitarray *bitmap);
 // void cerrar_bitmap(t_bitarray *bitmap);
@@ -17,7 +16,7 @@ int crear_archivo_metadata(char* filepath, t_args_dump_memory* info,int index_bl
 int escribir_bloques(const char* mount_dir, uint32_t* bloque_reservados, uint32_t bloques_necesarios, t_args_dump_memory* info, int block_size);
 void escribir_bloque_de_puntero(FILE* arch, uint32_t* bloques_reservados, uint32_t bloques_necesarios, int bloque_size);
 void imprimir_contenido_bitmap(t_bitarray* bitmap, uint32_t block_count);
-void imprimir_archivo_bloques(const char* mount_dir, uint32_t block_size);
+void imprimir_archivo_bloques(const char* mount_dir);
 void mostrar_contenido_archivo_metadata(const char* filepath);
 
 

@@ -584,7 +584,7 @@ int recepcionar_int_code_op(t_paquete_code_operacion* paquete){
     memcpy(&valor,stream,sizeof(int));
     stream+=sizeof(int);
     
-
+    eliminar_paquete_code_op(paquete);
     return valor;
 }
 
