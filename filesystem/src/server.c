@@ -85,7 +85,7 @@ int servidor_FileSystem_Memoria(t_log* log, t_config* config){
 
     hilo_clientes *args = malloc(sizeof(hilo_clientes));
 
-
+    pthread_t hilo_gestor;
     char * puerto;
     int socket_servidor, respuesta;
 
@@ -111,6 +111,7 @@ int servidor_FileSystem_Memoria(t_log* log, t_config* config){
             return -1;
         }
 
+        pthread_detach(hilo_gestor);
         
         return socket_servidor;
 }

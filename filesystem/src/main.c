@@ -11,7 +11,7 @@ uint32_t block_size;
 
 char* bitmap_path;
 char* ruta_completa;
-pthread_t hilo_gestor;
+
 
 int main(int argc, char *argv[]){
 
