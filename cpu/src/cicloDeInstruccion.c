@@ -5,12 +5,13 @@
 
 t_instruccion instruccion;
 bool seguir_ejecutando;
+pthread_t hilo_ciclo_instruccion;
+pthread_t hilo_atiende_interrupt;
 
 void iniciar_cpu()
 {
 
-    pthread_t hilo_ciclo_instruccion;
-    pthread_t hilo_atiende_interrupt;
+    
 
     int resultado;
 
@@ -28,8 +29,8 @@ void iniciar_cpu()
         log_error(log_cpu, "Error al crear el hilo que atiende interrupt en cpu");
     }
 
-    pthread_detach(hilo_ciclo_instruccion);
-    pthread_detach(hilo_atiende_interrupt);
+    
+    
 }
 
 void *ciclo_de_instruccion(void *args)
@@ -69,7 +70,7 @@ void *ciclo_de_instruccion(void *args)
         }
         else if(contextos == NULL){
             log_info(log_cpu,"Cierre de conexion con kernel");
-            sem_post(&sem_termina_hilo);
+
             return NULL; 
         }
     }

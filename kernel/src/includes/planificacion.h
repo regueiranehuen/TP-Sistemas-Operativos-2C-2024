@@ -7,6 +7,25 @@
 #include <semaphore.h>
 #include "main.h"
 
+// Hilos planificador largo plazo
+extern pthread_t hilo_plani_largo_plazo;
+extern pthread_t hilo_new_ready_procesos;
+extern pthread_t hilo_exit_procesos;
+extern pthread_t hilo_hilos_exit;
+
+// Hilos planificador corto plazo
+extern pthread_t hilo_ready_exec;
+extern pthread_t hilo_atender_syscall;
+extern pthread_t hilo_atender_interrupt;
+extern pthread_t hilo_cortar_modulos;
+
+// Hilo para ordenar cola prioridades
+extern pthread_t hilo_prioridades;
+
+// Hilo IO
+extern pthread_t hilo_IO;
+    
+
 
 t_tcb *fifo_tcb();
 void* funcion_new_ready_procesos(void* void_args);

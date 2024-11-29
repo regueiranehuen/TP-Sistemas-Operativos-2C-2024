@@ -16,6 +16,7 @@ extern int block_count;
 
 extern char* bitmap_path;
 extern char* ruta_completa;
+extern pthread_t hilo_gestor;
 
 void leer_archivo(const char *nombre_archivo);
 

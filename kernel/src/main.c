@@ -36,34 +36,32 @@ int main(int argc, char *argv[])
 void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
 {
     
-    char* algoritmo = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
 
     send_terminar_ejecucion(sockets->sockets_cliente_cpu->socket_Interrupt);
+    
     sem_wait(&sem_modulo_terminado);
 
-    close(sockets->socket_cliente_memoria);
+    pthread_cancel(hilo_exit_procesos);
+    pthread_join(hilo_exit_procesos,NULL);
+    pthread_cancel(hilo_hilos_exit);
+    pthread_join(hilo_hilos_exit,NULL);
+    pthread_cancel(hilo_new_ready_procesos);
+    pthread_join(hilo_new_ready_procesos,NULL);
+    pthread_cancel(hilo_plani_largo_plazo);
+    pthread_join(hilo_plani_largo_plazo,NULL);
+    pthread_cancel(hilo_cortar_modulos);
+    pthread_join(hilo_cortar_modulos,NULL);
+    pthread_cancel(hilo_atender_interrupt);
+    pthread_join(hilo_atender_interrupt,NULL);
+    pthread_cancel(hilo_atender_syscall);
+    pthread_join(hilo_atender_syscall,NULL);
+    pthread_cancel(hilo_ready_exec);
+    pthread_join(hilo_ready_exec,NULL);
+    
     close(sockets->sockets_cliente_cpu->socket_Dispatch);
-    close(sockets->sockets_cliente_cpu->socket_Interrupt);    
-
-    sem_post(&semaforo_cola_new_procesos);
-    sem_post(&semaforo_cola_exit_procesos);
-    sem_post(&semaforo_cola_exit_hilos);
-    sem_post(&sem_seguir_o_frenar);
-    sem_post(&sem_cola_IO);
-    if (strings_iguales(algoritmo,"PRIORIDADES")){
-        sem_post(&sem_lista_prioridades);
-    }
+    close(sockets->sockets_cliente_cpu->socket_Interrupt);  
+    close(sockets->socket_cliente_memoria);
     
-    int cantHilos = 7;
-    if (strings_iguales(algoritmo,"PRIORIDADES")){
-        cantHilos +=1;
-    }
-    
-
-    for (int i = 1; i < cantHilos; i++){
-        log_info(logger,"cant hilos que terminaron: %d",i);
-        sem_wait(&sem_termina_hilo);
-    }
 
 
     destruir_estados(); 

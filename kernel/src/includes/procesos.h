@@ -69,7 +69,7 @@ extern sem_t sem_seguir_o_frenar;
 extern sem_t sem_seguir;
 
 extern sem_t sem_modulo_terminado;
-extern sem_t sem_termina_hilo;
+
 
 extern bool desalojado;
 extern bool syscallEjecutando;

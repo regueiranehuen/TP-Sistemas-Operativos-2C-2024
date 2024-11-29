@@ -13,7 +13,7 @@ void *recibir_cpu(void *args)
         if (paquete_operacion == NULL)
         {
             log_info(logger,"Memoria recibio un paquete == NULL de cpu. Conexion cerrada");
-            sem_post(&sem_termina_hilo);
+
             break;
         }
         log_info(logger, "Memoria recibio el siguiente codigo operacion de CPU: %d", paquete_operacion->codigo_operacion);
@@ -166,6 +166,8 @@ void *recibir_cpu(void *args)
 
         case TERMINAR_EJECUCION_MODULO_OP_CODE:{
             log_info(logger, "## Llega TERMINAR_EJECUCION_MODULO_OP_CODE");
+            free(paquete_operacion->buffer);
+            free(paquete_operacion);
 
             enviar_codop(sockets_iniciales->socket_cpu,OK_TERMINAR_OP_CODE);
             
@@ -173,6 +175,7 @@ void *recibir_cpu(void *args)
             send_terminar_ejecucion(socket_filesystem);
             code_operacion code = recibir_code_operacion(socket_filesystem);
             close(socket_filesystem);
+            
             if (code == OK_TERMINAR){
                 log_info(logger, "Se termina la ejecución del módulo memoria");
                 sem_post(&sem_fin_memoria);

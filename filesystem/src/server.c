@@ -74,7 +74,7 @@ void *gestor_clientes(void *void_args){ // Crear un hilo que crea hilos que crea
             free(args_hilo);
             continue;
         }
-        pthread_detach(hilo_cliente);
+        
         sem_wait(&sem_conexion_hecha); // esperar a que un cliente se conecte para esperar otro
         i++;
     }
@@ -85,7 +85,6 @@ int servidor_FileSystem_Memoria(t_log* log, t_config* config){
 
     hilo_clientes *args = malloc(sizeof(hilo_clientes));
 
-    pthread_t hilo_gestor;
 
     char * puerto;
     int socket_servidor, respuesta;
@@ -112,7 +111,7 @@ int servidor_FileSystem_Memoria(t_log* log, t_config* config){
             return -1;
         }
 
-        pthread_detach(hilo_gestor);
+        
         return socket_servidor;
 }
 

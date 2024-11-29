@@ -384,6 +384,6 @@ void send_valor_read_mem(uint32_t valor, int socket_cliente, op_code code);
 
 void send_write_mem(uint32_t direccionFisica, uint32_t valor, int socket_memoria);
 t_write_mem* recepcionar_write_mem(t_paquete* paquete);
-void send_termina_ejecucion_op_code(int socket_cliente);
+void send_terminar_ejecucion_op_code(int socket);
 
 #endif

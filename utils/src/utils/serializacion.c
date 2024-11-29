@@ -521,7 +521,8 @@ void send_paquete_code_operacion(code_operacion code, t_buffer* buffer, int sock
     offset += sizeof(int);
     memcpy(a_enviar + offset, &(paquete->buffer->size), sizeof(uint32_t));  // Agregar el tamaño del buffer
     offset += sizeof(uint32_t);
-    memcpy(a_enviar + offset, paquete->buffer->stream, paquete->buffer->size);
+    if (paquete->buffer->size > 0)
+        memcpy(a_enviar + offset, paquete->buffer->stream, paquete->buffer->size);
 
     send(socket_cliente, a_enviar, total_size, 0);
 
@@ -551,7 +552,8 @@ t_paquete_code_operacion* recibir_paquete_code_operacion(int socket_cliente){
         
         recv(socket_cliente, &(paquete->buffer->size), sizeof(uint32_t), 0);
         paquete->buffer->stream = malloc(paquete->buffer->size);
-        recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
+        if (paquete->buffer->size > 0)
+            recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
         return paquete;
     }
 }
@@ -787,5 +789,8 @@ t_log_level log_level(t_config* config){
 }
 
 void send_terminar_ejecucion(int socket_cliente){
-    send_code_operacion(TERMINAR_EJECUCION_MODULO,socket_cliente);
+    t_buffer*buffer=malloc(sizeof(t_buffer));
+    buffer->size=0;
+
+    send_paquete_code_operacion(TERMINAR_EJECUCION_MODULO,buffer,socket_cliente);
 }

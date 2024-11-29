@@ -4,6 +4,7 @@
 #include "utils/includes/sockets.h"
 #include "utils/includes/estructuras.h"
 #include "auxiliares.h"
+#include "cicloDeInstruccion.h"
 #include <pthread.h>
 #include <stdint.h>
 
@@ -55,7 +56,7 @@ extern pthread_mutex_t mutex_motivo_devolucion;
 extern sem_t sem_ciclo_instruccion;
 extern sem_t sem_ok_o_interrupcion;
 extern sem_t sem_finalizacion_cpu;
-extern sem_t sem_termina_hilo;
+
 
 extern code_operacion devolucion_kernel;
 
