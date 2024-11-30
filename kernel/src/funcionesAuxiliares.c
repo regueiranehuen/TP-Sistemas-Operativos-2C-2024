@@ -197,33 +197,19 @@ void eliminar_pcb_lista(t_pcb*pcb,t_list*lista){
 
 void sacar_tcbs_de_colas_ready_multinivel(t_list *lista_prioridades, int pid_buscado)
 {
-    for (int i = 0; i < list_size(lista_prioridades); i++)
-    {
-        t_tcb *tcb_actual = list_get(lista_tcbs, i);
-        if (tcb_actual->pid == pid_buscado)
-        {
-            // Remover el TCB de la cola ready de prioridades
+    for (int i = 0; i < list_size(colas_ready_prioridad); i++) {
+            t_cola_prioridad* cola_prioridad = (t_cola_prioridad*) list_get(colas_ready_prioridad, i);
 
-            for (int j = 0; j < list_size(colas_ready_prioridad); j++)
-            {
-                t_cola_prioridad *cola_prioridad = list_get(colas_ready_prioridad, j);
-
-                // Iterar en la cola de esa prioridad
-                for (int z = 0; z < queue_size(cola_prioridad->cola); z++)
-                {
-                    t_tcb *hilo = list_get(cola_prioridad->cola->elements, z);
-                    if (hilo->tid == tcb_actual->tid && hilo->pid == pid_buscado)
-                    {
-                        sacar_tcb_de_cola(cola_prioridad->cola,hilo);
-                        sem_wait(&semaforo_cola_ready); // Hay que restar los signal hechos por cada hilo asociado al proceso
-                    }
+            // Iterar en la cola de esa prioridad
+            for (int j = 0; j < queue_size(cola_prioridad->cola); j++) {
+                t_tcb* hilo = (t_tcb*) list_get(cola_prioridad->cola->elements, j);
+                if (hilo->pid == pid_buscado) {
+                    sem_wait(&semaforo_cola_ready);
+                    list_remove(cola_prioridad->cola->elements,j);
+                    j--;
                 }
             }
-
-            
-            
         }
-    }
 }
 
 void sacar_tcbs_lista_blocked(t_list*lista_bloqueados,int pid_buscado){
