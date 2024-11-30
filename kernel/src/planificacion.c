@@ -251,6 +251,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             free(paquete);
             break;
         case ENUM_SEGMENTATION_FAULT:
+            log_info(logger,"(%d:%d) - Ocurrió Segmentation Fault",hilo_exec->pid,hilo_exec->tid);
             atender_segmentation_fault();
             
             free(paquete->buffer);
@@ -417,9 +418,15 @@ void colas_multinivel(){
     
     sem_wait(&semaforo_cola_ready);
     
+    pthread_mutex_lock(&mutex_cola_ready);
     print_lista_prioridades(colas_ready_prioridad);
-    printf("Lista bloqueados:\n");
+    pthread_mutex_unlock(&mutex_cola_ready);
+
+    log_info(logger,"Lista bloqueados:\n");
+
+    pthread_mutex_lock(&mutex_lista_blocked);
     print_lista(lista_bloqueados);
+    pthread_mutex_unlock(&mutex_lista_blocked);
 
     pthread_mutex_lock(&mutex_cola_ready);
     t_cola_prioridad* cola_prioritaria = obtener_cola_con_mayor_prioridad(colas_ready_prioridad);

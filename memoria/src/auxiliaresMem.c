@@ -19,11 +19,11 @@ void eliminar_estructuras(){
             free(contexto_tid);
             j--;
         }
-        free(contexto_pid->contextos_tids);
+        list_destroy(contexto_pid->contextos_tids);
         free(contexto_pid);
         i--;
     }
-    free(lista_contextos_pids);
+    list_destroy(lista_contextos_pids);
     pthread_mutex_unlock(&mutex_lista_contextos_pids);
 
     pthread_mutex_lock(&mutex_lista_instruccion);
@@ -35,7 +35,7 @@ void eliminar_estructuras(){
 
         i--; // Decrementa i para no saltar el siguiente elemento
     }
-    free(lista_instrucciones_tid_pid);
+    list_destroy(lista_instrucciones_tid_pid);
     pthread_mutex_unlock(&mutex_lista_instruccion);
 }
 
@@ -103,3 +103,12 @@ void eliminar_contexto_pid(t_contexto_pid*contexto_pid){
 }
 
 
+void print_pids(t_list* lista_contextos) {
+    // Recorremos la lista de contextos
+    for (int i = 0; i < list_size(lista_contextos); i++) {
+        // Obtenemos el contexto en la posición i
+        t_contexto_pid* contexto = list_get(lista_contextos, i);
+        // Imprimimos el pid
+        log_info(logger,"PID: %d", contexto->pid);
+    }
+}

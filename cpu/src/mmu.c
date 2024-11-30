@@ -21,7 +21,15 @@ uint32_t* traducir_direccion_logica(t_contexto_tid*contexto_tid,t_contexto_pid_s
             log_info(log_cpu,"CUACK CUACK");
         }
         send_segmentation_fault(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        sem_wait(&sem_ok_o_interrupcion); // Problema: Acá en colas multinivel puede pasar que llegue fin de quantum pero nosotros lo tomemos como ok al seg fault 
+
+        log_info(log_cpu,"Envio SEGMENTATION_FAULT");
+
+        code_operacion codigo = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+
+        if(codigo != OK){
+            log_info(log_cpu,"skibidi toilet");
+        }
+        
         return NULL;  // Retorna error
     }
     uint32_t *direccion_fisica = malloc(sizeof(uint32_t));

@@ -1001,8 +1001,19 @@ void DUMP_MEMORY()
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
-    list_add(lista_bloqueados, tcb);
+    
+        pthread_mutex_lock(&mutex_lista_blocked);        
+        list_add(lista_bloqueados, tcb);
+        pthread_mutex_unlock(&mutex_lista_blocked);
 
+        pthread_mutex_lock(&mutex_cola_ready);
+        if(hilo_esta_en_ready(tcb)){
+        pthread_mutex_unlock(&mutex_cola_ready);
+            sacar_tcb_ready(tcb);
+        }
+        else{
+        pthread_mutex_unlock(&mutex_cola_ready);
+        }
     // Conectar con memoria
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
@@ -1027,16 +1038,28 @@ void DUMP_MEMORY()
         t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, tcb->pid);
         pthread_mutex_unlock(&mutex_lista_pcbs);
         pcb->estado = PCB_EXIT;
+        pthread_mutex_lock(&mutex_lista_blocked);
+        list_remove_element(lista_bloqueados,tcb);
+        pthread_mutex_unlock(&mutex_lista_blocked);
+
         pthread_mutex_lock(&mutex_cola_exit_procesos);
         queue_push(cola_exit_procesos, pcb);
         pthread_mutex_unlock(&mutex_cola_exit_procesos);
+
+        sem_post(&semaforo_cola_exit_procesos);
     }
     else
     {
         pthread_mutex_lock(&mutex_log);
         log_info(logger, "Dump de memoria exitoso");
         pthread_mutex_unlock(&mutex_log);
+
+        pthread_mutex_lock(&mutex_lista_blocked);
+        list_remove_element(lista_bloqueados,tcb);
+        pthread_mutex_unlock(&mutex_lista_blocked);
+
         tcb->estado = TCB_READY;
+
         pushear_cola_ready(tcb);
     }
 }
@@ -1046,6 +1069,7 @@ void atender_segmentation_fault(){
     t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
     pthread_mutex_unlock(&mutex_lista_pcbs);
     pcb->estado = PCB_EXIT;
+    log_info(logger,"Estamos en atender_segmentation_fault, y metemos a la cola exit el proceso");
     pthread_mutex_lock(&mutex_cola_exit_procesos);
     queue_push(cola_exit_procesos, pcb);
     pthread_mutex_unlock(&mutex_cola_exit_procesos);
@@ -1058,20 +1082,23 @@ void atender_segmentation_fault(){
     {
         send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
         aviso_cpu->desalojar = true;
-        log_info(logger, "envio desalojar");
+        log_info(logger, "Envío desalojar con motivo de segmentation fault");
         code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
         if (codigo != OK)
         {
             log_info(logger, "CPU no proceso la interrupción correctamente");
         }
-        log_info(logger, "recibi la confirmacion");
+        else{
+            log_info(logger, "recibi la confirmacion de que CPU recibió el desalojo");
+        }
+        
     }
     else if (aviso_cpu->finQuantum)
     {
         aviso_cpu->finQuantum = false;
     }
     pthread_mutex_unlock(&mutex_desalojo);
-    log_info(logger, "le mando a cpu el OK nashei");
+    log_info(logger, "Envío OK a CPU para que siga su ciclo de instrucción");
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 }

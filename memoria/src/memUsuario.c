@@ -452,9 +452,9 @@ t_particiones *busqueda_particion(int pid)
     {
         t_particiones *particion = list_get(lista_particiones, i);
         
-        if (particion == NULL) {
-            continue; // Salta al siguiente elemento
-        }
+        /*if (particion == NULL) {
+            continue; // Salta al siguiente elemento.
+        }*/
 
         if (particion->pid == pid)
         {
@@ -504,5 +504,5 @@ void liberar_lista_particiones(t_list*lista){
         list_remove(lista,i);
         free(actual);
     }
-    free(lista);
+    list_destroy(lista);
 }

@@ -125,19 +125,17 @@ void liberar_proceso(t_pcb *pcb)
         log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d de las colas multinivel de ready", pcb->pid);
         pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_cola_ready);
-        sacar_tcbs_de_colas_ready_multinivel(lista_tcbs,colas_ready_prioridad,pcb->pid);
+        sacar_tcbs_de_colas_ready_multinivel(colas_ready_prioridad,pcb->pid);
         pthread_mutex_unlock(&mutex_cola_ready);
     }
     
-    // Falta para colas multinivel
 
-    // Hay que hacer funciones similares para el resto de los algoritmos
     pthread_mutex_lock(&mutex_log);
     log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d de la lista de blocked", pcb->pid);
     pthread_mutex_unlock(&mutex_log);
 
     pthread_mutex_lock(&mutex_lista_blocked);
-    sacar_tcbs_lista_blocked(lista_tcbs, lista_bloqueados, pcb->pid);
+    sacar_tcbs_lista_blocked(lista_bloqueados, pcb->pid);
     pthread_mutex_unlock(&mutex_lista_blocked);
 
     pthread_mutex_lock(&mutex_log);
@@ -197,12 +195,12 @@ void eliminar_pcb_lista(t_pcb*pcb,t_list*lista){
 }
 
 
-void sacar_tcbs_de_colas_ready_multinivel(t_list *lista_tcbs, t_list *lista_prioridades, int pid_buscado)
+void sacar_tcbs_de_colas_ready_multinivel(t_list *lista_prioridades, int pid_buscado)
 {
-    for (int i = 0; i < list_size(lista_tcbs); i++)
+    for (int i = 0; i < list_size(lista_prioridades); i++)
     {
         t_tcb *tcb_actual = list_get(lista_tcbs, i);
-        if (tcb_actual->pid == pid_buscado && tcb_actual->estado == TCB_READY)
+        if (tcb_actual->pid == pid_buscado)
         {
             // Remover el TCB de la cola ready de prioridades
 
@@ -211,9 +209,9 @@ void sacar_tcbs_de_colas_ready_multinivel(t_list *lista_tcbs, t_list *lista_prio
                 t_cola_prioridad *cola_prioridad = list_get(colas_ready_prioridad, j);
 
                 // Iterar en la cola de esa prioridad
-                for (int j = 0; j < queue_size(cola_prioridad->cola); j++)
+                for (int z = 0; z < queue_size(cola_prioridad->cola); z++)
                 {
-                    t_tcb *hilo = list_get(cola_prioridad->cola->elements, j);
+                    t_tcb *hilo = list_get(cola_prioridad->cola->elements, z);
                     if (hilo->tid == tcb_actual->tid && hilo->pid == pid_buscado)
                     {
                         sacar_tcb_de_cola(cola_prioridad->cola,hilo);
@@ -228,10 +226,10 @@ void sacar_tcbs_de_colas_ready_multinivel(t_list *lista_tcbs, t_list *lista_prio
     }
 }
 
-void sacar_tcbs_lista_blocked(t_list* lista_tcbs,t_list*lista_bloqueados,int pid_buscado){
-    for (int i = 0; i < list_size(lista_tcbs); i++) {
-        t_tcb* tcb_actual = list_get(lista_tcbs, i);
-        if (tcb_actual->pid == pid_buscado && tcb_actual->estado == TCB_BLOCKED) {
+void sacar_tcbs_lista_blocked(t_list*lista_bloqueados,int pid_buscado){
+    for (int i = 0; i < list_size(lista_bloqueados); i++) {
+        t_tcb* tcb_actual = list_get(lista_bloqueados, i);
+        if (tcb_actual->pid == pid_buscado) {
             // Remover el TCB de la cola de bloqueados
             list_remove_element(lista_bloqueados,tcb_actual);
         }
@@ -666,7 +664,7 @@ t_tcb* buscar_tcb_por_tid_pid(int tid, int pid,t_list* lista_tcbs){
 
 void print_queue(t_queue* queue) {
     if (queue == NULL || queue_size(queue) == 0) {
-        printf("La cola está vacía.\n");
+        log_info(logger,"La cola está vacía.\n");
         return;
     }
 
@@ -674,36 +672,36 @@ void print_queue(t_queue* queue) {
     for (int i = 0; i < list_size(queue->elements); i++) {
         t_tcb* tcb = list_get(queue->elements, i);  // obtener el elemento
         // Aquí asumo que el tipo de dato es un entero, puedes modificarlo según tu necesidad
-        printf("Elemento %d: %d\n", i, tcb->tid);
+        log_info(logger,"Elemento %d: PID: %d, TID: %d", i, tcb->pid, tcb->tid);
     }
 }
 
 // Función para imprimir los elementos de una lista de t_cola_prioridad
 void print_lista_prioridades(t_list* lista_prioridades) {
     if (lista_prioridades == NULL || list_size(lista_prioridades) == 0) {
-        printf("La lista de prioridades está vacía.\n");
+        log_info(logger,"La lista de prioridades está vacía.");
         return;
     }
 
     // Iteramos sobre la lista de t_cola_prioridad
     for (int i = 0; i < list_size(lista_prioridades); i++) {
         t_cola_prioridad* item = list_get(lista_prioridades, i);
-        printf("Prioridad: %d\n", item->prioridad);
-        printf("Cola asociada:\n");
+        log_info(logger,"Prioridad: %d", item->prioridad);
+        log_info(logger,"Cola asociada:");
         print_queue(item->cola);  // Llamamos a la función para imprimir la cola
     }
 }
 
 void print_lista(t_list* lista) {
     if (lista == NULL || list_size(lista) == 0) {
-        printf("La lista está vacía.\n");
+        log_info(logger,"La lista está vacía.\n");
         return;
     }
 
     // Iteramos sobre los elementos de la lista
     for (int i = 0; i < list_size(lista); i++) {
         t_tcb* tcb = list_get(lista, i);  // Obtenemos el elemento
-        printf("Elemento %d: %d\n", i, tcb->tid);  // Imprimimos el valor del elemento
+        log_info(logger,"Elemento %d: PID: %d, TID:%d\n", i, tcb->pid, tcb->tid);  // Imprimimos el valor del elemento
     }
 }
 
