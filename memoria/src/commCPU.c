@@ -154,7 +154,6 @@ void *recibir_cpu(void *args)
             }
             break;
         }
-
         case WRITE_MEM:
         {
             t_write_mem *info_0 = recepcionar_write_mem(paquete_operacion);

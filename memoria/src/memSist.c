@@ -29,7 +29,6 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
     
     log_info(logger,"PATH INSTRUCCIONES AUX: %s",path_instrucciones_aux);
 
-
     FILE* archivo = fopen(path_instrucciones_aux, "r");
     
     free(path_instrucciones_aux);
@@ -91,7 +90,6 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
         
     }
     fclose(archivo);
-    
 }
 
 void inicializar_resto_parametros(int cant_param, t_instruccion_tid_pid *instruccion)

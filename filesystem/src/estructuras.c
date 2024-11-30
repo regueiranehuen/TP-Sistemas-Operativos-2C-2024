@@ -355,6 +355,7 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
     }
 
     fclose(arch);
+  
     imprimir_archivo_bloques(mount_dir);
     free(path);
     return 0;

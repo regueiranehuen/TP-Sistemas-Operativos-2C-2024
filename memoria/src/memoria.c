@@ -27,6 +27,7 @@ void atender_conexiones(int socket_cliente)
             pthread_mutex_unlock(&mutex_lista_contextos_pids);
             printf("tamanio proceso:%d\n",info_0->tam_proceso);
             t_particiones* particion = inicializar_proceso(info_0->pid,info_0->tam_proceso,config);
+
             if(particion == NULL){
             log_info(logger,"particion == NULL");
             log_info(logger,"No hay espacio para inicializar el proceso:%d",info_0->pid);
