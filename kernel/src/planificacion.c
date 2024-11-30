@@ -242,7 +242,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             IO(milisegundos);
             
             break;
-        case ENUM_DUMP_MEMORY:
+        case ENUM_DUMP_MEMORY:            
             log_info(logger, "## (%d:%d) - Solicitó syscall: DUMP_MEMORY", hilo_exec->pid, hilo_exec->tid);
             
             DUMP_MEMORY();

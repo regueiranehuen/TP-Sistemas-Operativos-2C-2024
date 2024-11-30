@@ -73,12 +73,14 @@ void *recibir_cpu(void *args)
             printf("entrando a actualizar_contexto\n");
             t_contexto_tid *contexto_tid = recepcionar_contexto_tid(paquete_operacion);
             log_info(logger, "REGISTROS QUE VOY A METER EN MEMORIA (ACTUALIZO):");
-            log_info(logger, "%d", contexto_tid->registros->AX);
-            log_info(logger, "%d", contexto_tid->registros->BX);
-            log_info(logger, "%d", contexto_tid->registros->CX);
-            log_info(logger, "%d", contexto_tid->registros->DX);
-            log_info(logger, "%d", contexto_tid->registros->EX);
-            log_info(logger, "%d", contexto_tid->registros->HX);
+            log_info(logger, "AX: %d", contexto_tid->registros->AX);
+            log_info(logger, "BX: %d", contexto_tid->registros->BX);
+            log_info(logger, "CX: %d", contexto_tid->registros->CX);
+            log_info(logger, "DX: %d", contexto_tid->registros->DX);
+            log_info(logger, "EX: %d", contexto_tid->registros->EX);
+            log_info(logger, "FX: %d", contexto_tid->registros->FX);
+            log_info(logger, "GX: %d", contexto_tid->registros->GX);
+            log_info(logger, "HX: %d", contexto_tid->registros->HX);
             
             pthread_mutex_lock(&mutex_lista_contextos_pids);           
             print_pids(lista_contextos_pids);
@@ -221,13 +223,15 @@ void actualizar_contexto(int pid, int tid, t_registros_cpu* reg){
     }
     if (contexto != NULL)
     {
-        contexto->registros->PC = reg->PC;
         contexto->registros->AX = reg->AX;
         contexto->registros->BX = reg->BX;
         contexto->registros->CX = reg->CX;
         contexto->registros->DX = reg->DX;
         contexto->registros->EX = reg->EX;
+        contexto->registros->FX = reg->FX;
+        contexto->registros->GX = reg->GX;
         contexto->registros->HX = reg->HX;
+        contexto->registros->PC = reg->PC;
         log_info(logger,"## Contexto Actualizado - (PID:TID) - (%d:%d)",pid,tid);
     }
     

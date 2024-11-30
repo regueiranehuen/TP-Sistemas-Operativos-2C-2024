@@ -288,6 +288,7 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
     {
         log_info(logger,"No hay espacio para inicializar un proceso, se espera a la finalizacion de alguno");
         sem_wait(&semaforo_new_ready_procesos); // espera a que se libere un proceso
+        sem_post(&semaforo_cola_new_procesos);
     }
     else
     {

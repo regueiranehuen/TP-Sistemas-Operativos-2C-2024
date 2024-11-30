@@ -68,7 +68,10 @@ void *ciclo_de_instruccion(void *args)
                 }
                 
                 free(instruccion->parametros1);
-                if (strcmp(instruccion->parametros2, "") != 0)
+                free(instruccion->parametros2);
+                free(instruccion->parametros3);
+                free(instruccion->parametros4);
+                /*if (strcmp(instruccion->parametros2, "") != 0)
                 {
                     free(instruccion->parametros2);
                 }
@@ -81,7 +84,7 @@ void *ciclo_de_instruccion(void *args)
                 if (strcmp(instruccion->parametros4, "") != 0)
                 {
                     free(instruccion->parametros4);
-                }
+                }*/
 
                 free(instruccion);
             }

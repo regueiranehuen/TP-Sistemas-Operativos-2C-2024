@@ -34,8 +34,6 @@ t_particiones* dinamica_worst(int pid, int tamanio_proceso, int tamanio_lista);
 void liberar_espacio_proceso(int pid);
 void fusionar_particiones_libres(t_list* lista_particiones,t_particiones* particion_actual,int indice);
 
-t_list* lectura_datos_proceso(int pid);
-
 t_particiones* busqueda_particion(int pid);
 //char* generar_nombre_archivo(int pid, int tid);
 
