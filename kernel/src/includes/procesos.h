@@ -186,6 +186,8 @@ void MUTEX_UNLOCK(char* recurso);
 void IO(int milisegundos);
 
 void DUMP_MEMORY();
+void peticion_dump_memory(t_tcb* hilo);
+void* administrador_dump_memory(void* args);
 
 void dispositivo_IO();
 void* hilo_dispositivo_IO();

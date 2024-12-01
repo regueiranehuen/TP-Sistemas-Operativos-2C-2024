@@ -973,56 +973,31 @@ void *hilo_dispositivo_IO(void *args)
     return NULL;
 }
 
-void DUMP_MEMORY()
-{
+void peticion_dump_memory(t_tcb* hilo){
+    pthread_t hilo_dump;
 
-    t_tcb *tcb = hilo_exec;
+    int resultado = pthread_create(&hilo_dump, NULL, administrador_dump_memory, hilo);
 
-    code_operacion cod_op = DUMP_MEMORIA;
-
-    // hilo_exec = NULL;
-    tcb->estado = TCB_BLOCKED;
-    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    pthread_mutex_lock(&mutex_desalojo);
-    if (!aviso_cpu->finQuantum)
+    if (resultado != 0)
     {
-        send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
-        aviso_cpu->desalojar = true;
-        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
-        if (codigo != OK)
-        {
-            log_info(logger, "CPU no proceso la interrupción correctamente");
-        }
+        pthread_mutex_lock(&mutex_log);
+        log_error(logger, "Error al crear el hilo de dump");
+        pthread_mutex_unlock(&mutex_log);
+        return;
     }
-    else if (aviso_cpu->finQuantum)
-    {
-        aviso_cpu->finQuantum = false;
+    else{
+        log_info(logger,"Se creo una peticion de dump correctamente");
     }
-    pthread_mutex_unlock(&mutex_desalojo);
-    send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+    pthread_detach(hilo_dump);
+}
 
-    
-        pthread_mutex_lock(&mutex_lista_blocked);        
-        list_add(lista_bloqueados, tcb);
-        pthread_mutex_unlock(&mutex_lista_blocked);
+void* administrador_dump_memory(void* args){
 
-        pthread_mutex_lock(&mutex_cola_ready);
-        if(hilo_esta_en_ready(tcb)){
-        pthread_mutex_unlock(&mutex_cola_ready);
-            sacar_tcb_ready(tcb);
-        }
-        else{
-        pthread_mutex_unlock(&mutex_cola_ready);
-        }
-    // Conectar con memoria
+    t_tcb* tcb = (t_tcb*)args;
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
 
-    int pid = tcb->pid;
-    int tid = tcb->tid;
-
-    send_operacion_tid_pid(cod_op, tid, pid, socket_memoria);
+    send_operacion_tid_pid(DUMP_MEMORIA, tcb->tid, tcb->pid, socket_memoria);
 
     log_info(logger,"ENVIO DE OPERACION MEMORIA");
     int rta_memoria;
@@ -1033,12 +1008,15 @@ void DUMP_MEMORY()
     if (rta_memoria == -1)
     {
         pthread_mutex_lock(&mutex_log);
-        log_info(logger, "Error en el dump de memoria ");
+        log_info(logger, "Error en el dump de memoria");
         pthread_mutex_unlock(&mutex_log);
+
         pthread_mutex_lock(&mutex_lista_pcbs);
         t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, tcb->pid);
         pthread_mutex_unlock(&mutex_lista_pcbs);
+
         pcb->estado = PCB_EXIT;
+
         pthread_mutex_lock(&mutex_lista_blocked);
         list_remove_element(lista_bloqueados,tcb);
         pthread_mutex_unlock(&mutex_lista_blocked);
@@ -1063,6 +1041,48 @@ void DUMP_MEMORY()
 
         pushear_cola_ready(tcb);
     }
+    return NULL;
+}
+
+void DUMP_MEMORY()
+{
+
+    t_tcb *tcb = hilo_exec;
+
+    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+    pthread_mutex_lock(&mutex_desalojo);
+    if (!aviso_cpu->finQuantum)
+    {
+        send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
+        aviso_cpu->desalojar = true;
+        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
+        if (codigo != OK)
+        {
+            log_info(logger, "CPU no proceso la interrupción correctamente");
+        }
+    }
+    else if (aviso_cpu->finQuantum)
+    {
+        aviso_cpu->finQuantum = false;
+    }
+    pthread_mutex_unlock(&mutex_desalojo);
+    send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
+    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+
+        pthread_mutex_lock(&mutex_lista_blocked);        
+        list_add(lista_bloqueados, tcb);
+        pthread_mutex_unlock(&mutex_lista_blocked);
+
+        pthread_mutex_lock(&mutex_cola_ready);
+        if(hilo_esta_en_ready(tcb)){
+        pthread_mutex_unlock(&mutex_cola_ready);
+            sacar_tcb_ready(tcb);
+        }
+        else{
+        pthread_mutex_unlock(&mutex_cola_ready);
+        }
+
+        peticion_dump_memory(tcb);
 }
 
 void atender_segmentation_fault(){

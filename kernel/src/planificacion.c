@@ -7,7 +7,18 @@ t_tcb *fifo_tcb()
     sem_wait(&semaforo_cola_ready);
     log_info(logger, "Se tomó el semáforo (cola_ready)");
 
+    log_info(logger,"Cola ready");
+
+    pthread_mutex_lock(&mutex_cola_ready);
+    print_queue(cola_ready_fifo);
+    pthread_mutex_unlock(&mutex_cola_ready);
     
+    log_info(logger,"Lista bloqueados:");
+
+    pthread_mutex_lock(&mutex_lista_blocked);
+    print_lista(lista_bloqueados);
+    pthread_mutex_unlock(&mutex_lista_blocked);
+
     pthread_mutex_lock(&mutex_cola_ready);
 
     t_tcb *tcb = queue_pop(cola_ready_fifo);
