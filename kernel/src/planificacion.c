@@ -246,7 +246,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             log_info(logger, "## (%d:%d) - Solicitó syscall: DUMP_MEMORY", hilo_exec->pid, hilo_exec->tid);
             
             DUMP_MEMORY();
-             
+
             free(paquete->buffer);
             free(paquete);
             break;
@@ -457,7 +457,7 @@ while(1){
 
     sem_wait(&sem_lista_prioridades);
     if (estado_kernel == 0){
-
+        sem_post(&sem_termina_hilo);
         return NULL;
     }
     pthread_mutex_lock(&mutex_cola_ready);
