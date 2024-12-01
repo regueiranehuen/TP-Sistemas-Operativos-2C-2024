@@ -7,15 +7,21 @@ void funcSET(t_contexto_tid*contexto,char* registro, uint32_t valor) {
 
 void funcSUM(t_contexto_tid*contexto,char* registroDest, char* registroOrig) {
     uint32_t valor_orig = obtener_valor_registro(contexto,registroOrig);
+    log_info(log_cpu,"valor origen FUNCSUM: %d",valor_orig);
     uint32_t valor_dest = obtener_valor_registro(contexto,registroDest);
-    valor_registro_cpu(contexto,registroDest, valor_orig + valor_dest);
+    log_info(log_cpu,"valor dest FUNCSUM: %d",valor_dest);
+    uint32_t suma = valor_orig + valor_dest;
+    valor_registro_cpu(contexto,registroDest, suma);
     log_info(log_cpu, "SUM: %s + %s", registroOrig, registroDest);
 }
 
 void funcSUB(t_contexto_tid*contexto,char* registroDest, char* registroOrig) {
     uint32_t valor_orig = obtener_valor_registro(contexto,registroOrig);
+    log_info(log_cpu,"valor origen FUNCSUB: %d",valor_orig);
     uint32_t valor_dest = obtener_valor_registro(contexto,registroDest);
-    valor_registro_cpu(contexto,registroDest, valor_dest - valor_orig);
+    log_info(log_cpu,"valor dest FUNCSUB: %d",valor_dest);
+    uint32_t resta = valor_dest - valor_orig;
+    valor_registro_cpu(contexto,registroDest, resta);
     log_info(log_cpu, "SUB: %s - %s", registroDest, registroOrig);
 }
 
@@ -118,7 +124,7 @@ uint32_t tamanio_registro(char *registro){
 //--FUNCIONES EXTRAS
 
 uint32_t obtener_valor_registro(t_contexto_tid*contexto,char* registro) {
-    printf("registro:%s\n",registro);
+    log_info(log_cpu,"registro:%s",registro);
     if (strcmp(registro, "AX") == 0) return contexto->registros->AX;
     if (strcmp(registro, "BX") == 0) return contexto->registros->BX;
     if (strcmp(registro, "CX") == 0) return contexto->registros->CX;
@@ -127,7 +133,7 @@ uint32_t obtener_valor_registro(t_contexto_tid*contexto,char* registro) {
     if (strcmp(registro, "FX") == 0) return contexto->registros->FX;
     if (strcmp(registro, "GX") == 0) return contexto->registros->GX;
     if (strcmp(registro, "HX") == 0) return contexto->registros->HX;
-    printf("Registro desconocido: %s\n", registro);
+    log_info(log_cpu,"Registro desconocido:%s", registro);
     return 0;
 }
 

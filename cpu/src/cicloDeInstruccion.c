@@ -180,7 +180,15 @@ void checkInterrupt(t_contexto_tid *contextoTid)
     {
         hay_interrupcion = false;
         seguir_ejecutando = false;
-        log_info(log_cpu, "INTERRUPCION DE KERNEL QUE LEEMOS EN CHECK INTERRUPT: %d",devolucion_kernel);
+        log_info(log_cpu, "INTERRUPCION DE KERNEL QUE LEEMOS EN CHECK INTERRUPT: %d. MANDO ESTOS REGISTROS A MEMORIA",devolucion_kernel);
+        log_info(log_cpu, "AX: %u", contextoTid->registros->AX);
+            log_info(log_cpu, "BX: %u", contextoTid->registros->BX);
+            log_info(log_cpu, "CX: %u", contextoTid->registros->CX);
+            log_info(log_cpu, "DX: %u", contextoTid->registros->DX);
+            log_info(log_cpu, "EX: %u", contextoTid->registros->EX);
+            log_info(log_cpu, "FX: %u", contextoTid->registros->FX);
+            log_info(log_cpu, "GX: %u", contextoTid->registros->GX);
+            log_info(log_cpu, "HX: %u", contextoTid->registros->HX);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion respuesta = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (respuesta != OK)
@@ -335,6 +343,16 @@ op_code decode(t_instruccion *instruccion)
 void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_code instruccion_nombre, t_instruccion *instruccion)
 {
     log_info(log_cpu, "Ejecutando instrucción: %s", instruccion->parametros1);
+
+    log_info(log_cpu, "AX: %u", contextoTid->registros->AX);
+            log_info(log_cpu, "BX: %u", contextoTid->registros->BX);
+            log_info(log_cpu, "CX: %u", contextoTid->registros->CX);
+            log_info(log_cpu, "DX: %u", contextoTid->registros->DX);
+            log_info(log_cpu, "EX: %u", contextoTid->registros->EX);
+            log_info(log_cpu, "FX: %u", contextoTid->registros->FX);
+            log_info(log_cpu, "GX: %u", contextoTid->registros->GX);
+            log_info(log_cpu, "HX: %u", contextoTid->registros->HX);
+
 
     switch (instruccion_nombre)
     {

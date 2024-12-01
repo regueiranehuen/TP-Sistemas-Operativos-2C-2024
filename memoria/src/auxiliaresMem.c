@@ -92,9 +92,17 @@ void eliminar_contexto_pid(t_contexto_pid*contexto_pid){
         log_info(logger,"PID CONTEXTO_ACTUAL:%d",actual->pid);
         if (contexto_pid->pid == actual->pid){
             int pid = contexto_pid->pid; // Solo para hacer el log
-            list_remove(lista_contextos_pids,i);
 
-            free(contexto_pid->contextos_tids);
+            for (int j = 0; j<list_size(actual->contextos_tids);j++){
+                t_contexto_tid*act = list_get(actual->contextos_tids,j);
+                log_info(logger,"TID CONTEXTO_ACTUAL:%d",act->tid);
+                log_info(logger,"AX: %d",act->registros->AX);
+                list_remove(actual->contextos_tids,j);
+                free(act->registros);
+                free(act);
+            }
+            list_destroy(actual->contextos_tids);
+            list_remove(lista_contextos_pids,i);
             free(contexto_pid);
             log_info(logger,"Contexto del pid %d eliminado",pid);
             return;

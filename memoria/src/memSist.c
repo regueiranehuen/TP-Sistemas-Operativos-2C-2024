@@ -200,7 +200,12 @@ void finalizar_hilo(int tid, int pid) {
 
     log_info(logger,"OBTENIDO CONTEXTO DE TID %d!",contexto_tid->tid);
 
-    eliminar_elemento_por_tid(contexto_tid->tid, contexto_pid->contextos_tids);
+    list_remove_element(contexto_pid->contextos_tids,contexto_tid);
+    free(contexto_tid->registros);
+    free(contexto_tid);
+    
+
+    //eliminar_elemento_por_tid(contexto_tid->tid, contexto_pid->contextos_tids);
     pthread_mutex_unlock(&mutex_lista_contextos_pids);
 }
 

@@ -39,6 +39,19 @@ void *recibir_cpu(void *args)
             send_contexto_tid(sockets_iniciales->socket_cpu, contexto_tid);
             log_info(logger, "Enviado contexto para PID: %d, TID: %d", contexto_tid->pid, contexto_tid->tid);
 
+            for (int i = 0; i < list_size(lista_contextos_pids); i++)
+            {
+                t_contexto_pid *cont_pid_act = list_get(lista_contextos_pids, i);
+                log_info(logger, "CONTEXTO PID:%d", cont_pid_act->pid);
+                log_info(logger, "SIZE CONTEXTO TID:%d", list_size(cont_pid_act->contextos_tids));
+                for (int j = 0; j < list_size(cont_pid_act->contextos_tids); j++)
+                {
+                    t_contexto_tid *cont_tid_act = list_get(cont_pid_act->contextos_tids, j);
+                    log_info(logger, "TID:%d", cont_tid_act->tid);
+                    log_info(logger, "AX: %d", cont_tid_act->registros->AX);
+                }
+            }
+
             break;
         }
 
@@ -56,11 +69,24 @@ void *recibir_cpu(void *args)
                 send(sockets_iniciales->socket_cpu, &rta, sizeof(int), 0);
                 break;
             }
-            t_contexto_pid_send *contexto_a_enviar = malloc(sizeof(contexto_a_enviar));
+            t_contexto_pid_send *contexto_a_enviar = malloc(sizeof(t_contexto_pid_send));
             contexto_a_enviar->pid = contextoPid->pid;
             contexto_a_enviar->base = contextoPid->base;
             contexto_a_enviar->limite = contextoPid->limite;
             contexto_a_enviar->tamanio_proceso = contextoPid->tamanio_proceso;
+
+            for (int i = 0; i < list_size(lista_contextos_pids); i++)
+            {
+                t_contexto_pid *cont_pid_act = list_get(lista_contextos_pids, i);
+                log_info(logger, "CONTEXTO PID:%d", cont_pid_act->pid);
+                log_info(logger, "SIZE CONTEXTO TID:%d", list_size(cont_pid_act->contextos_tids));
+                for (int j = 0; j < list_size(cont_pid_act->contextos_tids); j++)
+                {
+                    t_contexto_tid *cont_tid_act = list_get(cont_pid_act->contextos_tids, j);
+                    log_info(logger, "TID:%d", cont_tid_act->tid);
+                    log_info(logger, "AX: %d", cont_tid_act->registros->AX);
+                }
+            }
 
             send_contexto_pid(sockets_iniciales->socket_cpu, contexto_a_enviar);
             break;
@@ -73,27 +99,40 @@ void *recibir_cpu(void *args)
             printf("entrando a actualizar_contexto\n");
             t_contexto_tid *contexto_tid = recepcionar_contexto_tid(paquete_operacion);
             log_info(logger, "REGISTROS QUE VOY A METER EN MEMORIA (ACTUALIZO):");
-            log_info(logger, "AX: %d", contexto_tid->registros->AX);
-            log_info(logger, "BX: %d", contexto_tid->registros->BX);
-            log_info(logger, "CX: %d", contexto_tid->registros->CX);
-            log_info(logger, "DX: %d", contexto_tid->registros->DX);
-            log_info(logger, "EX: %d", contexto_tid->registros->EX);
-            log_info(logger, "FX: %d", contexto_tid->registros->FX);
-            log_info(logger, "GX: %d", contexto_tid->registros->GX);
-            log_info(logger, "HX: %d", contexto_tid->registros->HX);
-            
-            pthread_mutex_lock(&mutex_lista_contextos_pids);           
-            print_pids(lista_contextos_pids);
-            pthread_mutex_unlock(&mutex_lista_contextos_pids);
+            log_info(logger, "AX: %u", contexto_tid->registros->AX);
+            log_info(logger, "BX: %u", contexto_tid->registros->BX);
+            log_info(logger, "CX: %u", contexto_tid->registros->CX);
+            log_info(logger, "DX: %u", contexto_tid->registros->DX);
+            log_info(logger, "EX: %u", contexto_tid->registros->EX);
+            log_info(logger, "FX: %u", contexto_tid->registros->FX);
+            log_info(logger, "GX: %u", contexto_tid->registros->GX);
+            log_info(logger, "HX: %u", contexto_tid->registros->HX);
 
-            log_info(logger, "PROGRAM COUNTER ACTUAL: %u", contexto_tid->registros->PC);
-            actualizar_contexto(contexto_tid->pid, contexto_tid->tid, contexto_tid->registros);
-            send_code_operacion(OK, sockets_iniciales->socket_cpu);
+            for (int i = 0; i < list_size(lista_contextos_pids); i++)
+            {
+                t_contexto_pid *cont_pid_act = list_get(lista_contextos_pids, i);
+                log_info(logger, "CONTEXTO PID:%d", cont_pid_act->pid);
+                log_info(logger, "SIZE CONTEXTO TID:%d", list_size(cont_pid_act->contextos_tids));
+                for (int j = 0; j < list_size(cont_pid_act->contextos_tids); j++)
+                {
+                    t_contexto_tid *cont_tid_act = list_get(cont_pid_act->contextos_tids, j);
+                    log_info(logger, "TID:%d", cont_tid_act->tid);
+                    log_info(logger, "AX: %d", cont_tid_act->registros->AX);
+                }
+            }
 
-            free(contexto_tid->registros); // Ya se actualizó el contexto que está en la lista de contextos tids correspondiente al pid enviado
-            free(contexto_tid);
-            break;
-        }
+                pthread_mutex_lock(&mutex_lista_contextos_pids);
+                print_pids(lista_contextos_pids);
+                pthread_mutex_unlock(&mutex_lista_contextos_pids);
+
+                log_info(logger, "PROGRAM COUNTER ACTUAL: %u", contexto_tid->registros->PC);
+                actualizar_contexto(contexto_tid->pid, contexto_tid->tid, contexto_tid->registros);
+                send_code_operacion(OK, sockets_iniciales->socket_cpu);
+
+                free(contexto_tid->registros); // Ya se actualizó el contexto que está en la lista de contextos tids correspondiente al pid enviado
+                free(contexto_tid);
+                break;
+            }
 
         case OBTENER_INSTRUCCION:
         {
@@ -287,18 +326,21 @@ t_contexto_pid*inicializar_contexto_pid(int pid,uint32_t base, uint32_t limite,i
 
 t_contexto_tid*obtener_contexto_tid(int pid, int tid){ // hay que usar mutex cada vez que se usa esta funcion
     //pthread_mutex_lock(&mutex_lista_contextos_pids);
-    for (int i = 0; i < list_size(lista_contextos_pids); i++){
-        
-        t_contexto_pid*cont_actual=list_get(lista_contextos_pids,i);
-        
-        for (int j = 0; j < list_size(cont_actual->contextos_tids); j++){
-            t_contexto_tid*cont_tid_actual=list_get(cont_actual->contextos_tids,j);
-            if (cont_tid_actual->pid==pid && cont_tid_actual->tid==tid){
-                return cont_tid_actual;
+    t_contexto_pid* cont_pid = obtener_contexto_pid(pid);
+
+    if (cont_pid!= NULL)
+    {
+        for (int i = 0; i < list_size(cont_pid->contextos_tids); i++)
+        {
+            t_contexto_tid *act = list_get(cont_pid->contextos_tids, i);
+            log_info(logger, "TID EN OBT CONT TID: %d  CORRESPONDE A PID %d", act->tid, pid);
+            if (act->tid == tid)
+            {
+                return act;
             }
         }
- 
     }
+
     //pthread_mutex_unlock(&mutex_lista_contextos_pids);
     return NULL;
 }
@@ -380,5 +422,3 @@ void liberar_contexto_pid(t_contexto_pid *contexto_pid){
 void liberar_lista_contextos(){
     list_destroy_and_destroy_elements(lista_contextos_pids,(void*)liberar_contexto_pid);
 }
-
-
