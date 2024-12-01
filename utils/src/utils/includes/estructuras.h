@@ -159,10 +159,13 @@ typedef enum // SOLO USARLO CON MEMORIA
     CONTEXTO_TID_INEXISTENTE,
     OBTENER_CONTEXTO_TID,
     OBTENER_CONTEXTO_PID,
+    OBTENER_CONTEXTO_EJECUCION,
     ACTUALIZAR_CONTEXTO_TID,
 
     OBTENCION_CONTEXTO_TID_OK,
     OBTENCION_CONTEXTO_PID_OK,
+    CONTEXTO_EJECUCION_INEXISTENTE,
+    OBTENCION_CONTEXTO_EJECUCION_OK,
     ACTUALIZACION_OK,
 
     //INSTRUCCION FINALIZADA
@@ -355,8 +358,7 @@ t_paquete* recibir_paquete_op_code(int socket_cliente);
 int leer_entero(char *buffer, int *desplazamiento);
 t_contexto_tid* recepcionar_contexto_tid(t_paquete*paquete);
 void enviar_tid_pid_op_code(int conexion,t_tid_pid* info, op_code codop);
-void solicitar_contexto_tid(int pid, int tid,int conexion);
-void solicitar_contexto_pid(int pid,int conexion);
+void solicitar_contexto_ejecucion(int pid, int tid,int conexion);
 void pedir_creacion_contexto_tid(int pid, int tid,int conexion);
 t_tid_pid* recepcionar_tid_pid_op_code(void*stream);
 void send_paquete_op_code(int socket, t_buffer* buffer, op_code code);
@@ -385,5 +387,9 @@ void send_valor_read_mem(uint32_t valor, int socket_cliente, op_code code);
 void send_write_mem(uint32_t direccionFisica, uint32_t valor, int socket_memoria);
 t_write_mem* recepcionar_write_mem(t_paquete* paquete);
 void send_terminar_ejecucion_op_code(int socket);
+t_tid_pid* recepcionar_solicitud_contexto(t_paquete* paquete);
+t_contextos*obtener_contextos(int pid, int tid);
+void enviar_contexto_ejecucion(t_contextos*contextos,int socket_cliente);
+t_contextos* recepcionar_contextos(t_paquete*paquete);
 
 #endif

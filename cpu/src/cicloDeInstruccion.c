@@ -71,21 +71,6 @@ void *ciclo_de_instruccion(void *args)
                 free(instruccion->parametros2);
                 free(instruccion->parametros3);
                 free(instruccion->parametros4);
-                /*if (strcmp(instruccion->parametros2, "") != 0)
-                {
-                    free(instruccion->parametros2);
-                }
-
-                if (strcmp(instruccion->parametros3, "") != 0)
-                {
-                    free(instruccion->parametros3);
-                }
-
-                if (strcmp(instruccion->parametros4, "") != 0)
-                {
-                    free(instruccion->parametros4);
-                }*/
-
                 free(instruccion);
             }
             free(contextos->contexto_tid->registros);
@@ -115,54 +100,38 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
 
     log_info(log_cpu, "se recibió el código %d por dispatch\n", paquete->code);
 
-    t_contextos *contextos = malloc(sizeof(t_contextos));
-    contextos->contexto_pid = malloc(sizeof(t_contexto_pid_send));
-    contextos->contexto_tid = malloc(sizeof(t_contexto_tid));
-
     if (paquete->code == THREAD_EXECUTE_AVISO)
     {
         /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
         t_tid_pid *info = recepcionar_tid_pid_code_op(paquete);
 
-        
+        t_contextos* contextos;
 
-        solicitar_contexto_pid(info->pid, sockets_cpu->socket_memoria);
+        solicitar_contexto_ejecucion(info->pid, info->tid,sockets_cpu->socket_memoria);
         
-        t_paquete *paquete_solicitud_contexto_pid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
+        t_paquete *paquete_solicitud_contexto_ejecucion = recibir_paquete_op_code(sockets_cpu->socket_memoria);
         
-        if (paquete_solicitud_contexto_pid->codigo_operacion == CONTEXTO_PID_INEXISTENTE)
+        if (paquete_solicitud_contexto_ejecucion->codigo_operacion == ERROR)
         {
-            log_error(log_cpu, "El contexto del pid %d no existe", info->pid);
+            log_error(log_cpu, "El contexto del pid %d tid %d no existe", info->pid,info->tid);
+            return NULL;
         }
-        else if (paquete_solicitud_contexto_pid->codigo_operacion == OBTENCION_CONTEXTO_PID_OK)
+        else if (paquete_solicitud_contexto_ejecucion->codigo_operacion == OBTENCION_CONTEXTO_EJECUCION_OK)
         {
-            
-            contextos->contexto_pid = recepcionar_contexto_pid(paquete_solicitud_contexto_pid);
-            solicitar_contexto_tid(info->pid, info->tid, sockets_cpu->socket_memoria);
-            log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
-            log_info(log_cpu, "PID: %d, BASE: %d, LIMITE: %d", contextos->contexto_pid->pid, contextos->contexto_pid->base, contextos->contexto_pid->limite);
-            t_paquete *paquete_solicitud_contexto_tid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
-            printf("%d\n", paquete_solicitud_contexto_tid->codigo_operacion);
-            if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK)
-            { // La memoria se encarga de crear el contexto del tid si es que no existe
-                contextos->contexto_tid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid);
-            }
-            else if (paquete_solicitud_contexto_tid->codigo_operacion == CONTEXTO_TID_INEXISTENTE)
-            {
-                log_error(log_cpu, "Error obteniendo contexto del tid %d", info->tid);
-            }
-        }
-        else if (paquete_solicitud_contexto_pid->codigo_operacion == -1)
-        {
-            log_error(log_cpu, "Error obteniendo contexto del tid %d", info->pid);
+            contextos = recepcionar_contextos(paquete_solicitud_contexto_ejecucion);
         }
 
         log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
 
         free(info);
+
+        return contextos;
+    }
+    else{
+        return NULL;
     }
 
-    return contextos;
+    return NULL;
 }
 
 /*

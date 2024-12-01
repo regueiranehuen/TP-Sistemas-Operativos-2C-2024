@@ -574,6 +574,21 @@ t_tid_pid* recepcionar_tid_pid_code_op(t_paquete_code_operacion* paquete){
     return info;
 }
 
+t_tid_pid* recepcionar_contexto_ejecucion(t_paquete_code_operacion* paquete){
+    t_tid_pid* info = malloc(sizeof(t_tid_pid));
+
+    void* stream = paquete->buffer->stream;
+
+    memcpy(&(info->tid),stream,sizeof(int));
+    stream += sizeof(int);
+    memcpy(&(info->pid), stream,sizeof(int)); // Primer parámetro para la syscall: nombre del archivo
+
+    eliminar_paquete_code_op(paquete);
+
+    return info;
+}
+
+
 int recepcionar_int_code_op(t_paquete_code_operacion* paquete){
 
 

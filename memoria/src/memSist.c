@@ -18,10 +18,7 @@ char* limpiar_token(char* token) {
 void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
     
 
-    /*const char *ruta_relativa = nombre_archivo;
-    char*ruta_absoluta = obtener_ruta_absoluta(ruta_relativa);*/
     char* path_instrucciones = config_get_string_value(config,"PATH_INSTRUCCIONES");
-    //char* extension = ".txt";
     char* path_instrucciones_aux = malloc(strlen(path_instrucciones)+strlen(nombre_archivo) + 1);
     
 
