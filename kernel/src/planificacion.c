@@ -337,7 +337,7 @@ void* cortar_ejecucion_modulos(void*args){
 
     while (estado_kernel != 0){
         sem_wait(&sem_seguir_o_frenar);
-        log_info(logger,"jijodebuuu");
+        
         if (estado_kernel == 0){
             sem_post(&sem_termina_hilo);
             return NULL;
