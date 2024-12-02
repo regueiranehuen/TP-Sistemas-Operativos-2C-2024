@@ -410,24 +410,7 @@ void ordenar_por_prioridad(t_list* lista) {
     list_destroy(lista_ordenada); // Limpiar la lista ordenada si ya no es necesaria
 }
 
-void buscar_y_eliminar_tcb(t_list* lista_tcbs, t_tcb* tcb) {
-    // Bloquear el mutex para asegurar acceso exclusivo a la lista
 
-    for (int i = 0; i < list_size(lista_tcbs); i++) {
-        t_tcb* tcb_actual = list_get(lista_tcbs, i);  // Obtener el TCB en la posición 'i'
-        if (tcb_actual->tid == tcb->tid) {
-            // Eliminar el TCB encontrado y retornarlo
-            
-            /*list_remove(lista_tcbs, i);
-            queue_destroy(tcb_actual->cola_hilos_bloqueados);
-            free(tcb->pseudocodigo);
-            free(tcb);*/
-            liberar_tcb(tcb_actual);
-            // Desbloquear el mutex antes de retornar
-            return;
-        }
-    }    
-}
 
 //Busca un tcb en los estados ready y block
 t_tcb* buscar_tcb(int tid_buscado, t_tcb* hilo_exec) {

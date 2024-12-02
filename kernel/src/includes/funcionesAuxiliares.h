@@ -19,7 +19,6 @@ t_mutex* busqueda_mutex(t_list* lista_mutex, char* recurso);//busca un mutex en 
 void liberar_tcb(t_tcb* tcb);//libera un tcb
 bool strings_iguales(char*c1,char*c2);//verifica si dos char son iguales
 void ordenar_por_prioridad(t_list* lista);//ordena una lista
-void buscar_y_eliminar_tcb(t_list* lista_tcbs, t_tcb* tcb);//elimina un tcb de una lista
 t_tcb* buscar_tcb_por_tid(t_list* lista_tcbs, int tid_buscado, t_tcb* hilo_exec); //busca un tcb en una lista
 t_pcb* buscar_pcb_por_pid(t_list* lista_pcbs, int pid_buscado);//saca un pcb de una lista
 t_cola_prioridad* obtener_cola_con_mayor_prioridad(t_list* colas_hilos_prioridad_ready);//devuelve la cola con mayor prioridad con al menos un elemento
