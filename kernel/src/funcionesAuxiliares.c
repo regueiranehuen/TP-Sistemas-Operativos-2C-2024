@@ -185,15 +185,6 @@ void sacar_tcbs_de_lista_ready_prioridades(t_list* lista_prioridades,int pid_bus
     }
 }
 
-void eliminar_pcb_lista(t_pcb*pcb,t_list*lista){
-    for (int i = 0; i< list_size(lista); i++){
-        t_pcb*actual=list_get(lista,i);
-        if (actual->pid == pcb->pid){
-            list_remove(lista,i);
-            return;
-        }
-    }
-}
 
 
 void sacar_tcbs_de_colas_ready_multinivel(t_list *lista_prioridades, int pid_buscado)
