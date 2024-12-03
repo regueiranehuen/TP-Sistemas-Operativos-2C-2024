@@ -80,7 +80,7 @@ void *ciclo_de_instruccion(void *args)
         }
         else if(contextos == NULL){
             log_info(log_cpu,"Cierre de conexion con kernel");
-            sem_post(&sem_socket_cerrado);
+            sem_post(&sem_finalizacion_cpu);
             return NULL; 
         }
     }
@@ -597,7 +597,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         if(codigo != OK){
             log_info(log_cpu,"skibidi toilet");
         }
-        
+        if (hay_interrupcion)
         break;
     }
     default:

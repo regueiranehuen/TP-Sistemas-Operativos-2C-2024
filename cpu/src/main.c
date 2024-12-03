@@ -15,6 +15,7 @@ int main(int argc, char** argv) {
     iniciar_cpu();
 
     sem_wait(&sem_finalizacion_cpu);
+    sem_wait(&sem_finalizacion_cpu);
     
     terminar_programa();
 

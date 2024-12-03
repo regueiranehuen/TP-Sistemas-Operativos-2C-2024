@@ -253,11 +253,10 @@ void* recibir_kernel_interrupt(void*args){
         //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
 
-
         log_info(log_cpu,"llega el código %d a interrupt",code);
         if(code == -1){
             log_info(log_cpu,"Conexion cerrada por Interrupt");
-
+            sem_post(&sem_finalizacion_cpu);
             return NULL;
         }
         
@@ -270,6 +269,7 @@ void* recibir_kernel_interrupt(void*args){
             hay_interrupcion = true;
             devolucion_kernel=FIN_QUANTUM_RR;
             pthread_mutex_unlock(&mutex_interrupt);
+            send_paquete_syscall_sin_parametros(sockets_cpu->socket_servidor->socket_cliente_Dispatch,ENUM_OK);
             break;
         case DESALOJAR:
             log_info(log_cpu,"## Llega interrupción al puerto Interrupt");
@@ -277,47 +277,7 @@ void* recibir_kernel_interrupt(void*args){
             hay_interrupcion = true;
             devolucion_kernel=DESALOJAR;
             pthread_mutex_unlock(&mutex_interrupt);
-            send_code_operacion(OK,sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-            break;
-        case TERMINAR_EJECUCION_MODULO:
-            log_info(log_cpu, "## Llega TERMINAR_EJECUCION_MODULO");
-            fd_set readfds;
-            FD_ZERO(&readfds);
-            FD_SET(sockets_cpu->socket_servidor->socket_cliente_Dispatch, &readfds);
-
-            
-            send_code_operacion(OK_TERMINAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
-            int actividad = select(sockets_cpu->socket_servidor->socket_cliente_Dispatch + 1, &readfds, NULL, NULL, NULL);
-            if (actividad < 0)
-            {
-                log_error(log_cpu, "Error en select (socket dispatch)");
-                exit(EXIT_FAILURE);
-            }
-
-            // Si se detecta actividad en el socket de dispatch
-            if (FD_ISSET(sockets_cpu->socket_servidor->socket_cliente_Dispatch, &readfds))
-            {
-                log_info(log_cpu, "Se detectó actividad en el socket de dispatch");
-                sem_wait(&sem_socket_cerrado);
-            }
-
-            close(sockets_cpu->socket_servidor->socket_servidor_Dispatch);
-            close(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-
-            // Limpiar el descriptor del socket cerrado
-            FD_CLR(sockets_cpu->socket_servidor->socket_cliente_Dispatch, &readfds);
-            send_terminar_ejecucion_op_code(sockets_cpu->socket_memoria);
-            op_code code = recibir_code_operacion(sockets_cpu->socket_memoria);
-            if (code == OK_TERMINAR_OP_CODE){
-                log_info(log_cpu, "Se va a terminar la ejecución del módulo CPU");
-
-                sem_post(&sem_finalizacion_cpu);
-
-                return NULL;
-            }
-            else{
-                log_info(log_cpu,"SOY UN ESTORBO");
-            }
+            send_paquete_syscall_sin_parametros(sockets_cpu->socket_servidor->socket_cliente_Dispatch,ENUM_OK);
             break;
 
         default:

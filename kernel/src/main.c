@@ -37,17 +37,16 @@ void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
 {
     
     char*algoritmo=config_get_string_value(config,"ALGORITMO_PLANIFICACION");
-    send_terminar_ejecucion(sockets->sockets_cliente_cpu->socket_Interrupt);
     
-    sem_wait(&sem_modulo_terminado);
-
-    close(sockets->sockets_cliente_cpu->socket_Dispatch);
+    shutdown(sockets->sockets_cliente_cpu->socket_Dispatch, SHUT_RDWR);
+    log_info(logger,"shutdown1");
+    shutdown(sockets->sockets_cliente_cpu->socket_Interrupt, SHUT_RDWR);  
+    log_info(logger,"shutdown2");
 
     sem_post(&semaforo_cola_new_procesos);
     sem_post(&semaforo_cola_exit_procesos);
     sem_post(&semaforo_cola_exit_hilos);
     sem_post(&sem_seguir_o_frenar);
-    sem_post(&sem_seguir);
     sem_post(&sem_cola_IO);
     sem_post(&sem_lista_prioridades);
 
@@ -81,7 +80,7 @@ void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
     pthread_join(hilo_ready_exec,NULL);*/
     
     
-    close(sockets->sockets_cliente_cpu->socket_Interrupt);  
+    
     close(sockets->socket_cliente_memoria);
     
 

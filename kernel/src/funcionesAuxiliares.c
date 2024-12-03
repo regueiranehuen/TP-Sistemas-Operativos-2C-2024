@@ -47,10 +47,10 @@ void inicializar_semaforos() {
     sem_init(&semaforo_cola_exit_hilos, 0, 0);      // Inicializa en 0
     sem_init(&sem_lista_prioridades, 0, 0);         // Inicializa en 0
     sem_init(&sem_ciclo_nuevo,0,0);
-    sem_init(&sem_seguir_o_frenar,0,0);
-    sem_init(&sem_seguir,0,0);                     
+    sem_init(&sem_seguir_o_frenar,0,0);                    
     sem_init(&sem_modulo_terminado,0,0);
     sem_init(&sem_termina_hilo,0,0);
+    sem_init(&sem_recibi_ok,0,0);
 }
 
 void destruir_semaforos() {
@@ -65,9 +65,9 @@ void destruir_semaforos() {
     sem_destroy(&sem_lista_prioridades);
     sem_destroy(&sem_ciclo_nuevo);
     sem_destroy(&sem_seguir_o_frenar);
-    sem_destroy(&sem_seguir);
     sem_destroy(&sem_modulo_terminado);
     sem_destroy(&sem_termina_hilo);
+    sem_destroy(&sem_recibi_ok);
 }
 
 void inicializar_mutex() {
@@ -83,7 +83,6 @@ void inicializar_mutex() {
     pthread_mutex_init(&mutex_lista_blocked,NULL);
     pthread_mutex_init(&mutex_syscall_ejecutando,NULL);
     pthread_mutex_init(&mutex_desalojo,NULL);
-    pthread_mutex_init(&mutex_exit_dump,NULL);
 }
 
 void destruir_mutex() {
@@ -99,7 +98,6 @@ void destruir_mutex() {
     pthread_mutex_destroy(&mutex_lista_blocked);
     pthread_mutex_destroy(&mutex_syscall_ejecutando);
     pthread_mutex_destroy(&mutex_desalojo);
-    pthread_mutex_destroy(&mutex_exit_dump);
 }
 
 

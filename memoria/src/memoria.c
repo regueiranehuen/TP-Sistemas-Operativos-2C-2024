@@ -25,19 +25,22 @@ void atender_conexiones(int socket_cliente)
             t_args_inicializar_proceso *info_0 = recepcionar_inicializacion_proceso(paquete);
             pthread_mutex_lock(&mutex_lista_contextos_pids);
             pthread_mutex_unlock(&mutex_lista_contextos_pids);
-            printf("tamanio proceso:%d\n",info_0->tam_proceso);
-            t_particiones* particion = inicializar_proceso(info_0->pid,info_0->tam_proceso,config);
-            if(particion == NULL){
-            log_info(logger,"particion == NULL");
-            log_info(logger,"No hay espacio para inicializar el proceso:%d",info_0->pid);
-            respuesta = -1;
-            send(socket_cliente,&respuesta,sizeof(int),0);       
-            }else{
-            log_info(logger,"Particion: Base: %d, Limite: %d, Tamanio: %d, Ocupada: %d, PID: %d",particion->base,particion->limite,particion->tamanio,particion->ocupada,particion->pid);
-            inicializar_contexto_pid(info_0->pid, particion->base,particion->limite,info_0->tam_proceso);
-            log_info(logger,"## Proceso Creado -  PID: %d - Tamaño: %d",info_0->pid,info_0->tam_proceso);
-            respuesta = OK;
-            send(socket_cliente, &respuesta, sizeof(int), 0);
+            printf("tamanio proceso:%d\n", info_0->tam_proceso);
+            t_particiones *particion = inicializar_proceso(info_0->pid, info_0->tam_proceso, config);
+            if (particion == NULL)
+            {
+                log_info(logger, "particion == NULL");
+                log_info(logger, "No hay espacio para inicializar el proceso:%d", info_0->pid);
+                respuesta = -1;
+                send(socket_cliente, &respuesta, sizeof(int), 0);
+            }
+            else
+            {
+                log_info(logger, "Particion: Base: %d, Limite: %d, Tamanio: %d, Ocupada: %d, PID: %d", particion->base, particion->limite, particion->tamanio, particion->ocupada, particion->pid);
+                inicializar_contexto_pid(info_0->pid, particion->base, particion->limite, info_0->tam_proceso);
+                log_info(logger, "## Proceso Creado -  PID: %d - Tamaño: %d", info_0->pid, info_0->tam_proceso);
+                respuesta = OK;
+                send(socket_cliente, &respuesta, sizeof(int), 0);
             }
             free(info_0->arch_pseudocodigo);
             free(info_0);
@@ -72,12 +75,19 @@ void atender_conexiones(int socket_cliente)
         case PROCESS_EXIT_AVISO:
             int pid_1 = recepcionar_int_code_op(paquete);
             log_info(logger,"ME LLEGÓ ESTE PID AMIGAZO: %d",pid_1);
+            pthread_mutex_lock(&mutex_lista_contextos_pids);
             t_contexto_pid* contexto_pid = obtener_contexto_pid(pid_1);
+            pthread_mutex_unlock(&mutex_lista_contextos_pids);
+
             if(contexto_pid == NULL){
                 log_info(logger,"Soy un cornudo");
             }
             int tam_proceso = contexto_pid->tamanio_proceso;
+
+            pthread_mutex_lock(&mutex_lista_contextos_pids);
             eliminar_contexto_pid(contexto_pid);
+            pthread_mutex_unlock(&mutex_lista_contextos_pids);
+
             liberar_espacio_proceso(pid_1);
             log_info(logger,"## Proceso Destruido -  PID: %d - Tamanio: %d",pid_1,tam_proceso);
             respuesta = OK;
@@ -90,8 +100,9 @@ void atender_conexiones(int socket_cliente)
             log_info(logger,"%d",info_4->tid);
             log_info(logger,"%s",info_4->arch_pseudo);
             
-
+            pthread_mutex_lock(&mutex_lista_contextos_pids);
             t_contexto_pid *contexto_pid_4 = obtener_contexto_pid(info_4->pid);
+            pthread_mutex_unlock(&mutex_lista_contextos_pids);
 
             if(contexto_pid_4 == NULL){
             log_info(logger,"No se encontro el contexto buscado");

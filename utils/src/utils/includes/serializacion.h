@@ -37,11 +37,13 @@ ENUM_MUTEX_CREATE,
 ENUM_MUTEX_LOCK,
 ENUM_MUTEX_UNLOCK,
 ENUM_IO,
+ENUM_OK,
 ENUM_DUMP_MEMORY,
 ENUM_SEGMENTATION_FAULT,
 ENUM_FIN_QUANTUM_RR,
 ENUM_DESALOJAR,
 ENUM_CICLO_NUEVO
+
 }syscalls;
 
 typedef struct {
@@ -165,5 +167,6 @@ void send_syscall(syscalls syscall, int socket_cliente);
 syscalls recibir_syscall(int socket_cliente);
 void send_ciclo_nuevo(int socket_cliente);
 void send_terminar_ejecucion(int socket_cliente);
+syscalls recibir_sys(int socket_cliente);
 
 #endif

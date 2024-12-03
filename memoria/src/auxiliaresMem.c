@@ -7,34 +7,51 @@ void inicializar_semaforos(){
     sem_init(&sem_termina_hilo,0,0);
 }
 
-void eliminar_estructuras(){
+void eliminar_estructuras()
+{
     pthread_mutex_lock(&mutex_lista_contextos_pids);
-    for (int i = 0; i < list_size(lista_contextos_pids); i++){
-        t_contexto_pid*contexto_pid = list_get(lista_contextos_pids,i);
-        list_remove_element(lista_contextos_pids,contexto_pid);
-        for (int j = 0; j < list_size(contexto_pid->contextos_tids); j++){
-            t_contexto_tid*contexto_tid = list_get(contexto_pid->contextos_tids,j);
-            list_remove_element(contexto_pid->contextos_tids,contexto_tid);
-            free(contexto_tid->registros);
-            free(contexto_tid);
-            j--;
+    if (!list_is_empty(lista_contextos_pids))
+    {
+        for (int i = 0; i < list_size(lista_contextos_pids); i++)
+        {
+            t_contexto_pid *contexto_pid = list_get(lista_contextos_pids, i);
+            list_remove_element(lista_contextos_pids, contexto_pid);
+            if (!list_is_empty(contexto_pid->contextos_tids))
+            {
+                for (int j = 0; j < list_size(contexto_pid->contextos_tids); j++)
+                {
+                    t_contexto_tid *contexto_tid = list_get(contexto_pid->contextos_tids, j);
+                    list_remove_element(contexto_pid->contextos_tids, contexto_tid);
+                    free(contexto_tid->registros);
+                    free(contexto_tid);
+                    j--;
+                }
+            }
+
+            list_destroy(contexto_pid->contextos_tids);
+            free(contexto_pid);
+            i--;
         }
-        list_destroy(contexto_pid->contextos_tids);
-        free(contexto_pid);
-        i--;
     }
+
     list_destroy(lista_contextos_pids);
     pthread_mutex_unlock(&mutex_lista_contextos_pids);
 
     pthread_mutex_lock(&mutex_lista_instruccion);
-    for (int i = 0; i < list_size(lista_instrucciones_tid_pid); i++){
-        t_instruccion_tid_pid *actual = list_get(lista_instrucciones_tid_pid, i);
 
-        list_remove(lista_instrucciones_tid_pid, i);
-        liberar_instruccion(actual);
+    if (!list_is_empty(lista_instrucciones_tid_pid))
+    {
+        for (int i = 0; i < list_size(lista_instrucciones_tid_pid); i++)
+        {
+            t_instruccion_tid_pid *actual = list_get(lista_instrucciones_tid_pid, i);
 
-        i--; // Decrementa i para no saltar el siguiente elemento
+            list_remove(lista_instrucciones_tid_pid, i);
+            liberar_instruccion(actual);
+
+            i--; // Decrementa i para no saltar el siguiente elemento
+        }
     }
+
     list_destroy(lista_instrucciones_tid_pid);
     pthread_mutex_unlock(&mutex_lista_instruccion);
 }
@@ -95,6 +112,7 @@ void eliminar_contexto_pid(t_contexto_pid*contexto_pid){
                 list_remove(actual->contextos_tids,j);
                 free(act->registros);
                 free(act);
+                j--; // Acomodar la lista de contextos tids
             }
             list_destroy(actual->contextos_tids);
             list_remove(lista_contextos_pids,i);

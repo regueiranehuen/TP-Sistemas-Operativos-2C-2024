@@ -361,7 +361,6 @@ t_process_create* parametros_process_create(t_paquete_syscall *paquete){
     stream += sizeof(int);
     memcpy(&(info->prioridad), stream, sizeof(int));
     stream += sizeof(int);
-
     eliminar_paquete_syscall(paquete);
 
     return info;
@@ -623,6 +622,15 @@ void send_code_operacion(code_operacion code, int socket_cliente){
 
 code_operacion recibir_code_operacion(int socket_cliente){
     code_operacion code;
+    int bytes = recv(socket_cliente,&code,sizeof(int),0);
+    if(bytes <= 0){
+    return -1;
+    }
+    return code;
+}
+
+syscalls recibir_sys(int socket_cliente){
+    syscalls code;
     int bytes = recv(socket_cliente,&code,sizeof(int),0);
     if(bytes <= 0){
     return -1;

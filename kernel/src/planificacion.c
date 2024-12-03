@@ -170,7 +170,18 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
 
         switch (paquete->syscall)
         {
+        case ENUM_OK:{
+            log_info(logger, "LLEGA UN OK");
+            pthread_mutex_lock(&mutex_syscall_ejecutando);
+            
+            sem_post(&sem_recibi_ok);
+            
+            pthread_mutex_unlock(&mutex_syscall_ejecutando);
 
+            free(paquete->buffer);
+            free(paquete);
+            break;
+        }
         case ENUM_PROCESS_CREATE:
 
             log_info(logger, "## (%d:%d) - Solicitó syscall: PROCESS_CREATE", hilo_exec->pid, hilo_exec->tid);
@@ -298,30 +309,27 @@ void*atender_interrupt(void*args){
 
     while (1){
 
-        code_operacion code = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Interrupt);
+        syscalls code = recibir_sys(sockets->sockets_cliente_cpu->socket_Interrupt);
 
         if(code ==-1){
             log_info(logger,"Conexion cerrada con cpu");
 
             return NULL;
         }
+        int valor;
+        sem_getvalue(&sem_recibi_ok,&valor);
 
+        if (valor == 1){
+            sem_wait(&sem_recibi_ok);
+        }
         switch(code){
             case ENUM_DESALOJAR:
             log_debug(logger,"LLEGÓ CÓDIGO ENUM_DESALOJAR");
-            sem_post(&sem_desalojado);
-            sem_post(&sem_seguir_o_frenar);    
+            sem_post(&sem_desalojado);   
             break;
             case ENUM_FIN_QUANTUM_RR:
             log_debug(logger,"LLEGÓ CÓDIGO ENUM_FIN_QUANTUM_RR");
             sem_post(&sem_desalojado);
-            sem_post(&sem_seguir_o_frenar);
-            break;
-            case OK_TERMINAR: // Se espera un OK solo cuando CPU nos avisa que le llegó el mensaje para que corte
-            log_debug(logger,"LLEGÓ OK A INTERRUPT");
-            sem_post(&sem_modulo_terminado);
-            sem_post(&sem_termina_hilo);
-            return NULL;
             break;
             default:
             log_error(logger,"CODIGO NO ESPERADO EN ATENDER INTERRUPT");
@@ -352,7 +360,6 @@ void* cortar_ejecucion_modulos(void*args){
         if (!list_is_empty(lista_pcbs)){
             log_info(logger,"SIGNAL A SEM SEGUIR");
             pthread_mutex_unlock(&mutex_lista_pcbs);
-            sem_post(&sem_seguir);
         }
         else{
             pthread_mutex_unlock(&mutex_lista_pcbs);
@@ -486,6 +493,10 @@ void *hilo_planificador_corto_plazo(void *arg)
         log_info(logger,"Esperando a planificar");
         sem_wait(&sem_ciclo_nuevo);
         sem_wait(&sem_desalojado);
+        if (estado_kernel == 0){
+            sem_post(&sem_termina_hilo);
+            return NULL;
+        }
         log_info(logger,"Planificando");
         aviso_cpu->desalojar = false;
         aviso_cpu->finQuantum = false;
@@ -509,11 +520,6 @@ void *hilo_planificador_corto_plazo(void *arg)
         {
             sem_init(&sem_fin_syscall,0,0);
             colas_multinivel();
-        }
-        sem_wait(&sem_seguir);
-        if (estado_kernel == 0){
-            sem_post(&sem_termina_hilo);
-            return NULL;
         }
     }
     return NULL;
@@ -612,14 +618,14 @@ void espera_con_quantum(int quantum)
     {
         log_error(logger, "Error en select");
     }
-    else if (resultado == 0) // Si se termina el quantum antes de que termine de ejecutar una syscall
+    else if (resultado == 0) // Si se termina el quantum
     {
-    
+
         log_debug(logger, "Timeout alcanzado en select (terminó el quantum)");
         // Tiempo del quantum agotado, desalojar por quantum
-            pthread_mutex_lock(&mutex_desalojo);
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            if (syscallEjecutando)
+        pthread_mutex_lock(&mutex_desalojo);
+        pthread_mutex_lock(&mutex_syscall_ejecutando);
+        if (syscallEjecutando)
         {
             esperando = true;
             pthread_mutex_unlock(&mutex_syscall_ejecutando);
@@ -629,10 +635,12 @@ void espera_con_quantum(int quantum)
             esperando = false;
             log_info(logger, "Syscall finalizada. Continuando con el desalojo por fin de quantum.");
         }
-        else{
+        else
+        {
             pthread_mutex_unlock(&mutex_syscall_ejecutando);
         }
-            if(!aviso_cpu->desalojar){
+        if (!aviso_cpu->desalojar)
+        {
             aviso_cpu->finQuantum = true;
             pthread_mutex_unlock(&mutex_desalojo);
             code_operacion cod_op = FIN_QUANTUM_RR;
@@ -645,17 +653,21 @@ void espera_con_quantum(int quantum)
             pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
             log_info(logger, "Enviado fin quantum!");
-        if(!tcb_metido_en_estructura(hilo_exec)){
-            t_tcb* tcb = hilo_exec;
-            tcb->estado = TCB_READY;
-            pushear_cola_ready(tcb);
+
+
+            if (!tcb_metido_en_estructura(hilo_exec))
+            {
+                t_tcb *tcb = hilo_exec;
+                tcb->estado = TCB_READY;
+                pushear_cola_ready(tcb);
+            }
         }
-        }
-        else if(aviso_cpu->desalojar){
+        else if (aviso_cpu->desalojar)
+        {
             aviso_cpu->desalojar = false;
             pthread_mutex_unlock(&mutex_desalojo);
         }
-}
+    }
 else if(resultado > 0){
     log_info(logger,"Llegada de interrupcion, finaliza clock");
 }

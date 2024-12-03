@@ -77,6 +77,7 @@ void *recibir_cpu(void *args)
             log_info(logger, "GX: %u", contexto_tid->registros->GX);
             log_info(logger, "HX: %u", contexto_tid->registros->HX);            
 
+            pthread_mutex_lock(&mutex_lista_contextos_pids);
             for (int i = 0; i < list_size(lista_contextos_pids); i++)
             {
                 t_contexto_pid *cont_pid_act = list_get(lista_contextos_pids, i);
@@ -89,8 +90,6 @@ void *recibir_cpu(void *args)
                     log_info(logger, "AX: %d", cont_tid_act->registros->AX);
                 }
             }
-
-                pthread_mutex_lock(&mutex_lista_contextos_pids);
                 print_pids(lista_contextos_pids);
                 pthread_mutex_unlock(&mutex_lista_contextos_pids);
 

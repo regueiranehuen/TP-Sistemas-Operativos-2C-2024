@@ -4,8 +4,6 @@ void inicializar_semaforos(){
     sem_init(&sem_ok_o_interrupcion,0,0);
     sem_init(&sem_finalizacion_cpu,0,0);
     sem_init(&sem_ciclo_instruccion,0,0);
-    sem_init(&sem_socket_cerrado,0,0);
-
 }
 
 void inicializar_estructuras() {
@@ -36,8 +34,6 @@ void destruir_semaforos(){
     sem_destroy(&sem_finalizacion_cpu);
     sem_destroy(&sem_finalizacion_cpu);
     sem_destroy(&sem_ciclo_instruccion);
-    sem_destroy(&sem_socket_cerrado);
-
 }
 
 void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){

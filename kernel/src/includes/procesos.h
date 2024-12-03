@@ -38,7 +38,6 @@ extern pthread_mutex_t mutex_conexion_kernel_a_interrupt;
 extern pthread_mutex_t mutex_log;
 extern pthread_mutex_t mutex_lista_blocked;
 extern pthread_mutex_t mutex_syscall_ejecutando;
-extern pthread_mutex_t mutex_exit_dump;
 
 extern bool esperando;
 
@@ -67,18 +66,18 @@ extern sem_t sem_ok_desalojo_cpu;
 
 extern sem_t sem_termina_cmn;
 extern sem_t sem_seguir_o_frenar;
-extern sem_t sem_seguir;
 
 extern sem_t sem_modulo_terminado;
 extern sem_t sem_termina_hilo;
+extern sem_t sem_recibi_ok;
 
 
 extern bool desalojado;
 extern bool syscallEjecutando;
-extern bool exit_dump;
+extern bool recibo_ok;
 
 extern pthread_mutex_t mutex_desalojo;
-
+extern pthread_mutex_t mutex_recibo_ok;
 
 typedef struct{
 bool desalojar;
