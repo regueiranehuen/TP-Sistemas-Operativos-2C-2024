@@ -281,12 +281,36 @@ void* recibir_kernel_interrupt(void*args){
             break;
         case TERMINAR_EJECUCION_MODULO:
             log_info(log_cpu, "## Llega TERMINAR_EJECUCION_MODULO");
-            send_code_operacion(OK_TERMINAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);   
-                     
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(sockets_cpu->socket_servidor->socket_cliente_Dispatch, &readfds);
+
+            
+            send_code_operacion(OK_TERMINAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+            int actividad = select(sockets_cpu->socket_servidor->socket_cliente_Dispatch + 1, &readfds, NULL, NULL, NULL);
+            if (actividad < 0)
+            {
+                log_error(log_cpu, "Error en select (socket dispatch)");
+                exit(EXIT_FAILURE);
+            }
+
+            // Si se detecta actividad en el socket de dispatch
+            if (FD_ISSET(sockets_cpu->socket_servidor->socket_cliente_Dispatch, &readfds))
+            {
+                log_info(log_cpu, "Se detectó actividad en el socket de dispatch");
+                sem_wait(&sem_socket_cerrado);
+            }
+
+            close(sockets_cpu->socket_servidor->socket_servidor_Dispatch);
+            close(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+
+            // Limpiar el descriptor del socket cerrado
+            FD_CLR(sockets_cpu->socket_servidor->socket_cliente_Dispatch, &readfds);
             send_terminar_ejecucion_op_code(sockets_cpu->socket_memoria);
             op_code code = recibir_code_operacion(sockets_cpu->socket_memoria);
             if (code == OK_TERMINAR_OP_CODE){
                 log_info(log_cpu, "Se va a terminar la ejecución del módulo CPU");
+
                 sem_post(&sem_finalizacion_cpu);
 
                 return NULL;
@@ -294,8 +318,6 @@ void* recibir_kernel_interrupt(void*args){
             else{
                 log_info(log_cpu,"SOY UN ESTORBO");
             }
-            sem_post(&sem_finalizacion_cpu);
-            return NULL;
             break;
 
         default:

@@ -61,13 +61,7 @@ void destruir_semaforos(){
 }
 
 void liberar_instruccion(t_instruccion_tid_pid* instruccion) {
-    // Liberar siempre el nombre de la instrucción
-    /*free(instruccion->instrucciones->parametros1);
-    free(instruccion->instrucciones->parametros2);
-    free(instruccion->instrucciones->parametros3);
-    free(instruccion->instrucciones->parametros4);
-    free(instruccion);*/
-
+    
     free(instruccion->instrucciones->parametros1);
 
     if (strcmp(instruccion->instrucciones->parametros2, "") != 0) {
@@ -82,6 +76,7 @@ void liberar_instruccion(t_instruccion_tid_pid* instruccion) {
         free(instruccion->instrucciones->parametros4);
     }
 
+    free(instruccion->instrucciones);
     free(instruccion);
 }
 

@@ -7,22 +7,22 @@ void funcSET(t_contexto_tid*contexto,char* registro, uint32_t valor) {
 
 void funcSUM(t_contexto_tid*contexto,char* registroDest, char* registroOrig) {
     uint32_t valor_orig = obtener_valor_registro(contexto,registroOrig);
-    log_info(log_cpu,"valor origen FUNCSUM: %d",valor_orig);
     uint32_t valor_dest = obtener_valor_registro(contexto,registroDest);
-    log_info(log_cpu,"valor dest FUNCSUM: %d",valor_dest);
+
     uint32_t suma = valor_orig + valor_dest;
+
     valor_registro_cpu(contexto,registroDest, suma);
-    log_info(log_cpu, "SUM: %s + %s", registroOrig, registroDest);
+    log_info(log_cpu, "SUM: %s + %s = %u", registroOrig, registroDest,suma);
 }
 
 void funcSUB(t_contexto_tid*contexto,char* registroDest, char* registroOrig) {
     uint32_t valor_orig = obtener_valor_registro(contexto,registroOrig);
-    log_info(log_cpu,"valor origen FUNCSUB: %d",valor_orig);
     uint32_t valor_dest = obtener_valor_registro(contexto,registroDest);
-    log_info(log_cpu,"valor dest FUNCSUB: %d",valor_dest);
+
     uint32_t resta = valor_dest - valor_orig;
+
     valor_registro_cpu(contexto,registroDest, resta);
-    log_info(log_cpu, "SUB: %s - %s", registroDest, registroOrig);
+    log_info(log_cpu, "SUB: %s - %s = %u", registroDest, registroOrig,resta);
 }
 
 void funcJNZ(t_contexto_tid*contexto,char* registro, uint32_t num_instruccion) {
@@ -35,7 +35,7 @@ void funcJNZ(t_contexto_tid*contexto,char* registro, uint32_t num_instruccion) {
 
 void funcLOG(t_contexto_tid*contexto,char* registro) {
     uint32_t valor = obtener_valor_registro(contexto,registro);
-    log_info(log_cpu, "LOG: Registro %s = %d", registro, valor);
+    log_info(log_cpu, "LOG: Registro %s = %u", registro, valor);
 }
 
 void funcREAD_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,char* registro_datos, char* registro_direccion) {
@@ -52,7 +52,7 @@ void funcREAD_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,cha
         if(valor != -1){
         valor_registro_cpu(contextoTid,registro_datos, valor);
         log_info(log_cpu,"## Lectura - (PID:TID) - (%d:%d) - Dir. Física: %d - Tamaño: %d",contextoTid->pid,contextoTid->tid,direccionFisica,contextoPid->tamanio_proceso);
-        log_info(log_cpu, "READ_MEM: Dirección %d, Valor %d", direccionFisica, valor);
+        log_info(log_cpu, "READ_MEM: Dirección %u, Valor %u", direccionFisica, valor);
         }
         free(punteroDireccionFisica);
     } else {
@@ -101,7 +101,7 @@ int escribir_valor_en_memoria(uint32_t direccionFisica, uint32_t valor) {
     
     send_write_mem(direccionFisica,valor,sockets_cpu->socket_memoria);
     op_code code_op;
-    recv(sockets_cpu->socket_memoria,&code_op,sizeof(op_code),0);
+    recv(sockets_cpu->socket_memoria,&code_op,sizeof(int),0);
     if(code_op == OK_OP_CODE){
     return 0;
     }

@@ -68,6 +68,23 @@ void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
 }
 
 void terminar_programa() {
+    
+    
+    close(sockets_cpu->socket_servidor->socket_servidor_Interrupt);
+    close(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
+    
+    close(sockets_cpu->socket_memoria);
+
+    destruir_mutex();
+    destruir_semaforos();
+    free(sockets);
+    free(sockets_cpu);
+    log_debug(log_cpu, "Estructuras liberadas. CPU TERMINADO");
+    config_destroy(config);
+    log_destroy(log_cpu);
+}
+
+void select_dispatch(){
     fd_set readfds;
     FD_ZERO(&readfds);
     FD_SET(sockets_cpu->socket_servidor->socket_cliente_Dispatch,&readfds);
@@ -90,19 +107,9 @@ void terminar_programa() {
 
     close(sockets_cpu->socket_servidor->socket_servidor_Dispatch);
     close(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-    
-    close(sockets_cpu->socket_servidor->socket_servidor_Interrupt);
-    close(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
-    
-    close(sockets_cpu->socket_memoria);
 
-    destruir_mutex();
-    destruir_semaforos();
-    free(sockets);
-    free(sockets_cpu);
-    log_debug(log_cpu, "Estructuras liberadas. CPU TERMINADO");
-    config_destroy(config);
-    log_destroy(log_cpu);
+    // Limpiar el descriptor del socket cerrado
+    FD_CLR(sockets_cpu->socket_servidor->socket_cliente_Dispatch, &readfds);
 }
 
 

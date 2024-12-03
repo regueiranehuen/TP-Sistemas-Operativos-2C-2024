@@ -44,7 +44,7 @@ void *recibir_cpu(void *args)
             enviar_contexto_ejecucion(contextos,sockets_iniciales->socket_cpu);
             log_info(logger, "Enviado contexto para PID: %d, TID: %d", contextos->contexto_tid->pid, contextos->contexto_tid->tid);
 
-            for (int i = 0; i < list_size(lista_contextos_pids); i++)
+            /*for (int i = 0; i < list_size(lista_contextos_pids); i++)
             {
                 t_contexto_pid *cont_pid_act = list_get(lista_contextos_pids, i);
                 log_info(logger, "CONTEXTO PID:%d", cont_pid_act->pid);
@@ -55,7 +55,7 @@ void *recibir_cpu(void *args)
                     log_info(logger, "TID:%d", cont_tid_act->tid);
                     log_info(logger, "AX: %d", cont_tid_act->registros->AX);
                 }
-            }
+            }*/
             free(contextos->contexto_pid);
             free(contextos); 
 
@@ -66,6 +66,7 @@ void *recibir_cpu(void *args)
         {
             printf("entrando a actualizar_contexto\n");
             t_contexto_tid *contexto_tid = recepcionar_contexto_tid(paquete_operacion);
+
             log_info(logger, "REGISTROS QUE VOY A METER EN MEMORIA (ACTUALIZO):");
             log_info(logger, "AX: %u", contexto_tid->registros->AX);
             log_info(logger, "BX: %u", contexto_tid->registros->BX);
@@ -74,7 +75,7 @@ void *recibir_cpu(void *args)
             log_info(logger, "EX: %u", contexto_tid->registros->EX);
             log_info(logger, "FX: %u", contexto_tid->registros->FX);
             log_info(logger, "GX: %u", contexto_tid->registros->GX);
-            log_info(logger, "HX: %u", contexto_tid->registros->HX);
+            log_info(logger, "HX: %u", contexto_tid->registros->HX);            
 
             for (int i = 0; i < list_size(lista_contextos_pids); i++)
             {
@@ -173,7 +174,7 @@ void *recibir_cpu(void *args)
             if (resultado == 0)
             {
                 op_code code = OK_OP_CODE;
-                send(sockets_iniciales->socket_cpu, &code, sizeof(op_code), 0);
+                send(sockets_iniciales->socket_cpu, &code, sizeof(int), 0);
             }
             free(info_0);
             break;
@@ -329,19 +330,32 @@ t_contextos*obtener_contextos(int pid, int tid){ // hay que usar mutex cada vez 
         contextos->contexto_pid->pid = cont_pid->pid;
         contextos->contexto_pid->tamanio_proceso = cont_pid->tamanio_proceso;
 
+        contextos->contexto_tid=malloc(sizeof(t_contexto_tid));
+        contextos->contexto_tid->registros=malloc(sizeof(t_registros_cpu));
         for (int i = 0; i < list_size(cont_pid->contextos_tids); i++)
         {
             t_contexto_tid *act = list_get(cont_pid->contextos_tids, i);
             log_info(logger, "TID EN OBT CONT TID: %d  CORRESPONDE A PID %d", act->tid, pid);
             if (act->tid == tid)
             {
-                contextos->contexto_tid=malloc(sizeof(t_contexto_tid));
-                contextos->contexto_tid->registros=malloc(sizeof(t_registros_cpu));
-                contextos->contexto_tid = act;
+                
+                contextos->contexto_tid->pid = act->pid;
+                contextos->contexto_tid->tid=act->tid;
+                contextos->contexto_tid->registros->AX=act->registros->AX;
+                contextos->contexto_tid->registros->BX=act->registros->BX;
+                contextos->contexto_tid->registros->CX=act->registros->CX;
+                contextos->contexto_tid->registros->DX=act->registros->DX;
+                contextos->contexto_tid->registros->EX=act->registros->EX;
+                contextos->contexto_tid->registros->FX=act->registros->FX;
+                contextos->contexto_tid->registros->GX=act->registros->GX;
+                contextos->contexto_tid->registros->HX=act->registros->HX;
+                contextos->contexto_tid->registros->PC=act->registros->PC;
                 return contextos;
             }
         }
+        free(contextos->contexto_tid->registros);
         free(contextos->contexto_tid);
+        free(contextos->contexto_pid);
         free(contextos);
 
     }

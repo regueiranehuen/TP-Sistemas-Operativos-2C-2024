@@ -38,6 +38,7 @@ extern pthread_mutex_t mutex_conexion_kernel_a_interrupt;
 extern pthread_mutex_t mutex_log;
 extern pthread_mutex_t mutex_lista_blocked;
 extern pthread_mutex_t mutex_syscall_ejecutando;
+extern pthread_mutex_t mutex_exit_dump;
 
 extern bool esperando;
 
@@ -74,7 +75,7 @@ extern sem_t sem_termina_hilo;
 
 extern bool desalojado;
 extern bool syscallEjecutando;
-
+extern bool exit_dump;
 
 extern pthread_mutex_t mutex_desalojo;
 

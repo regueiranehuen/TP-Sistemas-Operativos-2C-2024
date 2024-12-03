@@ -309,13 +309,13 @@ void*atender_interrupt(void*args){
         switch(code){
             case ENUM_DESALOJAR:
             log_debug(logger,"LLEGÓ CÓDIGO ENUM_DESALOJAR");
-            sem_post(&sem_seguir_o_frenar);
-            sem_post(&sem_desalojado);    
+            sem_post(&sem_desalojado);
+            sem_post(&sem_seguir_o_frenar);    
             break;
             case ENUM_FIN_QUANTUM_RR:
             log_debug(logger,"LLEGÓ CÓDIGO ENUM_FIN_QUANTUM_RR");
-            sem_post(&sem_seguir_o_frenar);
             sem_post(&sem_desalojado);
+            sem_post(&sem_seguir_o_frenar);
             break;
             case OK_TERMINAR: // Se espera un OK solo cuando CPU nos avisa que le llegó el mensaje para que corte
             log_debug(logger,"LLEGÓ OK A INTERRUPT");
@@ -350,7 +350,7 @@ void* cortar_ejecucion_modulos(void*args){
         }
 
         if (!list_is_empty(lista_pcbs)){
-            log_info(logger,"POST A SEM SEGUIR");
+            log_info(logger,"SIGNAL A SEM SEGUIR");
             pthread_mutex_unlock(&mutex_lista_pcbs);
             sem_post(&sem_seguir);
         }

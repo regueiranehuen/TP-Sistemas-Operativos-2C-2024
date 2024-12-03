@@ -62,9 +62,10 @@ pthread_mutex_t mutex_cola_ready;
 pthread_mutex_t mutex_conexion_kernel_a_dispatch;
 pthread_mutex_t mutex_conexion_kernel_a_interrupt;
 pthread_mutex_t mutex_syscall_ejecutando;
+pthread_mutex_t mutex_exit_dump;
 
 bool syscallEjecutando = false;
-
+bool exit_dump = false;
 
 t_pcb *crear_pcb()
 {
@@ -176,6 +177,17 @@ void proceso_exit()
         log_info(logger, "## Finaliza el proceso %d", pid);
         pthread_mutex_unlock(&mutex_log);
         sem_post(&semaforo_new_ready_procesos);
+
+        pthread_mutex_lock(&mutex_exit_dump);
+        if (exit_dump){
+            exit_dump = false;
+            pthread_mutex_unlock(&mutex_exit_dump);
+            sem_post(&sem_seguir_o_frenar);
+        }
+        else{
+            pthread_mutex_unlock(&mutex_exit_dump);
+        }
+        
     }
 }
 /*
@@ -275,9 +287,21 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
         return;
     }
 
+    t_pcb*pcb;
     pthread_mutex_lock(&mutex_cola_new_procesos);
-    t_pcb *pcb = queue_peek(cola_new_procesos);
-    pthread_mutex_unlock(&mutex_cola_new_procesos);
+    if (!queue_is_empty(cola_new_procesos)){
+        pcb = queue_peek(cola_new_procesos);
+        pthread_mutex_unlock(&mutex_cola_new_procesos);
+    }
+    else{
+        pthread_mutex_unlock(&mutex_cola_new_procesos);
+        sem_wait(&semaforo_cola_new_procesos);
+
+        pthread_mutex_lock(&mutex_cola_new_procesos);
+        pcb = queue_peek(cola_new_procesos);
+        pthread_mutex_unlock(&mutex_cola_new_procesos);
+    }
+    
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
     send_inicializacion_proceso(pcb->pid, pcb->tcb_main->pseudocodigo, pcb->tamanio_proceso, socket_memoria);
@@ -1024,6 +1048,10 @@ void* administrador_dump_memory(void* args){
         pthread_mutex_lock(&mutex_cola_exit_procesos);
         queue_push(cola_exit_procesos, pcb);
         pthread_mutex_unlock(&mutex_cola_exit_procesos);
+
+        pthread_mutex_lock(&mutex_exit_dump);
+        exit_dump = true;
+        pthread_mutex_unlock(&mutex_exit_dump);
 
         sem_post(&semaforo_cola_exit_procesos);
     }
