@@ -240,7 +240,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
         case ENUM_MUTEX_LOCK:
             log_info(logger, "## (%d:%d) - Solicitó syscall: MUTEX_LOCK", hilo_exec->pid, hilo_exec->tid);
             char *recurso_a_bloquear = recibir_string_paquete_syscall(paquete);
-            log_info(logger, "RECURSO MUTEX LOCK: %s", recurso);
+            log_info(logger, "RECURSO MUTEX LOCK: %s", recurso_a_bloquear);
             
             MUTEX_LOCK(recurso_a_bloquear);
             free(recurso_a_bloquear);
@@ -248,7 +248,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
         case ENUM_MUTEX_UNLOCK:
             log_info(logger, "## (%d:%d) - Solicitó syscall: MUTEX_UNLOCK", hilo_exec->pid, hilo_exec->tid);
             char *recurso_a_desbloquear = recibir_string_paquete_syscall(paquete);
-            log_info(logger, "RECURSO MUTEX UNLOCK: %s", recurso);
+            log_info(logger, "RECURSO MUTEX UNLOCK: %s", recurso_a_desbloquear);
         
             MUTEX_UNLOCK(recurso_a_desbloquear);
             free(recurso_a_desbloquear);

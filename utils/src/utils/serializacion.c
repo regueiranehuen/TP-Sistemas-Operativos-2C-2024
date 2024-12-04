@@ -400,13 +400,17 @@ char* recibir_string_paquete_syscall(t_paquete_syscall*paquete){
 
 
 void eliminar_paquete_syscall(t_paquete_syscall*paquete){
-    free(paquete->buffer->stream);
+    if (paquete->buffer->size > 0){
+        free(paquete->buffer->stream);
+    }
     free(paquete->buffer);
     free(paquete);
 }
 
 void eliminar_paquete_code_op(t_paquete_code_operacion*paquete){
-    free(paquete->buffer->stream);
+    if (paquete->buffer->size > 0){
+        free(paquete->buffer->stream);
+    }
     free(paquete->buffer);
     free(paquete);
 }

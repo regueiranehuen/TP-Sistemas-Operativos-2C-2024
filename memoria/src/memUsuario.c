@@ -34,7 +34,13 @@ void inicializar_Memoria(t_config *config)
     {
         char **particiones = config_get_array_value(config, "PARTICIONES");
         cargar_particiones_lista(particiones);
+        int i = 0;
+        while(particiones[i] != NULL){
+            free(particiones[i]);
+            i++;
+        }
         free(particiones);
+        
     }
 }
 
@@ -454,13 +460,4 @@ t_particiones*obtener_particion(int pid){
         }
     }
     return NULL;
-}
-
-void liberar_lista_particiones(t_list*lista){
-    for (int i = 0; i < list_size(lista); i++){
-        t_particiones*actual=list_get(lista,i);
-        list_remove(lista,i);
-        free(actual);
-    }
-    list_destroy(lista);
 }

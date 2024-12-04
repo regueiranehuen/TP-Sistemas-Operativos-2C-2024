@@ -55,7 +55,6 @@ void leer_config(char *path)
     puerto_escucha_dispatch = config_get_int_value(config, "PUERTO_ESCUCHA_DISPATCH");
     puerto_escucha_interrupt = config_get_int_value(config, "PUERTO_ESCUCHA_INTERRUPT");
     log_level_config = config_get_string_value(config, "LOG_LEVEL");
-    log_info(log_cpu, "Configuración del CPU cargada.");
 }
 
 // Inicialización del servidor de CPU para el Kernel

@@ -7,10 +7,10 @@ void inicializar_semaforos(){
 }
 
 void inicializar_estructuras() {
+    
     log_cpu = log_create("CPU.log", "tp", true, LOG_LEVEL_TRACE);
-    leer_config("CPU.config");
     
-    
+
     sockets_cpu = malloc(sizeof(t_sockets_cpu));
 
     
@@ -73,8 +73,8 @@ void terminar_programa() {
 
     destruir_mutex();
     destruir_semaforos();
+    free(sockets_cpu->socket_servidor);
     free(sockets);
-    free(sockets_cpu);
     log_debug(log_cpu, "Estructuras liberadas. CPU TERMINADO");
     config_destroy(config);
     log_destroy(log_cpu);

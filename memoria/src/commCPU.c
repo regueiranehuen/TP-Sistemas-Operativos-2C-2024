@@ -208,7 +208,6 @@ void *recibir_cpu(void *args)
     {
         log_info(logger, "Se termina la ejecución del módulo memoria");
         free(memoria);
-        liberar_lista_particiones(lista_particiones);
         sem_post(&sem_fin_memoria);
         return NULL;
     }
