@@ -597,7 +597,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         if(codigo != OK){
             log_info(log_cpu,"skibidi toilet");
         }
-        if (hay_interrupcion)
         break;
     }
     default:

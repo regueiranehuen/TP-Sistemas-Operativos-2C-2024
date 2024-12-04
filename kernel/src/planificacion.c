@@ -167,21 +167,13 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
         pthread_mutex_lock(&mutex_syscall_ejecutando);
         syscallEjecutando = true;
         pthread_mutex_unlock(&mutex_syscall_ejecutando);
-
+        log_debug(logger,"SYSCALL RECIBIDA:%d",paquete->syscall);
         switch (paquete->syscall)
         {
-        case ENUM_OK:{
-            log_info(logger, "LLEGA UN OK");
-            pthread_mutex_lock(&mutex_syscall_ejecutando);
-            
+        case ENUM_OK:
+            log_info(logger,"RECIBI OK");
             sem_post(&sem_recibi_ok);
-            
-            pthread_mutex_unlock(&mutex_syscall_ejecutando);
-
-            free(paquete->buffer);
-            free(paquete);
             break;
-        }
         case ENUM_PROCESS_CREATE:
 
             log_info(logger, "## (%d:%d) - Solicitó syscall: PROCESS_CREATE", hilo_exec->pid, hilo_exec->tid);
@@ -316,12 +308,15 @@ void*atender_interrupt(void*args){
 
             return NULL;
         }
+
         int valor;
         sem_getvalue(&sem_recibi_ok,&valor);
 
         if (valor == 1){
+            log_debug(logger,"Nadie tomo el semaforo, hago wait");
             sem_wait(&sem_recibi_ok);
         }
+
         switch(code){
             case ENUM_DESALOJAR:
             log_debug(logger,"LLEGÓ CÓDIGO ENUM_DESALOJAR");
@@ -653,7 +648,6 @@ void espera_con_quantum(int quantum)
             pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 
             log_info(logger, "Enviado fin quantum!");
-
 
             if (!tcb_metido_en_estructura(hilo_exec))
             {

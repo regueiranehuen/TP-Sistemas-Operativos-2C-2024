@@ -193,6 +193,7 @@ void dispositivo_IO();
 void* hilo_dispositivo_IO();
 void atender_segmentation_fault();
 
+void desalojo();
 
 
 

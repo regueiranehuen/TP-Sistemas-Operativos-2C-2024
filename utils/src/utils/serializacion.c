@@ -235,17 +235,16 @@ void send_segmentation_fault(int socket_cliente){
 void send_paquete_syscall_sin_parametros(int socket_cliente, syscalls syscall) {
     int n = 0;
     printf("SYSCALL QUE ESTOY POR MANDAR: %d",syscall);
-    void *a_enviar = malloc(sizeof(int) + sizeof(int));
+    void *a_enviar = malloc(sizeof(syscalls) + sizeof(int));
     int offset = 0;
 
     memcpy(a_enviar + offset, &syscall, sizeof(int));
     offset += sizeof(int);
     memcpy(a_enviar + offset, &n, sizeof(int));
     
-    send(socket_cliente, a_enviar, sizeof(int) + sizeof(int),0);
+    send(socket_cliente, a_enviar, sizeof(syscalls) + sizeof(int),0);
 
     free(a_enviar);
-
 }
 
 void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){
@@ -286,7 +285,7 @@ t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch) {
     
     syscalls syscall;
     // Primero recibimos el codigo de operacion
-    int bytes = recv(socket_dispatch, &syscall, sizeof(int), 0);
+    int bytes = recv(socket_dispatch, &syscall, sizeof(syscalls), 0);
 
     
 
@@ -631,7 +630,7 @@ code_operacion recibir_code_operacion(int socket_cliente){
 
 syscalls recibir_sys(int socket_cliente){
     syscalls code;
-    int bytes = recv(socket_cliente,&code,sizeof(int),0);
+    int bytes = recv(socket_cliente,&code,sizeof(syscalls),0);
     if(bytes <= 0){
     return -1;
     }

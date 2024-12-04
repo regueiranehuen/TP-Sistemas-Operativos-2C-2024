@@ -390,37 +390,54 @@ void PROCESS_EXIT()
 
     sem_post(&semaforo_cola_exit_procesos);
 
+    desalojo();
+
+    //fin_syscall_desalojo_cmn();
+}
+
+void desalojo(){
     pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
     pthread_mutex_lock(&mutex_desalojo);
     if (!aviso_cpu->finQuantum)
     {
+        log_info(logger, "envio desalojar");
         send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
         aviso_cpu->desalojar = true;
-        log_info(logger, "envio desalojar");
-        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
-        sem_post(&sem_recibi_ok);
-        if (codigo != OK)
-        {
-            log_info(logger, "CPU no proceso la interrupción correctamente");
-        }
-        log_info(logger, "recibi la confirmacion");
     }
     else if (aviso_cpu->finQuantum)
     {
         aviso_cpu->finQuantum = false;
     }
     pthread_mutex_unlock(&mutex_desalojo);
-    log_info(logger, "le mando a cpu el OK nashei");
 
-    if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")){
+    /*if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")){
         sem_wait(&sem_recibi_ok); // El Ok lo espera despues de que cpu reciba fin quantum
-    }
-    
+    }*/
+    int valor;
+        sem_getvalue(&sem_recibi_ok,&valor);
 
+        if (valor == 1){
+            log_debug(logger,"Ya recibi el ok");
+            sem_wait(&sem_recibi_ok);
+            goto OK;
+        }
+        else{
+        t_paquete_syscall* paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
+        
+        if (paquete->syscall != ENUM_OK)
+        {
+            log_info(logger, "CPU no proceso la interrupción correctamente");
+        }
+        else{
+        log_info(logger, "recibi la confirmacion");
+        }
+        free(paquete->buffer);
+        free(paquete);
+        }
+    OK:
+    log_info(logger, "le mando a cpu el OK nashei");
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
     pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-
-    //fin_syscall_desalojo_cmn();
 }
 
 /*Creación de hilos
@@ -532,34 +549,7 @@ void THREAD_JOIN(int tid)
 
     sacar_tcb_ready(tcb_aux);
 
-    /*t_tcb* tcb_bloqueante = buscar_tcb_por_tid(lista_tcbs, tid,tcb_aux);
-    queue_push(tcb_bloqueante->cola_hilos_bloqueados, tcb_aux);*/
-    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    pthread_mutex_lock(&mutex_desalojo);
-    if (!aviso_cpu->finQuantum)
-    {
-        send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
-        aviso_cpu->desalojar = true;
-        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
-        sem_post(&sem_recibi_ok);
-        if (codigo != OK)
-        {
-            log_info(logger, "CPU no proceso la interrupción correctamente");
-        }
-    }
-    else if (aviso_cpu->finQuantum)
-    {
-        aviso_cpu->finQuantum = false;
-    }
-
-    pthread_mutex_unlock(&mutex_desalojo);
-    if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")){
-        sem_wait(&sem_recibi_ok); // El Ok lo espera despues de que cpu reciba fin quantum
-    }
-    send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-
-    //fin_syscall_desalojo_cmn();
+    desalojo();
 }
 
 /*
@@ -625,33 +615,7 @@ void THREAD_EXIT() // AVISO A MEMORIA
 
     sem_post(&semaforo_cola_exit_hilos);
 
-    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    pthread_mutex_lock(&mutex_desalojo);
-    if (!aviso_cpu->finQuantum)
-    {
-        log_info(logger,"MANDO DESALOJAR");
-        send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
-        aviso_cpu->desalojar = true;
-        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
-        sem_post(&sem_recibi_ok);
-        if (codigo != OK)
-        {
-            log_info(logger, "CPU no proceso la interrupción correctamente");
-        }
-    }
-    else if (aviso_cpu->finQuantum)
-    {
-        aviso_cpu->finQuantum = false;
-    }
-    pthread_mutex_unlock(&mutex_desalojo);
-    log_info(logger,"MANDO OK");
-    if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")){
-        sem_wait(&sem_recibi_ok); // El Ok lo espera despues de que cpu reciba fin quantum
-    }
-
-    send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-    //fin_syscall_desalojo_cmn();
+    desalojo();
 }
 
 /*
@@ -724,33 +688,7 @@ void MUTEX_LOCK(char *recurso)
         
 
         pthread_mutex_unlock(&mutex_cola_exit_hilos);
-        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        pthread_mutex_lock(&mutex_desalojo);
-        if (!aviso_cpu->finQuantum)
-        {
-            send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
-            aviso_cpu->desalojar = true;
-            code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
-            sem_post(&sem_recibi_ok);
-            if (codigo != OK)
-            {
-                log_info(logger, "CPU no proceso la interrupción correctamente");
-            }
-        }
-        else if (aviso_cpu->finQuantum)
-        {
-            aviso_cpu->finQuantum = false;
-        }
-        
-
-        pthread_mutex_unlock(&mutex_desalojo);
-        if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")){
-        sem_wait(&sem_recibi_ok); // El Ok lo espera despues de que cpu reciba fin quantum
-        }
-        send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
-        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-
-        //fin_syscall_desalojo_cmn();
+        desalojo();
         return;
     }
 
@@ -781,32 +719,7 @@ void MUTEX_LOCK(char *recurso)
         log_info(logger, "## (%d:%d) - Bloqueado por: %s", hilo_aux->pid, hilo_aux->tid, recurso);
         pthread_mutex_unlock(&mutex_log);
         queue_push(mutex_asociado->cola_tcbs, hilo_aux);
-        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        pthread_mutex_lock(&mutex_desalojo);
-        if (!aviso_cpu->finQuantum)
-        {
-            send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
-            aviso_cpu->desalojar = true;
-            code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
-            sem_post(&sem_recibi_ok);
-            if (codigo != OK)
-            {
-                log_info(logger, "CPU no proceso la interrupción correctamente");
-            }
-        }
-        else if (aviso_cpu->finQuantum)
-        {
-            aviso_cpu->finQuantum = false;
-        }
-        
-
-        pthread_mutex_unlock(&mutex_desalojo);
-        if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")){
-        sem_wait(&sem_recibi_ok); // El Ok lo espera despues de que cpu reciba fin quantum
-        }
-        send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
-        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-        //fin_syscall_desalojo_cmn();
+        desalojo();
     }
 }
 
@@ -833,33 +746,7 @@ void MUTEX_UNLOCK(char *recurso)
         }
 
         
-        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-        pthread_mutex_lock(&mutex_desalojo);
-        if (!aviso_cpu->finQuantum)
-        {
-            send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
-            aviso_cpu->desalojar = true;
-            code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
-            sem_post(&sem_recibi_ok);
-            if (codigo != OK)
-            {
-                log_info(logger, "CPU no proceso la interrupción correctamente");
-            }
-        }
-        else if (aviso_cpu->finQuantum)
-        {
-            aviso_cpu->finQuantum = false;
-        }
-        
-
-        pthread_mutex_unlock(&mutex_desalojo);
-        if (strings_iguales(config_get_string_value(config, "ALGORITMO_PLANIFICACION"), "CMN"))
-        {
-            sem_wait(&sem_recibi_ok); // El Ok lo espera despues de que cpu reciba fin quantum
-        }
-        send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
-        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
-        //fin_syscall_desalojo_cmn();
+        desalojo();
         return;
     }
     
@@ -909,31 +796,7 @@ void IO(int milisegundos)
     // Cambiar el estado del hilo a BLOCKED
     tcb->estado = TCB_BLOCKED;
     // hilo_exec = NULL;
-    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    pthread_mutex_lock(&mutex_desalojo);
-    if (!aviso_cpu->finQuantum)
-    {
-        aviso_cpu->desalojar = true;
-        send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
-        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
-        sem_post(&sem_recibi_ok); 
-        if (codigo != OK)
-        {
-            log_info(logger, "CPU no proceso la interrupción correctamente");
-        }
-    }
-    else if (aviso_cpu->finQuantum)
-    {
-        aviso_cpu->finQuantum = false;
-    }
-    
-
-    pthread_mutex_unlock(&mutex_desalojo);
-    if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")){
-        sem_wait(&sem_recibi_ok); // El Ok lo espera despues de que cpu reciba fin quantum
-    }
-    send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+    desalojo();
 
     // Agregar el hilo a la lista de hilos bloqueados
     list_add(lista_bloqueados, tcb);
@@ -1094,31 +957,7 @@ void DUMP_MEMORY()
 
     t_tcb *tcb = hilo_exec;
 
-    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    pthread_mutex_lock(&mutex_desalojo);
-    if (!aviso_cpu->finQuantum)
-    {
-        send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
-        aviso_cpu->desalojar = true;
-        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
-        sem_post(&sem_recibi_ok);
-        if (codigo != OK)
-        {
-            log_info(logger, "CPU no proceso la interrupción correctamente");
-        }
-    }
-    else if (aviso_cpu->finQuantum)
-    {
-        aviso_cpu->finQuantum = false;
-    }
-    
-
-    pthread_mutex_unlock(&mutex_desalojo);
-    if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")){
-        sem_wait(&sem_recibi_ok); // El Ok lo espera despues de que cpu reciba fin quantum
-    }
-    send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+    desalojo();
 
         pthread_mutex_lock(&mutex_lista_blocked);        
         list_add(lista_bloqueados, tcb);
@@ -1148,35 +987,5 @@ void atender_segmentation_fault(){
 
     sem_post(&semaforo_cola_exit_procesos);
 
-    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
-    pthread_mutex_lock(&mutex_desalojo);
-    if (!aviso_cpu->finQuantum)
-    {
-        send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
-        aviso_cpu->desalojar = true;
-        log_info(logger, "Envío desalojar con motivo de segmentation fault");
-        code_operacion codigo = recibir_code_operacion(sockets->sockets_cliente_cpu->socket_Dispatch); // confirmar que cpu recibio la interrupción antes de continuar
-        sem_post(&sem_recibi_ok);
-        if (codigo != OK)
-        {
-            log_info(logger, "CPU no proceso la interrupción correctamente");
-        }
-        else{
-            log_info(logger, "recibi la confirmacion de que CPU recibió el desalojo");
-        }
-        
-    }
-    else if (aviso_cpu->finQuantum)
-    {
-        aviso_cpu->finQuantum = false;
-    }
-    
-    pthread_mutex_unlock(&mutex_desalojo);
-    if (strings_iguales(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")){
-        sem_wait(&sem_recibi_ok); // El Ok lo espera despues de que cpu reciba fin quantum
-    }
-
-    log_info(logger, "Envío OK a CPU para que siga su ciclo de instrucción");
-    send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
+    desalojo();
 }
