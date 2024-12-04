@@ -7,7 +7,7 @@ t_config *config;
 int main(int argc, char *argv[])
 {
 
-    sockets_memoria *sockets = malloc(sizeof(sockets_memoria));
+    sockets_memoria *sockets;
     sockets_iniciales = malloc(sizeof(sockets_memoria));
 
     config = config_create("memoria.config");

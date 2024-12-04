@@ -1,26 +1,26 @@
 #include "server.h"
 #include "cicloDeInstruccion.h"
 
-t_log *log_cpu = NULL;
-t_config *config = NULL;
-t_sockets_cpu *sockets_cpu = NULL;
+t_log *log_cpu;
+t_config *config;
+t_sockets_cpu *sockets_cpu;
 
-char *ip_memoria = NULL;
+char *ip_memoria;
 int puerto_memoria = 0;
 int puerto_escucha_dispatch = 0;
 int puerto_escucha_interrupt = 0;
-char* log_level_config = NULL;
+char* log_level_config;
 
 int socket_servidor_Dispatch = 0, socket_servidor_Interrupt = 0;
 int socket_cliente_Dispatch = 0, socket_cliente_Interrupt = 0;
 int respuesta_Dispatch = 0, respuesta_Interrupt = 0;
 
-t_socket_cpu *sockets = NULL;
+t_socket_cpu *sockets;
 
 pthread_t hilo_servidor;
 pthread_t hilo_cliente;
-void *socket_servidor_kernel = NULL;
-void *socket_cliente_memoria = NULL;
+void *socket_servidor_kernel;
+void *socket_cliente_memoria;
 
 uint32_t tid_interrupt;
 bool hay_interrupcion = false;

@@ -52,6 +52,8 @@ void eliminar_estructuras()
         }
     }
 
+    list_destroy_and_destroy_elements(lista_particiones,free);
+
     list_destroy(lista_instrucciones_tid_pid);
     pthread_mutex_unlock(&mutex_lista_instruccion);
 }

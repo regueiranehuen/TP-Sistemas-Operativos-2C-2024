@@ -615,9 +615,8 @@ void THREAD_EXIT() // AVISO A MEMORIA
     queue_push(cola_exit, hilo);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
 
-    sem_post(&semaforo_cola_exit_hilos);
-
     desalojo();
+    sem_post(&semaforo_cola_exit_hilos);
 }
 
 /*

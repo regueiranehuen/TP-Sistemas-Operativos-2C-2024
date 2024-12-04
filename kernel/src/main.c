@@ -43,6 +43,8 @@ void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
     shutdown(sockets->sockets_cliente_cpu->socket_Interrupt, SHUT_RDWR);  
     log_info(logger,"shutdown2");
 
+    free(sockets->sockets_cliente_cpu);
+
     sem_post(&semaforo_cola_new_procesos);
     sem_post(&semaforo_cola_exit_procesos);
     sem_post(&semaforo_cola_exit_hilos);
@@ -85,13 +87,12 @@ void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
     
     
     close(sockets->socket_cliente_memoria);
-    
+    free(sockets);
 
 
     destruir_estados(); 
     destruir_semaforos();
     destruir_mutex();
-    free(sockets);
     log_debug(logger, "Estructuras liberadas. KERNEL TERMINADO");
     log_destroy(logger);
     config_destroy(config);

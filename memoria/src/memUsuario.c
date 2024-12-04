@@ -34,6 +34,7 @@ void inicializar_Memoria(t_config *config)
     {
         char **particiones = config_get_array_value(config, "PARTICIONES");
         cargar_particiones_lista(particiones);
+        free(particiones);
     }
 }
 
@@ -432,15 +433,7 @@ t_particiones *busqueda_particion(int pid)
 
 uint32_t leer_Memoria(uint32_t direccionFisica)
 {
-    uint32_t * valor = malloc(sizeof(uint32_t));
-    memcpy(valor,memoria+direccionFisica,sizeof(uint32_t));
-
-    if (*valor == 0xFFFFFFFF)
-    {
-        return 0xFFFFFFFF;
-    }
-
-    return *valor;
+    return *((uint32_t*)(memoria + direccionFisica));
 }
 
 int escribir_Memoria(t_write_mem *info)

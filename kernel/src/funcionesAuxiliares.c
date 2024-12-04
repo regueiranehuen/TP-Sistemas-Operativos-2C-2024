@@ -29,6 +29,11 @@ void destruir_estados() {
 
     // Destrucción de listas
     list_destroy(lista_ready_prioridad);
+    for(int i = 0; i< list_size(colas_ready_prioridad); i++){
+        t_cola_prioridad* cola = list_get(colas_ready_prioridad,i);
+        queue_destroy(cola->cola);
+        free(cola);
+    }
     list_destroy(colas_ready_prioridad);
     list_destroy(lista_bloqueados);
     list_destroy(lista_tcbs);
@@ -156,15 +161,15 @@ void liberar_proceso(t_pcb *pcb)
     pthread_mutex_unlock(&mutex_lista_pcbs);
 
     sem_destroy(&pcb->sem_hilos_eliminar);
-    list_destroy(pcb->tids); // falta liberar lista de mutexes // paja
     
-
+    list_destroy_and_destroy_elements(pcb->tids, free);
+    
     for (int i = 0; i < list_size(pcb->lista_mutex); i++){
         t_mutex* actual = list_get(pcb->lista_mutex,i);
 
         queue_destroy(actual->cola_tcbs);
-        free(actual->hilo);
         free(actual->nombre);
+        free(actual);
     }
     list_destroy(pcb->lista_mutex);
 
