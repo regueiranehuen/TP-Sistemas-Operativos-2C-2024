@@ -119,8 +119,8 @@ int servidor_FileSystem_Memoria(t_log* log, t_config* config){
             return -1;
         }
 
-        pthread_detach(hilo_gestor);
-        return socket_servidor;
+    pthread_detach(hilo_gestor);
+    return socket_servidor;
 }
 
 void* funcion_hilo_servidor(void* void_args){

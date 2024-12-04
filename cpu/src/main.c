@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
     log_cpu = log_create("CPU.log", "tp", true, log_level_int);
     
     log_info(log_cpu, "Configuración del CPU cargada.");
-
+    
     sockets_cpu = hilos_cpu(log_cpu, config);
 
     iniciar_cpu();

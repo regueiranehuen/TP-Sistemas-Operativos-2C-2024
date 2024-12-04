@@ -1,63 +1,41 @@
-==28749== Memcheck, a memory error detector
-==28749== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==28749== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
-==28749== Command: ./bin/filesystem
-==28749== Parent PID: 1703
-==28749== 
-==28749== 
-==28749== HEAP SUMMARY:
-==28749==     in use at exit: 1,075 bytes in 9 blocks
-==28749==   total heap usage: 365 allocs, 356 frees, 30,980 bytes allocated
-==28749== 
-==28749== 0 bytes in 1 blocks are definitely lost in loss record 1 of 8
-==28749==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==28749==    by 0x10DAE8: recibir_paquete_code_operacion (serializacion.c:557)
-==28749==    by 0x10ACCF: atender_conexiones (peticiones.c:11)
-==28749==    by 0x10C357: hilo_por_cliente (server.c:46)
-==28749==    by 0x49F2AC2: start_thread (pthread_create.c:442)
-==28749==    by 0x4A83A03: clone (clone.S:100)
-==28749== 
-==28749== 272 bytes in 1 blocks are possibly lost in loss record 6 of 8
-==28749==    at 0x484DA83: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==28749==    by 0x40147D9: calloc (rtld-malloc.h:44)
-==28749==    by 0x40147D9: allocate_dtv (dl-tls.c:375)
-==28749==    by 0x40147D9: _dl_allocate_tls (dl-tls.c:634)
-==28749==    by 0x49F37B4: allocate_stack (allocatestack.c:430)
-==28749==    by 0x49F37B4: pthread_create@@GLIBC_2.34 (pthread_create.c:647)
-==28749==    by 0x10C6A2: hilo_filesystem (server.c:152)
-==28749==    by 0x10AA23: main (main.c:23)
-==28749== 
-==28749== 272 bytes in 1 blocks are possibly lost in loss record 7 of 8
-==28749==    at 0x484DA83: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==28749==    by 0x40147D9: calloc (rtld-malloc.h:44)
-==28749==    by 0x40147D9: allocate_dtv (dl-tls.c:375)
-==28749==    by 0x40147D9: _dl_allocate_tls (dl-tls.c:634)
-==28749==    by 0x49F37B4: allocate_stack (allocatestack.c:430)
-==28749==    by 0x49F37B4: pthread_create@@GLIBC_2.34 (pthread_create.c:647)
-==28749==    by 0x10C575: servidor_FileSystem_Memoria (server.c:114)
-==28749==    by 0x10C603: funcion_hilo_servidor (server.c:130)
-==28749==    by 0x49F2AC2: start_thread (pthread_create.c:442)
-==28749==    by 0x4A83A03: clone (clone.S:100)
-==28749== 
-==28749== 272 bytes in 1 blocks are possibly lost in loss record 8 of 8
-==28749==    at 0x484DA83: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==28749==    by 0x40147D9: calloc (rtld-malloc.h:44)
-==28749==    by 0x40147D9: allocate_dtv (dl-tls.c:375)
-==28749==    by 0x40147D9: _dl_allocate_tls (dl-tls.c:634)
-==28749==    by 0x49F37B4: allocate_stack (allocatestack.c:430)
-==28749==    by 0x49F37B4: pthread_create@@GLIBC_2.34 (pthread_create.c:647)
-==28749==    by 0x10C3E6: gestor_clientes (server.c:70)
-==28749==    by 0x49F2AC2: start_thread (pthread_create.c:442)
-==28749==    by 0x4A83A03: clone (clone.S:100)
-==28749== 
-==28749== LEAK SUMMARY:
-==28749==    definitely lost: 0 bytes in 1 blocks
-==28749==    indirectly lost: 0 bytes in 0 blocks
-==28749==      possibly lost: 816 bytes in 3 blocks
-==28749==    still reachable: 259 bytes in 5 blocks
-==28749==         suppressed: 0 bytes in 0 blocks
-==28749== Reachable blocks (those to which a pointer was found) are not shown.
-==28749== To see them, rerun with: --leak-check=full --show-leak-kinds=all
-==28749== 
-==28749== For lists of detected and suppressed errors, rerun with: -s
-==28749== ERROR SUMMARY: 4 errors from 4 contexts (suppressed: 0 from 0)
+==31408== Memcheck, a memory error detector
+==31408== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==31408== Using Valgrind-3.18.1 and LibVEX; rerun with -h for copyright info
+==31408== Command: ./bin/filesystem
+==31408== Parent PID: 1703
+==31408== 
+==31408== 
+==31408== HEAP SUMMARY:
+==31408==     in use at exit: 412 bytes in 6 blocks
+==31408==   total heap usage: 4,252 allocs, 4,246 frees, 153,001 bytes allocated
+==31408== 
+==31408== 0 bytes in 1 blocks are definitely lost in loss record 1 of 6
+==31408==    at 0x4848899: malloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==31408==    by 0x10DAE8: recibir_paquete_code_operacion (serializacion.c:557)
+==31408==    by 0x10ACCF: atender_conexiones (peticiones.c:11)
+==31408==    by 0x10C357: hilo_por_cliente (server.c:46)
+==31408==    by 0x49F2AC2: start_thread (pthread_create.c:442)
+==31408==    by 0x4A83A03: clone (clone.S:100)
+==31408== 
+==31408== 272 bytes in 1 blocks are possibly lost in loss record 6 of 6
+==31408==    at 0x484DA83: calloc (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==31408==    by 0x40147D9: calloc (rtld-malloc.h:44)
+==31408==    by 0x40147D9: allocate_dtv (dl-tls.c:375)
+==31408==    by 0x40147D9: _dl_allocate_tls (dl-tls.c:634)
+==31408==    by 0x49F37B4: allocate_stack (allocatestack.c:430)
+==31408==    by 0x49F37B4: pthread_create@@GLIBC_2.34 (pthread_create.c:647)
+==31408==    by 0x10C3E6: gestor_clientes (server.c:70)
+==31408==    by 0x49F2AC2: start_thread (pthread_create.c:442)
+==31408==    by 0x4A83A03: clone (clone.S:100)
+==31408== 
+==31408== LEAK SUMMARY:
+==31408==    definitely lost: 0 bytes in 1 blocks
+==31408==    indirectly lost: 0 bytes in 0 blocks
+==31408==      possibly lost: 272 bytes in 1 blocks
+==31408==    still reachable: 140 bytes in 4 blocks
+==31408==         suppressed: 0 bytes in 0 blocks
+==31408== Reachable blocks (those to which a pointer was found) are not shown.
+==31408== To see them, rerun with: --leak-check=full --show-leak-kinds=all
+==31408== 
+==31408== For lists of detected and suppressed errors, rerun with: -s
+==31408== ERROR SUMMARY: 2 errors from 2 contexts (suppressed: 0 from 0)

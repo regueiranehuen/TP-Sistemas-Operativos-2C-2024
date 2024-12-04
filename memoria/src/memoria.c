@@ -56,6 +56,7 @@ void atender_conexiones(int socket_cliente)
                 log_info(logger,"No se encontró la partición del proceso de pid %d",info_1->pid);
                 respuesta=ERROR;
                 send(socket_cliente, &respuesta, sizeof(int), 0);
+                free(info_1);
                 break;
             }
 
@@ -66,6 +67,7 @@ void atender_conexiones(int socket_cliente)
             close(socket_filesystem);
             if(respuesta != OK){
             send(socket_cliente, &respuesta, sizeof(int), 0);
+            free(info_1);
             break;
             }
             respuesta = OK;
