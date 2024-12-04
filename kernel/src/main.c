@@ -49,6 +49,9 @@ void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
     sem_post(&sem_seguir_o_frenar);
     sem_post(&sem_cola_IO);
     sem_post(&sem_lista_prioridades);
+    sem_post(&semaforo_cola_ready);
+    sem_post(&sem_ciclo_nuevo);
+    sem_post(&sem_desalojado);
 
     int cant_hilos=7;
 

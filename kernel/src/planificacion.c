@@ -5,6 +5,9 @@ t_tcb *fifo_tcb()
 {
 
     sem_wait(&semaforo_cola_ready);
+    if (estado_kernel == 0){
+        return NULL;
+    }
     log_info(logger, "Se tomó el semáforo (cola_ready)");
 
     log_info(logger,"Cola ready");
@@ -368,6 +371,9 @@ void* cortar_ejecucion_modulos(void*args){
 t_tcb* prioridades (){
 
 sem_wait(&semaforo_cola_ready);
+if (estado_kernel == 0){
+        return NULL;
+}
 log_info(logger, "Se tomó el semáforo (cola_ready)");
 
 
@@ -430,7 +436,9 @@ Se elegirá al siguiente hilo a ejecutar según el siguiente esquema de colas mu
 void colas_multinivel(){
     
     sem_wait(&semaforo_cola_ready);
-    
+    if (estado_kernel == 0){
+        return;
+    }
     pthread_mutex_lock(&mutex_cola_ready);
     print_lista_prioridades(colas_ready_prioridad);
     pthread_mutex_unlock(&mutex_cola_ready);
@@ -498,6 +506,9 @@ void *hilo_planificador_corto_plazo(void *arg)
         t_tcb* hilo_a_ejecutar;
         if (strings_iguales(algoritmo, "FIFO")){
         hilo_a_ejecutar = fifo_tcb();
+        if (estado_kernel == 0){
+            goto final;
+        }
         hilo_a_ejecutar->estado = TCB_EXECUTE;
         hilo_exec = hilo_a_ejecutar;
         ejecucion();
@@ -505,6 +516,9 @@ void *hilo_planificador_corto_plazo(void *arg)
         } else if (strings_iguales(algoritmo, "PRIORIDADES"))
         {
         hilo_a_ejecutar = prioridades();
+        if (estado_kernel == 0){
+            goto final;
+        }
         hilo_a_ejecutar->estado = TCB_EXECUTE;
         hilo_exec = hilo_a_ejecutar;
         ejecucion();
@@ -515,6 +529,11 @@ void *hilo_planificador_corto_plazo(void *arg)
         {
             sem_init(&sem_fin_syscall,0,0);
             colas_multinivel();
+        }
+        final:
+        if (estado_kernel == 0){
+            sem_post(&sem_termina_hilo);
+            return NULL;
         }
     }
     return NULL;
@@ -618,7 +637,7 @@ void espera_con_quantum(int quantum)
 
         log_debug(logger, "Timeout alcanzado en select (terminó el quantum)");
         // Tiempo del quantum agotado, desalojar por quantum
-        pthread_mutex_lock(&mutex_desalojo);
+        
         pthread_mutex_lock(&mutex_syscall_ejecutando);
         if (syscallEjecutando)
         {
@@ -634,6 +653,7 @@ void espera_con_quantum(int quantum)
         {
             pthread_mutex_unlock(&mutex_syscall_ejecutando);
         }
+        pthread_mutex_lock(&mutex_desalojo);
         if (!aviso_cpu->desalojar)
         {
             aviso_cpu->finQuantum = true;

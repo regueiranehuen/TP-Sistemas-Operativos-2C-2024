@@ -179,32 +179,6 @@ void *recibir_cpu(void *args)
             break;
         }
 
-        case TERMINAR_EJECUCION_MODULO_OP_CODE:{
-            log_info(logger, "## Llega TERMINAR_EJECUCION_MODULO_OP_CODE");
-            free(paquete_operacion->buffer);
-            free(paquete_operacion);
-            
-            enviar_codop(sockets_iniciales->socket_cpu,OK_TERMINAR_OP_CODE);
-            
-            int socket_filesystem = cliente_memoria_filesystem(logger,config);
-            send_terminar_ejecucion(socket_filesystem);
-
-            code_operacion code = recibir_code_operacion(socket_filesystem);
-            close(socket_filesystem);
-            
-            if (code == OK_TERMINAR){
-                log_info(logger, "Se termina la ejecución del módulo memoria");
-                free(memoria);
-                liberar_lista_particiones(lista_particiones);
-                sem_post(&sem_fin_memoria);
-                return NULL;
-            }
-            else{
-                log_info(logger,"SOY UN ESTORBO");
-            }
-            break;
-        }
-
         case 1:
             codigoOperacion = paquete_operacion->codigo_operacion;
             free(paquete_operacion->buffer);
@@ -221,6 +195,25 @@ void *recibir_cpu(void *args)
         usleep(retardo_respuesta * 1000); // Aplicar retardo configurado
     }
     log_warning(logger, "Se desconectó la CPU");
+
+    int socket_filesystem = cliente_memoria_filesystem(logger, config);
+    send_terminar_ejecucion(socket_filesystem);
+
+    code_operacion code = recibir_code_operacion(socket_filesystem);
+    close(socket_filesystem);
+
+    if (code == OK_TERMINAR)
+    {
+        log_info(logger, "Se termina la ejecución del módulo memoria");
+        free(memoria);
+        liberar_lista_particiones(lista_particiones);
+        sem_post(&sem_fin_memoria);
+        return NULL;
+    }
+    else
+    {
+        log_info(logger, "SOY UN ESTORBO");
+    }
     return NULL;
 }
 

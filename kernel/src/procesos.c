@@ -396,12 +396,14 @@ void PROCESS_EXIT()
 }
 
 void desalojo(){
-    pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
+    
     pthread_mutex_lock(&mutex_desalojo);
     if (!aviso_cpu->finQuantum)
     {
         log_info(logger, "envio desalojar");
+        pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
         send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
+        pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
         aviso_cpu->desalojar = true;
     }
     else if (aviso_cpu->finQuantum)
@@ -437,7 +439,6 @@ void desalojo(){
     OK:
     log_info(logger, "le mando a cpu el OK nashei");
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
-    pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
 }
 
 /*Creación de hilos
