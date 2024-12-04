@@ -30,7 +30,7 @@ void *recibir_cpu(void *args)
             t_contextos* contextos = obtener_contextos(info->pid,info->tid);
             pthread_mutex_unlock(&mutex_lista_contextos_pids);
 
-            
+                        
 
             if (contextos == NULL)
             {
@@ -57,6 +57,8 @@ void *recibir_cpu(void *args)
                 }
             }*/
             free(contextos->contexto_pid);
+            free(contextos->contexto_tid->registros);
+            free(contextos->contexto_tid);
             free(contextos); 
 
             break;

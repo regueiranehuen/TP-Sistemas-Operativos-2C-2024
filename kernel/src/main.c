@@ -16,8 +16,8 @@ int main(int argc, char *argv[])
     
     //char* archivo_pseudocodigo = argv[1];
     //int tamanio_proceso = atoi(argv[2]);
-    char *archivo_pseudocodigo = "PRUEBA_FS";//argv[1];
-    int tamanio_proceso = 8;//atoi(argv[2]);
+    char *archivo_pseudocodigo = "RECURSOS_MUTEX_PROC";//argv[1];
+    int tamanio_proceso = 32;//atoi(argv[2]);
 
     inicializar_estados();
     inicializar_semaforos();

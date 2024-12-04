@@ -176,6 +176,8 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
         case ENUM_OK:
             log_info(logger,"RECIBI OK");
             sem_post(&sem_recibi_ok);
+            free(paquete->buffer);
+            free(paquete);
             break;
         case ENUM_PROCESS_CREATE:
 

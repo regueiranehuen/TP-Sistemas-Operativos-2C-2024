@@ -157,6 +157,17 @@ void liberar_proceso(t_pcb *pcb)
 
     sem_destroy(&pcb->sem_hilos_eliminar);
     list_destroy(pcb->tids); // falta liberar lista de mutexes // paja
+    
+
+    for (int i = 0; i < list_size(pcb->lista_mutex); i++){
+        t_mutex* actual = list_get(pcb->lista_mutex,i);
+
+        queue_destroy(actual->cola_tcbs);
+        free(actual->hilo);
+        free(actual->nombre);
+    }
+    list_destroy(pcb->lista_mutex);
+
     pthread_mutex_destroy(&pcb->mutex_lista_mutex);
     pthread_mutex_destroy(&pcb->mutex_tids);
     free(pcb);
