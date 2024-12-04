@@ -15,10 +15,19 @@ char* ruta_completa;
 
 int main(int argc, char *argv[]){
 
+    if (argc <= 1 || argc > 2)
+    {
+        printf("Ingrese ./bin/filesystem <path del config>");
+        return -1;
+    }
+
     int socket_servidor;
     estado_filesystem = 1;
-    
-    inicializar_estructuras();
+    char* path_config = argv[1];
+    inicializar_estructuras(path_config);
+
+    log_info(log_filesystem,"Path del config: %s",path_config);
+    log_info(log_filesystem,"Block size: %s",config_get_string_value(config,"BLOCK_SIZE"));
 
     socket_servidor = hilo_filesystem(log_filesystem, config);
     //sem_wait(&sem_fin_filesystem);

@@ -6,14 +6,24 @@ t_config *config;
 
 int main(int argc, char *argv[])
 {
+    
+    if (argc <= 1 || argc > 2)
+    {
+        printf("Ingrese ./bin/memoria <path del config>");
+        return -1;
+    }
 
     sockets_memoria *sockets;
     sockets_iniciales = malloc(sizeof(sockets_memoria));
-
-    config = config_create("memoria.config");
+    char* path_config = argv[1];
+    config = config_create(path_config);
     t_log_level log_level_int = log_level(config);
-    logger = log_create("memoria.log", "tp", true, log_level_int);
+
     
+
+    logger = log_create("memoria.log", "tp", true, log_level_int);
+    log_info(logger,"Retardo respuesta: %s",config_get_string_value(config,"RETARDO_RESPUESTA"));
+
     inicializar_Memoria(config);
     inicializar_mutex();
     inicializar_semaforos();

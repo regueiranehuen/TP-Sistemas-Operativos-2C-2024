@@ -4,20 +4,20 @@
 
 int main(int argc, char *argv[])
 {
-    config = config_create("kernel.config");
+
+    if (argc <= 1 || argc > 4)
+    {
+        printf("Ingrese ./bin/kernel <archivo_pseudocodigo> <tamaño proceso> <path del config>\n");
+        return -1;
+    }
+
+    char* archivo_pseudocodigo = argv[1];
+    int tamanio_proceso = atoi(argv[2]);
+    char* path_config = argv[3];
+
+    config = config_create(path_config);
     t_log_level log_level_int = log_level(config);
     logger = log_create("kernel.log", "tp", true, log_level_int);
-    
-    /*if(argc <=1 || argc >3){
-    log_info(logger,"Ingrese ./bin/kernel <archivo_pseudocodigo> <tamaño proceso>");
-    log_destroy(logger);
-    return -1;
-    }*/
-    
-    //char* archivo_pseudocodigo = argv[1];
-    //int tamanio_proceso = atoi(argv[2]);
-    char *archivo_pseudocodigo = "PRUEBA_FS";//argv[1];
-    int tamanio_proceso = 8;//atoi(argv[2]);
 
     inicializar_estados();
     inicializar_semaforos();
