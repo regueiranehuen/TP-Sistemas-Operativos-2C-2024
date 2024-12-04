@@ -388,9 +388,10 @@ void PROCESS_EXIT()
     queue_push(cola_exit_procesos, pcb);
     pthread_mutex_unlock(&mutex_cola_exit_procesos);
 
+    desalojo();
     sem_post(&semaforo_cola_exit_procesos);
 
-    desalojo();
+    
 
     //fin_syscall_desalojo_cmn();
 }
@@ -670,26 +671,22 @@ void MUTEX_LOCK(char *recurso)
         log_info(logger, "NO SE ENCONTRÓ EL MUTEX %s", recurso);
         pthread_mutex_unlock(&mutex_log);
         sacar_tcb_ready(hilo_aux);
-        pthread_mutex_lock(&mutex_cola_exit_hilos);
 
         if (hilo_aux->tid != 0){
             pthread_mutex_lock(&mutex_cola_exit_hilos);
             queue_push(cola_exit, hilo_aux);
             pthread_mutex_unlock(&mutex_cola_exit_hilos);
+            desalojo();
             sem_post(&semaforo_cola_exit_hilos);
         }
         else{
             pthread_mutex_lock(&mutex_cola_exit_procesos);
             queue_push(cola_exit_procesos,proceso_asociado);
             pthread_mutex_unlock(&mutex_cola_exit_procesos);
+            desalojo();
             sem_post(&semaforo_cola_exit_procesos);
         }
 
-            
-        
-
-        pthread_mutex_unlock(&mutex_cola_exit_hilos);
-        desalojo();
         return;
     }
 
@@ -737,17 +734,17 @@ void MUTEX_UNLOCK(char *recurso)
             pthread_mutex_lock(&mutex_cola_exit_hilos);
             queue_push(cola_exit, hilo_aux);
             pthread_mutex_unlock(&mutex_cola_exit_hilos);
+            desalojo();
             sem_post(&semaforo_cola_exit_hilos);
         }
         else{
             pthread_mutex_lock(&mutex_cola_exit_procesos);
             queue_push(cola_exit_procesos,proceso_asociado);
             pthread_mutex_unlock(&mutex_cola_exit_procesos);
+            desalojo();
             sem_post(&semaforo_cola_exit_procesos);
         }
 
-        
-        desalojo();
         return;
     }
     
@@ -986,7 +983,8 @@ void atender_segmentation_fault(){
     queue_push(cola_exit_procesos, pcb);
     pthread_mutex_unlock(&mutex_cola_exit_procesos);
 
+    desalojo();
     sem_post(&semaforo_cola_exit_procesos);
 
-    desalojo();
+    
 }
