@@ -439,7 +439,7 @@ void imprimir_archivo_bloques(const char* filepath) {
     if (arch == NULL) {
         pthread_mutex_lock(&mutex_logs);
         log_info(log_filesystem,"Error: No se pudo abrir el archivo %s\n", filepath);
-        pthread_mutex_lock(&mutex_logs);
+        pthread_mutex_unlock(&mutex_logs);
         return;
     }
     pthread_mutex_lock(&mutex_logs);
