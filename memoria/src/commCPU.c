@@ -12,11 +12,15 @@ void *recibir_cpu(void *args)
 
         if (paquete_operacion == NULL)
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(logger,"Memoria recibio un paquete == NULL de cpu. Conexion cerrada");
+            pthread_mutex_unlock(&mutex_logs);
 
             break;
         }
+        pthread_mutex_lock(&mutex_logs);
         log_info(logger, "Memoria recibio el siguiente codigo operacion de CPU: %d", paquete_operacion->codigo_operacion);
+        pthread_mutex_unlock(&mutex_logs);
 
         switch (paquete_operacion->codigo_operacion)
         {
@@ -24,8 +28,9 @@ void *recibir_cpu(void *args)
         case OBTENER_CONTEXTO_EJECUCION:
         {
             t_tid_pid *info = recepcionar_solicitud_contexto(paquete_operacion); // Recibe PID y TID
-
-            log_info(logger, "## Contexto solicitado - (PID:TID) - (%d:%d)", info->pid, info->tid);
+            pthread_mutex_lock(&mutex_logs);
+            log_debug(logger, "## Contexto solicitado - (PID:TID) - (%d:%d)", info->pid, info->tid);
+            pthread_mutex_unlock(&mutex_logs);
             pthread_mutex_lock(&mutex_lista_contextos_pids);
             t_contextos* contextos = obtener_contextos(info->pid,info->tid);
             pthread_mutex_unlock(&mutex_lista_contextos_pids);
@@ -34,7 +39,9 @@ void *recibir_cpu(void *args)
 
             if (contextos == NULL)
             {
+                pthread_mutex_lock(&mutex_logs);
                 log_error(logger, "No se encontro el contexto del tid %d asociado al pid %d", info->tid, info->pid);
+                pthread_mutex_unlock(&mutex_logs);
                 op_code code = ERROR;
                 send(sockets_iniciales->socket_cpu,&code,sizeof(int),0);
                 free(info);
@@ -42,7 +49,9 @@ void *recibir_cpu(void *args)
             }
             free(info);
             enviar_contexto_ejecucion(contextos,sockets_iniciales->socket_cpu);
+            pthread_mutex_lock(&mutex_logs);
             log_info(logger, "Enviado contexto para PID: %d, TID: %d", contextos->contexto_tid->pid, contextos->contexto_tid->tid);
+            pthread_mutex_unlock(&mutex_logs);
 
             /*for (int i = 0; i < list_size(lista_contextos_pids); i++)
             {
@@ -66,9 +75,10 @@ void *recibir_cpu(void *args)
 
         case ACTUALIZAR_CONTEXTO_TID:
         {
-            printf("entrando a actualizar_contexto\n");
+            
             t_contexto_tid *contexto_tid = recepcionar_contexto_tid(paquete_operacion);
 
+            pthread_mutex_lock(&mutex_logs);
             log_info(logger, "REGISTROS QUE VOY A METER EN MEMORIA (ACTUALIZO):");
             log_info(logger, "AX: %u", contexto_tid->registros->AX);
             log_info(logger, "BX: %u", contexto_tid->registros->BX);
@@ -78,18 +88,22 @@ void *recibir_cpu(void *args)
             log_info(logger, "FX: %u", contexto_tid->registros->FX);
             log_info(logger, "GX: %u", contexto_tid->registros->GX);
             log_info(logger, "HX: %u", contexto_tid->registros->HX);            
-
+            pthread_mutex_unlock(&mutex_logs);
             pthread_mutex_lock(&mutex_lista_contextos_pids);
             for (int i = 0; i < list_size(lista_contextos_pids); i++)
             {
                 t_contexto_pid *cont_pid_act = list_get(lista_contextos_pids, i);
+                pthread_mutex_lock(&mutex_logs);
                 log_info(logger, "CONTEXTO PID:%d", cont_pid_act->pid);
                 log_info(logger, "SIZE CONTEXTO TID:%d", list_size(cont_pid_act->contextos_tids));
+                pthread_mutex_unlock(&mutex_logs);
                 for (int j = 0; j < list_size(cont_pid_act->contextos_tids); j++)
                 {
                     t_contexto_tid *cont_tid_act = list_get(cont_pid_act->contextos_tids, j);
+                    pthread_mutex_lock(&mutex_logs);
                     log_info(logger, "TID:%d", cont_tid_act->tid);
                     log_info(logger, "AX: %d", cont_tid_act->registros->AX);
+                    pthread_mutex_unlock(&mutex_logs);
                 }
             }
                 print_pids(lista_contextos_pids);
@@ -101,43 +115,60 @@ void *recibir_cpu(void *args)
 
                 free(contexto_tid->registros); // Ya se actualizó el contexto que está en la lista de contextos tids correspondiente al pid enviado
                 free(contexto_tid);
+
                 break;
             }
 
         case OBTENER_INSTRUCCION:
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(logger, "Entramos a obtener instruccion, los parámetros que llegaron de solicitud son estos:");
+            pthread_mutex_unlock(&mutex_logs);
             t_instruccion_memoria *solicitud_instruccion = recepcionar_solicitud_instruccion_memoria(paquete_operacion);
+            pthread_mutex_lock(&mutex_logs);
             log_info(logger, "%d", solicitud_instruccion->pid);
             log_info(logger, "%d", solicitud_instruccion->tid);
             log_info(logger, "%d", solicitud_instruccion->pc);
+            pthread_mutex_unlock(&mutex_logs);
             t_instruccion *instruccion = obtener_instruccion(solicitud_instruccion->tid, solicitud_instruccion->pid, solicitud_instruccion->pc);
             if (instruccion == NULL)
             {
+                pthread_mutex_lock(&mutex_logs);
                 log_info(logger, "instruccion no encontrada");
+                pthread_mutex_unlock(&mutex_logs);
                 free(solicitud_instruccion);
                 break;
             }
             else
             {
+                pthread_mutex_lock(&mutex_logs);
                 log_info(logger, "super instruccion a enviar: %s %s %s ", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
+                pthread_mutex_unlock(&mutex_logs);
             }
             enviar_instruccion(sockets_iniciales->socket_cpu, instruccion, INSTRUCCION_OBTENIDA);
             if (strcmp(instruccion->parametros2, "") == 0)
             {
-                log_info(logger, "## Obtener instruccion - (PID:TID) - (%d:%d) - Instruccion: %s", solicitud_instruccion->pid, solicitud_instruccion->tid, instruccion->parametros1);
+                pthread_mutex_lock(&mutex_logs);
+                log_debug(logger, "## Obtener instruccion - (PID:TID) - (%d:%d) - Instruccion: %s", solicitud_instruccion->pid, solicitud_instruccion->tid, instruccion->parametros1);
+                pthread_mutex_unlock(&mutex_logs);
             }
             else if (strcmp(instruccion->parametros3, "") == 0)
             {
-                log_info(logger, "## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: %s %s", solicitud_instruccion->pid, solicitud_instruccion->tid, instruccion->parametros1, instruccion->parametros2);
+                pthread_mutex_lock(&mutex_logs);
+                log_debug(logger, "## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: %s %s", solicitud_instruccion->pid, solicitud_instruccion->tid, instruccion->parametros1, instruccion->parametros2);
+                pthread_mutex_unlock(&mutex_logs);
             }
             else if (strcmp(instruccion->parametros4, "") == 0)
             {
-                log_info(logger, "## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: %s %s %s", solicitud_instruccion->pid, solicitud_instruccion->tid, instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
+                pthread_mutex_lock(&mutex_logs);
+                log_debug(logger, "## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: %s %s %s", solicitud_instruccion->pid, solicitud_instruccion->tid, instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
+                pthread_mutex_unlock(&mutex_logs);
             }
             else
             {
-                log_info(logger, "## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: %s %s %s %s", solicitud_instruccion->pid, solicitud_instruccion->tid, instruccion->parametros1, instruccion->parametros2, instruccion->parametros3, instruccion->parametros4);
+                pthread_mutex_lock(&mutex_logs);
+                log_debug(logger, "## Obtener instrucción - (PID:TID) - (%d:%d) - Instrucción: %s %s %s %s", solicitud_instruccion->pid, solicitud_instruccion->tid, instruccion->parametros1, instruccion->parametros2, instruccion->parametros3, instruccion->parametros4);
+                pthread_mutex_unlock(&mutex_logs);
             }
             free(solicitud_instruccion);
             break;
@@ -145,23 +176,28 @@ void *recibir_cpu(void *args)
 
         case READ_MEM:
         {
-            log_info(logger, "VOY A RECEPCIONAR EL READ MEM");
             uint32_t direccionFisica = recepcionar_read_mem(paquete_operacion);
-            log_info(logger, "direccionFisica recibida:%d", direccionFisica);
             uint32_t valor = leer_Memoria(direccionFisica);
+            pthread_mutex_lock(&mutex_logs);
             log_info(logger, "valor leido de memoria:%d", valor);
+            pthread_mutex_unlock(&mutex_logs);
             op_code code;
             if (valor == 0xFFFFFFFF)
             {
                 code = ERROR;
                 send_valor_read_mem(valor, sockets_iniciales->socket_cpu, code);
+
+                pthread_mutex_lock(&mutex_logs);
                 log_info(logger, "entre a error");
+                pthread_mutex_unlock(&mutex_logs);
             }
             else
             {
                 code = OK_OP_CODE;
                 send_valor_read_mem(valor, sockets_iniciales->socket_cpu, code);
+                pthread_mutex_lock(&mutex_logs);
                 log_info(logger, "entre a ok");
+                pthread_mutex_unlock(&mutex_logs);
             }
             break;
         }
@@ -169,8 +205,10 @@ void *recibir_cpu(void *args)
         case WRITE_MEM:
         {
             t_write_mem *info_0 = recepcionar_write_mem(paquete_operacion);
+            pthread_mutex_lock(&mutex_logs);
             log_info(logger, "direccion Fisica recibida:%d", info_0->direccionFisica);
             log_info(logger, "valor recibido:%d", info_0->valor);
+            pthread_mutex_unlock(&mutex_logs);
             int resultado = escribir_Memoria(info_0);
             if (resultado == 0)
             {
@@ -190,13 +228,17 @@ void *recibir_cpu(void *args)
         default:
             free(paquete_operacion->buffer);
             free(paquete_operacion);
+            pthread_mutex_lock(&mutex_logs);
             log_warning(logger, "Operación desconocida recibida: %d", paquete_operacion->codigo_operacion);
+            pthread_mutex_unlock(&mutex_logs);
             break;
         }
 
         usleep(retardo_respuesta * 1000); // Aplicar retardo configurado
     }
+    pthread_mutex_lock(&mutex_logs);
     log_warning(logger, "Se desconectó la CPU");
+    pthread_mutex_unlock(&mutex_logs);
 
     int socket_filesystem = cliente_memoria_filesystem(logger, config);
     send_terminar_ejecucion(socket_filesystem);
@@ -206,15 +248,14 @@ void *recibir_cpu(void *args)
 
     if (code == OK_TERMINAR)
     {
+        pthread_mutex_lock(&mutex_logs);
         log_info(logger, "Se termina la ejecución del módulo memoria");
+        pthread_mutex_unlock(&mutex_logs);
         free(memoria);
         sem_post(&sem_fin_memoria);
         return NULL;
     }
-    else
-    {
-        log_info(logger, "SOY UN ESTORBO");
-    }
+    
     return NULL;
 }
 
@@ -222,7 +263,9 @@ void actualizar_contexto(int pid, int tid, t_registros_cpu* reg){
     pthread_mutex_lock(&mutex_lista_contextos_pids);
     t_contexto_tid *contexto = obtener_contexto_tid(pid, tid);
     if(contexto == NULL){
+        pthread_mutex_lock(&mutex_logs);
         log_info(logger,"No se actualizó el contexto (PID:TID) - (%d:%d)",pid,tid);
+        pthread_mutex_unlock(&mutex_logs);
     }
     if (contexto != NULL)
     {
@@ -235,7 +278,9 @@ void actualizar_contexto(int pid, int tid, t_registros_cpu* reg){
         contexto->registros->GX = reg->GX;
         contexto->registros->HX = reg->HX;
         contexto->registros->PC = reg->PC;
-        log_info(logger,"## Contexto Actualizado - (PID:TID) - (%d:%d)",pid,tid);
+        pthread_mutex_lock(&mutex_logs);
+        log_debug(logger,"## Contexto Actualizado - (PID:TID) - (%d:%d)",pid,tid);
+        pthread_mutex_unlock(&mutex_logs);
     }
     
 
@@ -282,7 +327,9 @@ t_contexto_pid*inicializar_contexto_pid(int pid,uint32_t base, uint32_t limite,i
         return nuevo_contexto;
     }
     else{
+        pthread_mutex_lock(&mutex_logs);
         log_info(logger,"NO SE PUDO INICIALIZAR EL CONTEXTO DEL PID %d\n",pid);
+        pthread_mutex_unlock(&mutex_logs);
     }
     return NULL;
     
@@ -297,7 +344,9 @@ t_contexto_tid*obtener_contexto_tid(int pid, int tid){ // hay que usar mutex cad
         for (int i = 0; i < list_size(cont_pid->contextos_tids); i++)
         {
             t_contexto_tid *act = list_get(cont_pid->contextos_tids, i);
+            pthread_mutex_lock(&mutex_logs);
             log_info(logger, "TID EN OBT CONT TID: %d  CORRESPONDE A PID %d", act->tid, pid);
+            pthread_mutex_unlock(&mutex_logs);
             if (act->tid == tid)
             {
                 return act;
@@ -328,7 +377,9 @@ t_contextos*obtener_contextos(int pid, int tid){ // hay que usar mutex cada vez 
         for (int i = 0; i < list_size(cont_pid->contextos_tids); i++)
         {
             t_contexto_tid *act = list_get(cont_pid->contextos_tids, i);
+            pthread_mutex_lock(&mutex_logs);
             log_info(logger, "TID EN OBT CONT TID: %d  CORRESPONDE A PID %d", act->tid, pid);
+            pthread_mutex_unlock(&mutex_logs);
             if (act->tid == tid)
             {
                 
@@ -374,7 +425,9 @@ t_contexto_pid* obtener_contexto_pid(int pid){ // al usarla hay q meterle mutex 
     //pthread_mutex_lock(&mutex_lista_contextos_pids);
     for (int i = 0; i < list_size(lista_contextos_pids); i++){
         t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
+        pthread_mutex_lock(&mutex_logs);
         log_warning(logger,"PID DEL CONT ACTUAL: %d",cont_actual->pid);
+        pthread_mutex_unlock(&mutex_logs);
         if (pid == cont_actual->pid){
             //pthread_mutex_unlock(&mutex_lista_contextos_pids);
             return cont_actual;

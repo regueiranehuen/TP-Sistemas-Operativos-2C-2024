@@ -7,7 +7,9 @@ int main(int argc, char *argv[])
 
     if (argc <= 1 || argc > 4)
     {
-        printf("Ingrese ./bin/kernel <archivo_pseudocodigo> <tamaño proceso> <path del config>\n");
+        
+        printf("Ingrese ./bin/kernel <archivo_pseudocodigo> <tamaño proceso> <path del config>");
+        
         return -1;
     }
 
@@ -40,9 +42,7 @@ void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
     char*algoritmo=config_get_string_value(config,"ALGORITMO_PLANIFICACION");
     
     shutdown(sockets->sockets_cliente_cpu->socket_Dispatch, SHUT_RDWR);
-    log_info(logger,"shutdown1");
     shutdown(sockets->sockets_cliente_cpu->socket_Interrupt, SHUT_RDWR);  
-    log_info(logger,"shutdown2");
 
     free(sockets->sockets_cliente_cpu);
 
@@ -64,7 +64,9 @@ void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
     }
     for (int i = 0; i<cant_hilos;i++){
         sem_wait(&sem_termina_hilo);
+        pthread_mutex_lock(&mutex_log);
         log_info(logger,"Hilos contados: %d",i+1);
+        pthread_mutex_unlock(&mutex_log);
     }
     
 
@@ -94,7 +96,9 @@ void liberar_espacio(t_log *logger, t_config *config, sockets_kernel *sockets)
     destruir_estados(); 
     destruir_semaforos();
     destruir_mutex();
+    pthread_mutex_lock(&mutex_log);
     log_debug(logger, "Estructuras liberadas. KERNEL TERMINADO");
     log_destroy(logger);
+    pthread_mutex_unlock(&mutex_log);
     config_destroy(config);
 }

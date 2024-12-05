@@ -72,7 +72,6 @@ t_particiones *busqueda_fija(int pid, int tamanio_proceso, char *algoritmo_busqu
     pthread_mutex_lock(&mutex_lista_particiones);
     if (strcmp(algoritmo_busqueda, "FIRST") == 0)
     {
-        printf("entre a first\n");
         particion = fija_first(pid, tamanio_proceso, tamanio_lista);
     }
     if (strcmp(algoritmo_busqueda, "BEST") == 0)
@@ -326,10 +325,12 @@ t_particiones *inicializar_proceso(int pid, int tamanio_proceso, t_config *confi
     char *esquema = config_get_string_value(config, "ESQUEMA");
     char *algoritmo_busqueda = config_get_string_value(config, "ALGORITMO_BUSQUEDA");
     t_particiones *particion = NULL;
-    printf("esquema:%s\n", esquema);
+    pthread_mutex_lock(&mutex_logs);
+    log_info(logger, "esquema:%s", esquema);
+    pthread_mutex_unlock(&mutex_logs);
     if (strcmp(esquema, "FIJAS") == 0)
     {
-        printf("entre a fijas\n");
+        
         particion = busqueda_fija(pid, tamanio_proceso, algoritmo_busqueda, tamanio_lista);
     }
     else if (strcmp(esquema, "DINAMICAS") == 0)
@@ -359,17 +360,23 @@ void liberar_espacio_proceso(int pid)
 }
 
 void fusionar_particiones_libres(t_list *lista_particiones, t_particiones *particion_actual, int indice) {
-    printf("Indice: %d\n", indice);
+    pthread_mutex_lock(&mutex_logs);
+    log_info(logger, "Indice: %d", indice);
+    pthread_mutex_unlock(&mutex_logs);
     int tamanio_lista = list_size(lista_particiones);
 
     // Si la partición actual es la primera
     if (indice == 0) {
-        printf("Base partición actual: %d\n", particion_actual->base);
+        pthread_mutex_lock(&mutex_logs);
+        log_info(logger, "Base partición actual: %d", particion_actual->base);
+        pthread_mutex_unlock(&mutex_logs);
         
         // Verificar si existe una partición siguiente
         if (indice + 1 < tamanio_lista) {
             t_particiones *particion_siguiente = list_get(lista_particiones, indice + 1);
-            printf("Base partición siguiente: %d\n", particion_siguiente->base);
+            pthread_mutex_lock(&mutex_logs);
+            log_info(logger, "Base partición siguiente: %d", particion_siguiente->base);
+            pthread_mutex_unlock(&mutex_logs);
 
             if (!particion_siguiente->ocupada) {
                 // Fusionar con la partición siguiente
@@ -382,13 +389,19 @@ void fusionar_particiones_libres(t_list *lista_particiones, t_particiones *parti
         }
     } else {
         t_particiones *particion_anterior = list_get(lista_particiones, indice - 1);
-        printf("Base partición anterior: %d\n", particion_anterior->base);
-        printf("Base partición actual: %d\n", particion_actual->base);
+        pthread_mutex_lock(&mutex_logs);
+        log_info(logger, "Base partición anterior: %d\n", particion_anterior->base);
+        pthread_mutex_unlock(&mutex_logs);
+        pthread_mutex_lock(&mutex_logs);
+        log_info(logger, "Base partición actual: %d\n", particion_actual->base);
+        pthread_mutex_unlock(&mutex_logs);
 
         // Si la partición actual tiene partición anterior y siguiente
         if (indice + 1 < tamanio_lista) {
             t_particiones *particion_siguiente = list_get(lista_particiones, indice + 1);
-            printf("Base partición siguiente: %d\n", particion_siguiente->base);
+            pthread_mutex_lock(&mutex_logs);
+            log_info(logger, "Base partición siguiente: %d\n", particion_siguiente->base);
+            pthread_mutex_unlock(&mutex_logs);
 
             if (!particion_anterior->ocupada && !particion_siguiente->ocupada) {
                 // Fusionar con anterior y siguiente

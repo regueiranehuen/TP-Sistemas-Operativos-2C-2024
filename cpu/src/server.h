@@ -58,6 +58,8 @@ extern sem_t sem_ok_o_interrupcion;
 extern sem_t sem_finalizacion_cpu;
 extern sem_t sem_socket_cerrado;
 
+extern pthread_mutex_t mutex_logs;
+
 
 extern code_operacion devolucion_kernel;
 

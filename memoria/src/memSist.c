@@ -24,7 +24,9 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
 
     snprintf(path_instrucciones_aux,strlen(path_instrucciones)+strlen(nombre_archivo) + 1,"%s%s",path_instrucciones,nombre_archivo);
     
+    pthread_mutex_lock(&mutex_logs);
     log_info(logger,"PATH INSTRUCCIONES: %s",path_instrucciones_aux);
+    pthread_mutex_unlock(&mutex_logs);
 
 
     FILE* archivo = fopen(path_instrucciones_aux, "r");
@@ -32,7 +34,9 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
     free(path_instrucciones_aux);
 
     if (archivo == NULL) {
+        pthread_mutex_lock(&mutex_logs);
         perror("Error al abrir el archivo");
+        pthread_mutex_unlock(&mutex_logs);
         exit(EXIT_FAILURE);
     }
     
@@ -174,28 +178,21 @@ void finalizar_hilo(int tid, int pid) {
     pthread_mutex_lock(&mutex_lista_contextos_pids);
     t_contexto_pid* contexto_pid = obtener_contexto_pid(pid);
 
+    pthread_mutex_lock(&mutex_logs);
     log_info(logger,"CONTEXTO PID DEL HILO QUE QUIERO ELIMINAR:%d",contexto_pid->pid);
-
-    for (int i = 0; i < list_size(lista_contextos_pids);i++){
-        t_contexto_pid*cont_pid_act=list_get(lista_contextos_pids,i);
-        log_info(logger,"PID:%d",cont_pid_act->pid);
-        log_info(logger,"SIZE CONTEXTO TID:%d",list_size(cont_pid_act->contextos_tids));
-        for (int j = 0; j < list_size(cont_pid_act->contextos_tids); j++){
-            t_contexto_tid*cont_tid_act=list_get(cont_pid_act->contextos_tids,j);
-            log_info(logger,"TID:%d",cont_tid_act->tid);
-        }
-
-    }
-    
-
     log_info(logger,"VOY A OBTENER EL CONTEXTO DEL TID %d PID %d",tid,contexto_pid->pid);
+    pthread_mutex_unlock(&mutex_logs);
     t_contexto_tid* contexto_tid = obtener_contexto_tid(pid,tid);
 
+    
     if (contexto_tid == NULL){
-        log_info(logger,"PINGO");
+        pthread_mutex_lock(&mutex_logs);
+        log_info(logger,"Contexto tid: NULL");
+        pthread_mutex_unlock(&mutex_logs);
     }
-
+    pthread_mutex_lock(&mutex_logs);
     log_info(logger,"OBTENIDO CONTEXTO DE TID %d!",contexto_tid->tid);
+    pthread_mutex_unlock(&mutex_logs);
 
     list_remove_element(contexto_pid->contextos_tids,contexto_tid);
     free(contexto_tid->registros);

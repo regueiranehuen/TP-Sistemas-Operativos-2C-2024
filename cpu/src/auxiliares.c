@@ -8,19 +8,23 @@ void inicializar_semaforos(){
 
 void inicializar_estructuras() {
     
+    pthread_mutex_lock(&mutex_logs);
     log_cpu = log_create("CPU.log", "tp", true, LOG_LEVEL_TRACE);
-    
+    pthread_mutex_unlock(&mutex_logs);
+
 
     sockets_cpu = malloc(sizeof(t_sockets_cpu));
 
-    
+    pthread_mutex_lock(&mutex_logs);
     log_info(log_cpu, "Estructuras inicializadas");
+    pthread_mutex_unlock(&mutex_logs);
 }
 
 
 void inicializar_mutex(){
     pthread_mutex_init(&mutex_contextos_exec,NULL);
     pthread_mutex_init(&mutex_interrupt,NULL);
+    pthread_mutex_init(&mutex_logs,NULL);
 }
 
 
@@ -28,6 +32,7 @@ void inicializar_mutex(){
 void destruir_mutex(){
     pthread_mutex_destroy(&mutex_contextos_exec);
     pthread_mutex_destroy(&mutex_interrupt);
+    pthread_mutex_destroy(&mutex_logs);
 }
 
 void destruir_semaforos(){
@@ -43,7 +48,9 @@ void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
         sockets->socket_servidor->socket_cliente_Dispatch == -1 || 
         sockets->socket_servidor->socket_cliente_Interrupt == -1) {
 
+        pthread_mutex_lock(&mutex_logs);
         log_info(log, "Error en los sockets de cpu");
+        pthread_mutex_unlock(&mutex_logs);  
         }
         else{
     close(sockets->socket_memoria);
@@ -60,7 +67,9 @@ void liberarMemoria(t_sockets_cpu * sockets,t_log* log, t_config* config){
             free(sockets);
         }
     config_destroy(config);
+    pthread_mutex_lock(&mutex_logs);
     log_destroy(log);
+    pthread_mutex_unlock(&mutex_logs); 
 }
 
 void terminar_programa() {
@@ -75,9 +84,13 @@ void terminar_programa() {
     destruir_semaforos();
     free(sockets_cpu->socket_servidor);
     free(sockets);
+    pthread_mutex_lock(&mutex_logs);
     log_debug(log_cpu, "Estructuras liberadas. CPU TERMINADO");
+    pthread_mutex_unlock(&mutex_logs); 
     config_destroy(config);
+    pthread_mutex_lock(&mutex_logs);
     log_destroy(log_cpu);
+    pthread_mutex_unlock(&mutex_logs); 
 }
 
 void select_dispatch(){
@@ -89,14 +102,18 @@ void select_dispatch(){
 
     if (actividad < 0)
     {
+        pthread_mutex_lock(&mutex_logs);
         log_error(log_cpu,"Error en select (socket dispatch)");
+        pthread_mutex_unlock(&mutex_logs); 
         exit(EXIT_FAILURE);
     }
 
     // Si se detecta actividad en el socket de dispatch
     if (FD_ISSET(sockets_cpu->socket_servidor->socket_cliente_Dispatch, &readfds))
     {
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu,"Se detectó actividad en el socket de dispatch");
+        pthread_mutex_unlock(&mutex_logs); 
         sem_wait(&sem_socket_cerrado);
     }
 
@@ -120,7 +137,6 @@ t_instruccion *recepcionar_instruccion(t_paquete *paquete)
     // memcpy(&(cantParam), stream, sizeof(int));
     //stream += sizeof(int);
 
-    //log_info(log_cpu, "Cantidad parametros:%d", cantParam);
     int l1 = 0;
     int l2 = 0;
     int l3 = 0;

@@ -83,10 +83,14 @@ t_pcb *crear_pcb()
     pcb->contador_mutex = 0;
     pthread_mutex_lock(&mutex_lista_pcbs);
     list_add(lista_pcbs, pcb);
+    pthread_mutex_lock(&mutex_log);
     log_info(logger,"pids en crear_pcb, lista_pcbs");
+    pthread_mutex_unlock(&mutex_log);
     for (int i = 0; i<list_size(lista_pcbs);i++){
         t_pcb*act=list_get(lista_pcbs,i);
+        pthread_mutex_lock(&mutex_log);
         log_info(logger,"pid guardado: %d",act->pid);
+        pthread_mutex_unlock(&mutex_log);
     }
 
     pthread_mutex_unlock(&mutex_lista_pcbs);
@@ -132,7 +136,7 @@ void iniciar_kernel(char *archivo_pseudocodigo, int tamanio_proceso)
     pcb->tcb_main = tcb;
     pcb->estado = PCB_NEW;
     pthread_mutex_lock(&mutex_log);
-    log_info(logger, "## (%d:0) Se crea el proceso - Estado: NEW", pcb->pid);
+    log_debug(logger, "## (%d:0) Se crea el proceso - Estado: NEW", pcb->pid);
     pthread_mutex_unlock(&mutex_log);
     pthread_mutex_lock(&mutex_cola_new_procesos);
     queue_push(cola_new_procesos, pcb);
@@ -174,12 +178,14 @@ void proceso_exit()
     close(socket_memoria);
     if (respuesta != OK)
     {
-        printf("Error en la eliminación del proceso en memoria");
+        pthread_mutex_lock(&mutex_log);
+        log_error(logger, "Error en la eliminación del proceso en memoria");
+        pthread_mutex_unlock(&mutex_log);
     }
     else if (respuesta == OK)
     {
         pthread_mutex_lock(&mutex_log);
-        log_info(logger, "## Finaliza el proceso %d", pid);
+        log_debug(logger, "## Finaliza el proceso %d", pid);
         pthread_mutex_unlock(&mutex_log);
         sem_post(&semaforo_new_ready_procesos);
 
@@ -209,7 +215,11 @@ void hilo_exit()
 
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     t_tcb *hilo = queue_pop(cola_exit);
-    printf("tid:%d\n", hilo->tid);
+
+    pthread_mutex_lock(&mutex_log);
+    log_info(logger, "tid:%d\n", hilo->tid);
+    pthread_mutex_unlock(&mutex_log);
+    
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
 
     pthread_mutex_lock(&hilo->mutex_cola_hilos_bloqueados);
@@ -236,7 +246,7 @@ void hilo_exit()
     pthread_mutex_unlock(&hilo->mutex_cola_hilos_bloqueados);
 
     pthread_mutex_lock(&mutex_log);
-    log_info(logger, "## (%d:%d) Finaliza el hilo", hilo->pid, hilo->tid);
+    log_debug(logger, "## (%d:%d) Finaliza el hilo", hilo->pid, hilo->tid);
     pthread_mutex_unlock(&mutex_log);
 
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
@@ -263,7 +273,9 @@ void hilo_exit()
     pthread_mutex_lock(&mutex_lista_pcbs);
     t_pcb* proceso = buscar_pcb_por_pid(lista_pcbs,pid);
     pthread_mutex_unlock(&mutex_lista_pcbs);
+    pthread_mutex_lock(&mutex_log);
     log_info(logger,"Proceso:%d Tids:%d",proceso->pid,proceso->contador_tid);
+    pthread_mutex_unlock(&mutex_log);
     sem_post(&proceso->sem_hilos_eliminar);
 
 }
@@ -301,7 +313,9 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
     close(socket_memoria);
     if (respuesta == -1)
     {
+        pthread_mutex_lock(&mutex_log);
         log_info(logger,"No hay espacio para inicializar un proceso, se espera a la finalizacion de alguno");
+        pthread_mutex_unlock(&mutex_log);
         sem_wait(&semaforo_new_ready_procesos); // espera a que se libere un proceso
         sem_post(&semaforo_cola_new_procesos);
     }
@@ -330,7 +344,7 @@ void new_a_ready_procesos() // Verificar contra la memoria si el proceso se pued
         {
             pcb->tcb_main->estado = TCB_READY;
             pthread_mutex_lock(&mutex_log);
-            log_info(logger, "## (%d:%d) Se crea el Hilo - Estado: READY", pcb->pid, pcb->tcb_main->tid);
+            log_debug(logger, "## (%d:%d) Se crea el Hilo - Estado: READY", pcb->pid, pcb->tcb_main->tid);
             pthread_mutex_unlock(&mutex_log);
             pushear_cola_ready(pcb->tcb_main);
         }
@@ -356,7 +370,7 @@ void PROCESS_CREATE(char *pseudocodigo, int tamanio_proceso, int prioridad)
     pcb->tcb_main = tcb;
     pcb->estado = PCB_NEW;
     pthread_mutex_lock(&mutex_log);
-    log_info(logger, "## (%d:0) Se crea el proceso - Estado: NEW", pcb->pid);
+    log_debug(logger, "## (%d:0) Se crea el proceso - Estado: NEW", pcb->pid);
     pthread_mutex_unlock(&mutex_log);
 
     pthread_mutex_lock(&mutex_cola_new_procesos);
@@ -378,7 +392,7 @@ y le deberá indicar a la memoria la finalización de dicho proceso.
 
 void PROCESS_EXIT()
 {
-    log_info(logger, "ENTRAMOS A LA SYSCALL PROCESS_EXIT");
+    
     if (hilo_exec->tid != 0)
     {
         pthread_mutex_lock(&mutex_log);
@@ -393,7 +407,6 @@ void PROCESS_EXIT()
     t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
     pthread_mutex_unlock(&mutex_lista_pcbs);
 
-    log_info(logger,"PID PCB EN PROCESS EXIT: %d",pcb->pid);
     pcb->estado = PCB_EXIT;
 
     pthread_mutex_lock(&mutex_cola_exit_procesos);
@@ -413,7 +426,9 @@ void desalojo(){
     pthread_mutex_lock(&mutex_desalojo);
     if (!aviso_cpu->finQuantum)
     {
+        pthread_mutex_lock(&mutex_log);
         log_info(logger, "envio desalojar");
+        pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
         send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
@@ -432,7 +447,9 @@ void desalojo(){
         sem_getvalue(&sem_recibi_ok,&valor);
 
         if (valor == 1){
+            pthread_mutex_lock(&mutex_log);
             log_debug(logger,"Ya recibi el ok");
+            pthread_mutex_unlock(&mutex_log);
             sem_wait(&sem_recibi_ok);
             goto OK;
         }
@@ -441,16 +458,22 @@ void desalojo(){
         
         if (paquete->syscall != ENUM_OK)
         {
+            pthread_mutex_lock(&mutex_log);
             log_info(logger, "CPU no proceso la interrupción correctamente");
+            pthread_mutex_unlock(&mutex_log);
         }
         else{
+            pthread_mutex_lock(&mutex_log);
         log_info(logger, "recibi la confirmacion");
+        pthread_mutex_unlock(&mutex_log);
         }
         free(paquete->buffer);
         free(paquete);
         }
     OK:
-    log_info(logger, "le mando a cpu el OK nashei");
+    pthread_mutex_lock(&mutex_log);
+    log_info(logger, "le mando a cpu el OK");
+    pthread_mutex_unlock(&mutex_log);
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
 }
 
@@ -500,7 +523,7 @@ void THREAD_CREATE(char *pseudocodigo, int prioridad)
     else
     {
         pthread_mutex_lock(&mutex_log);
-        log_info(logger, "## (%d:%d) Se crea el Hilo - Estado: READY", pcb->pid, tcb->tid);
+        log_debug(logger, "## (%d:%d) Se crea el Hilo - Estado: READY", pcb->pid, tcb->tid);
         pthread_mutex_unlock(&mutex_log);
         pushear_cola_ready(tcb);
     }
@@ -521,7 +544,7 @@ void THREAD_JOIN(int tid)
     if (buscar_tcb_por_tid(lista_tcbs, tid, hilo_exec) == NULL || buscar_tcb(tid, hilo_exec) == NULL)
     {
         pthread_mutex_lock(&mutex_log);
-        log_info(logger, "## (%d:%d) - El hilo pasado por parámetro no existe/ya finalizó", hilo_exec->pid, hilo_exec->tid);
+        log_debug(logger, "## (%d:%d) - El hilo pasado por parámetro no existe/ya finalizó", hilo_exec->pid, hilo_exec->tid);
         pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
         send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
@@ -537,7 +560,7 @@ void THREAD_JOIN(int tid)
     if (hilo_a_bancar == NULL)
     {
         pthread_mutex_lock(&mutex_log);
-        log_info(logger, "## (%d:%d) - El hilo pasado por parámetro no existe/ya finalizó", hilo_exec->pid, hilo_exec->tid);
+        log_debug(logger, "## (%d:%d) - El hilo pasado por parámetro no existe/ya finalizó", hilo_exec->pid, hilo_exec->tid);
         pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
         send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
@@ -558,7 +581,7 @@ void THREAD_JOIN(int tid)
     pthread_mutex_unlock(&mutex_lista_blocked);
 
     pthread_mutex_lock(&mutex_log);
-    log_info(logger, "## (%d:%d) - Bloqueado por: PTHREAD_JOIN", tcb_aux->pid, tcb_aux->tid);
+    log_debug(logger, "## (%d:%d) - Bloqueado por: PTHREAD_JOIN", tcb_aux->pid, tcb_aux->tid);
     pthread_mutex_unlock(&mutex_log);
 
     sacar_tcb_ready(tcb_aux);
@@ -574,14 +597,18 @@ ya haya finalizado, esta syscall no hace nada. Finalmente, el hilo que la invoc�
 
 void THREAD_CANCEL(int tid)
 { // suponiendo que el proceso main esta ejecutando
-
+    pthread_mutex_lock(&mutex_log);
     log_info(logger, "Llega thread cancel para hilo %d", tid);
+    pthread_mutex_unlock(&mutex_log);
 
     t_tcb *tcb = buscar_tcb_por_tid(lista_tcbs, tid, hilo_exec); // Debido a que solamente hilos vinculados por un mismo proceso se pueden cancelar entre si, el tid a cancelar debe ser del proceso del hilo que llamo a la funcion
 
     if (tcb == NULL || buscar_tcb(tid, hilo_exec) == NULL)
     {
+        pthread_mutex_lock(&mutex_log);
         log_info(logger, "El tid %d pasado por parámetro no pertenece al proceso en ejecución/no existe/ya finalizó", tid);
+        pthread_mutex_unlock(&mutex_log);
+
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
         send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
@@ -605,7 +632,10 @@ void THREAD_CANCEL(int tid)
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
     sem_post(&semaforo_cola_exit_hilos);
 
+    pthread_mutex_lock(&mutex_log);
     log_info(logger,"MANDO OK");
+    pthread_mutex_unlock(&mutex_log);
+
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
 }
 
@@ -622,7 +652,9 @@ void THREAD_EXIT() // AVISO A MEMORIA
 
     // Hilo exec lo establezco en NULL despues
     sacar_tcb_ready(hilo);
+    pthread_mutex_lock(&mutex_log);
     log_info(logger,"TID DEL HILO EN THREAD EXIT: %d",hilo->tid);
+    pthread_mutex_unlock(&mutex_log);
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     queue_push(cola_exit, hilo);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
@@ -725,7 +757,7 @@ void MUTEX_LOCK(char *recurso)
         pthread_mutex_unlock(&mutex_lista_blocked);
 
         pthread_mutex_lock(&mutex_log);
-        log_info(logger, "## (%d:%d) - Bloqueado por: %s", hilo_aux->pid, hilo_aux->tid, recurso);
+        log_debug(logger, "## (%d:%d) - Bloqueado por: %s", hilo_aux->pid, hilo_aux->tid, recurso);
         pthread_mutex_unlock(&mutex_log);
         queue_push(mutex_asociado->cola_tcbs, hilo_aux);
         desalojo();
@@ -761,7 +793,9 @@ void MUTEX_UNLOCK(char *recurso)
     
     if (mutex_asociado->hilo != hilo_exec)
     {
+        pthread_mutex_lock(&mutex_log);
         log_info(logger, "El hilo que realizó la syscall no es el que tiene tomado el recurso");
+        pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
         send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
@@ -810,7 +844,7 @@ void IO(int milisegundos)
     // Agregar el hilo a la lista de hilos bloqueados
     list_add(lista_bloqueados, tcb);
     pthread_mutex_lock(&mutex_log);
-    log_info(logger, "## (%d:%d) - Bloqueado por: IO", tcb->pid, tcb->tid);
+    log_debug(logger, "## (%d:%d) - Bloqueado por: IO", tcb->pid, tcb->tid);
     pthread_mutex_unlock(&mutex_log);
 
     t_nodo_cola_IO *nodo_cola_hilo = malloc(sizeof(t_nodo_cola_IO));
@@ -862,9 +896,13 @@ void *hilo_dispositivo_IO(void *args)
             return NULL;
         }
         pthread_mutex_unlock(&mutex_estado_kernel);
+        pthread_mutex_lock(&mutex_log);
         log_info(logger, "LLEGÓ SIGNAL SEM COLA IO");
+        pthread_mutex_unlock(&mutex_log);
         t_nodo_cola_IO *info = queue_pop(cola_IO);
+        pthread_mutex_lock(&mutex_log);
         log_info(logger, "MILISEGUNDOS IO: %d", info->milisegundos);
+        pthread_mutex_unlock(&mutex_log);
         usleep(info->milisegundos * 1000); // operacion IO
 
         pthread_mutex_lock(&mutex_lista_blocked);
@@ -873,7 +911,7 @@ void *hilo_dispositivo_IO(void *args)
         if (listado)
         {
             pthread_mutex_lock(&mutex_log);
-            log_info(logger, "## (%d:%d) finalizó IO y pasa a READY", info->hilo->pid, info->hilo->tid);
+            log_debug(logger, "## (%d:%d) finalizó IO y pasa a READY", info->hilo->pid, info->hilo->tid);
             pthread_mutex_unlock(&mutex_log);
             list_remove_element(lista_bloqueados,info->hilo);
             pthread_mutex_unlock(&mutex_lista_blocked);
@@ -885,7 +923,6 @@ void *hilo_dispositivo_IO(void *args)
         else
         {
             pthread_mutex_unlock(&mutex_lista_blocked);
-            log_info(logger, "El hilo no está bloqueado");
         }
         
         free(info);
@@ -906,7 +943,9 @@ void peticion_dump_memory(t_tcb* hilo){
         return;
     }
     else{
+        pthread_mutex_lock(&mutex_log);
         log_info(logger,"Se creo una peticion de dump correctamente");
+        pthread_mutex_unlock(&mutex_log);
     }
     pthread_detach(hilo_dump);
 }
@@ -918,8 +957,9 @@ void* administrador_dump_memory(void* args){
     int socket_memoria = cliente_Memoria_Kernel(logger, config);
 
     send_operacion_tid_pid(DUMP_MEMORIA, tcb->tid, tcb->pid, socket_memoria);
-
+    pthread_mutex_lock(&mutex_log);
     log_info(logger,"ENVIO DE OPERACION MEMORIA");
+    pthread_mutex_unlock(&mutex_log);
     int rta_memoria;
 
     recv(socket_memoria, &rta_memoria, sizeof(int), 0);
@@ -992,7 +1032,6 @@ void atender_segmentation_fault(){
     t_pcb *pcb = buscar_pcb_por_pid(lista_pcbs, hilo_exec->pid);
     pthread_mutex_unlock(&mutex_lista_pcbs);
     pcb->estado = PCB_EXIT;
-    log_info(logger,"Estamos en atender_segmentation_fault, y metemos a la cola exit el proceso");
     pthread_mutex_lock(&mutex_cola_exit_procesos);
     queue_push(cola_exit_procesos, pcb);
     pthread_mutex_unlock(&mutex_cola_exit_procesos);

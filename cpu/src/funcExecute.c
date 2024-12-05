@@ -35,12 +35,17 @@ void funcJNZ(t_contexto_tid*contexto,char* registro, uint32_t num_instruccion) {
 
 void funcLOG(t_contexto_tid*contexto,char* registro) {
     uint32_t valor = obtener_valor_registro(contexto,registro);
+    pthread_mutex_lock(&mutex_logs);
     log_info(log_cpu, "LOG: Registro %s = %u", registro, valor);
+    pthread_mutex_unlock(&mutex_logs);
 }
 
 void funcREAD_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,char* registro_datos, char* registro_direccion) {
-    printf("registro de datos:%s\n",registro_datos);
-    printf("registro de direccion:%s\n",registro_direccion);
+
+    pthread_mutex_lock(&mutex_logs);
+    log_info(log_cpu, "registro de datos:%s\n",registro_datos);
+    log_info(log_cpu, "registro de direccion:%s\n",registro_direccion);
+    pthread_mutex_unlock(&mutex_logs);
 
     uint32_t direccionLogica = obtener_valor_registro(contextoTid,registro_direccion);
     uint32_t* punteroDireccionFisica = traducir_direccion_logica(contextoTid,contextoPid,direccionLogica);
@@ -51,12 +56,16 @@ void funcREAD_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,cha
         uint32_t valor = leer_valor_de_memoria(direccionFisica);
         if(valor != -1){
         valor_registro_cpu(contextoTid,registro_datos, valor);
-        log_info(log_cpu,"## Lectura - (PID:TID) - (%d:%d) - Dir. Física: %d - Tamaño: %d",contextoTid->pid,contextoTid->tid,direccionFisica,contextoPid->tamanio_proceso);
+        pthread_mutex_lock(&mutex_logs);
+        log_debug(log_cpu,"## TID: %d - Acción: LEER - Dirección Física: %u",contextoTid->tid,direccionFisica);
         log_info(log_cpu, "READ_MEM: Dirección %u, Valor %u", direccionFisica, valor);
+        pthread_mutex_unlock(&mutex_logs);
         }
         free(punteroDireccionFisica);
     } else {
+        pthread_mutex_lock(&mutex_logs);
         log_error(log_cpu, "Dirección física inválida: Se recibió NULL");
+        pthread_mutex_unlock(&mutex_logs);
     }
 }
 
@@ -70,14 +79,20 @@ void funcWRITE_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,ch
         uint32_t valor = obtener_valor_registro(contextoTid,registro_datos);
         int resultado = escribir_valor_en_memoria(direccionFisica, valor);
         if(resultado == 0){
-        log_info(log_cpu,"## Escritura - (PID:TID) - (%d:%d) - Dir. Física: %u - Tamaño: %d",contextoTid->pid,contextoTid->tid,direccionFisica,contextoPid->tamanio_proceso);
+        pthread_mutex_lock(&mutex_logs);
+        log_debug(log_cpu,"## TID: %d - Acción: ESCRIBIR - Dirección Física: %u",contextoTid->tid,direccionFisica);
+        pthread_mutex_unlock(&mutex_logs);
         }
         else{
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu,"Error en la escritura en memoria");
+        pthread_mutex_unlock(&mutex_logs);
         }
         free(punteroDireccionFisica);
     } else {
+        pthread_mutex_lock(&mutex_logs);
         log_error(log_cpu, "Dirección física inválida: Se recibió NULL");
+        pthread_mutex_unlock(&mutex_logs);
     }
 }
 
@@ -124,7 +139,9 @@ uint32_t tamanio_registro(char *registro){
 //--FUNCIONES EXTRAS
 
 uint32_t obtener_valor_registro(t_contexto_tid*contexto,char* registro) {
+    pthread_mutex_lock(&mutex_logs);
     log_info(log_cpu,"registro:%s",registro);
+    pthread_mutex_unlock(&mutex_logs);
     if (strcmp(registro, "AX") == 0) return contexto->registros->AX;
     if (strcmp(registro, "BX") == 0) return contexto->registros->BX;
     if (strcmp(registro, "CX") == 0) return contexto->registros->CX;
@@ -133,7 +150,9 @@ uint32_t obtener_valor_registro(t_contexto_tid*contexto,char* registro) {
     if (strcmp(registro, "FX") == 0) return contexto->registros->FX;
     if (strcmp(registro, "GX") == 0) return contexto->registros->GX;
     if (strcmp(registro, "HX") == 0) return contexto->registros->HX;
+    pthread_mutex_lock(&mutex_logs);
     log_info(log_cpu,"Registro desconocido:%s", registro);
+    pthread_mutex_unlock(&mutex_logs);
     return 0;
 }
 
@@ -141,7 +160,9 @@ void valor_registro_cpu(t_contexto_tid*contexto,char* registro, uint32_t valor) 
     if (strcmp(registro, "AX") == 0) contexto->registros->AX = valor;
     else if (strcmp(registro, "BX") == 0){
         contexto->registros->BX = valor;
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu,"SI ESCRIBO ESTO ES QUE ESTOY RE BASADO AAAAAH Y MI VALOR ES:%d",contexto->registros->BX);
+        pthread_mutex_unlock(&mutex_logs);
     }
     else if (strcmp(registro, "CX") == 0) contexto->registros->CX = valor;
     else if (strcmp(registro, "DX") == 0) contexto->registros->DX = valor;
@@ -154,5 +175,7 @@ void valor_registro_cpu(t_contexto_tid*contexto,char* registro, uint32_t valor) 
 //x si hay que mostrar un registro
 void logRegistro(t_contexto_tid*contexto,char* registro) {
     uint32_t valor = obtener_valor_registro(contexto,registro);
+    pthread_mutex_lock(&mutex_logs);
     log_info(log_cpu, "Registro %s: %u", registro, valor);
+    pthread_mutex_unlock(&mutex_logs);
 }

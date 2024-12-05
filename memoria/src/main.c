@@ -9,7 +9,10 @@ int main(int argc, char *argv[])
     
     if (argc <= 1 || argc > 2)
     {
-        printf("Ingrese ./bin/memoria <path del config>");
+        pthread_mutex_lock(&mutex_logs);
+        log_info(logger, "Ingrese ./bin/memoria <path del config>");
+        pthread_mutex_unlock(&mutex_logs);
+
         return -1;
     }
 
@@ -22,7 +25,9 @@ int main(int argc, char *argv[])
     
 
     logger = log_create("memoria.log", "tp", true, log_level_int);
+    pthread_mutex_lock(&mutex_logs);
     log_info(logger,"Retardo respuesta: %s",config_get_string_value(config,"RETARDO_RESPUESTA"));
+    pthread_mutex_unlock(&mutex_logs);
 
     inicializar_Memoria(config);
     inicializar_mutex();
@@ -31,7 +36,9 @@ int main(int argc, char *argv[])
 
     if (config == NULL)
     {
+        pthread_mutex_lock(&mutex_logs);
         log_error(logger, "Error al crear la configuración");
+        pthread_mutex_unlock(&mutex_logs);
         return -1;
     }
 
@@ -64,7 +71,9 @@ int main(int argc, char *argv[])
     close(sockets_iniciales->socket_kernel);
     free(sockets_iniciales);
     free(sockets);
+    pthread_mutex_lock(&mutex_logs);
     log_debug(logger, "Estructuras liberadas. MEMORIA TERMINADO");
+    pthread_mutex_unlock(&mutex_logs);
     log_destroy(logger);
     return 0;
 }
@@ -76,7 +85,9 @@ void hilo_recibe_cpu()
 
     if (resultado != 0)
     {
+        pthread_mutex_lock(&mutex_logs);
         log_error(logger, "Error al crear el hilo que recibe a cpu desde memoria");
+        pthread_mutex_unlock(&mutex_logs);
     }
     pthread_detach(hilo_cliente_cpu);
 }

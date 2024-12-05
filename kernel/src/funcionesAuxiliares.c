@@ -113,42 +113,24 @@ void liberar_proceso(t_pcb *pcb)
     char *algoritmo = config_get_string_value(config, "ALGORITMO_PLANIFICACION");
     if (strings_iguales(algoritmo, "FIFO"))
     {   
-        pthread_mutex_lock(&mutex_log);
-        log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d de la cola ready de fifo", pcb->pid);
-        pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_cola_ready);
         sacar_tcbs_de_cola_ready_fifo(cola_ready_fifo, pcb->pid);
         pthread_mutex_unlock(&mutex_cola_ready);
     }
     else if (strings_iguales(algoritmo, "PRIORIDADES")){
-        pthread_mutex_lock(&mutex_log);
-        log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d de la cola ready de prioridades", pcb->pid);
-        pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_cola_ready);
         sacar_tcbs_de_lista_ready_prioridades(lista_ready_prioridad,pcb->pid);
         pthread_mutex_unlock(&mutex_cola_ready);
     }
     else if (strings_iguales(algoritmo, "CMN")){
-        pthread_mutex_lock(&mutex_log);
-        log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d de las colas multinivel de ready", pcb->pid);
-        pthread_mutex_unlock(&mutex_log);
         pthread_mutex_lock(&mutex_cola_ready);
         sacar_tcbs_de_colas_ready_multinivel(colas_ready_prioridad,pcb->pid);
         pthread_mutex_unlock(&mutex_cola_ready);
     }
     
-
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d de la lista de blocked", pcb->pid);
-    pthread_mutex_unlock(&mutex_log);
-
     pthread_mutex_lock(&mutex_lista_blocked);
     sacar_tcbs_lista_blocked(lista_bloqueados, pcb->pid);
     pthread_mutex_unlock(&mutex_lista_blocked);
-
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger,"voy a sacar a los tcbs asociados al proceso de pid %d a la cola exit", pcb->pid);
-    pthread_mutex_unlock(&mutex_log);
     
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     enviar_tcbs_a_cola_exit_por_pid(lista_tcbs, cola_exit, pcb->pid);
@@ -242,21 +224,26 @@ void enviar_tcbs_a_cola_exit_por_pid(t_list* lista_tcbs, t_queue* cola_exit, int
         t_tcb* tcb_actual = list_get(lista_tcbs, i);  // Obtener el TCB en el índice actual
 
         if (tcb_actual == NULL) {
+            pthread_mutex_lock(&mutex_log);
             log_error(logger, "Error: TCB nulo en índice %d. Abortando.", i);
+            pthread_mutex_unlock(&mutex_log);
             break;
         }
-
+        pthread_mutex_lock(&mutex_log);
         log_info(logger, "INDICE: %d", i);
         log_info(logger, "tid actual: %d", tcb_actual->tid);
-
+        pthread_mutex_unlock(&mutex_log);
         if (tcb_actual->pid == pid_buscado) {
             t_tcb* tcb_a_mover = list_remove(lista_tcbs, i);
             if (tcb_a_mover == NULL) {
+                pthread_mutex_lock(&mutex_log);
                 log_error(logger, "Error: No se pudo remover el TCB del índice %d. Abortando.", i);
+                pthread_mutex_unlock(&mutex_log);
                 break;
             }
-
+            pthread_mutex_lock(&mutex_log);
             log_info(logger, "tcb_a_mover tid: %d", tcb_a_mover->tid);
+            pthread_mutex_unlock(&mutex_log);
             queue_push(cola_exit, tcb_a_mover);  // Enviar a la cola EXIT
             sem_post(&semaforo_cola_exit_hilos);
 
@@ -296,8 +283,6 @@ t_tcb* sacar_tcb_ready(t_tcb* tcb) {
     pthread_mutex_unlock(&mutex_cola_ready);
     if (aux!=NULL)
         sem_wait(&semaforo_cola_ready);
-    else
-        log_info(logger,"CUACK CUACK NO ESTÁ"); 
     return tcb;
     }
     else if(strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"PRIORIDADES")==0){
@@ -306,8 +291,6 @@ t_tcb* sacar_tcb_ready(t_tcb* tcb) {
     pthread_mutex_unlock(&mutex_cola_ready);
     if (aux!=NULL)
         sem_wait(&semaforo_cola_ready);
-    else
-        log_info(logger,"CUACK CUACK NO ESTÁ"); 
     return tcb;
     }
     else if(strcmp(config_get_string_value(config,"ALGORITMO_PLANIFICACION"),"CMN")==0){
@@ -352,7 +335,6 @@ void liberar_tcb(t_tcb* tcb) {
     if (tcb != NULL) {
         // Liberar el pseudocódigo si fue asignado
         if (tcb->pseudocodigo != NULL) {
-            log_info(logger,"pseudocodigo:%s",tcb->pseudocodigo);
             free(tcb->pseudocodigo);
             
         }
@@ -371,7 +353,6 @@ bool strings_iguales(char*c1,char*c2){
 t_cola_prioridad* obtener_cola_con_mayor_prioridad(t_list* colas_hilos_prioridad_ready) {
     if (list_is_empty(colas_hilos_prioridad_ready)) {
         sem_wait(&semaforo_cola_ready);
-        log_info(logger, "Se tomó el semáforo (cola_ready)");
 
     }
 
@@ -577,7 +558,7 @@ t_pcb* buscar_pcb_por_pid(t_list* lista_pcbs, int pid_buscado) {
 }
 
 t_tcb* sacar_tcb_de_cola(t_queue* cola, t_tcb* tcb_a_sacar) {
-    log_info(logger,"ENTRÉ A SACAR TCB DE COLA");
+
     if (cola == NULL || queue_is_empty(cola)) {
         return NULL;  // Retorna NULL si la cola es NULL o está vacía
     }
@@ -652,7 +633,9 @@ t_tcb* buscar_tcb_por_tid_pid(int tid, int pid,t_list* lista_tcbs){
 
 void print_queue(t_queue* queue) {
     if (queue == NULL || queue_size(queue) == 0) {
+        pthread_mutex_lock(&mutex_log);
         log_info(logger,"La cola está vacía.\n");
+        pthread_mutex_unlock(&mutex_log);
         return;
     }
 
@@ -660,36 +643,46 @@ void print_queue(t_queue* queue) {
     for (int i = 0; i < list_size(queue->elements); i++) {
         t_tcb* tcb = list_get(queue->elements, i);  // obtener el elemento
         // Aquí asumo que el tipo de dato es un entero, puedes modificarlo según tu necesidad
+        pthread_mutex_lock(&mutex_log);
         log_info(logger,"Elemento %d: PID: %d, TID: %d", i, tcb->pid, tcb->tid);
+        pthread_mutex_unlock(&mutex_log);
     }
 }
 
 // Función para imprimir los elementos de una lista de t_cola_prioridad
 void print_lista_prioridades(t_list* lista_prioridades) {
     if (lista_prioridades == NULL || list_size(lista_prioridades) == 0) {
+        pthread_mutex_lock(&mutex_log);
         log_info(logger,"La lista de prioridades está vacía.");
+        pthread_mutex_unlock(&mutex_log);
         return;
     }
 
     // Iteramos sobre la lista de t_cola_prioridad
     for (int i = 0; i < list_size(lista_prioridades); i++) {
         t_cola_prioridad* item = list_get(lista_prioridades, i);
+        pthread_mutex_lock(&mutex_log);
         log_info(logger,"Prioridad: %d", item->prioridad);
         log_info(logger,"Cola asociada:");
+        pthread_mutex_unlock(&mutex_log);
         print_queue(item->cola);  // Llamamos a la función para imprimir la cola
     }
 }
 
 void print_lista(t_list* lista) {
     if (lista == NULL || list_size(lista) == 0) {
+        pthread_mutex_lock(&mutex_log);
         log_info(logger,"La lista está vacía.\n");
+        pthread_mutex_unlock(&mutex_log);
         return;
     }
 
     // Iteramos sobre los elementos de la lista
     for (int i = 0; i < list_size(lista); i++) {
         t_tcb* tcb = list_get(lista, i);  // Obtenemos el elemento
+        pthread_mutex_lock(&mutex_log);
         log_info(logger,"Elemento %d: PID: %d, TID:%d\n", i, tcb->pid, tcb->tid);  // Imprimimos el valor del elemento
+        pthread_mutex_unlock(&mutex_log);
     }
 }
 
