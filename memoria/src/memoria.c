@@ -51,7 +51,10 @@ void atender_conexiones(int socket_cliente)
             log_info(logger,"## Memory Dump solicitado - (PID:TID) - (%d:%d)",info_1->pid,info_1->tid);
             int socket_filesystem = cliente_memoria_filesystem(logger,config);
             
+            pthread_mutex_lock(&mutex_lista_particiones);
             t_particiones* particion_proceso = obtener_particion(info_1->pid);
+            pthread_mutex_unlock(&mutex_lista_particiones);
+
             if (particion_proceso == NULL){
                 log_info(logger,"No se encontró la partición del proceso de pid %d",info_1->pid);
                 respuesta=ERROR;
@@ -90,7 +93,10 @@ void atender_conexiones(int socket_cliente)
             eliminar_contexto_pid(contexto_pid);
             pthread_mutex_unlock(&mutex_lista_contextos_pids);
 
+            pthread_mutex_lock(&mutex_lista_particiones);
             liberar_espacio_proceso(pid_1);
+            pthread_mutex_unlock(&mutex_lista_particiones);
+
             log_info(logger,"## Proceso Destruido -  PID: %d - Tamanio: %d",pid_1,tam_proceso);
             respuesta = OK;
             send(socket_cliente, &respuesta, sizeof(int), 0);

@@ -19,6 +19,7 @@ extern t_list*lista_contextos_pids;
 
 extern pthread_mutex_t mutex_lista_contextos_pids;
 extern pthread_mutex_t mutex_estado_memoria;
+extern pthread_mutex_t mutex_lista_particiones;
 
 extern t_list*lista_instrucciones_tid_pid;
 

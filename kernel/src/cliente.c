@@ -1,5 +1,7 @@
 #include "includes/cliente.h"
 
+pthread_mutex_t mutex_i;
+
 int cliente_Memoria_Kernel(t_log* log, t_config* config) {
     char* ip;
     char* puerto;
@@ -26,17 +28,25 @@ int cliente_Memoria_Kernel(t_log* log, t_config* config) {
     int respuesta = cliente_handshake(socket_cliente,log);
     printf("Despues de cliente handshake\n");
     if (respuesta == 0){
+    pthread_mutex_lock(&mutex_i);
     log_info(log,"%d_Handshake de Kernel --> Memoria realizado correctamente",i);
+    pthread_mutex_unlock(&mutex_i);
    }
    else {
+    pthread_mutex_lock(&mutex_i);
     log_error(log, "%d_Handshake de Kernel --> Memoria tuvo un error",i);
+    pthread_mutex_unlock(&mutex_i);
    }
+   pthread_mutex_lock(&mutex_i);
    if(i==0){//conexion inicial
+   
     code_operacion cod_op = KERNEL;
     send_code_operacion(cod_op,socket_cliente);
    }
+   
    printf("valor de i:%d\n",i);
    i++;
+   pthread_mutex_unlock(&mutex_i);
    return socket_cliente;
 }
 

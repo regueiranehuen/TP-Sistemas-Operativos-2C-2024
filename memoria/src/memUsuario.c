@@ -28,7 +28,9 @@ void inicializar_Memoria(t_config *config)
         particion_inicial->limite = tamanio_memoria;
         particion_inicial->tamanio = tamanio_memoria;
         particion_inicial->ocupada = false;
+        pthread_mutex_lock(&mutex_lista_particiones);
         list_add(lista_particiones, particion_inicial);
+        pthread_mutex_unlock(&mutex_lista_particiones);
     }
     else if (strcmp(esquema, "FIJAS") == 0)
     {
@@ -57,8 +59,9 @@ void cargar_particiones_lista(char **particiones)
         particion->tamanio = particion->limite - particion->base;
         particion->ocupada = false;
         base = particion->limite;
+        pthread_mutex_lock(&mutex_lista_particiones);
         list_add(lista_particiones, particion); // Agregar el puntero del entero a la lista
-
+        pthread_mutex_unlock(&mutex_lista_particiones);
         i++;
     }
 }
@@ -66,7 +69,7 @@ void cargar_particiones_lista(char **particiones)
 t_particiones *busqueda_fija(int pid, int tamanio_proceso, char *algoritmo_busqueda, int tamanio_lista)
 {
     t_particiones *particion = NULL;
-
+    pthread_mutex_lock(&mutex_lista_particiones);
     if (strcmp(algoritmo_busqueda, "FIRST") == 0)
     {
         printf("entre a first\n");
@@ -80,6 +83,7 @@ t_particiones *busqueda_fija(int pid, int tamanio_proceso, char *algoritmo_busqu
     {
         particion = fija_worst(pid, tamanio_proceso, tamanio_lista);
     }
+    pthread_mutex_unlock(&mutex_lista_particiones);
     return particion;
 }
 t_particiones *fija_first(int pid, int tamanio_proceso, int tamanio_lista)
@@ -153,6 +157,7 @@ t_particiones *fija_worst(int pid, int tamanio_proceso, int tamanio_lista)
 t_particiones *busqueda_dinamica(int pid, int tamanio_proceso, char *algoritmo_busqueda, int tamanio_lista)
 {
     t_particiones *particion = NULL;
+    pthread_mutex_lock(&mutex_lista_particiones);
     if (strcmp(algoritmo_busqueda, "FIRST") == 0)
     {
         particion = dinamica_first(pid, tamanio_proceso, tamanio_lista);
@@ -166,6 +171,7 @@ t_particiones *busqueda_dinamica(int pid, int tamanio_proceso, char *algoritmo_b
     {
         particion = dinamica_worst(pid, tamanio_proceso, tamanio_lista);
     }
+    pthread_mutex_unlock(&mutex_lista_particiones);
     return particion;
 }
 

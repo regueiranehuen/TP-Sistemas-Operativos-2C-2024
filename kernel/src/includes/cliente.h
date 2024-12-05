@@ -14,6 +14,8 @@ int socket_cliente_memoria;
 t_socket_cpu* sockets_cliente_cpu;
 }sockets_kernel;
 
+extern pthread_mutex_t mutex_i;
+
 int cliente_Memoria_Kernel(t_log* log,t_config* config);
 t_socket_cpu* cliente_CPU_Kernel(t_log* log, t_config* config);
 void* funcion_hilo_cliente_memoria(void* void_args);

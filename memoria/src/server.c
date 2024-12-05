@@ -9,7 +9,7 @@ sem_t sem_conexion_iniciales;
 sem_t sem_termina_hilo;
 
 pthread_mutex_t mutex_estado_memoria;
-
+pthread_mutex_t mutex_lista_particiones;
 
 t_list *lista_contextos_pids;
 t_list *lista_instrucciones_tid_pid;
