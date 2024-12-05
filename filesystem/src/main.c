@@ -52,6 +52,7 @@ int main(int argc, char *argv[]){
     close(socket_servidor);
     pthread_mutex_destroy(&mutex_bitmap);
     pthread_mutex_destroy(&mutex_estado_filesystem);
+    pthread_mutex_destroy(&cliente_count_mutex);
     sem_destroy(&sem_conexion_hecha);
     sem_destroy(&sem_fin_filesystem);
     sem_destroy(&sem_termina_hilo);

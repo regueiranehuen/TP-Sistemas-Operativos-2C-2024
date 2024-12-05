@@ -8,6 +8,7 @@ extern sem_t sem_fin_filesystem;
 extern sem_t sem_termina_hilo;
 extern pthread_mutex_t mutex_bitmap;
 extern pthread_mutex_t mutex_estado_filesystem;
+extern pthread_mutex_t cliente_count_mutex;
 extern t_log* log_filesystem;
 extern t_config* config;
 extern t_bitarray* bitmap;

@@ -100,7 +100,9 @@ t_bitarray* cargar_bitmap(char* mount_dir, uint32_t block_count) {
 }
 
 void imprimir_contenido_bitmap(t_bitarray* bitmap, uint32_t block_count) {
+    pthread_mutex_lock(&mutex_bitmap);
     if (!bitmap) {
+        pthread_mutex_unlock(&mutex_bitmap);
         log_error(log_filesystem, "Bitmap no cargado");
         return;
     }
@@ -109,6 +111,7 @@ void imprimir_contenido_bitmap(t_bitarray* bitmap, uint32_t block_count) {
         int bit = bitarray_test_bit(bitmap, i);
         log_info(log_filesystem,"Bloque %u: %s\n", i, bit ? "Ocupado" : "Libre");
     }
+    pthread_mutex_unlock(&mutex_bitmap);
 }
 
 char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const char* mount_dir, uint32_t block_size) {
@@ -121,7 +124,7 @@ char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const cha
         log_error(log_filesystem, "No hay espacio suficiente para el archivo dump");
         return NULL;
     }
-
+    pthread_mutex_unlock(&mutex_bitmap);
     // 2. Reservo los bloques necesarios
     char* filepath = malloc(256);
     char* files = "files";
@@ -137,7 +140,7 @@ char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const cha
     int* index_bloque_indices = malloc(sizeof(int));
     *index_bloque_indices = -1;
     reservar_bloque(bitmap, bloques_reservados, bloques_necesarios, filepath, index_bloque_indices, nombre_arch);
-    pthread_mutex_unlock(&mutex_bitmap);
+    
 
     int indice_bloque_indices = *index_bloque_indices;
     free(index_bloque_indices);
@@ -225,13 +228,12 @@ void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t 
     bool primero=true;
 
     
-
+    pthread_mutex_lock(&mutex_bitmap);
     for(int i = 0; i < bitarray_get_max_bit(bitmap); i++) {
         if(!bitarray_test_bit(bitmap, i)) {
             bloques_libres++;
         }
     }
-    
     
     for(int i = 0; i < bitarray_get_max_bit(bitmap) && contador_reserva < bloques_necesarios; i++) {
         if(!bitarray_test_bit(bitmap, i)) {
@@ -259,7 +261,7 @@ void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t 
     
     FILE*arch=fopen(bitmap_path,"wb");
     fwrite(bitmap->bitarray,bitmap->size,1,arch);//escribir en el archivo los bits modificados
-
+    pthread_mutex_unlock(&mutex_bitmap);
     fclose(arch);
     
 }

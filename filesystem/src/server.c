@@ -5,7 +5,7 @@ int estado_filesystem;
 sem_t sem_conexion_hecha;
 sem_t sem_termina_hilo;
 static int client_count = 0;
-static pthread_mutex_t cliente_count_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t cliente_count_mutex;
 
 void *hilo_por_cliente(void *void_args){
 

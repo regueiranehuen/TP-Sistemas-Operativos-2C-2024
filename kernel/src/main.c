@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     int tamanio_proceso = atoi(argv[2]);
     char* path_config = argv[3];
 
-    config = config_create("configs/fibo.config");
+    config = config_create(path_config);
     t_log_level log_level_int = log_level(config);
     logger = log_create("kernel.log", "tp", true, log_level_int);
 
@@ -30,7 +30,6 @@ int main(int argc, char *argv[])
     pthread_mutex_lock(&mutex_estado_kernel);
     estado_kernel = 0;
     pthread_mutex_unlock(&mutex_estado_kernel);
-    log_info(logger,"fuera de mi cesped NEVERCRAKER :,vv,vv.v.v,v,,v.vv.");
     liberar_espacio(logger, config, sockets);
     return 0;
 }
