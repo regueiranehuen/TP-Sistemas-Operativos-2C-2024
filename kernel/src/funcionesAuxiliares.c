@@ -88,6 +88,7 @@ void inicializar_mutex() {
     pthread_mutex_init(&mutex_lista_blocked,NULL);
     pthread_mutex_init(&mutex_syscall_ejecutando,NULL);
     pthread_mutex_init(&mutex_desalojo,NULL);
+    pthread_mutex_init(&mutex_estado_kernel, NULL);
 }
 
 void destruir_mutex() {
@@ -103,6 +104,7 @@ void destruir_mutex() {
     pthread_mutex_destroy(&mutex_lista_blocked);
     pthread_mutex_destroy(&mutex_syscall_ejecutando);
     pthread_mutex_destroy(&mutex_desalojo);
+    pthread_mutex_destroy(&mutex_estado_kernel);
 }
 
 
@@ -493,15 +495,19 @@ bool tcb_metido_en_estructura(t_tcb*tcb){
 
     // Si es FIFO
     if (strings_iguales(algoritmo, "FIFO")) {
+        pthread_mutex_lock(&mutex_cola_ready);
         for (int i = 0; i < queue_size(cola_ready_fifo); i++) {
             t_tcb* hilo = (t_tcb*) list_get(cola_ready_fifo->elements, i);  // Acceso a elementos de la cola FIFO
             if (hilo->tid == tcb->tid && hilo->pid == tcb->pid) {
+                pthread_mutex_unlock(&mutex_cola_ready);
                 return true;
             }
         }
+        pthread_mutex_unlock(&mutex_cola_ready);
     }
     // Si es PRIORIDADES
     if (strings_iguales(algoritmo, "PRIORIDADES")) {
+        pthread_mutex_lock(&mutex_cola_ready);
         for (int i = 0; i < list_size(lista_ready_prioridad); i++) {
             t_tcb* hilo = (t_tcb*) list_get(lista_ready_prioridad, i);
             if (hilo->tid == tcb->tid && hilo->pid == tcb->pid) {
@@ -509,6 +515,7 @@ bool tcb_metido_en_estructura(t_tcb*tcb){
                 return true;
             }
         }
+        pthread_mutex_unlock(&mutex_cola_ready);
     }
 
     // Si es MULTINIVEL
@@ -516,6 +523,7 @@ bool tcb_metido_en_estructura(t_tcb*tcb){
         
 
         // Iterar en las colas_ready_procesos
+        pthread_mutex_lock(&mutex_cola_ready);
         for (int i = 0; i < list_size(colas_ready_prioridad); i++) {
             t_cola_prioridad* cola_prioridad = (t_cola_prioridad*) list_get(colas_ready_prioridad, i);
 
@@ -528,16 +536,19 @@ bool tcb_metido_en_estructura(t_tcb*tcb){
                 }
             }
         }
+        pthread_mutex_unlock(&mutex_cola_ready);
 
     }
     // Buscar en la lista de bloqueados
-  
+    pthread_mutex_lock(&mutex_lista_blocked);
     for (int i = 0; i < list_size(lista_bloqueados); i++) {
         t_tcb* hilo_bloqueado = (t_tcb*) list_get(lista_bloqueados, i);
         if (hilo_bloqueado->tid == tcb->tid && hilo_bloqueado->pid == tcb->pid) {
+            pthread_mutex_unlock(&mutex_lista_blocked);
             return true;
         }
     }
+    pthread_mutex_unlock(&mutex_lista_blocked);
  
     // Si no se encontrÃ³ en ninguna parte
     return false;

@@ -4,6 +4,7 @@ t_log *log_filesystem;
 t_config *config;
 sem_t sem_fin_filesystem;
 pthread_mutex_t mutex_bitmap;
+pthread_mutex_t mutex_estado_filesystem;
 t_bitarray *bitmap;
 char *mount_dir;
 int block_count;
@@ -22,7 +23,9 @@ int main(int argc, char *argv[]){
     }
 
     int socket_servidor;
+    pthread_mutex_lock(&mutex_estado_filesystem);
     estado_filesystem = 1;
+    pthread_mutex_unlock(&mutex_estado_filesystem);
     char* path_config = argv[1];
     inicializar_estructuras(path_config);
 
@@ -37,7 +40,9 @@ int main(int argc, char *argv[]){
     /*pthread_cancel(hilo_gestor);
     pthread_join(hilo_gestor,NULL);*/
 
+    pthread_mutex_lock(&mutex_estado_filesystem);
     estado_filesystem = 0;
+    pthread_mutex_unlock(&mutex_estado_filesystem);
 
     sem_post(&sem_conexion_hecha);
     sem_wait(&sem_termina_hilo);
@@ -46,6 +51,7 @@ int main(int argc, char *argv[]){
     
     close(socket_servidor);
     pthread_mutex_destroy(&mutex_bitmap);
+    pthread_mutex_destroy(&mutex_estado_filesystem);
     sem_destroy(&sem_conexion_hecha);
     sem_destroy(&sem_fin_filesystem);
     sem_destroy(&sem_termina_hilo);

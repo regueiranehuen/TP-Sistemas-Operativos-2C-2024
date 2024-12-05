@@ -6,6 +6,7 @@ void inicializar_estructuras(char* path_config){
     sem_init(&sem_conexion_hecha, 0, 0);
     sem_init(&sem_termina_hilo,0,0);
     pthread_mutex_init(&mutex_bitmap,NULL);
+    pthread_mutex_init(&mutex_estado_filesystem,NULL);
     config = config_create(path_config);
     t_log_level log_level_int = log_level(config);
     log_filesystem = log_create("filesystem.log", "tp", true, log_level_int);

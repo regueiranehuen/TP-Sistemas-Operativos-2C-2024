@@ -77,6 +77,7 @@ extern bool syscallEjecutando;
 extern bool recibo_ok;
 
 extern pthread_mutex_t mutex_desalojo;
+extern pthread_mutex_t mutex_estado_kernel;
 extern pthread_mutex_t mutex_recibo_ok;
 
 typedef struct{

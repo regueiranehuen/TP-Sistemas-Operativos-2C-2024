@@ -52,39 +52,56 @@ void *hilo_por_cliente(void *void_args){
     return NULL;
 }
 
-void *gestor_clientes(void *void_args){ // Crear un hilo que crea hilos que crean conexiones para cada petición de kernel
-
+void *gestor_clientes(void *void_args) {
     hilo_clientes *args = (hilo_clientes *)void_args;
 
     int respuesta;
     int i = 0;
-    while (estado_filesystem != 0)
-    { // mientras el servidor este abierto
-        
+
+    while (1) { // Ciclo infinito hasta que estado_filesystem sea 0
+        pthread_mutex_lock(&mutex_estado_filesystem);
+        int estado = estado_filesystem;
+        pthread_mutex_unlock(&mutex_estado_filesystem);
+
+        if (estado == 0) {
+            break;
+        }
+
         hilo_clientes *args_hilo = malloc(sizeof(hilo_clientes));
+        if (args_hilo == NULL) {
+            log_error(args->log, "Error al asignar memoria para el hilo del cliente");
+            continue;
+        }
+
         args_hilo->log = args->log;
         args_hilo->socket_servidor = args->socket_servidor;
-        
+
         pthread_t hilo_cliente;
-        
+
         respuesta = pthread_create(&hilo_cliente, NULL, hilo_por_cliente, (void *)args_hilo);
-        
-        if (respuesta != 0)
-        {
+
+        if (respuesta != 0) {
             log_error(args->log, "Error al crear el hilo para el cliente");
             free(args_hilo);
             continue;
         }
+
         pthread_detach(hilo_cliente);
-        sem_wait(&sem_conexion_hecha); // esperar a que un cliente se conecte para esperar otro
-        if (estado_filesystem == 0){
+        
+        sem_wait(&sem_conexion_hecha); // Esperar a que un cliente se conecte para procesar otro
+
+        pthread_mutex_lock(&mutex_estado_filesystem);
+        if (estado_filesystem == 0) {
+            pthread_mutex_unlock(&mutex_estado_filesystem);
             free(args);
             sem_post(&sem_termina_hilo);
             return NULL;
         }
+        pthread_mutex_unlock(&mutex_estado_filesystem);
 
         i++;
     }
+
     free(args);
     return NULL;
 }

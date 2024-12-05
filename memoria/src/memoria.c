@@ -50,7 +50,7 @@ void atender_conexiones(int socket_cliente)
             t_tid_pid *info_1 = recepcionar_tid_pid_code_op(paquete);
             log_info(logger,"## Memory Dump solicitado - (PID:TID) - (%d:%d)",info_1->pid,info_1->tid);
             int socket_filesystem = cliente_memoria_filesystem(logger,config);
-
+            
             t_particiones* particion_proceso = obtener_particion(info_1->pid);
             if (particion_proceso == NULL){
                 log_info(logger,"No se encontró la partición del proceso de pid %d",info_1->pid);

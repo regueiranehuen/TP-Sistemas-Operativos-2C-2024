@@ -5,9 +5,13 @@ t_tcb *fifo_tcb()
 {
 
     sem_wait(&semaforo_cola_ready);
+    pthread_mutex_lock(&mutex_estado_kernel);
     if (estado_kernel == 0){
+    pthread_mutex_unlock(&mutex_estado_kernel);
         return NULL;
     }
+    pthread_mutex_unlock(&mutex_estado_kernel);
+    
     log_info(logger, "Se tomó el semáforo (cola_ready)");
 
     log_info(logger,"Cola ready");
@@ -54,19 +58,35 @@ Al llegar un proceso a esta cola y haya otros esperando, el mismo simplemente se
 void *funcion_new_ready_procesos(void *void_args)
 {
 
-    while (estado_kernel != 0)
+    while (1)
     {
         new_a_ready_procesos();
+        pthread_mutex_lock(&mutex_estado_kernel);
+        if(estado_kernel == 0){
+        pthread_mutex_unlock(&mutex_estado_kernel);
+            break;
+        }
+        pthread_mutex_unlock(&mutex_estado_kernel);
+
     }
+
+    
+
     sem_post(&sem_termina_hilo);
     return NULL;
 }
 
 void *funcion_procesos_exit(void *void_args)
 {
-    while (estado_kernel != 0)
+    while (1)
     {
         proceso_exit();
+        pthread_mutex_lock(&mutex_estado_kernel);
+        if(estado_kernel == 0){
+            pthread_mutex_unlock(&mutex_estado_kernel);
+            break;
+        }
+        pthread_mutex_unlock(&mutex_estado_kernel);
     }
     sem_post(&sem_termina_hilo);
     return NULL;
@@ -75,9 +95,15 @@ void *funcion_procesos_exit(void *void_args)
 void *funcion_hilos_exit(void *void_args)
 {
 
-    while (estado_kernel != 0)
+    while (1)
     {
         hilo_exit();
+        pthread_mutex_lock(&mutex_estado_kernel);
+        if(estado_kernel == 0){
+            pthread_mutex_unlock(&mutex_estado_kernel);
+            break;
+        }
+        pthread_mutex_unlock(&mutex_estado_kernel);
     }
     sem_post(&sem_termina_hilo);
     return NULL;
@@ -343,13 +369,15 @@ void*atender_interrupt(void*args){
 
 void* cortar_ejecucion_modulos(void*args){
 
-    while (estado_kernel != 0){
+    while (1){
         sem_wait(&sem_seguir_o_frenar);
-        
+        pthread_mutex_lock(&mutex_estado_kernel);
         if (estado_kernel == 0){
+            pthread_mutex_unlock(&mutex_estado_kernel);
             sem_post(&sem_termina_hilo);
             return NULL;
         } 
+        pthread_mutex_unlock(&mutex_estado_kernel);
         pthread_mutex_lock(&mutex_lista_pcbs);
         log_info(logger,"LISTA PIDS EN CORTAR EJECUCION MODULOS");
         for (int i = 0; i< list_size(lista_pcbs); i++){
@@ -372,18 +400,21 @@ void* cortar_ejecucion_modulos(void*args){
 
 t_tcb* prioridades (){
 
-sem_wait(&semaforo_cola_ready);
-if (estado_kernel == 0){
-        return NULL;
-}
-log_info(logger, "Se tomó el semáforo (cola_ready)");
+    sem_wait(&semaforo_cola_ready);
+    pthread_mutex_lock(&mutex_estado_kernel);
+    if (estado_kernel == 0){
+        pthread_mutex_unlock(&mutex_estado_kernel);
+            return NULL;
+    }
+    pthread_mutex_unlock(&mutex_estado_kernel);
+    log_info(logger, "Se tomó el semáforo (cola_ready)");
 
 
-pthread_mutex_lock(&mutex_cola_ready);
-t_tcb* tcb_prioritario = list_remove(lista_ready_prioridad,0);
-pthread_mutex_unlock(&mutex_cola_ready);
+    pthread_mutex_lock(&mutex_cola_ready);
+    t_tcb* tcb_prioritario = list_remove(lista_ready_prioridad,0);
+    pthread_mutex_unlock(&mutex_cola_ready);
 
-return tcb_prioritario;
+    return tcb_prioritario;
 
 }
 
@@ -438,9 +469,13 @@ Se elegirá al siguiente hilo a ejecutar según el siguiente esquema de colas mu
 void colas_multinivel(){
     
     sem_wait(&semaforo_cola_ready);
+    pthread_mutex_lock(&mutex_estado_kernel);
     if (estado_kernel == 0){
+        pthread_mutex_unlock(&mutex_estado_kernel);
         return;
     }
+    pthread_mutex_unlock(&mutex_estado_kernel);
+
     pthread_mutex_lock(&mutex_cola_ready);
     print_lista_prioridades(colas_ready_prioridad);
     pthread_mutex_unlock(&mutex_cola_ready);
@@ -479,10 +514,14 @@ t_list* lista_prioridades = (t_list*)void_args;
 while(1){
 
     sem_wait(&sem_lista_prioridades);
+    pthread_mutex_lock(&mutex_estado_kernel);
     if (estado_kernel == 0){
+        pthread_mutex_unlock(&mutex_estado_kernel);
         sem_post(&sem_termina_hilo);
         return NULL;
     }
+    pthread_mutex_unlock(&mutex_estado_kernel);
+
     pthread_mutex_lock(&mutex_cola_ready);
     ordenar_por_prioridad(lista_prioridades);
     pthread_mutex_unlock(&mutex_cola_ready);
@@ -498,19 +537,26 @@ void *hilo_planificador_corto_plazo(void *arg)
         log_info(logger,"Esperando a planificar");
         sem_wait(&sem_ciclo_nuevo);
         sem_wait(&sem_desalojado);
+
+        pthread_mutex_lock(&mutex_estado_kernel);
         if (estado_kernel == 0){
+            pthread_mutex_unlock(&mutex_estado_kernel);
             sem_post(&sem_termina_hilo);
             return NULL;
         }
+        pthread_mutex_unlock(&mutex_estado_kernel);
         log_info(logger,"Planificando");
         aviso_cpu->desalojar = false;
         aviso_cpu->finQuantum = false;
         t_tcb* hilo_a_ejecutar;
         if (strings_iguales(algoritmo, "FIFO")){
         hilo_a_ejecutar = fifo_tcb();
+        pthread_mutex_lock(&mutex_estado_kernel);
         if (estado_kernel == 0){
+            pthread_mutex_unlock(&mutex_estado_kernel);
             goto final;
         }
+        pthread_mutex_unlock(&mutex_estado_kernel);
         hilo_a_ejecutar->estado = TCB_EXECUTE;
         hilo_exec = hilo_a_ejecutar;
         ejecucion();
@@ -518,9 +564,12 @@ void *hilo_planificador_corto_plazo(void *arg)
         } else if (strings_iguales(algoritmo, "PRIORIDADES"))
         {
         hilo_a_ejecutar = prioridades();
+        pthread_mutex_lock(&mutex_estado_kernel);
         if (estado_kernel == 0){
+            pthread_mutex_unlock(&mutex_estado_kernel);
             goto final;
         }
+        pthread_mutex_unlock(&mutex_estado_kernel);
         hilo_a_ejecutar->estado = TCB_EXECUTE;
         hilo_exec = hilo_a_ejecutar;
         ejecucion();
@@ -533,10 +582,13 @@ void *hilo_planificador_corto_plazo(void *arg)
             colas_multinivel();
         }
         final:
+        pthread_mutex_lock(&mutex_estado_kernel);
         if (estado_kernel == 0){
+            pthread_mutex_unlock(&mutex_estado_kernel);
             sem_post(&sem_termina_hilo);
             return NULL;
         }
+        pthread_mutex_unlock(&mutex_estado_kernel);
     }
     return NULL;
 }

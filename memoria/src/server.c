@@ -8,6 +8,8 @@ sem_t sem_fin_memoria;
 sem_t sem_conexion_iniciales;
 sem_t sem_termina_hilo;
 
+pthread_mutex_t mutex_estado_memoria;
+
 
 t_list *lista_contextos_pids;
 t_list *lista_instrucciones_tid_pid;
@@ -83,7 +85,7 @@ void *gestor_clientes(void *void_args)
 
     int respuesta;
     int i = 0;
-    while (estado_memoria != 0)
+    while (1)
     { // mientras el servidor este abierto
         
         hilo_clientes *args_hilo = malloc(sizeof(hilo_clientes));
@@ -102,12 +104,14 @@ void *gestor_clientes(void *void_args)
         }
         pthread_detach(hilo_cliente);
         sem_wait(&sem_conexion_hecha); // esperar a que un cliente se conecte para esperar otro
+        pthread_mutex_lock(&mutex_estado_memoria);
         if (estado_memoria == 0){
             free(args);
             sem_post(&sem_termina_hilo);
+            pthread_mutex_unlock(&mutex_estado_memoria);
             return NULL;
         }
-
+        pthread_mutex_unlock(&mutex_estado_memoria);
         
 
         i++;

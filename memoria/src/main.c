@@ -42,11 +42,12 @@ int main(int argc, char *argv[])
 
     hilo_recibe_cpu();
 
-    
-
     sem_wait(&sem_fin_memoria);
     //sem_wait para terminar la ejecucion de memoria
+    pthread_mutex_lock(&mutex_estado_memoria);
     estado_memoria = 0;
+    pthread_mutex_unlock(&mutex_estado_memoria);
+
     sem_post(&sem_conexion_hecha);
     sem_wait(&sem_termina_hilo);
 

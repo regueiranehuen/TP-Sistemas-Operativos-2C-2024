@@ -66,10 +66,13 @@ void inicializar_estructuras(){
 void inicializar_mutex(){
     pthread_mutex_init(&mutex_lista_contextos_pids,NULL);
     pthread_mutex_init(&mutex_lista_instruccion,NULL);
+    pthread_mutex_init(&mutex_estado_memoria,NULL);
 }
+
 void destruir_mutex(){
     pthread_mutex_destroy(&mutex_lista_contextos_pids);
     pthread_mutex_destroy(&mutex_lista_instruccion);
+    pthread_mutex_destroy(&mutex_estado_memoria);
 }
 
 void destruir_semaforos(){
