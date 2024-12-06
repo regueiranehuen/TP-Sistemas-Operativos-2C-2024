@@ -176,10 +176,15 @@ void *recibir_cpu(void *args)
 
         case READ_MEM:
         {
-            uint32_t direccionFisica = recepcionar_read_mem(paquete_operacion);
-            uint32_t valor = leer_Memoria(direccionFisica);
+            t_read_mem* info = recepcionar_read_mem(paquete_operacion);
+
+            uint32_t valor = leer_Memoria(info->direccionFisica);
+            pthread_mutex_lock(&mutex_lista_particiones);
+            t_particiones* particion = obtener_particion(info->pid);
+            pthread_mutex_unlock(&mutex_lista_particiones);
+
             pthread_mutex_lock(&mutex_logs);
-            log_info(logger, "valor leido de memoria:%d", valor);
+            log_debug(logger, "## Lectura - (PID:TID) - (%d:%d) - Dir. Física: %u - Tamaño: %u", info->pid,info->tid,info->direccionFisica,particion->tamanio);
             pthread_mutex_unlock(&mutex_logs);
             op_code code;
             if (valor == 0xFFFFFFFF)
@@ -199,17 +204,23 @@ void *recibir_cpu(void *args)
                 log_info(logger, "entre a ok");
                 pthread_mutex_unlock(&mutex_logs);
             }
+            free(info);
             break;
         }
 
         case WRITE_MEM:
         {
             t_write_mem *info_0 = recepcionar_write_mem(paquete_operacion);
-            pthread_mutex_lock(&mutex_logs);
-            log_info(logger, "direccion Fisica recibida:%d", info_0->direccionFisica);
-            log_info(logger, "valor recibido:%d", info_0->valor);
-            pthread_mutex_unlock(&mutex_logs);
+
             int resultado = escribir_Memoria(info_0);
+            pthread_mutex_lock(&mutex_lista_particiones);
+            t_particiones* particion = obtener_particion(info_0->pid);
+            pthread_mutex_unlock(&mutex_lista_particiones);
+
+            pthread_mutex_lock(&mutex_logs);
+            log_debug(logger, "## Escritura - (PID:TID) - (%d:%d) - Dir. Física: %u - Tamaño: %u", info_0->pid,info_0->tid,info_0->direccionFisica,particion->tamanio);
+            pthread_mutex_unlock(&mutex_logs);
+
             if (resultado == 0)
             {
                 op_code code = OK_OP_CODE;
