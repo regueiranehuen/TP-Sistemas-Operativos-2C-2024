@@ -286,7 +286,7 @@ void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t 
             
             bitarray_set_bit(bitmap, i);
 
-            bloques_reservados[contador_reserva] = i; // ?
+            bloques_reservados[contador_reserva] = i;
 
             if (primero){ // Al primer bloque que encuentro lo vuelvo bloque de indices
                 *index_bloque_indices=i; // Guardo la posicion del bloque de indices en el bitmap. Despues uso esto para crear el archivo de metadata
@@ -425,7 +425,6 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
     }
 
     fclose(arch);
-    log_info(log_filesystem, "RUTA MOUNT DIR: %s", mount_dir);
     imprimir_archivo_bloques(mount_dir);
     free(path);
     return 0;
