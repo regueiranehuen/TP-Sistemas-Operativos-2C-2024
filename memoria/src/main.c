@@ -9,9 +9,8 @@ int main(int argc, char *argv[])
     
     if (argc <= 1 || argc > 2)
     {
-        pthread_mutex_lock(&mutex_logs);
-        log_info(logger, "Ingrese ./bin/memoria <path del config>");
-        pthread_mutex_unlock(&mutex_logs);
+        
+        printf("Ingrese ./bin/memoria <path del config>");
 
         return -1;
     }

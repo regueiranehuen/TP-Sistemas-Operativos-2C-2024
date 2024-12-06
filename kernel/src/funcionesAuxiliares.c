@@ -229,10 +229,7 @@ void enviar_tcbs_a_cola_exit_por_pid(t_list* lista_tcbs, t_queue* cola_exit, int
             pthread_mutex_unlock(&mutex_log);
             break;
         }
-        pthread_mutex_lock(&mutex_log);
-        log_info(logger, "INDICE: %d", i);
-        log_info(logger, "tid actual: %d", tcb_actual->tid);
-        pthread_mutex_unlock(&mutex_log);
+    
         if (tcb_actual->pid == pid_buscado) {
             t_tcb* tcb_a_mover = list_remove(lista_tcbs, i);
             if (tcb_a_mover == NULL) {
@@ -241,9 +238,7 @@ void enviar_tcbs_a_cola_exit_por_pid(t_list* lista_tcbs, t_queue* cola_exit, int
                 pthread_mutex_unlock(&mutex_log);
                 break;
             }
-            pthread_mutex_lock(&mutex_log);
-            log_info(logger, "tcb_a_mover tid: %d", tcb_a_mover->tid);
-            pthread_mutex_unlock(&mutex_log);
+
             queue_push(cola_exit, tcb_a_mover);  // Enviar a la cola EXIT
             sem_post(&semaforo_cola_exit_hilos);
 
@@ -634,7 +629,7 @@ t_tcb* buscar_tcb_por_tid_pid(int tid, int pid,t_list* lista_tcbs){
 void print_queue(t_queue* queue) {
     if (queue == NULL || queue_size(queue) == 0) {
         pthread_mutex_lock(&mutex_log);
-        log_info(logger,"La cola está vacía.\n");
+        log_info(logger,"La cola está vacía.");
         pthread_mutex_unlock(&mutex_log);
         return;
     }

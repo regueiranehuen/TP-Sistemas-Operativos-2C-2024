@@ -215,10 +215,6 @@ void hilo_exit()
 
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     t_tcb *hilo = queue_pop(cola_exit);
-
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger, "tid:%d\n", hilo->tid);
-    pthread_mutex_unlock(&mutex_log);
     
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
 
@@ -426,9 +422,7 @@ void desalojo(){
     pthread_mutex_lock(&mutex_desalojo);
     if (!aviso_cpu->finQuantum)
     {
-        pthread_mutex_lock(&mutex_log);
-        log_info(logger, "envio desalojar");
-        pthread_mutex_unlock(&mutex_log);
+        
         pthread_mutex_lock(&mutex_conexion_kernel_a_interrupt);
         send_code_operacion(DESALOJAR, sockets->sockets_cliente_cpu->socket_Interrupt);
         pthread_mutex_unlock(&mutex_conexion_kernel_a_interrupt);
@@ -447,9 +441,6 @@ void desalojo(){
         sem_getvalue(&sem_recibi_ok,&valor);
 
         if (valor == 1){
-            pthread_mutex_lock(&mutex_log);
-            log_debug(logger,"Ya recibi el ok");
-            pthread_mutex_unlock(&mutex_log);
             sem_wait(&sem_recibi_ok);
             goto OK;
         }
@@ -462,18 +453,10 @@ void desalojo(){
             log_info(logger, "CPU no proceso la interrupción correctamente");
             pthread_mutex_unlock(&mutex_log);
         }
-        else{
-            pthread_mutex_lock(&mutex_log);
-        log_info(logger, "recibi la confirmacion");
-        pthread_mutex_unlock(&mutex_log);
-        }
         free(paquete->buffer);
         free(paquete);
         }
     OK:
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger, "le mando a cpu el OK");
-    pthread_mutex_unlock(&mutex_log);
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
 }
 
@@ -597,9 +580,7 @@ ya haya finalizado, esta syscall no hace nada. Finalmente, el hilo que la invoc�
 
 void THREAD_CANCEL(int tid)
 { // suponiendo que el proceso main esta ejecutando
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger, "Llega thread cancel para hilo %d", tid);
-    pthread_mutex_unlock(&mutex_log);
+    
 
     t_tcb *tcb = buscar_tcb_por_tid(lista_tcbs, tid, hilo_exec); // Debido a que solamente hilos vinculados por un mismo proceso se pueden cancelar entre si, el tid a cancelar debe ser del proceso del hilo que llamo a la funcion
 
@@ -632,10 +613,6 @@ void THREAD_CANCEL(int tid)
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
     sem_post(&semaforo_cola_exit_hilos);
 
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger,"MANDO OK");
-    pthread_mutex_unlock(&mutex_log);
-
     send_code_operacion(OK, sockets->sockets_cliente_cpu->socket_Dispatch);
 }
 
@@ -652,9 +629,7 @@ void THREAD_EXIT() // AVISO A MEMORIA
 
     // Hilo exec lo establezco en NULL despues
     sacar_tcb_ready(hilo);
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger,"TID DEL HILO EN THREAD EXIT: %d",hilo->tid);
-    pthread_mutex_unlock(&mutex_log);
+    
     pthread_mutex_lock(&mutex_cola_exit_hilos);
     queue_push(cola_exit, hilo);
     pthread_mutex_unlock(&mutex_cola_exit_hilos);
@@ -757,7 +732,7 @@ void MUTEX_LOCK(char *recurso)
         pthread_mutex_unlock(&mutex_lista_blocked);
 
         pthread_mutex_lock(&mutex_log);
-        log_debug(logger, "## (%d:%d) - Bloqueado por: %s", hilo_aux->pid, hilo_aux->tid, recurso);
+        log_debug(logger, "## (%d:%d) - Bloqueado por: MUTEX", hilo_aux->pid, hilo_aux->tid);
         pthread_mutex_unlock(&mutex_log);
         queue_push(mutex_asociado->cola_tcbs, hilo_aux);
         desalojo();
@@ -851,9 +826,7 @@ void IO(int milisegundos)
     nodo_cola_hilo->hilo = tcb;
     nodo_cola_hilo->milisegundos = milisegundos;
     queue_push(cola_IO, nodo_cola_hilo);
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger, "PUSHEÉ EL TCB DEL HILO CON TID %d A LA COLA IO", tcb->tid);
-    pthread_mutex_unlock(&mutex_log);
+    
     sem_post(&sem_cola_IO);
     //fin_syscall_desalojo_cmn();
 }
@@ -896,9 +869,7 @@ void *hilo_dispositivo_IO(void *args)
             return NULL;
         }
         pthread_mutex_unlock(&mutex_estado_kernel);
-        pthread_mutex_lock(&mutex_log);
-        log_info(logger, "LLEGÓ SIGNAL SEM COLA IO");
-        pthread_mutex_unlock(&mutex_log);
+        
         t_nodo_cola_IO *info = queue_pop(cola_IO);
         pthread_mutex_lock(&mutex_log);
         log_info(logger, "MILISEGUNDOS IO: %d", info->milisegundos);

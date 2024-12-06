@@ -4,9 +4,9 @@ int main(int argc, char** argv) {
 
     if (argc <= 1 || argc > 2)
     {
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "Ingrese ./bin/cpu <path del config>\n");
-        pthread_mutex_unlock(&mutex_logs);
+        
+        printf("Ingrese ./bin/cpu <path del config>\n");
+
         return -1;
     }
     

@@ -52,10 +52,6 @@ int cliente_Memoria_Kernel(t_log* log, t_config* config) {
     code_operacion cod_op = KERNEL;
     send_code_operacion(cod_op,socket_cliente);
    }
-   
-    pthread_mutex_lock(&mutex_log);
-    log_info(log, "valor de i:%d\n",i);
-    pthread_mutex_unlock(&mutex_log);
 
    i++;
    pthread_mutex_unlock(&mutex_i);

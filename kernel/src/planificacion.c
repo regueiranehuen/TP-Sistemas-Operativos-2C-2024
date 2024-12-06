@@ -291,9 +291,6 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             log_debug(logger, "## (%d:%d) - Solicitó syscall: MUTEX_CREATE", hilo_exec->pid, hilo_exec->tid);
             pthread_mutex_unlock(&mutex_log);
             char *recurso = recibir_string_paquete_syscall(paquete);
-            pthread_mutex_lock(&mutex_log);
-            log_info(logger, "RECURSO MUTEX CREATE: %s", recurso);
-            pthread_mutex_unlock(&mutex_log);
             
             MUTEX_CREATE(recurso);
             free(recurso);
@@ -303,9 +300,6 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             log_debug(logger, "## (%d:%d) - Solicitó syscall: MUTEX_LOCK", hilo_exec->pid, hilo_exec->tid);
             pthread_mutex_unlock(&mutex_log);
             char *recurso_a_bloquear = recibir_string_paquete_syscall(paquete);
-            pthread_mutex_lock(&mutex_log);
-            log_info(logger, "RECURSO MUTEX LOCK: %s", recurso_a_bloquear);
-            pthread_mutex_unlock(&mutex_log);
             
             MUTEX_LOCK(recurso_a_bloquear);
             free(recurso_a_bloquear);
@@ -315,9 +309,6 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             log_debug(logger, "## (%d:%d) - Solicitó syscall: MUTEX_UNLOCK", hilo_exec->pid, hilo_exec->tid);
             pthread_mutex_unlock(&mutex_log);
             char *recurso_a_desbloquear = recibir_string_paquete_syscall(paquete);
-            pthread_mutex_lock(&mutex_log);
-            log_info(logger, "RECURSO MUTEX UNLOCK: %s", recurso_a_desbloquear);
-            pthread_mutex_unlock(&mutex_log);
         
             MUTEX_UNLOCK(recurso_a_desbloquear);
             free(recurso_a_desbloquear);
@@ -327,9 +318,6 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             log_debug(logger, "## (%d:%d) - Solicitó syscall: IO", hilo_exec->pid, hilo_exec->tid);
             pthread_mutex_unlock(&mutex_log);
             int milisegundos = recibir_entero_paquete_syscall(paquete);
-            pthread_mutex_lock(&mutex_log);
-            log_info(logger, "ENTRAMOS A SYSCALL IO, MILISEGUNDOS: %d", milisegundos);
-            pthread_mutex_unlock(&mutex_log);
             
             IO(milisegundos);
             
@@ -364,7 +352,6 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
         default:
             pthread_mutex_lock(&mutex_log);
             log_info(logger, "se recibio el codigo %d no valido", paquete->syscall);
-            log_info(logger, "Syscall no válida.");
             pthread_mutex_unlock(&mutex_log);
             free(paquete->buffer);
             free(paquete);
@@ -400,9 +387,6 @@ void*atender_interrupt(void*args){
         sem_getvalue(&sem_recibi_ok,&valor);
 
         if (valor == 1){
-            pthread_mutex_lock(&mutex_log);
-            log_debug(logger,"Nadie tomo el semaforo, hago wait");
-            pthread_mutex_unlock(&mutex_log);
             sem_wait(&sem_recibi_ok);
         }
 
@@ -484,9 +468,7 @@ t_tcb* prioridades (){
 }
 
 t_thread_create* parametros_thread_create(t_paquete_syscall*paquete){
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger,"VOY A RECIBIR LOS PARAMETROS THREAD CREATE QUE EMOPCION");
-    pthread_mutex_unlock(&mutex_log);
+
     t_thread_create*info = malloc(sizeof(t_thread_create));
     
     void * stream = paquete->buffer->stream;
@@ -495,20 +477,14 @@ t_thread_create* parametros_thread_create(t_paquete_syscall*paquete){
     // Deserializamos los campos que tenemos en el buffer
     memcpy(&sizeNombreArchivo, stream, sizeof(int)); // Recibimos el size del nombre del archivo de pseudocodigo
     stream += sizeof(int);
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger,"Size nombre archivo: %d",sizeNombreArchivo);
-    pthread_mutex_unlock(&mutex_log);
+    
     info->nombreArchivo = malloc(sizeNombreArchivo);
     memcpy(info->nombreArchivo, stream, sizeNombreArchivo); // Primer parámetro para la syscall: nombre del archivo
     stream += sizeNombreArchivo;
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger,"nombre archivo: %s",info->nombreArchivo);
-    pthread_mutex_unlock(&mutex_log);
+    
     memcpy(&(info->prioridad), stream, sizeof(int));
     stream += sizeof(int);
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger,"Prioridad: %d",info->prioridad);
-    pthread_mutex_unlock(&mutex_log);
+    
     eliminar_paquete_syscall(paquete);
 
     return info;
@@ -838,9 +814,7 @@ else if(resultado > 0){
 }
 }
 void pushear_cola_ready(t_tcb* hilo){
-    pthread_mutex_lock(&mutex_log);
-    log_info(logger, "FUNCION PUSHEAR COLA READY LLEGA HILO CON TID %d",hilo->tid);
-    pthread_mutex_unlock(&mutex_log);
+    
     char* planificacion = config_get_string_value(config,"ALGORITMO_PLANIFICACION");
     
     if (strcmp(planificacion, "FIFO") == 0){
