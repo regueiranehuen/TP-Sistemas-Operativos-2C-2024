@@ -5,8 +5,7 @@ uint32_t* traducir_direccion_logica(t_contexto_tid*contexto_tid,t_contexto_pid_s
     uint32_t base = contexto_pid->base;
     uint32_t limite = contexto_pid->limite;  
 
-    log_info(log_cpu,"rraaah pid %d",contexto_pid->pid);
-
+    
     log_info(log_cpu, "Base de la partición: %d", base);
     log_info(log_cpu, "Límite de la partición: %d", limite);
 

@@ -294,13 +294,17 @@ else{
 
 }
 
-void send_read_mem(uint32_t direccionFisica, int socket_memoria){
+void send_read_mem(int tid, int pid,uint32_t direccionFisica, int socket_memoria){
  t_buffer* buffer = malloc(sizeof(t_buffer));
 
- buffer->size = sizeof(uint32_t);
+ buffer->size = 2*sizeof(int) +sizeof(uint32_t);
  buffer->stream = malloc(buffer->size);
  
  void* stream = buffer->stream;
+memcpy(stream,&tid,sizeof(int));
+stream+=sizeof(int);
+memcpy(stream,&pid,sizeof(int));
+stream+=sizeof(int);
 
  memcpy(stream,&direccionFisica,sizeof(uint32_t));
 
@@ -309,14 +313,18 @@ void send_read_mem(uint32_t direccionFisica, int socket_memoria){
  send_paquete_op_code(socket_memoria,buffer,code);    
 }
 
-void send_write_mem(uint32_t direccionFisica, uint32_t valor, int socket_memoria){
+void send_write_mem(int tid, int pid,uint32_t direccionFisica, uint32_t valor, int socket_memoria){
 t_buffer* buffer = malloc(sizeof(t_buffer));
 
- buffer->size = 2*sizeof(uint32_t);
+ buffer->size = 2*sizeof(int) + 2*sizeof(uint32_t);
  buffer->stream = malloc(buffer->size);
  
  void* stream = buffer->stream;
-
+ 
+memcpy(stream,&tid,sizeof(int));
+stream+=sizeof(int);
+memcpy(stream,&pid,sizeof(int));
+stream+=sizeof(int);
  memcpy(stream,&direccionFisica,sizeof(uint32_t));
  stream += sizeof(uint32_t);
  memcpy(stream,&valor,sizeof(uint32_t));
@@ -333,11 +341,19 @@ t_write_mem* info = malloc(sizeof(t_write_mem));
 
 uint32_t direccionFisica;
 uint32_t valor;
+int tid;
+int pid;
 
+memcpy(&tid,stream,sizeof(int));
+stream += sizeof(int);
+memcpy(&pid,stream,sizeof(int));
+stream += sizeof(int);
 memcpy(&(direccionFisica),stream,sizeof(uint32_t));
 stream += sizeof(uint32_t);
 memcpy(&(valor),stream,sizeof(uint32_t));
 
+info->tid = tid;
+info->pid = pid;
 info->direccionFisica = direccionFisica;
 info->valor = valor;
 
@@ -345,15 +361,36 @@ eliminar_paquete(paquete);
 return info;  
 }
 
-uint32_t recepcionar_read_mem(t_paquete* paquete){
+t_read_mem* recepcionar_read_mem(t_paquete* paquete){
 void* stream = paquete->buffer->stream;
 
+t_read_mem* info = malloc(sizeof(t_read_mem));
+
+int tid;
+int pid;
 uint32_t direccionFisica;
 
+memcpy(&tid,stream,sizeof(int));
+stream += sizeof(int);
+memcpy(&pid,stream,sizeof(int));
+stream += sizeof(int);
 memcpy(&(direccionFisica),stream,sizeof(uint32_t));
 
+info->tid=tid;
+info->pid=pid;
+info->direccionFisica=direccionFisica;
+
 eliminar_paquete(paquete);
-return direccionFisica;
+return info;
+}
+
+uint32_t recepcionar_valor_read_mem(t_paquete* paquete){
+void* stream = paquete->buffer->stream;
+uint32_t info;
+memcpy(&info,stream,sizeof(uint32_t));
+
+eliminar_paquete(paquete);
+return info;
 }
 
 void solicitar_contexto_ejecucion(int pid, int tid,int conexion){

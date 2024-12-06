@@ -51,9 +51,11 @@ void funcREAD_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,cha
     uint32_t* punteroDireccionFisica = traducir_direccion_logica(contextoTid,contextoPid,direccionLogica);
     uint32_t direccionFisica;
 
+
+
     if (punteroDireccionFisica != NULL) {
         direccionFisica = *punteroDireccionFisica;
-        uint32_t valor = leer_valor_de_memoria(direccionFisica);
+        uint32_t valor = leer_valor_de_memoria(contextoTid->tid,contextoPid->pid,direccionFisica);
         if(valor != -1){
         valor_registro_cpu(contextoTid,registro_datos, valor);
         pthread_mutex_lock(&mutex_logs);
@@ -77,7 +79,7 @@ void funcWRITE_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,ch
     if (punteroDireccionFisica != NULL) {
         direccionFisica = *punteroDireccionFisica;
         uint32_t valor = obtener_valor_registro(contextoTid,registro_datos);
-        int resultado = escribir_valor_en_memoria(direccionFisica, valor);
+        int resultado = escribir_valor_en_memoria(contextoTid->tid,contextoPid->pid,direccionFisica,valor);
         if(resultado == 0){
         pthread_mutex_lock(&mutex_logs);
         log_debug(log_cpu,"## TID: %d - Acción: ESCRIBIR - Dirección Física: %u",contextoTid->tid,direccionFisica);
@@ -96,14 +98,14 @@ void funcWRITE_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,ch
     }
 }
 
-uint32_t leer_valor_de_memoria(uint32_t direccionFisica) {
+uint32_t leer_valor_de_memoria(int tid, int pid, uint32_t direccionFisica) {
 
-    send_read_mem(direccionFisica,sockets_cpu->socket_memoria);
+    send_read_mem(tid,pid,direccionFisica,sockets_cpu->socket_memoria);
 
     t_paquete* paquete = recibir_paquete_op_code(sockets_cpu->socket_memoria);
 
     if (paquete->codigo_operacion == OK_OP_CODE) {
-        uint32_t valor = recepcionar_read_mem(paquete);
+        uint32_t valor = recepcionar_valor_read_mem(paquete);
         return valor;
     } else {
         log_error(log_cpu, "Error al leer memoria");
@@ -112,9 +114,9 @@ uint32_t leer_valor_de_memoria(uint32_t direccionFisica) {
 }
 
 
-int escribir_valor_en_memoria(uint32_t direccionFisica, uint32_t valor) {
+int escribir_valor_en_memoria(int tid, int pid,uint32_t direccionFisica, uint32_t valor) {
     
-    send_write_mem(direccionFisica,valor,sockets_cpu->socket_memoria);
+    send_write_mem(tid,pid,direccionFisica,valor,sockets_cpu->socket_memoria);
     op_code code_op;
     recv(sockets_cpu->socket_memoria,&code_op,sizeof(int),0);
     if(code_op == OK_OP_CODE){

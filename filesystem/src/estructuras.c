@@ -1,7 +1,7 @@
 #include "includes/estructuras.h"
 
 t_bitarray* cargar_bitmap(char* mount_dir, uint32_t block_count) {
-    bool arch_sobreescrito=false;
+
     int length_path = strlen(mount_dir) + 1 + 12; // "/bitmap.dat" = 12 caracteres
     bitmap_path = malloc(length_path);
     if (!bitmap_path) {
@@ -33,7 +33,6 @@ t_bitarray* cargar_bitmap(char* mount_dir, uint32_t block_count) {
         }
 
         // Calcular el tamaño del bitmap
-        etiqueta_arch_creado:
         uint32_t bitmap_size = (uint32_t)ceil((double)block_count / 8.0);
         pthread_mutex_lock(&mutex_logs);
         log_info(log_filesystem, "Tamaño del bitmap: %u bytes", bitmap_size);
@@ -82,20 +81,17 @@ t_bitarray* cargar_bitmap(char* mount_dir, uint32_t block_count) {
         free(bitmap_path);
         return NULL;
     }
-    if (arch_sobreescrito == false)
+
+    uint32_t expected_size = (uint32_t)ceil((double)block_count / 8.0);
+    if ((uint32_t)st.st_size != expected_size)
     {
-        uint32_t expected_size = (uint32_t)ceil((double)block_count / 8.0);
-        if ((uint32_t)st.st_size != expected_size)
-        {
-            pthread_mutex_lock(&mutex_logs);
-            log_info(log_filesystem, "El tamaño del archivo %s no es el esperado. Esperado: %u, Actual: %lu => Creamos un nuevo archivo",
-                     bitmap_path, expected_size, st.st_size);
-            pthread_mutex_unlock(&mutex_logs);
-            fclose(arch);
-            arch = fopen(bitmap_path, "wb");
-            arch_sobreescrito = true;
-            goto etiqueta_arch_creado;
-        }
+        pthread_mutex_lock(&mutex_logs);
+        log_info(log_filesystem, "El tamaño del archivo %s no es el esperado. Esperado: %u, Actual: %lu => Creamos un nuevo archivo",
+                 bitmap_path, expected_size, st.st_size);
+        pthread_mutex_unlock(&mutex_logs);
+        fclose(arch);
+        free(bitmap_path);
+        return NULL;
     }
 
     // Cargar el contenido del archivo en memoria
@@ -175,7 +171,7 @@ char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const cha
     uint32_t* bloques_reservados = malloc((bloques_necesarios) * sizeof(uint32_t));
     int* index_bloque_indices = malloc(sizeof(int));
     *index_bloque_indices = -1;
-    reservar_bloque(bitmap, bloques_reservados, bloques_necesarios, filepath, index_bloque_indices, nombre_arch);
+    reservar_bloque(bitmap, bloques_reservados, bloques_necesarios, index_bloque_indices, nombre_arch);
     
 
     int indice_bloque_indices = *index_bloque_indices;
@@ -268,7 +264,7 @@ bool hay_espacio_disponible(t_bitarray* bitmap, int bloques_necesarios) {
     return false;
 }
 
-void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t bloques_necesarios,char* filepath, int* index_bloque_indices, char* nombre_arch) {
+void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t bloques_necesarios, int* index_bloque_indices, char* nombre_arch) {
     int contador_reserva = 0;
     int bloques_libres = 0;
 

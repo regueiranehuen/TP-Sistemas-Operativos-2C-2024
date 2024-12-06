@@ -62,9 +62,17 @@ uint32_t pc;
 }t_instruccion_memoria;
 
 typedef struct{
+int tid;
+int pid;
 uint32_t direccionFisica;
 uint32_t valor;
 }t_write_mem;
+
+typedef struct{
+    int tid;
+    int pid;
+    uint32_t direccionFisica;
+}t_read_mem;
 
 typedef struct{
     int pid;
@@ -379,12 +387,13 @@ t_instruccion_memoria* recepcionar_solicitud_instruccion_memoria(t_paquete* paqu
 
 
 
-void send_read_mem(uint32_t direccionFisica, int socket_memoria);
-uint32_t recepcionar_read_mem(t_paquete* paquete);
+void send_read_mem(int tid, int pid,uint32_t direccionFisica, int socket_memoria);
+t_read_mem* recepcionar_read_mem(t_paquete* paquete);
 void send_valor_read_mem(uint32_t valor, int socket_cliente, op_code code);
 
-void send_write_mem(uint32_t direccionFisica, uint32_t valor, int socket_memoria);
+void send_write_mem(int tid, int pid,uint32_t direccionFisica, uint32_t valor, int socket_memoria);
 t_write_mem* recepcionar_write_mem(t_paquete* paquete);
+uint32_t recepcionar_valor_read_mem(t_paquete* paquete);
 void send_terminar_ejecucion_op_code(int socket);
 t_tid_pid* recepcionar_solicitud_contexto(t_paquete* paquete);
 t_contextos*obtener_contextos(int pid, int tid);

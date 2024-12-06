@@ -380,7 +380,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         pthread_mutex_unlock(&mutex_logs);
         funcWRITE_MEM(contextoPid, contextoTid, instruccion->parametros2, instruccion->parametros3);
         contextoTid->registros->PC++;
-
+        
         break;
     case LOG:
         pthread_mutex_lock(&mutex_logs);
