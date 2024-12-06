@@ -139,9 +139,7 @@ uint32_t tamanio_registro(char *registro){
 //--FUNCIONES EXTRAS
 
 uint32_t obtener_valor_registro(t_contexto_tid*contexto,char* registro) {
-    pthread_mutex_lock(&mutex_logs);
-    log_info(log_cpu,"registro:%s",registro);
-    pthread_mutex_unlock(&mutex_logs);
+
     if (strcmp(registro, "AX") == 0) return contexto->registros->AX;
     if (strcmp(registro, "BX") == 0) return contexto->registros->BX;
     if (strcmp(registro, "CX") == 0) return contexto->registros->CX;
@@ -160,9 +158,6 @@ void valor_registro_cpu(t_contexto_tid*contexto,char* registro, uint32_t valor) 
     if (strcmp(registro, "AX") == 0) contexto->registros->AX = valor;
     else if (strcmp(registro, "BX") == 0){
         contexto->registros->BX = valor;
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu,"SI ESCRIBO ESTO ES QUE ESTOY RE BASADO AAAAAH Y MI VALOR ES:%d",contexto->registros->BX);
-        pthread_mutex_unlock(&mutex_logs);
     }
     else if (strcmp(registro, "CX") == 0) contexto->registros->CX = valor;
     else if (strcmp(registro, "DX") == 0) contexto->registros->DX = valor;

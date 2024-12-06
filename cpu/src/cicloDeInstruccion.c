@@ -103,8 +103,6 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
         return NULL;
     }
 
-    log_info(log_cpu, "se recibió el código %d por dispatch\n", paquete->code);
-
     if (paquete->code == THREAD_EXECUTE_AVISO)
     {
         /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
@@ -169,9 +167,6 @@ void checkInterrupt(t_contexto_tid *contextoTid)
         code_operacion respuesta = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (respuesta != OK)
         {
-            pthread_mutex_lock(&mutex_logs);
-            log_info(log_cpu, "Memoria no pudo actualizar los registros, muy poco sigma");
-            pthread_mutex_unlock(&mutex_logs);
             pthread_mutex_unlock(&mutex_interrupt);
             return;
         }
@@ -224,7 +219,7 @@ t_instruccion *fetch(t_contexto_tid *contexto)
         instruccion = recepcionar_instruccion(paquete); 
     }
     pthread_mutex_lock(&mutex_logs);
-    log_debug(log_cpu, "TID: %d - FETCH - Program Counter: %u", contexto->tid, contexto->registros->PC);
+    log_debug(log_cpu, "## TID: %d - FETCH - Program Counter: %u", contexto->tid, contexto->registros->PC);
     pthread_mutex_unlock(&mutex_logs);
     return instruccion;
 }
@@ -332,7 +327,7 @@ op_code decode(t_instruccion *instruccion)
 void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_code instruccion_nombre, t_instruccion *instruccion)
 {
     pthread_mutex_lock(&mutex_logs);
-    log_debug(log_cpu, "TID: %d - Ejecutando: %s - %s %s %s", contextoTid->tid, instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4);
+    log_debug(log_cpu, "## TID: %d - Ejecutando: %s - %s %s %s", contextoTid->tid, instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4);
     pthread_mutex_unlock(&mutex_logs);
     
     switch (instruccion_nombre)
@@ -403,9 +398,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
             pthread_mutex_unlock(&mutex_logs);
         }
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "CODE:%d", code);
-        pthread_mutex_unlock(&mutex_logs);
 
         send_dump_memory(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
@@ -432,10 +424,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
             pthread_mutex_unlock(&mutex_logs);
         }
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "CODE:%d", code);
-        pthread_mutex_unlock(&mutex_logs);
-
+    
         send_IO(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "IO ENVIADO");
@@ -460,9 +449,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
             pthread_mutex_unlock(&mutex_logs);
         }
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "CODE:%d", code);
-        pthread_mutex_unlock(&mutex_logs);
 
         send_process_create(instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         pthread_mutex_lock(&mutex_logs);
@@ -488,9 +474,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
             pthread_mutex_unlock(&mutex_logs);
         }
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "CODE:%d", code);
-        pthread_mutex_unlock(&mutex_logs);
 
         send_thread_create(instruccion->parametros2, atoi(instruccion->parametros3), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         pthread_mutex_lock(&mutex_logs);
@@ -516,9 +499,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
             pthread_mutex_unlock(&mutex_logs);
         }
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "CODE:%d", code);
-        pthread_mutex_unlock(&mutex_logs);
 
         send_thread_join(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         pthread_mutex_lock(&mutex_logs);
@@ -544,9 +524,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
             pthread_mutex_unlock(&mutex_logs);
         }
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "CODE:%d", code);
-        pthread_mutex_unlock(&mutex_logs);
 
         send_thread_cancel(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
@@ -574,9 +551,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
             pthread_mutex_unlock(&mutex_logs);
         }
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "CODE:%d", code);
-        pthread_mutex_unlock(&mutex_logs);
 
         send_mutex_create(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         pthread_mutex_lock(&mutex_logs);
@@ -602,9 +576,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
             pthread_mutex_unlock(&mutex_logs);
         }
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "CODE:%d", code);
-        pthread_mutex_unlock(&mutex_logs);
 
         send_mutex_lock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
@@ -632,9 +603,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
             pthread_mutex_unlock(&mutex_logs);
         }
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "CODE:%d", code);
-        pthread_mutex_unlock(&mutex_logs);
 
         send_mutex_unlock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
@@ -661,9 +629,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
             pthread_mutex_unlock(&mutex_logs);
         }
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "CODE:%d", code);
-        pthread_mutex_unlock(&mutex_logs);
 
         send_thread_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
@@ -691,17 +656,11 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
             pthread_mutex_unlock(&mutex_logs);
         }
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "CODE:%d", code);
-        pthread_mutex_unlock(&mutex_logs);
         
         send_process_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
 
         recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu,"me llego el ok");
-        pthread_mutex_unlock(&mutex_logs);
 
         break;
     }

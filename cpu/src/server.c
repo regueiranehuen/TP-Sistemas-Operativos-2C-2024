@@ -292,7 +292,6 @@ void* recibir_kernel_interrupt(void*args){
 
         pthread_mutex_lock(&mutex_logs);
         log_debug(log_cpu,"## Llega interrupción al puerto Interrupt");
-        log_debug(log_cpu,"Código que llegó a interrupt: %d",code);
         pthread_mutex_unlock(&mutex_logs);
         if(code == -1){
             log_info(log_cpu,"Conexion cerrada por Interrupt");
@@ -311,9 +310,7 @@ void* recibir_kernel_interrupt(void*args){
             hay_interrupcion = true;
             devolucion_kernel=FIN_QUANTUM_RR;
             pthread_mutex_unlock(&mutex_interrupt);
-            pthread_mutex_lock(&mutex_logs);
-            log_debug(log_cpu,"ENVIO AVISO DE QUE LEI LA INTERRUPCION");
-            pthread_mutex_unlock(&mutex_logs);
+            
             send_paquete_syscall_sin_parametros(sockets_cpu->socket_servidor->socket_cliente_Dispatch,ENUM_OK);
             break;
         case DESALOJAR:
@@ -324,9 +321,7 @@ void* recibir_kernel_interrupt(void*args){
             hay_interrupcion = true;
             devolucion_kernel=DESALOJAR;
             pthread_mutex_unlock(&mutex_interrupt);
-            pthread_mutex_lock(&mutex_logs);
-            log_debug(log_cpu,"ENVIO AVISO DE QUE LEI LA INTERRUPCION");
-            pthread_mutex_unlock(&mutex_logs);
+           
             send_paquete_syscall_sin_parametros(sockets_cpu->socket_servidor->socket_cliente_Dispatch,ENUM_OK);
             break;
         default:
