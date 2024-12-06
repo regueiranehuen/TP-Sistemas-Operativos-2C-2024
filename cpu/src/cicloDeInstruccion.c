@@ -188,9 +188,6 @@ void checkInterrupt(t_contexto_tid *contextoTid)
     }
     else
     {
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu,"NO HAY INTERRUPCIONES PARA EL TID %d PID %d PROGRAM COUNTER %d, seguimos",contextoTid->tid,contextoTid->pid,contextoTid->registros->PC);
-        pthread_mutex_unlock(&mutex_logs);
         pthread_mutex_unlock(&mutex_interrupt);
     }
 }
@@ -198,7 +195,7 @@ void checkInterrupt(t_contexto_tid *contextoTid)
 t_instruccion *fetch(t_contexto_tid *contexto)
 {
     pthread_mutex_lock(&mutex_logs);
-    log_info(log_cpu,"ENTRAMOS A FETCH CON PID %d TID %d PC %d",contexto->pid,contexto->tid,contexto->registros->PC);
+    log_debug(log_cpu,"ENTRAMOS A FETCH CON PID %d TID %d PC %d",contexto->pid,contexto->tid,contexto->registros->PC);
     pthread_mutex_unlock(&mutex_logs);
 
     send_solicitud_instruccion_memoria(contexto->tid, contexto->pid, contexto->registros->PC);
@@ -451,9 +448,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         }
 
         send_process_create(instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "PROCESS_CREATE ENVIADO");
-        pthread_mutex_unlock(&mutex_logs);
+
 
         recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
     
@@ -476,9 +471,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         }
 
         send_thread_create(instruccion->parametros2, atoi(instruccion->parametros3), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "THREAD_CREATE ENVIADO");
-        pthread_mutex_unlock(&mutex_logs);
+
 
         recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
@@ -501,9 +494,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         }
 
         send_thread_join(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "THREAD_JOIN ENVIADO");
-        pthread_mutex_unlock(&mutex_logs);
+
 
         recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
@@ -527,9 +518,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
 
         send_thread_cancel(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "THREAD_CANCEL ENVIADO");
-        pthread_mutex_unlock(&mutex_logs);
+
 
         recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
@@ -553,9 +542,7 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
         }
 
         send_mutex_create(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "MUTEX_CREATE ENVIADO");
-        pthread_mutex_unlock(&mutex_logs);
+
 
         recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
@@ -579,9 +566,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
 
         send_mutex_lock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "MUTEX_LOCK ENVIADO");
-        pthread_mutex_unlock(&mutex_logs);
 
         recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
@@ -606,9 +590,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
 
         send_mutex_unlock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "MUTEX_UNLOCK ENVIADO");
-        pthread_mutex_unlock(&mutex_logs);
 
         recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
@@ -632,9 +613,6 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
 
         send_thread_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_cpu, "THREAD_EXIT ENVIADO");
-        pthread_mutex_unlock(&mutex_logs);
 
         recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         

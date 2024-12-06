@@ -18,9 +18,6 @@ void *recibir_cpu(void *args)
 
             break;
         }
-        pthread_mutex_lock(&mutex_logs);
-        log_info(logger, "Memoria recibio el siguiente codigo operacion de CPU: %d", paquete_operacion->codigo_operacion);
-        pthread_mutex_unlock(&mutex_logs);
 
         switch (paquete_operacion->codigo_operacion)
         {
@@ -121,15 +118,9 @@ void *recibir_cpu(void *args)
 
         case OBTENER_INSTRUCCION:
         {
-            pthread_mutex_lock(&mutex_logs);
-            log_info(logger, "Entramos a obtener instruccion, los parámetros que llegaron de solicitud son estos:");
-            pthread_mutex_unlock(&mutex_logs);
+
             t_instruccion_memoria *solicitud_instruccion = recepcionar_solicitud_instruccion_memoria(paquete_operacion);
-            pthread_mutex_lock(&mutex_logs);
-            log_info(logger, "%d", solicitud_instruccion->pid);
-            log_info(logger, "%d", solicitud_instruccion->tid);
-            log_info(logger, "%d", solicitud_instruccion->pc);
-            pthread_mutex_unlock(&mutex_logs);
+
             t_instruccion *instruccion = obtener_instruccion(solicitud_instruccion->tid, solicitud_instruccion->pid, solicitud_instruccion->pc);
             if (instruccion == NULL)
             {
@@ -139,12 +130,7 @@ void *recibir_cpu(void *args)
                 free(solicitud_instruccion);
                 break;
             }
-            else
-            {
-                pthread_mutex_lock(&mutex_logs);
-                log_info(logger, "super instruccion a enviar: %s %s %s ", instruccion->parametros1, instruccion->parametros2, instruccion->parametros3);
-                pthread_mutex_unlock(&mutex_logs);
-            }
+
             enviar_instruccion(sockets_iniciales->socket_cpu, instruccion, INSTRUCCION_OBTENIDA);
             if (strcmp(instruccion->parametros2, "") == 0)
             {
@@ -191,18 +177,11 @@ void *recibir_cpu(void *args)
             {
                 code = ERROR;
                 send_valor_read_mem(valor, sockets_iniciales->socket_cpu, code);
-
-                pthread_mutex_lock(&mutex_logs);
-                log_info(logger, "entre a error");
-                pthread_mutex_unlock(&mutex_logs);
             }
             else
             {
                 code = OK_OP_CODE;
                 send_valor_read_mem(valor, sockets_iniciales->socket_cpu, code);
-                pthread_mutex_lock(&mutex_logs);
-                log_info(logger, "entre a ok");
-                pthread_mutex_unlock(&mutex_logs);
             }
             free(info);
             break;
@@ -355,9 +334,7 @@ t_contexto_tid*obtener_contexto_tid(int pid, int tid){ // hay que usar mutex cad
         for (int i = 0; i < list_size(cont_pid->contextos_tids); i++)
         {
             t_contexto_tid *act = list_get(cont_pid->contextos_tids, i);
-            pthread_mutex_lock(&mutex_logs);
-            log_info(logger, "TID EN OBT CONT TID: %d  CORRESPONDE A PID %d", act->tid, pid);
-            pthread_mutex_unlock(&mutex_logs);
+
             if (act->tid == tid)
             {
                 return act;
@@ -388,9 +365,7 @@ t_contextos*obtener_contextos(int pid, int tid){ // hay que usar mutex cada vez 
         for (int i = 0; i < list_size(cont_pid->contextos_tids); i++)
         {
             t_contexto_tid *act = list_get(cont_pid->contextos_tids, i);
-            pthread_mutex_lock(&mutex_logs);
-            log_info(logger, "TID EN OBT CONT TID: %d  CORRESPONDE A PID %d", act->tid, pid);
-            pthread_mutex_unlock(&mutex_logs);
+
             if (act->tid == tid)
             {
                 
@@ -436,9 +411,6 @@ t_contexto_pid* obtener_contexto_pid(int pid){ // al usarla hay q meterle mutex 
     //pthread_mutex_lock(&mutex_lista_contextos_pids);
     for (int i = 0; i < list_size(lista_contextos_pids); i++){
         t_contexto_pid*cont_actual=(t_contexto_pid*)list_get(lista_contextos_pids,i);
-        pthread_mutex_lock(&mutex_logs);
-        log_warning(logger,"PID DEL CONT ACTUAL: %d",cont_actual->pid);
-        pthread_mutex_unlock(&mutex_logs);
         if (pid == cont_actual->pid){
             //pthread_mutex_unlock(&mutex_lista_contextos_pids);
             return cont_actual;

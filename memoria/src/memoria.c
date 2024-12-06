@@ -25,9 +25,6 @@ void atender_conexiones(int socket_cliente)
 
         case INICIALIZAR_PROCESO:
             t_args_inicializar_proceso *info_0 = recepcionar_inicializacion_proceso(paquete);
-            pthread_mutex_lock(&mutex_logs);
-            log_info(logger ,"tamanio proceso:%d", info_0->tam_proceso);
-            pthread_mutex_unlock(&mutex_logs);
             
             t_particiones *particion = inicializar_proceso(info_0->pid, info_0->tam_proceso, config);
             if (particion == NULL)
@@ -92,9 +89,7 @@ void atender_conexiones(int socket_cliente)
             break;
         case PROCESS_EXIT_AVISO:
             int pid_1 = recepcionar_int_code_op(paquete);
-            pthread_mutex_lock(&mutex_logs);
-            log_info(logger,"PID RECIBIDO: %d",pid_1); // TODO
-            pthread_mutex_unlock(&mutex_logs);
+
             pthread_mutex_lock(&mutex_lista_contextos_pids);
             t_contexto_pid* contexto_pid = obtener_contexto_pid(pid_1);
             pthread_mutex_unlock(&mutex_lista_contextos_pids);
@@ -121,15 +116,8 @@ void atender_conexiones(int socket_cliente)
             send(socket_cliente, &respuesta, sizeof(int), 0);
             break;
         case THREAD_CREATE_AVISO:
-            pthread_mutex_lock(&mutex_logs);
-            log_info(logger,"LLEGA THREAD CREATE AVISO A MEMORIA");
-            pthread_mutex_unlock(&mutex_logs);
+
             t_args_thread_create_aviso *info_4 = recepcionar_inicializacion_hilo(paquete);
-            pthread_mutex_lock(&mutex_logs);
-            log_info(logger,"%d",info_4->pid);
-            log_info(logger,"%d",info_4->tid);
-            log_info(logger,"%s",info_4->arch_pseudo);
-            pthread_mutex_unlock(&mutex_logs);
             
             pthread_mutex_lock(&mutex_lista_contextos_pids);
             t_contexto_pid *contexto_pid_4 = obtener_contexto_pid(info_4->pid);
@@ -156,9 +144,7 @@ void atender_conexiones(int socket_cliente)
             break;
         case THREAD_ELIMINATE_AVISO:
             t_tid_pid * info_thread_eliminate = recepcionar_tid_pid_code_op(paquete);
-            pthread_mutex_lock(&mutex_logs);
-            log_info(logger,"PID:%d,TID:%d",info_thread_eliminate->pid,info_thread_eliminate->tid);
-            pthread_mutex_unlock(&mutex_logs);
+
             finalizar_hilo(info_thread_eliminate->tid,info_thread_eliminate->pid);
             pthread_mutex_lock(&mutex_logs);
             log_debug(logger,"## Hilo Destruido - (PID:TID) - (%d:%d)",info_thread_eliminate->pid,info_thread_eliminate->tid);

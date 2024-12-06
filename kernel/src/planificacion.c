@@ -206,9 +206,6 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
         syscallEjecutando = true;
         pthread_mutex_unlock(&mutex_syscall_ejecutando);
 
-        pthread_mutex_lock(&mutex_log);
-        log_debug(logger,"SYSCALL RECIBIDA:%d",paquete->syscall);
-        pthread_mutex_unlock(&mutex_log);
 
         switch (paquete->syscall)
         {
@@ -227,9 +224,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             log_debug(logger, "## (%d:%d) - Solicitó syscall: PROCESS_CREATE", hilo_exec->pid, hilo_exec->tid);
             pthread_mutex_unlock(&mutex_log);
             t_process_create *paramProcessCreate = parametros_process_create(paquete);
-            pthread_mutex_lock(&mutex_log);
-            log_info(logger, "pseudocodigo:%s, Tamanio:%d, Prioridad:%d", paramProcessCreate->nombreArchivo, paramProcessCreate->tamProceso, paramProcessCreate->prioridad);
-            pthread_mutex_unlock(&mutex_log);
+            
             PROCESS_CREATE(paramProcessCreate->nombreArchivo, paramProcessCreate->tamProceso, paramProcessCreate->prioridad);
             free(paramProcessCreate->nombreArchivo);
             free(paramProcessCreate);
@@ -251,10 +246,6 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             pthread_mutex_unlock(&mutex_log);
             t_thread_create *paramThreadCreate = parametros_thread_create(paquete);
 
-            pthread_mutex_lock(&mutex_log);
-            log_info(logger, "NOMBRE PSEUDOCODIGO RECIBIDO THREAD CREATE: %s", paramThreadCreate->nombreArchivo);
-            pthread_mutex_unlock(&mutex_log);
-
             THREAD_CREATE(paramThreadCreate->nombreArchivo, paramThreadCreate->prioridad);
             
             free(paramThreadCreate->nombreArchivo);
@@ -271,7 +262,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             break;
         case ENUM_THREAD_CANCEL:
             pthread_mutex_lock(&mutex_log);
-            log_info(logger, "## (%d:%d) - Solicitó syscall: THREAD_CANCEL", hilo_exec->pid, hilo_exec->tid);
+            log_debug(logger, "## (%d:%d) - Solicitó syscall: THREAD_CANCEL", hilo_exec->pid, hilo_exec->tid);
             pthread_mutex_unlock(&mutex_log);
             int tid_thread_cancel = recibir_entero_paquete_syscall(paquete);
             

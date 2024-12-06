@@ -187,7 +187,6 @@ void send_ciclo_nuevo(int socket_cliente){
     buffer-> size = 0;
 
     syscalls syscall = ENUM_CICLO_NUEVO;
-    printf("Enviando CICLO NUEVO\n");
     send_paquete_syscall(buffer,socket_cliente,syscall);
 }
 
@@ -234,7 +233,6 @@ void send_segmentation_fault(int socket_cliente){
 
 void send_paquete_syscall_sin_parametros(int socket_cliente, syscalls syscall) {
     int n = 0;
-    printf("SYSCALL QUE ESTOY POR MANDAR: %d",syscall);
     void *a_enviar = malloc(sizeof(syscalls) + sizeof(int));
     int offset = 0;
 

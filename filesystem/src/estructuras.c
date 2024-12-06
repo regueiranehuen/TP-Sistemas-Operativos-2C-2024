@@ -426,6 +426,7 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
     }
 
     fclose(arch);
+    log_info(log_filesystem, "RUTA MOUNT DIR: %s", mount_dir);
     imprimir_archivo_bloques(mount_dir);
     free(path);
     return 0;
@@ -445,48 +446,41 @@ void escribir_bloque_de_puntero(FILE* arch, uint32_t* bloques_reservados, uint32
 }
 
 
-void imprimir_archivo_bloques(const char* filepath) {
-    
-    FILE* arch = fopen(filepath, "rb");
+void imprimir_archivo_bloques(const char* mount_dir) {
+    char bloques_path[256];
+    snprintf(bloques_path, sizeof(bloques_path), "%s/bloques.dat", mount_dir);
+
+    FILE* arch = fopen(bloques_path, "rb");
     if (arch == NULL) {
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_filesystem,"Error: No se pudo abrir el archivo %s\n", filepath);
-        pthread_mutex_unlock(&mutex_logs);
+        printf("Error: No se pudo abrir el archivo %s\n", bloques_path);
         return;
     }
-    // pthread_mutex_lock(&mutex_logs);
-    // log_info(log_filesystem,"Contenido del archivo bloques.dat:");
-    // pthread_mutex_unlock(&mutex_logs);
+
+    printf("Contenido del archivo bloques.dat:\n");
+
     uint32_t total_bloques = block_count; // Bloques necesarios según block_count
     uint32_t bloque_index = 0;
     uint8_t* buffer = malloc(block_size);
     if (!buffer) {
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_filesystem,"Error: No se pudo asignar memoria para el buffer");
-        pthread_mutex_unlock(&mutex_logs);
+        printf("Error: No se pudo asignar memoria para el buffer\n");
         fclose(arch);
         return;
     }
 
     // Leer y mostrar bloques hasta total_bloques
     while (fread(buffer, 1, block_size, arch) == block_size && bloque_index < total_bloques) {
-        log_info(log_filesystem,"Bloque %u:\n", bloque_index);
+        printf("\nBloque %u:", bloque_index);
         for (uint32_t i = 0; i < block_size; i++) {
             if (i % 16 == 0) {
-            pthread_mutex_lock(&mutex_logs);
-            log_info(log_filesystem,"\n%04X: ", i); // Imprime la dirección de inicio de la línea
-            pthread_mutex_unlock(&mutex_logs);
+                printf("\n%04X: ", i); // Imprime la dirección de inicio de la línea
             }
-            pthread_mutex_lock(&mutex_logs);
-            log_info(log_filesystem,"%02X ", buffer[i]); // Imprime el byte en formato hexadecimal
-            pthread_mutex_unlock(&mutex_logs);
+            printf("%02X ", buffer[i]); // Imprime el byte en formato hexadecimal
         }
         bloque_index++;
     }
 
     free(buffer);
     fclose(arch);
-    // pthread_mutex_lock(&mutex_logs);
-    // log_info(log_filesystem,"Fin del archivo bloques.dat\n");
-    // pthread_mutex_unlock(&mutex_logs);
+
+    printf("Fin del archivo bloques.dat\n");
 }
