@@ -10,9 +10,6 @@ char *mount_dir;
 int block_count;
 uint32_t block_size;
 char* bitmap_path;
-char* ruta_completa;
-char* nombre_dump;
-char* nombre_arch;
 
 
 int main(int argc, char *argv[]){

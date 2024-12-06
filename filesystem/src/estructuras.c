@@ -164,12 +164,11 @@ char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const cha
     // 2. Reservo los bloques necesarios
     char* filepath = malloc(256);
     char* files = "files";
-    nombre_arch = malloc(256);
-    ruta_completa = malloc(256);
+    char* nombre_arch = malloc(256);
+    char* ruta_completa = malloc(256);
 
     time_t now = time(NULL);
     snprintf(nombre_arch, 256, "%i-%i-%ld.dmp", info->pid, info->tid, now);
-    nombre_dump = nombre_arch;
     snprintf(filepath, 256, "%s", mount_dir);
     snprintf(ruta_completa, 256, "%s%s/%s", filepath, files, nombre_arch);
     
@@ -199,7 +198,7 @@ char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const cha
         return ruta_completa;
     }
     pthread_mutex_lock(&mutex_logs);
-    log_debug(log_filesystem, "## Archivo Creado: %s - Tamaño: %d", nombre_dump, info->tamanio_particion_proceso);
+    log_debug(log_filesystem, "## Archivo Creado: %s - Tamaño: %d", nombre_arch, info->tamanio_particion_proceso);
     pthread_mutex_unlock(&mutex_logs);
 
     // 4. Escribir el contenido en los bloques reservados
@@ -221,6 +220,10 @@ char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const cha
     imprimir_contenido_bitmap(bitmap, block_count);
     
     free(filepath);
+    pthread_mutex_lock(&mutex_logs);
+    log_debug(log_filesystem, "## Fin de solicitud - Archivo: %s", nombre_arch);
+    pthread_mutex_unlock(&mutex_logs);
+    free(nombre_arch);
     return ruta_completa;
 }
 
@@ -353,7 +356,7 @@ int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, int index_b
     fclose(archivo_metadata);
 
     // Mostrar el contenido del archivo de metadata para verificar su escritura
-    mostrar_contenido_archivo_metadata(ruta_completa);
+    mostrar_contenido_archivo_metadata(filepath);
 
     return 0;
 }
