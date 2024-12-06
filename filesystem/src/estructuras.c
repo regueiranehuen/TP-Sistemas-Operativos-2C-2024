@@ -35,9 +35,6 @@ t_bitarray* cargar_bitmap(char* mount_dir, uint32_t block_count) {
         // Calcular el tamaño del bitmap
         etiqueta_arch_creado:
         uint32_t bitmap_size = (uint32_t)ceil((double)block_count / 8.0);
-        pthread_mutex_lock(&mutex_logs);
-        log_info(log_filesystem, "Tamaño del bitmap: %u bytes", bitmap_size);
-        pthread_mutex_unlock(&mutex_logs);
         char* empty_bitmap = calloc(bitmap_size, sizeof(char));
         if (!empty_bitmap) {
             pthread_mutex_lock(&mutex_logs);
@@ -47,6 +44,9 @@ t_bitarray* cargar_bitmap(char* mount_dir, uint32_t block_count) {
             free(bitmap_path);
             return NULL;
         }
+        pthread_mutex_lock(&mutex_logs);
+        log_debug(log_filesystem, "## Archivo Creado: Bitmap.dat - Tamaño: %d", bitmap_size);
+        pthread_mutex_unlock(&mutex_logs);
 
         // Escribir el bitmap vacío en el archivo
         if (fwrite(empty_bitmap, 1, bitmap_size, arch) != bitmap_size) {
@@ -142,7 +142,7 @@ void imprimir_contenido_bitmap(t_bitarray* bitmap, uint32_t block_count) {
     for (uint32_t i = 0; i < block_count; i++) {
         int bit = bitarray_test_bit(bitmap, i);
         pthread_mutex_lock(&mutex_logs);
-        log_info(log_filesystem,"Bloque %u: %s\n", i, bit ? "Ocupado" : "Libre");
+        log_info(log_filesystem,"Bloque %u: %s", i, bit ? "Ocupado" : "Libre");
         pthread_mutex_unlock(&mutex_logs);
     }
     pthread_mutex_unlock(&mutex_bitmap);
@@ -164,11 +164,12 @@ char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const cha
     // 2. Reservo los bloques necesarios
     char* filepath = malloc(256);
     char* files = "files";
-    char* nombre_arch = malloc(256);
+    nombre_arch = malloc(256);
     ruta_completa = malloc(256);
 
     time_t now = time(NULL);
     snprintf(nombre_arch, 256, "%i-%i-%ld.dmp", info->pid, info->tid, now);
+    nombre_dump = nombre_arch;
     snprintf(filepath, 256, "%s", mount_dir);
     snprintf(ruta_completa, 256, "%s%s/%s", filepath, files, nombre_arch);
     
@@ -187,9 +188,9 @@ char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const cha
     }
 
     // Mostrar el nombre del archivo
-    pthread_mutex_lock(&mutex_logs);
-    log_info(log_filesystem, "Nombre del archivo creado: %s", nombre_arch);
-    pthread_mutex_unlock(&mutex_logs);
+    // pthread_mutex_lock(&mutex_logs);
+    // log_info(log_filesystem, "Nombre del archivo creado: %s", nombre_dump);
+    // pthread_mutex_unlock(&mutex_logs);
 
     // Crear el archivo de metadata
     if (crear_archivo_metadata(ruta_completa, info, indice_bloque_indices, nombre_arch) != 0) {
@@ -198,7 +199,7 @@ char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const cha
         return ruta_completa;
     }
     pthread_mutex_lock(&mutex_logs);
-    log_info(log_filesystem, "Archivo de metadata creado: %s - Tamaño: %d", ruta_completa, info->tamanio_particion_proceso);
+    log_debug(log_filesystem, "## Archivo Creado: %s - Tamaño: %d", nombre_dump, info->tamanio_particion_proceso);
     pthread_mutex_unlock(&mutex_logs);
 
     // 4. Escribir el contenido en los bloques reservados
@@ -218,7 +219,7 @@ char* crear_archivo_dump(t_args_dump_memory* info, t_bitarray* bitmap, const cha
     
 
     imprimir_contenido_bitmap(bitmap, block_count);
-    free(nombre_arch);
+    
     free(filepath);
     return ruta_completa;
 }
@@ -232,9 +233,9 @@ void mostrar_contenido_archivo_metadata(const char* filepath) {
         return;
     }
 
-    pthread_mutex_lock(&mutex_logs);
-    log_info(log_filesystem, "Contenido del archivo metadata (%s):", filepath);
-    pthread_mutex_unlock(&mutex_logs);
+    // pthread_mutex_lock(&mutex_logs);
+    // log_info(log_filesystem, "Contenido del archivo metadata (%s):", filepath);
+    // pthread_mutex_unlock(&mutex_logs);
 
     char linea[256];
     while (fgets(linea, sizeof(linea), archivo) != NULL) {
@@ -261,9 +262,9 @@ bool hay_espacio_disponible(t_bitarray* bitmap, int bloques_necesarios) {
             return true;
         }
     }
-    pthread_mutex_lock(&mutex_logs);
-    log_warning(log_filesystem, "BLOQUES LIBRES: %d, : BLOQUES NECESARIOS: %d", bloques_libres, bloques_necesarios);
-    pthread_mutex_unlock(&mutex_logs);
+    // pthread_mutex_lock(&mutex_logs);
+    // log_warning(log_filesystem, "BLOQUES LIBRES: %d, : BLOQUES NECESARIOS: %d", bloques_libres, bloques_necesarios);
+    // pthread_mutex_unlock(&mutex_logs);
 
     return false;
 }
@@ -320,9 +321,9 @@ void reservar_bloque(t_bitarray* bitmap, uint32_t* bloques_reservados, uint32_t 
 int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, int index_bloque_indices, char* nombre_arch) {
     
     // Crear el archivo de metadata
-    pthread_mutex_lock(&mutex_logs);
-    log_info(log_filesystem, "Creando archivo de metadata %s", filepath);
-    pthread_mutex_unlock(&mutex_logs);
+    // pthread_mutex_lock(&mutex_logs);
+    // log_info(log_filesystem, "Creando archivo de metadata %s", filepath);
+    // pthread_mutex_unlock(&mutex_logs);
     FILE* archivo_metadata = fopen(filepath, "w");
     
     if (archivo_metadata == NULL) {
@@ -333,8 +334,9 @@ int crear_archivo_metadata(char* filepath, t_args_dump_memory* info, int index_b
     }
 
     // Escribir los valores de SIZE y INDEX_BLOCK en el archivo de metadata
-    fprintf(archivo_metadata, "SIZE=%d\n", info->tamanio_particion_proceso);  // Escribir el tamaño del archivo
-    fprintf(archivo_metadata, "INDEX_BLOCK=%d\n", index_bloque_indices);      // Escribir el índice de bloque
+    log_info(log_filesystem, "Contenido metadata:");
+    fprintf(archivo_metadata, "SIZE=%d", info->tamanio_particion_proceso);  // Escribir el tamaño del archivo
+    fprintf(archivo_metadata, "INDEX_BLOCK=%d", index_bloque_indices);      // Escribir el índice de bloque
 
     // Asegurarse de que los datos se escriban correctamente al archivo
     fflush(archivo_metadata);
@@ -386,11 +388,16 @@ int escribir_bloques(const char* mount_dir, uint32_t* bloques_reservados, uint32
             free(path);
             return -1;
         }
-
+        
         // Establecer el tamaño del archivo directamente
         fseek(arch, file_size - 1, SEEK_SET);
         fputc(0, arch); // Escribir un byte en la última posición para asegurar el tamaño
     }
+
+    pthread_mutex_lock(&mutex_logs);
+    log_debug(log_filesystem, "## Archivo Creado: Bloques.dat - Tamaño: %d", block_count * block_size);
+    pthread_mutex_unlock(&mutex_logs);
+
 
     escribir_bloque_de_puntero(arch, bloques_reservados, bloques_necesarios, block_size);
 
@@ -448,9 +455,9 @@ void imprimir_archivo_bloques(const char* filepath) {
         pthread_mutex_unlock(&mutex_logs);
         return;
     }
-    pthread_mutex_lock(&mutex_logs);
-    log_info(log_filesystem,"Contenido del archivo bloques.dat:");
-    pthread_mutex_unlock(&mutex_logs);
+    // pthread_mutex_lock(&mutex_logs);
+    // log_info(log_filesystem,"Contenido del archivo bloques.dat:");
+    // pthread_mutex_unlock(&mutex_logs);
     uint32_t total_bloques = block_count; // Bloques necesarios según block_count
     uint32_t bloque_index = 0;
     uint8_t* buffer = malloc(block_size);
@@ -480,7 +487,7 @@ void imprimir_archivo_bloques(const char* filepath) {
 
     free(buffer);
     fclose(arch);
-    pthread_mutex_lock(&mutex_logs);
-    log_info(log_filesystem,"Fin del archivo bloques.dat\n");
-    pthread_mutex_unlock(&mutex_logs);
+    // pthread_mutex_lock(&mutex_logs);
+    // log_info(log_filesystem,"Fin del archivo bloques.dat\n");
+    // pthread_mutex_unlock(&mutex_logs);
 }
