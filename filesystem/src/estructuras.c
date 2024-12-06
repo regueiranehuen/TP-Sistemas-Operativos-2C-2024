@@ -86,8 +86,7 @@ t_bitarray* cargar_bitmap(char* mount_dir, uint32_t block_count) {
     if ((uint32_t)st.st_size != expected_size)
     {
         pthread_mutex_lock(&mutex_logs);
-        log_info(log_filesystem, "El tamaño del archivo %s no es el esperado. Esperado: %u, Actual: %lu => Creamos un nuevo archivo",
-                 bitmap_path, expected_size, st.st_size);
+        log_error(log_filesystem, "El tamaño del archivo %s no es el esperado. Esperado: %u, Actual: %lu",bitmap_path, expected_size, st.st_size);
         pthread_mutex_unlock(&mutex_logs);
         fclose(arch);
         free(bitmap_path);

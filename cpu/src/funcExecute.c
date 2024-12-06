@@ -2,7 +2,10 @@
 
 void funcSET(t_contexto_tid*contexto,char* registro, uint32_t valor) {
     valor_registro_cpu(contexto,registro, valor);
+
+    pthread_mutex_lock(&mutex_logs);
     log_info(log_cpu, "SET: Registro %s = %d", registro, valor);
+    pthread_mutex_unlock(&mutex_logs);
 }
 
 void funcSUM(t_contexto_tid*contexto,char* registroDest, char* registroOrig) {
@@ -12,7 +15,9 @@ void funcSUM(t_contexto_tid*contexto,char* registroDest, char* registroOrig) {
     uint32_t suma = valor_orig + valor_dest;
 
     valor_registro_cpu(contexto,registroDest, suma);
+    pthread_mutex_lock(&mutex_logs);
     log_info(log_cpu, "SUM: %s + %s = %u", registroOrig, registroDest,suma);
+    pthread_mutex_unlock(&mutex_logs);
 }
 
 void funcSUB(t_contexto_tid*contexto,char* registroDest, char* registroOrig) {
@@ -22,7 +27,10 @@ void funcSUB(t_contexto_tid*contexto,char* registroDest, char* registroOrig) {
     uint32_t resta = valor_dest - valor_orig;
 
     valor_registro_cpu(contexto,registroDest, resta);
+
+    pthread_mutex_lock(&mutex_logs);
     log_info(log_cpu, "SUB: %s - %s = %u", registroDest, registroOrig,resta);
+    pthread_mutex_unlock(&mutex_logs);
 }
 
 void funcJNZ(t_contexto_tid*contexto,char* registro, uint32_t num_instruccion) {
@@ -40,24 +48,32 @@ void funcLOG(t_contexto_tid*contexto,char* registro) {
     pthread_mutex_unlock(&mutex_logs);
 }
 
-void funcREAD_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,char* registro_datos, char* registro_direccion) {
+void funcREAD_MEM(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, char *registro_datos, char *registro_direccion)
+{
 
-    uint32_t direccionLogica = obtener_valor_registro(contextoTid,registro_direccion);
-    uint32_t* punteroDireccionFisica = traducir_direccion_logica(contextoTid,contextoPid,direccionLogica);
+    uint32_t direccionLogica = obtener_valor_registro(contextoTid, registro_direccion);
+    uint32_t *punteroDireccionFisica = traducir_direccion_logica(contextoTid, contextoPid, direccionLogica);
     uint32_t direccionFisica;
 
-    if (punteroDireccionFisica != NULL) {
+    if (punteroDireccionFisica != NULL)
+    {
         direccionFisica = *punteroDireccionFisica;
-        uint32_t valor = leer_valor_de_memoria(contextoTid->tid,contextoPid->pid,direccionFisica);
-        if(valor != -1){
-        valor_registro_cpu(contextoTid,registro_datos, valor);
-        pthread_mutex_lock(&mutex_logs);
-        log_debug(log_cpu,"## TID: %d - Acción: LEER - Dirección Física: %u",contextoTid->tid,direccionFisica);
-        log_info(log_cpu, "READ_MEM: Dirección %u, Valor %u", direccionFisica, valor);
-        pthread_mutex_unlock(&mutex_logs);
+        uint32_t *valorPuntero = leer_valor_de_memoria(contextoTid->tid, contextoPid->pid, direccionFisica);
+        if (valorPuntero != NULL)
+        {
+            uint32_t valor = *valorPuntero;
+            valor_registro_cpu(contextoTid, registro_datos, valor);
+            pthread_mutex_lock(&mutex_logs);
+            log_debug(log_cpu, "## TID: %d - Acción: LEER - Dirección Física: %u", contextoTid->tid, direccionFisica);
+            log_info(log_cpu, "READ_MEM: Dirección %u, Valor %u", direccionFisica, valor);
+            pthread_mutex_unlock(&mutex_logs);
+
+            free(valorPuntero);
         }
         free(punteroDireccionFisica);
-    } else {
+    }
+    else
+    {
         pthread_mutex_lock(&mutex_logs);
         log_error(log_cpu, "Dirección física inválida: Se recibió NULL");
         pthread_mutex_unlock(&mutex_logs);
@@ -91,18 +107,23 @@ void funcWRITE_MEM(t_contexto_pid_send*contextoPid,t_contexto_tid*contextoTid,ch
     }
 }
 
-uint32_t leer_valor_de_memoria(int tid, int pid, uint32_t direccionFisica){
+uint32_t* leer_valor_de_memoria(int tid, int pid, uint32_t direccionFisica){
+
+    uint32_t*valor=malloc(sizeof(uint32_t));
 
     send_read_mem(tid,pid,direccionFisica,sockets_cpu->socket_memoria);
 
     t_paquete* paquete = recibir_paquete_op_code(sockets_cpu->socket_memoria);
 
     if (paquete->codigo_operacion == OK_OP_CODE) {
-        uint32_t valor = recepcionar_valor_read_mem(paquete);
+        *valor = recepcionar_valor_read_mem(paquete);
         return valor;
     } else {
+        pthread_mutex_lock(&mutex_logs);
         log_error(log_cpu, "Error al leer memoria");
-        return -1; // Valor por defecto en caso de error
+        pthread_mutex_unlock(&mutex_logs);
+        free(valor);
+        return NULL; // Valor por defecto en caso de error
     }
 }
 

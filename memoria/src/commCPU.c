@@ -86,7 +86,7 @@ void *recibir_cpu(void *args)
             log_info(logger, "GX: %u", contexto_tid->registros->GX);
             log_info(logger, "HX: %u", contexto_tid->registros->HX);            
             pthread_mutex_unlock(&mutex_logs);
-            pthread_mutex_lock(&mutex_lista_contextos_pids);
+            /*pthread_mutex_lock(&mutex_lista_contextos_pids);
             for (int i = 0; i < list_size(lista_contextos_pids); i++)
             {
                 t_contexto_pid *cont_pid_act = list_get(lista_contextos_pids, i);
@@ -104,9 +104,11 @@ void *recibir_cpu(void *args)
                 }
             }
                 print_pids(lista_contextos_pids);
-                pthread_mutex_unlock(&mutex_lista_contextos_pids);
-
+                pthread_mutex_unlock(&mutex_lista_contextos_pids);*/
+                pthread_mutex_lock(&mutex_logs);
                 log_info(logger, "PROGRAM COUNTER ACTUAL: %u", contexto_tid->registros->PC);
+                pthread_mutex_unlock(&mutex_logs);
+                
                 actualizar_contexto(contexto_tid->pid, contexto_tid->tid, contexto_tid->registros);
                 send_code_operacion(OK, sockets_iniciales->socket_cpu);
 
@@ -165,12 +167,9 @@ void *recibir_cpu(void *args)
             t_read_mem* info = recepcionar_read_mem(paquete_operacion);
 
             uint32_t valor = leer_Memoria(info->direccionFisica);
-            pthread_mutex_lock(&mutex_lista_particiones);
-            t_particiones* particion = obtener_particion(info->pid);
-            pthread_mutex_unlock(&mutex_lista_particiones);
 
             pthread_mutex_lock(&mutex_logs);
-            log_debug(logger, "## Lectura - (PID:TID) - (%d:%d) - Dir. Física: %u - Tamaño: %u", info->pid,info->tid,info->direccionFisica,particion->tamanio);
+            log_debug(logger, "## Lectura - (PID:TID) - (%d:%d) - Dir. Física: %u - Tamaño: %u", info->pid,info->tid,info->direccionFisica,(uint32_t)sizeof(valor));
             pthread_mutex_unlock(&mutex_logs);
             op_code code;
             if (valor == 0xFFFFFFFF)
@@ -192,12 +191,10 @@ void *recibir_cpu(void *args)
             t_write_mem *info_0 = recepcionar_write_mem(paquete_operacion);
 
             int resultado = escribir_Memoria(info_0);
-            pthread_mutex_lock(&mutex_lista_particiones);
-            t_particiones* particion = obtener_particion(info_0->pid);
-            pthread_mutex_unlock(&mutex_lista_particiones);
+
 
             pthread_mutex_lock(&mutex_logs);
-            log_debug(logger, "## Escritura - (PID:TID) - (%d:%d) - Dir. Física: %u - Tamaño: %u", info_0->pid,info_0->tid,info_0->direccionFisica,particion->tamanio);
+            log_debug(logger, "## Escritura - (PID:TID) - (%d:%d) - Dir. Física: %u - Tamaño: %u", info_0->pid,info_0->tid,info_0->direccionFisica,(uint32_t)sizeof(info_0->valor));
             pthread_mutex_unlock(&mutex_logs);
 
             if (resultado == 0)

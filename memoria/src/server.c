@@ -80,7 +80,7 @@ void *hilo_por_cliente(void *void_args)
     else
     {
         pthread_mutex_lock(&mutex_logs);
-        log_info(args->log, "## Kernel Conectado - FD del socket: %d", socket_cliente);
+        log_debug(args->log, "## Kernel Conectado - FD del socket: %d", socket_cliente);
         pthread_mutex_unlock(&mutex_logs);
         sem_post(&sem_conexion_hecha);
         atender_conexiones(socket_cliente);

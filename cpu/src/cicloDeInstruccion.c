@@ -81,7 +81,7 @@ void *ciclo_de_instruccion(void *args)
         }
         else if(contextos == NULL){
             pthread_mutex_lock(&mutex_logs);
-            log_info(log_cpu,"Cierre de conexion con kernel");
+            log_info(log_cpu,"Cierre de conexion por Dispatch");
             pthread_mutex_unlock(&mutex_logs);
             sem_post(&sem_finalizacion_cpu);
             return NULL; 

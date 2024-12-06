@@ -189,10 +189,6 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
 
         t_paquete_syscall *paquete = recibir_paquete_syscall(sockets->sockets_cliente_cpu->socket_Dispatch);
 
-        pthread_mutex_lock(&mutex_log);
-        log_info(logger, "recibi syscall");
-        pthread_mutex_unlock(&mutex_log);
-
         if (paquete == NULL)
         {
             pthread_mutex_lock(&mutex_log);
@@ -210,10 +206,6 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
         switch (paquete->syscall)
         {
         case ENUM_OK:
-
-            pthread_mutex_lock(&mutex_log);
-            log_info(logger,"RECIBI OK");
-            pthread_mutex_unlock(&mutex_log);
 
             sem_post(&sem_recibi_ok);
             free(paquete->buffer);
@@ -333,9 +325,7 @@ void *atender_syscall(void *args) // recibir un paquete con un codigo de operaci
             free(paquete);
             break;
         case ENUM_CICLO_NUEVO:
-            pthread_mutex_lock(&mutex_log);
-            log_debug(logger,"Ciclo nuevo por parte de cpu");
-            pthread_mutex_unlock(&mutex_log);
+
             sem_post(&sem_ciclo_nuevo);
             free(paquete->buffer);
             free(paquete);
@@ -419,7 +409,7 @@ void* cortar_ejecucion_modulos(void*args){
         pthread_mutex_unlock(&mutex_estado_kernel);
         pthread_mutex_lock(&mutex_lista_pcbs);
         pthread_mutex_lock(&mutex_log);
-        log_info(logger,"LISTA PIDS EN CORTAR EJECUCION MODULOS");
+        log_info(logger,"LISTA PIDS EN KERNEL");
         pthread_mutex_unlock(&mutex_log);
         for (int i = 0; i< list_size(lista_pcbs); i++){
             t_pcb*act=list_get(lista_pcbs,i);

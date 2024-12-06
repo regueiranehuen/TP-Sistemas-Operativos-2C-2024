@@ -109,19 +109,13 @@ void liberar_instruccion(t_instruccion_tid_pid* instruccion) {
 void eliminar_contexto_pid(t_contexto_pid*contexto_pid){
     for (int i = 0; i<list_size(lista_contextos_pids);i++){
         t_contexto_pid*actual=list_get(lista_contextos_pids,i);
-        pthread_mutex_lock(&mutex_logs);
-        log_info(logger,"PID CONTEXTO_PID:%d",contexto_pid->pid);
-        log_info(logger,"PID CONTEXTO_ACTUAL:%d",actual->pid);
-        pthread_mutex_unlock(&mutex_logs);
+        
         if (contexto_pid->pid == actual->pid){
             int pid = contexto_pid->pid; // Solo para hacer el log
 
             for (int j = 0; j<list_size(actual->contextos_tids);j++){
                 t_contexto_tid*act = list_get(actual->contextos_tids,j);
-                pthread_mutex_lock(&mutex_logs);
-                log_info(logger,"TID CONTEXTO_ACTUAL:%d",act->tid);
-                log_info(logger,"AX: %d",act->registros->AX);
-                pthread_mutex_unlock(&mutex_logs);
+
                 list_remove(actual->contextos_tids,j);
                 free(act->registros);
                 free(act);
@@ -130,8 +124,9 @@ void eliminar_contexto_pid(t_contexto_pid*contexto_pid){
             list_destroy(actual->contextos_tids);
             list_remove(lista_contextos_pids,i);
             free(contexto_pid);
+            
             pthread_mutex_lock(&mutex_logs);
-            log_info(logger,"Contexto del pid %d eliminado",pid);
+            log_info(logger,"Contexto del pid %d eliminado junto a los contextos de sus tids asociados",pid);
             pthread_mutex_unlock(&mutex_logs);
             return;
         }

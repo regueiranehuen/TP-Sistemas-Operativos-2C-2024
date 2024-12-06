@@ -18,15 +18,13 @@ int main(int argc, char *argv[])
     sockets_memoria *sockets;
     sockets_iniciales = malloc(sizeof(sockets_memoria));
     char* path_config = argv[1];
+
     config = config_create(path_config);
     t_log_level log_level_int = log_level(config);
 
     
 
     logger = log_create("memoria.log", "tp", true, log_level_int);
-    pthread_mutex_lock(&mutex_logs);
-    log_info(logger,"Retardo respuesta: %s",config_get_string_value(config,"RETARDO_RESPUESTA"));
-    pthread_mutex_unlock(&mutex_logs);
 
     inicializar_Memoria(config);
     inicializar_mutex();

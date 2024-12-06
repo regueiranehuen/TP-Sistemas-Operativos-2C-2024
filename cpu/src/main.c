@@ -19,10 +19,11 @@ int main(int argc, char** argv) {
 
     t_log_level log_level_int = log_level(config);
 
-    pthread_mutex_lock(&mutex_logs);
+    
     log_cpu = log_create("CPU.log", "tp", true, log_level_int);
+
+    pthread_mutex_lock(&mutex_logs);
     log_info(log_cpu, "Configuración del CPU cargada.");
-    log_info(log_cpu,"ip memoria: %s",config_get_string_value(config,"IP_MEMORIA"));
     pthread_mutex_unlock(&mutex_logs);
     
     sockets_cpu = hilos_cpu(log_cpu, config);

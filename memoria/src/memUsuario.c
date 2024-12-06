@@ -325,9 +325,7 @@ t_particiones *inicializar_proceso(int pid, int tamanio_proceso, t_config *confi
     char *esquema = config_get_string_value(config, "ESQUEMA");
     char *algoritmo_busqueda = config_get_string_value(config, "ALGORITMO_BUSQUEDA");
     t_particiones *particion = NULL;
-    pthread_mutex_lock(&mutex_logs);
-    log_info(logger, "esquema:%s", esquema);
-    pthread_mutex_unlock(&mutex_logs);
+
     if (strcmp(esquema, "FIJAS") == 0)
     {
         

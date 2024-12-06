@@ -39,7 +39,7 @@ void atender_conexiones(int socket_cliente)
             else
             {
                 pthread_mutex_lock(&mutex_logs);
-                log_info(logger, "Particion: Base: %d, Limite: %d, Tamanio: %d, Ocupada: %d, PID: %d", particion->base, particion->limite, particion->tamanio, particion->ocupada, particion->pid);
+                log_debug(logger, "Particion: Base: %d, Limite: %d, Tamaño: %d, Ocupada: %d, PID: %d", particion->base, particion->limite, particion->tamanio, particion->ocupada, particion->pid);
                 pthread_mutex_unlock(&mutex_logs);
                 inicializar_contexto_pid(info_0->pid, particion->base, particion->limite, info_0->tam_proceso);
                 pthread_mutex_lock(&mutex_logs);

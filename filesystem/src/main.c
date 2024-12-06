@@ -28,10 +28,7 @@ int main(int argc, char *argv[]){
     pthread_mutex_unlock(&mutex_estado_filesystem);
     char* path_config = argv[1];
     inicializar_estructuras(path_config);
-    pthread_mutex_lock(&mutex_logs);
-    log_info(log_filesystem,"Path del config: %s",path_config);
-    log_info(log_filesystem,"Block size: %s",config_get_string_value(config,"BLOCK_SIZE"));
-    pthread_mutex_unlock(&mutex_logs);
+
     socket_servidor = hilo_filesystem(log_filesystem, config);
     //sem_wait(&sem_fin_filesystem);
 
