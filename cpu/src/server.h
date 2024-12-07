@@ -3,6 +3,8 @@
 
 #include "utils/includes/sockets.h"
 #include "utils/includes/estructuras.h"
+#include "auxiliares.h"
+#include "cicloDeInstruccion.h"
 #include <pthread.h>
 #include <stdint.h>
 
@@ -54,6 +56,10 @@ extern pthread_mutex_t mutex_motivo_devolucion;
 extern sem_t sem_ciclo_instruccion;
 extern sem_t sem_ok_o_interrupcion;
 extern sem_t sem_finalizacion_cpu;
+extern sem_t sem_socket_cerrado;
+
+extern pthread_mutex_t mutex_logs;
+
 
 extern code_operacion devolucion_kernel;
 
@@ -75,6 +81,7 @@ void inicializar_semaforos();
 void destruir_semaforos();
 void* recibir_kernel_dispatch(void*args);
 void* recibir_kernel_interrupt(void*args);
+void terminar_cpu();
 
 
 #endif  // SERVER_H

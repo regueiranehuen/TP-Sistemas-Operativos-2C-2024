@@ -21,7 +21,9 @@ typedef enum{
     SEGMENTATION_FAULT,
     OK,
     KERNEL,
-    CPU
+    CPU,
+    TERMINAR_EJECUCION_MODULO,
+    OK_TERMINAR
 }code_operacion;
 
 typedef enum{
@@ -35,10 +37,13 @@ ENUM_MUTEX_CREATE,
 ENUM_MUTEX_LOCK,
 ENUM_MUTEX_UNLOCK,
 ENUM_IO,
+ENUM_OK,
 ENUM_DUMP_MEMORY,
 ENUM_SEGMENTATION_FAULT,
 ENUM_FIN_QUANTUM_RR,
-ENUM_DESALOJAR
+ENUM_DESALOJAR,
+ENUM_CICLO_NUEVO
+
 }syscalls;
 
 typedef struct {
@@ -63,6 +68,12 @@ typedef struct{
     int pid;
 }t_tid_pid;
 
+typedef struct{
+    int pid;
+    int tid;
+    int tamanio_particion_proceso;
+    void* contenido;
+}t_args_dump_memory;
 
 typedef struct{
 	char*nombreArchivo;
@@ -148,5 +159,14 @@ t_args_thread_create_aviso* recepcionar_inicializacion_hilo(t_paquete_code_opera
 char* obtener_ruta_absoluta(const char *ruta_relativa);
 
 t_log_level log_level(t_config* config);
+
+void send_dump_memory_filesystem(int pid,int tid,int tamanio_particion_proceso,void*contenido,int socket_cliente);
+t_args_dump_memory* recepcionar_dump_memory_filesystem(t_paquete_code_operacion* paquete);
+
+void send_syscall(syscalls syscall, int socket_cliente);
+syscalls recibir_syscall(int socket_cliente);
+void send_ciclo_nuevo(int socket_cliente);
+void send_terminar_ejecucion(int socket_cliente);
+syscalls recibir_sys(int socket_cliente);
 
 #endif

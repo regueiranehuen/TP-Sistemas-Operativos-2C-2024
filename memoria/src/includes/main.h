@@ -4,7 +4,7 @@
 #include "server.h"
 #include "auxiliaresMem.h"
 
-extern int estado_cpu;
+extern int estado_memoria;
 extern t_log* logger;
 extern t_config* config;
 

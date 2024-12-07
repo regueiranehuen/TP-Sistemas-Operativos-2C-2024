@@ -1,26 +1,26 @@
 #include "server.h"
 #include "cicloDeInstruccion.h"
 
-t_log *log_cpu = NULL;
-t_config *config = NULL;
-t_sockets_cpu *sockets_cpu = NULL;
+t_log *log_cpu;
+t_config *config;
+t_sockets_cpu *sockets_cpu;
 
-char *ip_memoria = NULL;
+char *ip_memoria;
 int puerto_memoria = 0;
 int puerto_escucha_dispatch = 0;
 int puerto_escucha_interrupt = 0;
-char* log_level_config = NULL;
+char* log_level_config;
 
 int socket_servidor_Dispatch = 0, socket_servidor_Interrupt = 0;
 int socket_cliente_Dispatch = 0, socket_cliente_Interrupt = 0;
 int respuesta_Dispatch = 0, respuesta_Interrupt = 0;
 
-t_socket_cpu *sockets = NULL;
+t_socket_cpu *sockets;
 
 pthread_t hilo_servidor;
 pthread_t hilo_cliente;
-void *socket_servidor_kernel = NULL;
-void *socket_cliente_memoria = NULL;
+void *socket_servidor_kernel;
+void *socket_cliente_memoria;
 
 uint32_t tid_interrupt;
 bool hay_interrupcion = false;
@@ -30,6 +30,7 @@ int es_por_usuario = 0;
 
 pthread_mutex_t mutex_contextos_exec;
 pthread_mutex_t mutex_interrupt;
+pthread_mutex_t mutex_logs;
 
 
 t_contexto_tid*contexto_tid_actual;
@@ -38,6 +39,8 @@ t_contexto_pid*contexto_pid_actual;
 sem_t sem_ciclo_instruccion;
 sem_t sem_ok_o_interrupcion;
 sem_t sem_finalizacion_cpu;
+sem_t sem_socket_cerrado;
+
 
 
 code_operacion devolucion_kernel;
@@ -53,7 +56,6 @@ void leer_config(char *path)
     puerto_escucha_dispatch = config_get_int_value(config, "PUERTO_ESCUCHA_DISPATCH");
     puerto_escucha_interrupt = config_get_int_value(config, "PUERTO_ESCUCHA_INTERRUPT");
     log_level_config = config_get_string_value(config, "LOG_LEVEL");
-    log_info(log_cpu, "Configuración del CPU cargada.");
 }
 
 // Inicialización del servidor de CPU para el Kernel
@@ -62,7 +64,9 @@ t_socket_cpu *servidor_CPU_Kernel(t_log *log, t_config *config)
     t_socket_cpu *sockets = malloc(sizeof(t_socket_cpu));
     if (!sockets)
     {
+        pthread_mutex_lock(&mutex_logs); 
         log_error(log, "Error al asignar memoria para sockets.");
+        pthread_mutex_unlock(&mutex_logs); 
         return NULL;
     }
 
@@ -75,7 +79,9 @@ t_socket_cpu *servidor_CPU_Kernel(t_log *log, t_config *config)
 
     if (socket_servidor_Dispatch == -1 || socket_servidor_Interrupt == -1)
     {
+        pthread_mutex_lock(&mutex_logs); 
         log_error(log, "Error al iniciar servidores.");
+        pthread_mutex_unlock(&mutex_logs); 
         if (socket_servidor_Dispatch != -1)
             close(socket_servidor_Dispatch);
         if (socket_servidor_Interrupt != -1)
@@ -89,7 +95,9 @@ t_socket_cpu *servidor_CPU_Kernel(t_log *log, t_config *config)
 
     if (socket_cliente_Dispatch == -1 || socket_cliente_Interrupt == -1)
     {
+        pthread_mutex_lock(&mutex_logs); 
         log_error(log, "Error al esperar cliente.");
+        pthread_mutex_unlock(&mutex_logs); 
         close(socket_servidor_Dispatch);
         close(socket_servidor_Interrupt);
         free(sockets);
@@ -100,18 +108,26 @@ t_socket_cpu *servidor_CPU_Kernel(t_log *log, t_config *config)
     respuesta_Interrupt = servidor_handshake(socket_cliente_Interrupt, log);
 
     if (respuesta_Dispatch == 0){
+    pthread_mutex_lock(&mutex_logs); 
     log_info(log,"Socket Dispatch: %d", socket_cliente_Dispatch);
     log_info(log,"Handshake de CPU_Dispatch --> Kernel realizado correctamente");
+    pthread_mutex_unlock(&mutex_logs); 
     }
    else {
+    pthread_mutex_lock(&mutex_logs); 
     log_error(log, "Handshake de CPU_Dispatch --> Kernel tuvo un error");
+    pthread_mutex_unlock(&mutex_logs); 
    }
    if (respuesta_Interrupt == 0){
+    pthread_mutex_lock(&mutex_logs); 
     log_info(log,"Socket Dispatch: %d", socket_cliente_Interrupt);
     log_info(log,"Handshake de CPU_Interrupt --> Kernel realizado correctamente");
+    pthread_mutex_unlock(&mutex_logs); 
    }
    else {
+    pthread_mutex_lock(&mutex_logs); 
     log_error(log, "Handshake de CPU_Interrupt --> Kernel tuvo un error");
+    pthread_mutex_unlock(&mutex_logs); 
    }
 
     sockets->socket_servidor_Dispatch = socket_servidor_Dispatch;
@@ -127,7 +143,9 @@ int cliente_cpu_memoria(t_log *log, t_config *config)
 {
     if (!ip_memoria)
     {
+        pthread_mutex_lock(&mutex_logs); 
         log_error(log, "IP de memoria no definida en la configuración.");
+        pthread_mutex_unlock(&mutex_logs); 
         return -1;
     }
 
@@ -136,24 +154,32 @@ int cliente_cpu_memoria(t_log *log, t_config *config)
     int socket_cliente = crear_conexion(log, ip_memoria, puerto_str);
     if (socket_cliente == -1)
     {
+        pthread_mutex_lock(&mutex_logs); 
         log_error(log, "Error al crear la conexión con memoria.");
+        pthread_mutex_unlock(&mutex_logs); 
         return -1;
     }
 
     int respuesta = cliente_handshake(socket_cliente, log);
     if (respuesta != 0)
     {
+        pthread_mutex_lock(&mutex_logs); 
         log_error(log, "Error en el handshake con memoria.");
+        pthread_mutex_unlock(&mutex_logs); 
         close(socket_cliente);
         return -1;
     }
 
     if (respuesta == 0){
+    pthread_mutex_lock(&mutex_logs); 
     log_info(log,"Socket Memoria: %d", socket_cliente);
     log_info(log,"Handshake de CPU --> Memoria realizado correctamente");
+    pthread_mutex_unlock(&mutex_logs); 
     }
    else {
+    pthread_mutex_lock(&mutex_logs); 
     log_error(log, "Handshake de CPU --> Memoria tuvo un error");
+    pthread_mutex_unlock(&mutex_logs); 
    }
 
     code_operacion cod_op = CPU;
@@ -170,7 +196,9 @@ void *funcion_hilo_servidor_cpu(void *void_args)
 
     if (!sockets)
     {
+        pthread_mutex_lock(&mutex_logs); 
         log_error(args->log, "Error en la conexión con Kernel.");
+        pthread_mutex_unlock(&mutex_logs); 
         pthread_exit(NULL);
     }
 
@@ -185,7 +213,9 @@ void *funcion_hilo_cliente_memoria(void *void_args)
 
     if (socket == -1)
     {
+        pthread_mutex_lock(&mutex_logs); 
         log_error(args->log, "Error en la conexión con Memoria.");
+        pthread_mutex_unlock(&mutex_logs); 
         pthread_exit(NULL);
     }
 
@@ -200,7 +230,9 @@ t_sockets_cpu *hilos_cpu(t_log *log, t_config *config)
     args_hilo *args = malloc(sizeof(args_hilo));
     if (!args)
     {
+        pthread_mutex_lock(&mutex_logs); 
         log_error(log, "Error al asignar memoria para los argumentos.");
+        pthread_mutex_unlock(&mutex_logs); 
         return NULL;
     }
 
@@ -208,7 +240,9 @@ t_sockets_cpu *hilos_cpu(t_log *log, t_config *config)
     if (!sockets_cpu)
     {
         free(args);
+        pthread_mutex_lock(&mutex_logs);
         log_error(log, "Error al asignar memoria para sockets CPU.");
+        pthread_mutex_unlock(&mutex_logs); 
         return NULL;
     }
 
@@ -217,7 +251,9 @@ t_sockets_cpu *hilos_cpu(t_log *log, t_config *config)
 
     if (pthread_create(&hilo_servidor, NULL, funcion_hilo_servidor_cpu, (void *)args) != 0)
     {
+        pthread_mutex_lock(&mutex_logs);
         log_error(log, "Error al crear el hilo servidor.");
+        pthread_mutex_unlock(&mutex_logs); 
         free(args);
         free(sockets_cpu);
         return NULL;
@@ -225,7 +261,9 @@ t_sockets_cpu *hilos_cpu(t_log *log, t_config *config)
 
     if (pthread_create(&hilo_cliente, NULL, funcion_hilo_cliente_memoria, (void *)args) != 0)
     {
+        pthread_mutex_lock(&mutex_logs);
         log_error(log, "Error al crear el hilo cliente.");
+        pthread_mutex_unlock(&mutex_logs); 
         free(args);
         free(sockets_cpu);
         return NULL;
@@ -246,39 +284,50 @@ void* recibir_kernel_interrupt(void*args){
 
     int noFinalizar = 0;
     while (noFinalizar != -1){
-        
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu,"esperando interrupciones\n");
+        pthread_mutex_unlock(&mutex_logs);
         //t_paquete_code_operacion* paquete = recibir_paquete_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Interrupt);
-        if(code > 100){
+
+        pthread_mutex_lock(&mutex_logs);
+        log_debug(log_cpu,"## Llega interrupción al puerto Interrupt");
+        pthread_mutex_unlock(&mutex_logs);
+        if(code == -1){
             log_info(log_cpu,"Conexion cerrada por Interrupt");
-            break;
+            sem_post(&sem_finalizacion_cpu);
+            return NULL;
         }
-        log_info(log_cpu,"llega el código %d a interrupt",code);
+        
 
         switch (code)
         {
         case FIN_QUANTUM_RR:
-            log_info(log_cpu,"## Llega interrupción al puerto Interrupt");
+            pthread_mutex_lock(&mutex_logs);
+            log_info(log_cpu,"## Llegada de FIN_QUANTUM_RR al puerto Interrupt");
+            pthread_mutex_unlock(&mutex_logs);
             pthread_mutex_lock(&mutex_interrupt);
             hay_interrupcion = true;
             devolucion_kernel=FIN_QUANTUM_RR;
             pthread_mutex_unlock(&mutex_interrupt);
-            sem_post(&sem_ok_o_interrupcion);
+            
+            send_paquete_syscall_sin_parametros(sockets_cpu->socket_servidor->socket_cliente_Dispatch,ENUM_OK);
             break;
         case DESALOJAR:
-            log_info(log_cpu,"## Llega interrupción al puerto Interrupt");
+            pthread_mutex_lock(&mutex_logs);
+            log_info(log_cpu,"## Llegada de DESALOJAR al puerto Interrupt");
+            pthread_mutex_unlock(&mutex_logs);
             pthread_mutex_lock(&mutex_interrupt);
             hay_interrupcion = true;
             devolucion_kernel=DESALOJAR;
             pthread_mutex_unlock(&mutex_interrupt);
-            sem_post(&sem_ok_o_interrupcion);
+           
+            send_paquete_syscall_sin_parametros(sockets_cpu->socket_servidor->socket_cliente_Dispatch,ENUM_OK);
             break;
-        case OK:
-            log_info(log_cpu,"## Terminó una syscall");
-            sem_post(&sem_ok_o_interrupcion);
         default:
-        log_info(log_cpu,"codigo no valido recibido: %d",code);
+            pthread_mutex_lock(&mutex_logs);
+            log_info(log_cpu,"codigo no valido recibido");
+            pthread_mutex_unlock(&mutex_logs);
             break;
         }
         

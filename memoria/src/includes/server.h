@@ -3,20 +3,26 @@
 
 #include "memoria.h"
 #include "memSist.h"
+#include "memUsuario.h"
 #include "utils/includes/sockets.h"
 #include <commons/config.h>
 #include <semaphore.h>
 #include "utils/includes/serializacion.h"
+#include "main.h"
 
 extern sem_t sem_conexion_iniciales;
 extern sem_t sem_conexion_hecha;
 extern sem_t sem_fin_memoria;
+extern sem_t sem_termina_hilo;
+
 extern t_list*lista_contextos_pids;
 
 extern pthread_mutex_t mutex_lista_contextos_pids;
+extern pthread_mutex_t mutex_estado_memoria;
+extern pthread_mutex_t mutex_lista_particiones;
+extern pthread_mutex_t mutex_logs;
 
 extern t_list*lista_instrucciones_tid_pid;
-
 
 
 typedef struct{

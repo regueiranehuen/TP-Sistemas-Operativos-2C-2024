@@ -7,17 +7,31 @@ int longitud_maxima=200;
 int parametros_maximos=6;
 int instrucciones_maximas=200;
 
+char* limpiar_token(char* token) {
+    size_t len = strlen(token);
+    if (len > 0 && (token[len - 1] == '\n' || token[len - 1] == '\r')) {
+        token[len - 1] = '\0';
+    }
+    return token;
+}
 
 void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
     
 
-    const char *ruta_relativa = nombre_archivo;
-    char*ruta_absoluta = obtener_ruta_absoluta(ruta_relativa);
-
-    FILE* archivo = fopen(ruta_absoluta, "r");
+    char* path_instrucciones = config_get_string_value(config,"PATH_INSTRUCCIONES");
+    char* path_instrucciones_aux = malloc(strlen(path_instrucciones)+strlen(nombre_archivo) + 1);
     
+
+    snprintf(path_instrucciones_aux,strlen(path_instrucciones)+strlen(nombre_archivo) + 1,"%s%s",path_instrucciones,nombre_archivo);
+    
+    FILE* archivo = fopen(path_instrucciones_aux, "r");
+    
+    free(path_instrucciones_aux);
+
     if (archivo == NULL) {
+        pthread_mutex_lock(&mutex_logs);
         perror("Error al abrir el archivo");
+        pthread_mutex_unlock(&mutex_logs);
         exit(EXIT_FAILURE);
     }
     
@@ -39,23 +53,23 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
             switch (param_count) {
                 case 0:
                     instruccion_tid_pid->instrucciones->parametros1 = "";
-                    instruccion_tid_pid->instrucciones->parametros1 = strdup(token);
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros1);
+                    instruccion_tid_pid->instrucciones->parametros1 = strdup(limpiar_token(token));
+                    
                     break;
                 case 1:
                     instruccion_tid_pid->instrucciones->parametros2 = "";
-                    instruccion_tid_pid->instrucciones->parametros2 = strdup(token);
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros2);
+                    instruccion_tid_pid->instrucciones->parametros2 = strdup(limpiar_token(token));
+                    
                     break;
                 case 2:
                     instruccion_tid_pid->instrucciones->parametros3 = "";
-                    instruccion_tid_pid->instrucciones->parametros3 = strdup(token);
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros3);
+                    instruccion_tid_pid->instrucciones->parametros3 = strdup(limpiar_token(token));
+
                     break;
                 case 3:
                     instruccion_tid_pid->instrucciones->parametros4 = "";
-                    instruccion_tid_pid->instrucciones->parametros4 = strdup(token);
-                    log_info(logger,"%s",instruccion_tid_pid->instrucciones->parametros4);
+                    instruccion_tid_pid->instrucciones->parametros4 = strdup(limpiar_token(token));
+                    
                     break;
                 default:
                     break;
@@ -73,6 +87,7 @@ void cargar_instrucciones_desde_archivo(char* nombre_archivo, int pid, int tid){
         
     }
     fclose(archivo);
+    
 }
 
 void inicializar_resto_parametros(int cant_param, t_instruccion_tid_pid *instruccion)
@@ -95,6 +110,7 @@ void inicializar_resto_parametros(int cant_param, t_instruccion_tid_pid *instruc
         break;
     }
 }
+
 
 void enviar_instruccion(int conexion, t_instruccion *instruccion_nueva, op_code codop)
 {
@@ -156,8 +172,24 @@ void finalizar_hilo(int tid, int pid) {
     pthread_mutex_unlock(&mutex_lista_instruccion);
     pthread_mutex_lock(&mutex_lista_contextos_pids);
     t_contexto_pid* contexto_pid = obtener_contexto_pid(pid);
+
+
     t_contexto_tid* contexto_tid = obtener_contexto_tid(pid,tid);
-    eliminar_elemento_por_tid(contexto_tid->tid, contexto_pid->contextos_tids);
+
+    
+    if (contexto_tid == NULL){
+        pthread_mutex_lock(&mutex_logs);
+        log_info(logger,"Contexto tid: NULL");
+        pthread_mutex_unlock(&mutex_logs);
+    }
+
+
+    list_remove_element(contexto_pid->contextos_tids,contexto_tid);
+    free(contexto_tid->registros);
+    free(contexto_tid);
+    
+
+    //eliminar_elemento_por_tid(contexto_tid->tid, contexto_pid->contextos_tids);
     pthread_mutex_unlock(&mutex_lista_contextos_pids);
 }
 

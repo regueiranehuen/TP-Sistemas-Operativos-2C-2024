@@ -86,13 +86,14 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 
 void send_mutex_create(char* recurso, int socket_cliente){
     t_buffer* buffer = malloc(sizeof(t_buffer));
+int lenght_recurso = strlen(recurso) + 1;
 
-buffer->size = sizeof(int);
+buffer->size = sizeof(int) + lenght_recurso;
 
 buffer->offset = 0;
 buffer->stream = malloc(buffer->size);
 
-int lenght_recurso = strlen(recurso);
+
 
 memcpy(buffer->stream + buffer->offset, &lenght_recurso, sizeof(int));
 buffer->offset += sizeof(int);
@@ -105,13 +106,13 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 
 void send_mutex_lock(char* recurso, int socket_cliente){
  t_buffer* buffer = malloc(sizeof(t_buffer));
-
-buffer->size = sizeof(int);
+int lenght_recurso = strlen(recurso)+1;
+buffer->size = sizeof(int)+lenght_recurso;
 
 buffer->offset = 0;
 buffer->stream = malloc(buffer->size);
 
-int lenght_recurso = strlen(recurso);
+
 
 memcpy(buffer->stream + buffer->offset, &lenght_recurso, sizeof(int));
 buffer->offset += sizeof(int);
@@ -125,13 +126,12 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 
 void send_mutex_unlock(char* recurso, int socket_cliente){
  t_buffer* buffer = malloc(sizeof(t_buffer));
-
-buffer->size = sizeof(int);
+int lenght_recurso = strlen(recurso) + 1;
+buffer->size = sizeof(int)+lenght_recurso;
 
 buffer->offset = 0;
 buffer->stream = malloc(buffer->size);
 
-int lenght_recurso = strlen(recurso);
 
 memcpy(buffer->stream + buffer->offset, &lenght_recurso, sizeof(int));
 buffer->offset += sizeof(int);
@@ -181,6 +181,25 @@ send_paquete_syscall(buffer,socket_cliente,syscall);
 
 }
 
+void send_ciclo_nuevo(int socket_cliente){
+    t_buffer* buffer = malloc(sizeof(t_buffer));
+
+    buffer-> size = 0;
+
+    syscalls syscall = ENUM_CICLO_NUEVO;
+    send_paquete_syscall(buffer,socket_cliente,syscall);
+}
+
+void send_syscall(syscalls syscall, int socket_cliente){
+    send(socket_cliente,&syscall,sizeof(int),0);
+}
+
+syscalls recibir_syscall(int socket_cliente){
+    syscalls syscall;
+    recv(socket_cliente,&syscall,sizeof(int),0);
+    return syscall;
+}
+
 void send_fin_quantum_rr(int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
 
@@ -214,18 +233,16 @@ void send_segmentation_fault(int socket_cliente){
 
 void send_paquete_syscall_sin_parametros(int socket_cliente, syscalls syscall) {
     int n = 0;
-    printf("SYSCALL QUE ESTOY POR MANDAR: %d",syscall);
-    void *a_enviar = malloc(sizeof(int) + sizeof(int));
+    void *a_enviar = malloc(sizeof(syscalls) + sizeof(int));
     int offset = 0;
 
     memcpy(a_enviar + offset, &syscall, sizeof(int));
     offset += sizeof(int);
     memcpy(a_enviar + offset, &n, sizeof(int));
     
-    send(socket_cliente, a_enviar, sizeof(int) + sizeof(int),0);
+    send(socket_cliente, a_enviar, sizeof(syscalls) + sizeof(int),0);
 
     free(a_enviar);
-
 }
 
 void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){
@@ -233,6 +250,7 @@ void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){
 
     if(buffer->size == 0){
         send_paquete_syscall_sin_parametros(socket_cliente,syscall);
+        free(buffer);
     } else{
 
     t_paquete_syscall*paquete=malloc(sizeof(t_paquete_syscall));
@@ -262,19 +280,23 @@ void send_paquete_syscall(t_buffer*buffer, int socket_cliente,syscalls syscall){
 
 
 t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch) {
-    t_paquete_syscall* paquete = malloc(sizeof(t_paquete_syscall));
-
-    paquete->buffer=malloc(sizeof(t_buffer));
-
+    
+    syscalls syscall;
     // Primero recibimos el codigo de operacion
-    int bytes = recv(socket_dispatch, &(paquete->syscall), sizeof(int), 0);
+    int bytes = recv(socket_dispatch, &syscall, sizeof(syscalls), 0);
+
+    
+
+    //if (paquete->syscall == ENUM_DUMP_MEMORY || paquete->syscall == THREAD_EX)
 
     if (bytes <= 0){
         return NULL;
     }
     else{
         // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
-        
+        t_paquete_syscall* paquete = malloc(sizeof(t_paquete_syscall));
+        paquete->buffer=malloc(sizeof(t_buffer));
+        paquete->syscall = syscall;
         recv(socket_dispatch, &(paquete->buffer->size), sizeof(uint32_t), 0);
 
         if (paquete->buffer->size > 0){
@@ -286,7 +308,6 @@ t_paquete_syscall* recibir_paquete_syscall(int socket_dispatch) {
         return paquete;
     }
 
-    //return paquete;
 }
 
 int recibir_entero_buffer(t_paquete_syscall*paquete){
@@ -326,44 +347,24 @@ t_process_create* parametros_process_create(t_paquete_syscall *paquete){
 
     void * stream = paquete->buffer->stream;
 
-    int sizeNombreArchivo;
+    int sizeNombreArchivo = 0;
     // Deserializamos los campos que tenemos en el buffer
     memcpy(&sizeNombreArchivo, stream, sizeof(int)); // Recibimos el size del nombre del archivo de pseudocodigo
     stream += sizeof(int);
-
-    memcpy(&(info->nombreArchivo), stream, sizeNombreArchivo); // Primer parámetro para la syscall: nombre del archivo
+    info->nombreArchivo = malloc(sizeNombreArchivo + 1);
+    memcpy(info->nombreArchivo, stream, sizeNombreArchivo); // Primer parámetro para la syscall: nombre del archivo
     stream += sizeNombreArchivo;
     memcpy(&(info->tamProceso), stream, sizeof(int));
     stream += sizeof(int);
     memcpy(&(info->prioridad), stream, sizeof(int));
     stream += sizeof(int);
-
     eliminar_paquete_syscall(paquete);
 
     return info;
 
 }
 
-t_thread_create* parametros_thread_create(t_paquete_syscall*paquete){
-    t_thread_create*info = malloc(paquete->buffer->size);
 
-    void * stream = paquete->buffer->stream;
-
-    int sizeNombreArchivo;
-    // Deserializamos los campos que tenemos en el buffer
-    memcpy(&sizeNombreArchivo, stream, sizeof(int)); // Recibimos el size del nombre del archivo de pseudocodigo
-    stream += sizeof(int);
-
-    memcpy(&(info->nombreArchivo), stream, sizeNombreArchivo); // Primer parámetro para la syscall: nombre del archivo
-    stream += sizeNombreArchivo;
-    memcpy(&(info->prioridad), stream, sizeof(int));
-    stream += sizeof(int);
-
-    eliminar_paquete_syscall(paquete);
-
-    return info;
-
-}
 
 int recibir_entero_paquete_syscall(t_paquete_syscall* paquete){
 
@@ -397,13 +398,17 @@ char* recibir_string_paquete_syscall(t_paquete_syscall*paquete){
 
 
 void eliminar_paquete_syscall(t_paquete_syscall*paquete){
-    free(paquete->buffer->stream);
+    if (paquete->buffer->size > 0){
+        free(paquete->buffer->stream);
+    }
     free(paquete->buffer);
     free(paquete);
 }
 
 void eliminar_paquete_code_op(t_paquete_code_operacion*paquete){
-    free(paquete->buffer->stream);
+    if (paquete->buffer->size > 0){
+        free(paquete->buffer->stream);
+    }
     free(paquete->buffer);
     free(paquete);
 }
@@ -425,6 +430,7 @@ void send_operacion_tid_pid(code_operacion code, int tid, int pid, int socket_cl
     send_paquete_code_operacion(code,buffer,socket_cliente);
     
 }
+
 
 void send_operacion_entero(code_operacion code, int entero, int socket_cliente){
     t_buffer*buffer=malloc(sizeof(t_buffer));
@@ -515,7 +521,8 @@ void send_paquete_code_operacion(code_operacion code, t_buffer* buffer, int sock
     offset += sizeof(int);
     memcpy(a_enviar + offset, &(paquete->buffer->size), sizeof(uint32_t));  // Agregar el tamaño del buffer
     offset += sizeof(uint32_t);
-    memcpy(a_enviar + offset, paquete->buffer->stream, paquete->buffer->size);
+    if (paquete->buffer->size > 0)
+        memcpy(a_enviar + offset, paquete->buffer->stream, paquete->buffer->size);
 
     send(socket_cliente, a_enviar, total_size, 0);
 
@@ -527,22 +534,27 @@ void send_paquete_code_operacion(code_operacion code, t_buffer* buffer, int sock
 
 
 t_paquete_code_operacion* recibir_paquete_code_operacion(int socket_cliente){
-    t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
+    
 
-    paquete->buffer=malloc(sizeof(t_buffer));
-
+    code_operacion code;
     // Primero recibimos el codigo de operacion
-    int bytes = recv(socket_cliente, &(paquete->code), sizeof(int), 0);
+    int bytes = recv(socket_cliente, &code, sizeof(int), 0);
+
+    
 
     if (bytes <= 0){
+
         return NULL;
     }
     else{
         // Después ya podemos recibir el buffer. Primero su tamaño seguido del contenido
-        
+        t_paquete_code_operacion*paquete=malloc(sizeof(t_paquete_code_operacion));
+        paquete->buffer=malloc(sizeof(t_buffer));
+        paquete->code = code;
         recv(socket_cliente, &(paquete->buffer->size), sizeof(uint32_t), 0);
         paquete->buffer->stream = malloc(paquete->buffer->size);
-        recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
+        if (paquete->buffer->size > 0)
+            recv(socket_cliente, paquete->buffer->stream, paquete->buffer->size, 0);
         return paquete;
     }
 }
@@ -562,6 +574,21 @@ t_tid_pid* recepcionar_tid_pid_code_op(t_paquete_code_operacion* paquete){
     return info;
 }
 
+t_tid_pid* recepcionar_contexto_ejecucion(t_paquete_code_operacion* paquete){
+    t_tid_pid* info = malloc(sizeof(t_tid_pid));
+
+    void* stream = paquete->buffer->stream;
+
+    memcpy(&(info->tid),stream,sizeof(int));
+    stream += sizeof(int);
+    memcpy(&(info->pid), stream,sizeof(int)); // Primer parámetro para la syscall: nombre del archivo
+
+    eliminar_paquete_code_op(paquete);
+
+    return info;
+}
+
+
 int recepcionar_int_code_op(t_paquete_code_operacion* paquete){
 
 
@@ -572,7 +599,7 @@ int recepcionar_int_code_op(t_paquete_code_operacion* paquete){
     memcpy(&valor,stream,sizeof(int));
     stream+=sizeof(int);
     
-
+    eliminar_paquete_code_op(paquete);
     return valor;
 }
 
@@ -596,7 +623,19 @@ void send_code_operacion(code_operacion code, int socket_cliente){
 
 code_operacion recibir_code_operacion(int socket_cliente){
     code_operacion code;
-    recv(socket_cliente,&code,sizeof(int),0);
+    int bytes = recv(socket_cliente,&code,sizeof(int),0);
+    if(bytes <= 0){
+    return -1;
+    }
+    return code;
+}
+
+syscalls recibir_sys(int socket_cliente){
+    syscalls code;
+    int bytes = recv(socket_cliente,&code,sizeof(syscalls),0);
+    if(bytes <= 0){
+    return -1;
+    }
     return code;
 }
 
@@ -651,6 +690,50 @@ void send_inicializacion_proceso(int pid, char*arch_pseudocodigo,int tamanio_pro
     
     send_paquete_code_operacion(INICIALIZAR_PROCESO,buffer,socket_cliente);
     
+}
+
+void send_dump_memory_filesystem(int pid,int tid,int tamanio_particion_proceso, void*contenido, int socket_cliente){
+    t_buffer* buffer = malloc(sizeof(t_buffer));
+    
+    
+    // Calcula el tamaño total del buffer: 3 enteros + todos los datos en la lista
+    int buffer_size = 3 * sizeof(int) + tamanio_particion_proceso;
+
+    buffer->size = buffer_size;
+    buffer->stream = malloc(buffer->size);
+
+    void* stream = buffer->stream;
+
+    memcpy(stream,&pid,sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream,&tid,sizeof(int));
+    stream += sizeof(int);
+    memcpy(stream,&tamanio_particion_proceso,sizeof(int));
+    stream+=sizeof(int);
+    memcpy(stream,contenido,tamanio_particion_proceso);
+    
+    send_paquete_code_operacion(DUMP_MEMORIA,buffer,socket_cliente);
+
+}
+
+t_args_dump_memory* recepcionar_dump_memory_filesystem(t_paquete_code_operacion* paquete){
+    t_args_dump_memory* info = malloc(sizeof(t_args_dump_memory)); // APLICAR SIEMPRE ASI
+
+    void* stream = paquete->buffer->stream;
+
+    memcpy(&(info->pid),stream,sizeof(int));
+    stream += sizeof(int);
+    memcpy(&(info->tid), stream,sizeof(int));
+    stream+=sizeof(int);
+    memcpy(&(info->tamanio_particion_proceso), stream,sizeof(int));
+    stream += sizeof(int);
+
+    info->contenido=malloc(info->tamanio_particion_proceso);
+    memcpy(info->contenido,stream,info->tamanio_particion_proceso);
+
+    eliminar_paquete_code_op(paquete);
+
+    return info; 
 }
 
 
@@ -728,4 +811,11 @@ t_log_level log_level(t_config* config){
     return LOG_LEVEL_ERROR;
     }
     return -1;
+}
+
+void send_terminar_ejecucion(int socket_cliente){
+    t_buffer*buffer=malloc(sizeof(t_buffer));
+    buffer->size=0;
+
+    send_paquete_code_operacion(TERMINAR_EJECUCION_MODULO,buffer,socket_cliente);
 }

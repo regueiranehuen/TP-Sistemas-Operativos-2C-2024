@@ -7,6 +7,8 @@
 #include <semaphore.h>
 #include "main.h"
 
+    
+
 
 t_tcb *fifo_tcb();
 void* funcion_new_ready_procesos(void* void_args);
@@ -31,5 +33,6 @@ void *funcion_manejo_procesos(void *arg);
 void espera_con_quantum(int quantum);
 void ejecucion();
 void pushear_cola_ready(t_tcb* hilo);
+void* cortar_ejecucion_modulos(void*args);
 
 #endif

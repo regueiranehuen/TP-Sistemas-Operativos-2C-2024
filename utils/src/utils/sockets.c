@@ -160,7 +160,7 @@ if (socket_cliente == -1){
     while(conexion != true && i<15){//15 segundos de espera para que el servidor haya arrancado
     if(connect(socket_cliente, server_info->ai_addr, server_info->ai_addrlen) == 0){
             conexion = true;
-            printf("Kernel se conecto");
+            log_info(log,"Kernel se conecto");
             freeaddrinfo(server_info); // Liberar la memoria asignada por getaddrinfo()
             return socket_cliente;
     }

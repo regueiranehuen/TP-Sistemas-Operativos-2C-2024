@@ -6,30 +6,34 @@
 t_instruccion instruccion;
 bool seguir_ejecutando;
 
-void iniciar_cpu()
-{
 
-    pthread_t hilo_ciclo_instruccion;
-    pthread_t hilo_atiende_interrupt;
+
+void iniciar_cpu(){
 
     int resultado;
-
+    pthread_t hilo_ciclo_instruccion;
+    pthread_t hilo_atiende_interrupt;
     resultado = pthread_create(&hilo_ciclo_instruccion, NULL, ciclo_de_instruccion, NULL);
 
     if (resultado != 0)
     {
+        pthread_mutex_lock(&mutex_logs);
         log_error(log_cpu, "Error al crear el hilo que atiende los ciclos de instruccion en cpu");
+        pthread_mutex_unlock(&mutex_logs);
     }
 
     resultado = pthread_create(&hilo_atiende_interrupt, NULL, recibir_kernel_interrupt, NULL);
 
     if (resultado != 0)
     {
+        pthread_mutex_lock(&mutex_logs);
         log_error(log_cpu, "Error al crear el hilo que atiende interrupt en cpu");
+        pthread_mutex_unlock(&mutex_logs);
     }
 
     pthread_detach(hilo_ciclo_instruccion);
     pthread_detach(hilo_atiende_interrupt);
+    
 }
 
 void *ciclo_de_instruccion(void *args)
@@ -39,12 +43,13 @@ void *ciclo_de_instruccion(void *args)
 
     while (noFinalizar != -1)
     {
+        send_ciclo_nuevo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         t_contextos *contextos = esperar_thread_execute(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
         if (contextos != NULL && contextos->contexto_pid != NULL && contextos->contexto_tid != NULL)
         {
             seguir_ejecutando = true;
-            while (seguir_ejecutando)
+            while (seguir_ejecutando == true)
             {
                 
                 t_instruccion *instruccion = fetch(contextos->contexto_tid);
@@ -61,11 +66,25 @@ void *ciclo_de_instruccion(void *args)
                 if (seguir_ejecutando)
                 {
                     checkInterrupt(contextos->contexto_tid);
-                    
                 }
+                
+                free(instruccion->parametros1);
+                free(instruccion->parametros2);
+                free(instruccion->parametros3);
+                free(instruccion->parametros4);
+                free(instruccion);
             }
+            free(contextos->contexto_tid->registros);
             free(contextos->contexto_tid);
             free(contextos->contexto_pid);
+            free(contextos);
+        }
+        else if(contextos == NULL){
+            pthread_mutex_lock(&mutex_logs);
+            log_info(log_cpu,"Cierre de conexion por Dispatch");
+            pthread_mutex_unlock(&mutex_logs);
+            sem_post(&sem_finalizacion_cpu);
+            return NULL; 
         }
     }
     return NULL;
@@ -78,59 +97,51 @@ t_contextos *esperar_thread_execute(int socket_cliente_Dispatch)
 
     if (paquete == NULL)
     {
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu,"Cpu recibio un paquete no valido de kernel por dispatch");
+        pthread_mutex_unlock(&mutex_logs);
         return NULL;
     }
-
-    log_info(log_cpu, "se recibió el código %d por dispatch\n", paquete->code);
-
-    t_contextos *contextos = malloc(sizeof(t_contextos));
-    contextos->contexto_pid = malloc(sizeof(t_contexto_pid_send));
-    contextos->contexto_tid = malloc(sizeof(t_contexto_tid));
 
     if (paquete->code == THREAD_EXECUTE_AVISO)
     {
         /*Al momento de recibir un TID y PID de parte del Kernel la CPU deberá solicitarle el contexto de ejecución correspondiente a la Memoria para poder iniciar su ejecución.*/
         t_tid_pid *info = recepcionar_tid_pid_code_op(paquete);
 
-        
+        t_contextos* contextos;
 
-        solicitar_contexto_pid(info->pid, sockets_cpu->socket_memoria);
-        
-        t_paquete *paquete_solicitud_contexto_pid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
-        
-        if (paquete_solicitud_contexto_pid->codigo_operacion == CONTEXTO_PID_INEXISTENTE)
-        {
-            log_error(log_cpu, "El contexto del pid %d no existe", info->pid);
-        }
-        else if (paquete_solicitud_contexto_pid->codigo_operacion == OBTENCION_CONTEXTO_PID_OK)
-        {
+        solicitar_contexto_ejecucion(info->pid, info->tid,sockets_cpu->socket_memoria);
 
-            contextos->contexto_pid = recepcionar_contexto_pid(paquete_solicitud_contexto_pid);
-            solicitar_contexto_tid(info->pid, info->tid, sockets_cpu->socket_memoria);
-            log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
-            log_info(log_cpu, "PID: %d, BASE: %d, LIMITE: %d", contextos->contexto_pid->pid, contextos->contexto_pid->base, contextos->contexto_pid->limite);
-            t_paquete *paquete_solicitud_contexto_tid = recibir_paquete_op_code(sockets_cpu->socket_memoria);
-            printf("%d\n", paquete_solicitud_contexto_tid->codigo_operacion);
-            if (paquete_solicitud_contexto_tid->codigo_operacion == OBTENCION_CONTEXTO_TID_OK)
-            { // La memoria se encarga de crear el contexto del tid si es que no existe
-                contextos->contexto_tid = recepcionar_contexto_tid(paquete_solicitud_contexto_tid);
-                log_info(log_cpu, "TID: %d - Solicito Contexto Ejecución", info->tid);
-            }
-            else if (paquete_solicitud_contexto_tid->codigo_operacion == CONTEXTO_TID_INEXISTENTE)
-            {
-                log_error(log_cpu, "Error obteniendo contexto del tid %d", info->tid);
-            }
-        }
-        else if (paquete_solicitud_contexto_pid->codigo_operacion == -1)
+        pthread_mutex_lock(&mutex_logs);
+        log_debug(log_cpu,"## TID: %d - Solicito Contexto Ejecución",info->tid);
+        pthread_mutex_unlock(&mutex_logs);
+        
+        t_paquete *paquete_solicitud_contexto_ejecucion = recibir_paquete_op_code(sockets_cpu->socket_memoria);
+        
+        if (paquete_solicitud_contexto_ejecucion->codigo_operacion == ERROR)
         {
-            log_error(log_cpu, "Error obteniendo contexto del tid %d", info->pid);
+            pthread_mutex_lock(&mutex_logs);
+            log_error(log_cpu, "El contexto del pid %d tid %d no existe", info->pid,info->tid);
+            pthread_mutex_unlock(&mutex_logs);
+            return NULL;
         }
-
+        else if (paquete_solicitud_contexto_ejecucion->codigo_operacion == OBTENCION_CONTEXTO_EJECUCION_OK)
+        {
+            contextos = recepcionar_contextos(paquete_solicitud_contexto_ejecucion);
+        }
+        pthread_mutex_lock(&mutex_logs);
         log_trace(log_cpu, "Ejecutando ciclo de instrucción.");
+        pthread_mutex_unlock(&mutex_logs);
+
+        free(info);
+
+        return contextos;
+    }
+    else{
+        return NULL;
     }
 
-    return contextos;
+    return NULL;
 }
 
 /*
@@ -146,39 +157,46 @@ void checkInterrupt(t_contexto_tid *contextoTid)
 
     if (hay_interrupcion)
     {
-        
         hay_interrupcion = false;
         seguir_ejecutando = false;
+    
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
+        pthread_mutex_lock(&mutex_logs);
+        log_debug(log_cpu,"## TID: %d - Actualizo Contexto Ejecución",contextoTid->tid);
+        pthread_mutex_unlock(&mutex_logs);
         code_operacion respuesta = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (respuesta != OK)
         {
-            log_info(log_cpu, "Memoria no pudo actualizar los registros, muy poco sigma");
+            pthread_mutex_unlock(&mutex_interrupt);
             return;
         }
-        printf("code:%d\n",respuesta);
         if (devolucion_kernel == FIN_QUANTUM_RR)
         {
-            send_fin_quantum_rr(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+            pthread_mutex_lock(&mutex_logs);
+            log_info(log_cpu,"MANDANDO FIN QUANTUM A KERNEL\n");
+            pthread_mutex_unlock(&mutex_logs);
+            send_syscall(ENUM_FIN_QUANTUM_RR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         }
         else if (devolucion_kernel == DESALOJAR)
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(log_cpu,"Mandando desalojo a kernel\n");
-            send_desalojo(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+            pthread_mutex_unlock(&mutex_logs);
+            send_syscall(ENUM_DESALOJAR,sockets_cpu->socket_servidor->socket_cliente_Interrupt);
         }
         pthread_mutex_unlock(&mutex_interrupt);
     }
     else
     {
-        
         pthread_mutex_unlock(&mutex_interrupt);
     }
 }
 
 t_instruccion *fetch(t_contexto_tid *contexto)
 {
-
-    
+    pthread_mutex_lock(&mutex_logs);
+    log_debug(log_cpu,"ENTRAMOS A FETCH CON PID %d TID %d PC %d",contexto->pid,contexto->tid,contexto->registros->PC);
+    pthread_mutex_unlock(&mutex_logs);
 
     send_solicitud_instruccion_memoria(contexto->tid, contexto->pid, contexto->registros->PC);
 
@@ -186,15 +204,20 @@ t_instruccion *fetch(t_contexto_tid *contexto)
     t_instruccion *instruccion;
     if (paquete->codigo_operacion == -1)
     {
+        pthread_mutex_lock(&mutex_logs);
         log_error(log_cpu, "Error al recibir la instrucción");
+        pthread_mutex_unlock(&mutex_logs);
         seguir_ejecutando = false;
+        eliminar_paquete(paquete);
         return NULL;
     }
     else if (paquete->codigo_operacion == INSTRUCCION_OBTENIDA)
     {
-        instruccion = recepcionar_instruccion(paquete);
+        instruccion = recepcionar_instruccion(paquete); 
     }
-    log_info(log_cpu, "TID: %i - FETCH - Program Counter: %i", contexto->tid, contexto->registros->PC);
+    pthread_mutex_lock(&mutex_logs);
+    log_debug(log_cpu, "## TID: %d - FETCH - Program Counter: %u", contexto->tid, contexto->registros->PC);
+    pthread_mutex_unlock(&mutex_logs);
     return instruccion;
 }
 
@@ -219,7 +242,6 @@ void send_solicitud_instruccion_memoria(int tid, int pid, uint32_t pc)
 
 op_code decode(t_instruccion *instruccion)
 {
-    // log_info(log_cpu,"ESTAMOS EN DECODE CON LA INSTRUCCIÓN %s",instruccion->parametros1);
     if (strcmp(instruccion->parametros1, "SET") == 0)
     {
         return SET;
@@ -288,10 +310,6 @@ op_code decode(t_instruccion *instruccion)
     {
         return THREAD_EXIT;
     }
-    else if (strcmp(instruccion->parametros1, "IO_FS_READ") == 0)
-    {
-        // return IO_FS_READ;
-    }
     else if (strcmp(instruccion->parametros1, "PROCESS_EXIT") == 0)
     {
         return PROCESS_EXIT;
@@ -305,64 +323,86 @@ op_code decode(t_instruccion *instruccion)
 
 void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_code instruccion_nombre, t_instruccion *instruccion)
 {
-    log_info(log_cpu, "Ejecutando instrucción: %s", instruccion->parametros1);
-
+    pthread_mutex_lock(&mutex_logs);
+    log_debug(log_cpu, "## TID: %d - Ejecutando: %s - %s %s %s", contextoTid->tid, instruccion->parametros1,instruccion->parametros2,instruccion->parametros3,instruccion->parametros4);
+    pthread_mutex_unlock(&mutex_logs);
+    
     switch (instruccion_nombre)
     {
     case SET:
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "SET - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
+        pthread_mutex_unlock(&mutex_logs);
         funcSET(contextoTid, instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
-        contextoTid->registros->PC++;
+        if (strcmp(instruccion->parametros2, "PC") != 0)
+            contextoTid->registros->PC++;
         break;
     case SUM:
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "SUM - Registro: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
+        pthread_mutex_unlock(&mutex_logs);
         funcSUM(contextoTid, instruccion->parametros2, instruccion->parametros3);
         contextoTid->registros->PC++;
         break;
     case SUB:
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "SUB - Registro: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
+        pthread_mutex_unlock(&mutex_logs);
         funcSUB(contextoTid, instruccion->parametros2, instruccion->parametros3);
         contextoTid->registros->PC++;
         break;
     case JNZ:
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "JNZ - Registro: %s, Valor: %d", instruccion->parametros2, atoi(instruccion->parametros3));
+        pthread_mutex_unlock(&mutex_logs);
         funcJNZ(contextoTid, instruccion->parametros2, (uint32_t)atoi(instruccion->parametros3));
-        // No se incrementa el program counter
+        // El valor del program counter se evalúa dentro de la instrucción
         break;
     case READ_MEM:
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "READ_MEM - Dirección: %s", instruccion->parametros2);
+        pthread_mutex_unlock(&mutex_logs);
         funcREAD_MEM(contextoPid, contextoTid, instruccion->parametros2, instruccion->parametros3);
         contextoTid->registros->PC++;
 
         break;
     case WRITE_MEM:
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "WRITE_MEM - Dirección: %s, Valor: %s", instruccion->parametros2, instruccion->parametros3);
+        pthread_mutex_unlock(&mutex_logs);
         funcWRITE_MEM(contextoPid, contextoTid, instruccion->parametros2, instruccion->parametros3);
         contextoTid->registros->PC++;
 
         break;
     case LOG:
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "LOG - Mensaje: %s", instruccion->parametros2);
+        pthread_mutex_unlock(&mutex_logs);
         funcLOG(contextoTid, instruccion->parametros2);
         contextoTid->registros->PC++;
 
         break;
     case DUMP_MEMORY:
     {
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "DUMP_MEMORY");
+        pthread_mutex_unlock(&mutex_logs);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
+            pthread_mutex_unlock(&mutex_logs);
         }
-        printf("CODE:%d", code);
+
         send_dump_memory(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "DUMP_MEMORY ENVIADO");
+        pthread_mutex_unlock(&mutex_logs);
 
-        sem_wait(&sem_ok_o_interrupcion);
-
+        recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
         contextoTid->registros->PC++;
 
@@ -370,56 +410,70 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
     }
     case IO:
     {
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "IO - Tiempo: %d", atoi(instruccion->parametros2));
+        pthread_mutex_unlock(&mutex_logs);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
+            pthread_mutex_unlock(&mutex_logs);
         }
-        printf("CODE:%d", code);
+    
         send_IO(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "IO ENVIADO");
+        pthread_mutex_unlock(&mutex_logs);
 
-        sem_wait(&sem_ok_o_interrupcion);
-
+        recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+    
         contextoTid->registros->PC++;
 
         break;
     }
     case PROCESS_CREATE:
     {
-        log_info(log_cpu, "PROCESS_CREATE - PID: %s, Tamaño: %d, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4));
+        pthread_mutex_lock(&mutex_logs);
+        log_info(log_cpu, "PROCESS_CREATE - PSEUDOCODIGO:%s, Tamaño: %d, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4));
+        pthread_mutex_unlock(&mutex_logs);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
+            pthread_mutex_unlock(&mutex_logs);
         }
-        printf("CODE:%d", code);
+
         send_process_create(instruccion->parametros2, atoi(instruccion->parametros3), atoi(instruccion->parametros4), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        log_info(log_cpu, "PROCESS_CREATE ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
 
+        recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+    
         contextoTid->registros->PC++;
 
         break;
     }
     case THREAD_CREATE:
     {
-        log_info(log_cpu, "THREAD_CREATE - TID: %s, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3));
+        pthread_mutex_lock(&mutex_logs);
+        log_info(log_cpu, "THREAD_CREATE - PSEUDOCODIGO: %s, Prioridad: %d", instruccion->parametros2, atoi(instruccion->parametros3));
+        pthread_mutex_unlock(&mutex_logs);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
+            pthread_mutex_unlock(&mutex_logs);
         }
-        printf("CODE:%d", code);
-        send_thread_create(instruccion->parametros2, atoi(instruccion->parametros3), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        log_info(log_cpu, "THREAD_CREATE ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        send_thread_create(instruccion->parametros2, atoi(instruccion->parametros3), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+
+
+        recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
         contextoTid->registros->PC++;
 
@@ -427,141 +481,171 @@ void execute(t_contexto_pid_send *contextoPid, t_contexto_tid *contextoTid, op_c
     }
     case THREAD_JOIN:
     {
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "THREAD_JOIN - TID: %d", atoi(instruccion->parametros2));
+        pthread_mutex_unlock(&mutex_logs);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
+            pthread_mutex_unlock(&mutex_logs);
         }
-        printf("CODE:%d", code);
-        send_thread_join(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        log_info(log_cpu, "THREAD_JOIN ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        send_thread_join(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+
+
+        recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
 
         break;
     }
     case THREAD_CANCEL:
     {
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "THREAD_CANCEL - TID: %d", atoi(instruccion->parametros2));
+        pthread_mutex_unlock(&mutex_logs);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
+            pthread_mutex_unlock(&mutex_logs);
         }
-        printf("CODE:%d", code);
-        send_thread_cancel(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        log_info(log_cpu, "THREAD_CANCEL ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        send_thread_cancel(atoi(instruccion->parametros2), sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+
+
+
+        recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
 
         break;
     }
     case MUTEX_CREATE:
     {
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "MUTEX_CREATE - Nombre: %s", instruccion->parametros2);
+        pthread_mutex_unlock(&mutex_logs);
+
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
+            pthread_mutex_unlock(&mutex_logs);
         }
-        printf("CODE:%d", code);
-        send_mutex_create(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        log_info(log_cpu, "MUTEX_CREATE ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        send_mutex_create(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+
+
+        recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
 
         break;
     }
     case MUTEX_LOCK:
     {
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "MUTEX_LOCK - Nombre: %s", instruccion->parametros2);
+        pthread_mutex_unlock(&mutex_logs);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
+            pthread_mutex_unlock(&mutex_logs);
         }
-        printf("CODE:%d", code);
-        send_mutex_lock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        log_info(log_cpu, "MUTEX_LOCK ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
+        send_mutex_lock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+
+
+        recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
 
         break;
     }
     case MUTEX_UNLOCK:
     {
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "MUTEX_UNLOCK - Nombre: %s", instruccion->parametros2);
+        pthread_mutex_unlock(&mutex_logs);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
 
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
+            pthread_mutex_unlock(&mutex_logs);
         }
-        printf("CODE:%d", code);
 
         send_mutex_unlock(instruccion->parametros2, sockets_cpu->socket_servidor->socket_cliente_Dispatch);
-        log_info(log_cpu, "MUTEX_UNLOCK ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
 
+        recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
 
         break;
     }
     case THREAD_EXIT:
     {
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "THREAD_EXIT");
+        pthread_mutex_unlock(&mutex_logs);
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         if (code != OK)
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
+            pthread_mutex_unlock(&mutex_logs);
         }
-        printf("CODE:%d", code);
 
         send_thread_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
-        log_info(log_cpu, "THREAD_EXIT ENVIADO");
 
-        sem_wait(&sem_ok_o_interrupcion);
-
+        recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
+        
         contextoTid->registros->PC++;
         break;
     }
     case PROCESS_EXIT:
     {
+        pthread_mutex_lock(&mutex_logs);
         log_info(log_cpu, "PROCESS_EXIT");
+        pthread_mutex_unlock(&mutex_logs);
         
         enviar_registros_a_actualizar(sockets_cpu->socket_memoria, contextoTid->registros, contextoTid->pid, contextoTid->tid);
         code_operacion code = recibir_code_operacion(sockets_cpu->socket_memoria);
         
         if (code != OK)
         {
+            pthread_mutex_lock(&mutex_logs);
             log_info(log_cpu, "Memoria no actualizo el registro correctamente");
+            pthread_mutex_unlock(&mutex_logs);
         }
-        printf("CODE:%d", code);
         
         send_process_exit(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
         
 
-        sem_wait(&sem_ok_o_interrupcion);
-
-        // No hay que incrementar el program counter
+        recibir_code_operacion(sockets_cpu->socket_servidor->socket_cliente_Dispatch);
 
         break;
     }
     default:
+        pthread_mutex_lock(&mutex_logs);
         log_error(log_cpu, "Instrucción no válida");
+        pthread_mutex_unlock(&mutex_logs);
         break;
     }
 }
