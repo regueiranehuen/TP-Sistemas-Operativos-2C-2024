@@ -4,21 +4,16 @@
 Estas simulaciones se realizan a partir de pseudocódigos que ejecutan los hilos pertenecientes a los procesos planificados por Kernel.
 
 Ejemplo de uso:
-![FIBO_47](FIBO_47.mp4)
+
+
+https://github.com/user-attachments/assets/a0b2ae2e-23be-49a4-b301-3fa27a03f3c5
 
 * En el ejemplo, se puede obvservar que tras la ejecución de los hilos planificados por Kernel, en AX quedó almacenado el número 46 de la sucesión de Fibonacci (1836311903), y en BX el número 47 de la misma (2971215073), por lo cual se llegó al objetivo que tenía el pseudocódigo ingresado en Kernel.
 * Tras la instrucción DUMP_MEMORY, se creó el archivo dump correspondiente al proceso que llevó a cabo la ejecución del pseudocódigo.
 * Las especificaciones que indican detalles como tamaños de procesos, algoritmos de planificación y tamaños de bloques se especificaron en los configs de cada módulo.
 * Así como en este ejemplo la ejecución fue con un único proceso y mediante colas multinivel como algoritmo de planificación, debido a los configs se pueden elegir múltiples formas de ejecución
 
-
-
 --------------
-# tp-scaffold
-
-Esta es una plantilla de proyecto diseñada para generar un TP de Sistemas
-Operativos de la UTN FRBA.
-
 ## Dependencias
 
 Para poder compilar y ejecutar el proyecto, es necesario tener instalada la
